@@ -25,12 +25,12 @@ def session_lint(session):
 def session_py27(session):
     session.interpreter = 'python2.7'
     session.install('requirements-test.txt')
-    session.install('.')
-    session.run('py.test')
+    session.setenv(PYTHONPATH='.')
+    session.run('py.test', '--cov=nox', '--cov-report', 'term-missing')
 
 
 def session_py35(session):
     session.interpreter = 'python3.5'
     session.install('requirements-test.txt')
     session.install('.')
-    session.run('py.test')
+    session.run('py.test', '--cov=nox',)

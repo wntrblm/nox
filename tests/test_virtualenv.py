@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import os
-
+import mock
 import nox.virtualenv
-
+import nox.command
 import py.test
 
 
@@ -95,9 +95,108 @@ def test_create(make_one):
     assert dir.join('bin', 'pip').check()
     assert dir.join('lib').check()
 
+    # Test running create on an existing environment. It should be deleted.
+    dir.join('test.txt').write('blah')
+    assert dir.join('test.txt').check()
+    venv.create()
+    assert not dir.join('test.txt').check()
+
+    # Test running create on an existing environment with reuse_exising
+    # enabled, it should not be deleted.
+    dir.join('test.txt').write('blah')
+    assert dir.join('test.txt').check()
+    venv.reuse_existing = True
+    venv.create()
+    assert dir.join('test.txt').check()
+
 
 def test_create_interpreter(make_one):
     venv, dir = make_one(interpreter='python3')
     venv.create()
     assert dir.join('bin', 'python').check()
     assert dir.join('bin', 'python3').check()
+
+
+def test_run(monkeypatch, make_one):
+    venv, _ = make_one(interpreter='python3')
+    venv.env['SIGIL'] = '123'
+
+    def mock_run(self):
+        assert self.args == ['test', 'command']
+        assert self.silent is True
+        assert self.path == venv.bin
+        assert self.env['SIGIL'] == '123'
+        return 'okay :)'
+
+    monkeypatch.setattr(nox.virtualenv.Command, 'run', mock_run)
+    assert venv.run(['test', 'command']) == 'okay :)'
+
+    def mock_run_outside_venv(self):
+        assert self.args == ['test', 'command']
+        assert self.silent is True
+        assert self.path != venv.bin
+        assert self.env is None
+        return 'okay :)'
+
+    monkeypatch.setattr(nox.virtualenv.Command, 'run', mock_run_outside_venv)
+    assert venv.run(['test', 'command'], in_venv=False) == 'okay :)'
+
+
+def test_install(monkeypatch, make_one):
+    monkeypatch.setattr(
+        nox.virtualenv.VirtualEnv, 'install_package', lambda self, _: _)
+    monkeypatch.delattr(
+        nox.virtualenv.VirtualEnv, 'install_requirements_file')
+    venv, _ = make_one()
+
+    venv.install('pytest')
+    venv.install('pytest==1.2.3')
+    venv.install('pytest>=1')
+    venv.install('pytest>=1,<=5')
+
+    with py.test.raises(AttributeError):
+        venv.install('requirements.txt')
+
+    with py.test.raises(AttributeError):
+        venv.install('blah.txt')
+
+    monkeypatch.undo()
+    monkeypatch.setattr(
+        nox.virtualenv.VirtualEnv,
+        'install_requirements_file',
+        lambda self, _: _)
+    monkeypatch.delattr(
+        nox.virtualenv.VirtualEnv, 'install_package')
+    venv, _ = make_one()
+
+    venv.install('requirements.txt')
+    venv.install('blah.txt')
+
+    with py.test.raises(AttributeError):
+        venv.install('pytest')
+
+
+def test_install_package(monkeypatch, make_one):
+    monkeypatch.setattr(nox.virtualenv.VirtualEnv, 'run', mock.Mock())
+    venv, _ = make_one()
+
+    venv.install_package('pytest')
+    venv.run.assert_called_with(
+        ['pip', 'install', '--upgrade', 'pytest'])
+
+    venv.install_package('pytest>=1.2.3')
+    venv.run.assert_called_with(
+        ['pip', 'install', '--upgrade', 'pytest>=1.2.3'])
+
+
+def test_install_requirements_file(monkeypatch, make_one):
+    monkeypatch.setattr(nox.virtualenv.VirtualEnv, 'run', mock.Mock())
+    venv, _ = make_one()
+
+    venv.install_requirements_file('requirements.txt')
+    venv.run.assert_called_with(
+        ['pip', 'install', '--upgrade', '-r', 'requirements.txt'])
+
+    venv.install_requirements_file('blah.txt')
+    venv.run.assert_called_with(
+        ['pip', 'install', '--upgrade', '-r', 'blah.txt'])
