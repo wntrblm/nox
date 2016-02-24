@@ -1,0 +1,14 @@
+done:
+* Virtualenv cleaning
+* Virtualenv re-use
+* Ignoring exit codes
+* Running functions instead of just commands
+* Create setup.py and such (turn it into a package)
+
+todo:
+* Write tests
+* sdist
+* whitelist_externals
+* fail() and succeed()
+* reporter class?
+* Setuptools integration (https://tox.readthedocs.org/en/latest/example/basic.html#integration-with-setuptools-distribute-test-commands)
