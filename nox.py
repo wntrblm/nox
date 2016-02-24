@@ -18,8 +18,8 @@ def session_lint(session):
     session.run(
         'flake8',
         '--max-complexity=10',
-        '--import-order-style=google',
-        'main.py')
+        '--import-order-style=google'
+        'nox', 'tests')
 
 
 def session_py27(session):

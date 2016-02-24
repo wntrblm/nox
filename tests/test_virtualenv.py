@@ -15,6 +15,7 @@
 import os
 
 import nox.virtualenv
+
 import py.test
 
 
