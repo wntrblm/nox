@@ -48,21 +48,22 @@ class Command(object):
         self.success_codes = success_codes or [0]
 
     def run(self):
+        cmd, args = self.args[0], self.args[1:]
         full_cmd = ' '.join(self.args)
+
         logger.info(full_cmd)
 
-        cmd = which(self.args[0], self.path)
+        cmd_path = which(cmd, self.path)
 
-        if not cmd:
-            logger.error('Command {} not found.'.format(self.args[0]))
-            raise CommandFailed('Commmand {} not found'.format(self.args[0]))
+        if not cmd_path:
+            logger.error('Command {} not found.'.format(cmd))
+            raise CommandFailed('Commmand {} not found'.format(cmd))
 
-        run = sh.Command(cmd)
+        run = sh.Command(cmd_path)
 
-        args = self.args[1:]
         kwargs = {
             '_env': self.env,
-            '_ok_code': self.success_codes
+            '_ok_code': self.success_codes,
         }
 
         try:
