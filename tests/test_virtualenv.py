@@ -15,7 +15,6 @@
 import os
 import mock
 import nox.virtualenv
-import nox.command
 import py.test
 
 
@@ -96,14 +95,13 @@ def test_create(make_one):
     assert dir.join('lib').check()
 
     # Test running create on an existing environment. It should be deleted.
-    dir.join('test.txt').write('blah')
-    assert dir.join('test.txt').check()
+    dir.ensure('test.txt')
     venv.create()
     assert not dir.join('test.txt').check()
 
     # Test running create on an existing environment with reuse_exising
     # enabled, it should not be deleted.
-    dir.join('test.txt').write('blah')
+    dir.ensure('test.txt')
     assert dir.join('test.txt').check()
     venv.reuse_existing = True
     venv.create()

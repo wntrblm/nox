@@ -55,7 +55,7 @@ class Command(object):
 
         if not cmd:
             logger.error('Command {} not found.'.format(self.args[0]))
-            raise CommandFailed()
+            raise CommandFailed('Commmand {} not found'.format(self.args[0]))
 
         run = sh.Command(cmd)
 
@@ -68,19 +68,19 @@ class Command(object):
         try:
             if self.silent:
                 result = run(*args, **kwargs)
+                return result.stdout
             else:
                 result = run(*args, _out=sys.stdout, _out_bufsize=0, **kwargs)
                 result.wait()
-
-            return result.stdout
+                return True
 
         except sh.ErrorReturnCode as e:
             logger.error('Command {} failed, exit code {}{}'.format(
                 full_cmd, e.exit_code, ':' if self.silent else ''))
 
             if self.silent:
-                print(e.stdout)
-                print(e.stderr)
+                sys.stdout.write(e.stdout)
+                sys.stderr.write(e.stderr)
 
             raise CommandFailed(e)
 
@@ -97,6 +97,7 @@ class FunctionCommand(object):
 
         try:
             self.func()
+            return True
         except Exception as e:
             logger.exception('Function {} raised {}.'.format(
                 func_name, e))

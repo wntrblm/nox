@@ -22,11 +22,16 @@ def session_lint(session):
         'nox', 'tests')
 
 
+def session_test(session):
+    session.run('python', '-c', 'import sys; print(sys.executable)')
+
+
 def session_py27(session):
     session.interpreter = 'python2.7'
     session.install('requirements-test.txt')
-    session.setenv(PYTHONPATH='.')
-    session.run('py.test', '--cov=nox', '--cov-report', 'term-missing')
+    session.install_editable('.')
+    session.run(
+        'py.test', '--cov=nox', '--cov-report', 'term-missing', 'tests/')
 
 
 def session_py35(session):

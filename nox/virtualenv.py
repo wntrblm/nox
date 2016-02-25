@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 import os
 import shutil
 
@@ -75,6 +73,12 @@ class VirtualEnv(object):
 
     def install(self, dependency):
         """Install a given dependency in the virtualenv using pip."""
+        if isinstance(dependency, (list, tuple)):
+            if dependency[0] == '-e':
+                return self.install_editable(dependency[1])
+            else:
+                raise ValueError(
+                    'Unknown package specification: {}'.format(dependency))
         if dependency.endswith('.txt'):
             return self.install_requirements_file(dependency)
         return self.install_package(dependency)
@@ -84,3 +88,6 @@ class VirtualEnv(object):
 
     def install_package(self, package):
         self.run(['pip', 'install', '--upgrade', package])
+
+    def install_editable(self, package):
+        self.run(['pip', 'install', '-e', package])

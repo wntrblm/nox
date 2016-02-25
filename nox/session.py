@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 import contextlib
 import os
 
@@ -48,6 +46,9 @@ class SessionConfig(object):
 
     def install(self, *dependencies):
         self._dependencies.extend(dependencies)
+
+    def install_editable(self, dependency):
+        self._dependencies.append(('-e', dependency))
 
     def setenv(self, dict=None, **kwargs):
         if not dict:
