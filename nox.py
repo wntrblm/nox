@@ -37,5 +37,6 @@ def session_py27(session):
 def session_py35(session):
     session.interpreter = 'python3.5'
     session.install('requirements-test.txt')
-    session.install('.')
-    session.run('py.test', '--cov=nox',)
+    session.install_editable('.')
+    session.run(
+        'py.test', '--cov=nox', '--cov-report', 'term-missing', 'tests/')

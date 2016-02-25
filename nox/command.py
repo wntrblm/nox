@@ -68,7 +68,7 @@ class Command(object):
         try:
             if self.silent:
                 result = run(*args, **kwargs)
-                return result.stdout
+                return result.stdout.decode('utf-8')
             else:
                 result = run(*args, _out=sys.stdout, _out_bufsize=0, **kwargs)
                 result.wait()
@@ -79,8 +79,8 @@ class Command(object):
                 full_cmd, e.exit_code, ':' if self.silent else ''))
 
             if self.silent:
-                sys.stdout.write(e.stdout)
-                sys.stderr.write(e.stderr)
+                sys.stdout.write(e.stdout.decode('utf-8'))
+                sys.stderr.write(e.stderr.decode('utf-8'))
 
             raise CommandFailed(e)
 
