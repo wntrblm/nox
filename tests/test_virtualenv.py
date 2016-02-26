@@ -15,10 +15,10 @@
 import os
 import mock
 import nox.virtualenv
-import py.test
+import pytest
 
 
-@py.test.fixture
+@pytest.fixture
 def make_one(tmpdir):
     def factory(*args, **kwargs):
         location = tmpdir.join('venv')
@@ -148,7 +148,6 @@ def test_install(make_one):
         mock_run.assert_called_with(
             ('pip', 'install', '--upgrade', 'blah'))
 
-        mock_run.reset()
         venv.install('-r', 'somefile.txt')
         mock_run.assert_called_with(
             ('pip', 'install', '--upgrade', '-r', 'somefile.txt'))

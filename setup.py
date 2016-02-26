@@ -59,7 +59,7 @@ setup(
 
     packages=['nox'],
 
-    install_requires=['colorlog', 'sh'],
+    install_requires=['colorlog', 'sh', 'py'],
 
     entry_points={
         'console_scripts': [

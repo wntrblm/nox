@@ -2,18 +2,18 @@ import os
 import mock
 import nox.command
 import py
-import py.test
+import pytest
 import sys
 
 
-@py.test.fixture
+@pytest.fixture
 def make_one():
     def factory(*args, **kwargs):
         return nox.command.Command(*args, **kwargs)
     return factory
 
 
-@py.test.fixture
+@pytest.fixture
 def make_one_func():
     def factory(*args, **kwargs):
         return nox.command.FunctionCommand(*args, **kwargs)
@@ -71,7 +71,7 @@ def test_run_env(make_one):
 def test_run_not_found(make_one):
     command = make_one(['nonexistentcmd'])
 
-    with py.test.raises(nox.command.CommandFailed):
+    with pytest.raises(nox.command.CommandFailed):
         command.run()
 
 
@@ -109,7 +109,7 @@ def test_exit_codes(make_one):
 
     assert command_exit_code_0.run()
 
-    with py.test.raises(nox.command.CommandFailed):
+    with pytest.raises(nox.command.CommandFailed):
         command_exit_code_1.run()
 
     command_exit_code_1.success_codes = [1, 2]
@@ -123,7 +123,7 @@ def test_fail_with_silent(make_one, capsys):
          'sys.stderr.write("err"); sys.exit(1)'],
         silent=True)
 
-    with py.test.raises(nox.command.CommandFailed):
+    with pytest.raises(nox.command.CommandFailed):
         command.run()
         out, err = capsys.readouterr()
         assert 'out' in out
@@ -146,5 +146,5 @@ def test_function_command_fail(make_one_func):
 
     command = make_one_func(mock_func)
 
-    with py.test.raises(nox.command.CommandFailed):
+    with pytest.raises(nox.command.CommandFailed):
         command.run()

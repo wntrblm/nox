@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import contextlib
 import os
+
+import py
 
 from .command import Command, CommandFailed, FunctionCommand
 from .logger import logger
@@ -25,7 +26,7 @@ class SessionConfig(object):
         self.interpreter = None
         self._dependencies = []
         self._commands = []
-        self._env = {}
+        self.env = {}
         self._dir = '.'
         self.posargs = posargs or []
         self.reuse_existing_virtualenv = False
@@ -45,19 +46,9 @@ class SessionConfig(object):
             self._commands.append(Command(args=args, **kwargs))
 
     def install(self, *args):
+        if not args:
+            raise ValueError('At least one argument required to install().')
         self._dependencies.append(args)
-
-    def setenv(self, dict=None, **kwargs):
-        if not dict:
-            self._env.update(kwargs)
-        else:
-            self._env.update(dict)
-
-    def getenv(self, key):
-        if key in self._env:
-            return self._env[key]
-        else:
-            return os.environ.get(key)
 
 
 class Session(object):
@@ -85,7 +76,7 @@ class Session(object):
 
     def _run_commands(self):
         env = self.venv.env.copy()
-        env.update(self.config._env)
+        env.update(self.config.env)
 
         for command in self.config._commands:
             if isinstance(command, Command):
@@ -104,7 +95,11 @@ class Session(object):
             self._create_venv()
             self._install_dependencies()
 
-            with self.chdir():
+            if self.config._dir != '.':
+                logger.info('Changing directory to {}'.format(self.config._dir))
+
+            cwd = py.path.local(self.config._dir).as_cwd()
+            with cwd:
                 self._run_commands()
 
             logger.success('Session {} successful. :)'.format(self.name))
@@ -113,16 +108,3 @@ class Session(object):
         except CommandFailed:
             logger.error('Session {} failed. :('.format(self.name))
             return False
-
-    @contextlib.contextmanager
-    def chdir(self):
-        cwd = os.getcwd()
-
-        if self.config._dir != '.':
-            logger.info('Changing directory to {}'.format(self.config._dir))
-            os.chdir(self.config._dir)
-
-        try:
-            yield
-        finally:
-            os.chdir(cwd)
