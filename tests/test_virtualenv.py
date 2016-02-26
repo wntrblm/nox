@@ -140,61 +140,15 @@ def test_run(monkeypatch, make_one):
     assert venv.run(['test', 'command'], in_venv=False) == 'okay :)'
 
 
-def test_install(monkeypatch, make_one):
-    monkeypatch.setattr(
-        nox.virtualenv.VirtualEnv, 'install_package', lambda self, _: _)
-    monkeypatch.delattr(
-        nox.virtualenv.VirtualEnv, 'install_requirements_file')
+def test_install(make_one):
     venv, _ = make_one()
+    with mock.patch.object(venv, 'run') as mock_run:
 
-    venv.install('pytest')
-    venv.install('pytest==1.2.3')
-    venv.install('pytest>=1')
-    venv.install('pytest>=1,<=5')
+        venv.install('blah')
+        mock_run.assert_called_with(
+            ('pip', 'install', '--upgrade', 'blah'))
 
-    with py.test.raises(AttributeError):
-        venv.install('requirements.txt')
-
-    with py.test.raises(AttributeError):
-        venv.install('blah.txt')
-
-    monkeypatch.undo()
-    monkeypatch.setattr(
-        nox.virtualenv.VirtualEnv,
-        'install_requirements_file',
-        lambda self, _: _)
-    monkeypatch.delattr(
-        nox.virtualenv.VirtualEnv, 'install_package')
-    venv, _ = make_one()
-
-    venv.install('requirements.txt')
-    venv.install('blah.txt')
-
-    with py.test.raises(AttributeError):
-        venv.install('pytest')
-
-
-def test_install_package(monkeypatch, make_one):
-    monkeypatch.setattr(nox.virtualenv.VirtualEnv, 'run', mock.Mock())
-    venv, _ = make_one()
-
-    venv.install_package('pytest')
-    venv.run.assert_called_with(
-        ['pip', 'install', '--upgrade', 'pytest'])
-
-    venv.install_package('pytest>=1.2.3')
-    venv.run.assert_called_with(
-        ['pip', 'install', '--upgrade', 'pytest>=1.2.3'])
-
-
-def test_install_requirements_file(monkeypatch, make_one):
-    monkeypatch.setattr(nox.virtualenv.VirtualEnv, 'run', mock.Mock())
-    venv, _ = make_one()
-
-    venv.install_requirements_file('requirements.txt')
-    venv.run.assert_called_with(
-        ['pip', 'install', '--upgrade', '-r', 'requirements.txt'])
-
-    venv.install_requirements_file('blah.txt')
-    venv.run.assert_called_with(
-        ['pip', 'install', '--upgrade', '-r', 'blah.txt'])
+        mock_run.reset()
+        venv.install('-r', 'somefile.txt')
+        mock_run.assert_called_with(
+            ('pip', 'install', '--upgrade', '-r', 'somefile.txt'))

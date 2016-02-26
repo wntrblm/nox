@@ -71,23 +71,5 @@ class VirtualEnv(object):
             silent=True,
             path=self.bin if in_venv else None).run()
 
-    def install(self, dependency):
-        """Install a given dependency in the virtualenv using pip."""
-        if isinstance(dependency, (list, tuple)):
-            if dependency[0] == '-e':
-                return self.install_editable(dependency[1])
-            else:
-                raise ValueError(
-                    'Unknown package specification: {}'.format(dependency))
-        if dependency.endswith('.txt'):
-            return self.install_requirements_file(dependency)
-        return self.install_package(dependency)
-
-    def install_requirements_file(self, filename):
-        self.run(['pip', 'install', '--upgrade', '-r', filename])
-
-    def install_package(self, package):
-        self.run(['pip', 'install', '--upgrade', package])
-
-    def install_editable(self, package):
-        self.run(['pip', 'install', '-e', package])
+    def install(self, *args):
+        self.run(('pip', 'install', '--upgrade') + args)

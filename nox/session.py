@@ -44,11 +44,8 @@ class SessionConfig(object):
         else:
             self._commands.append(Command(args=args, **kwargs))
 
-    def install(self, *dependencies):
-        self._dependencies.extend(dependencies)
-
-    def install_editable(self, dependency):
-        self._dependencies.append(('-e', dependency))
+    def install(self, *args):
+        self._dependencies.append(args)
 
     def setenv(self, dict=None, **kwargs):
         if not dict:
@@ -84,7 +81,7 @@ class Session(object):
 
     def _install_dependencies(self):
         for dep in self.config._dependencies:
-            self.venv.install(dep)
+            self.venv.install(*dep)
 
     def _run_commands(self):
         env = self.venv.env.copy()

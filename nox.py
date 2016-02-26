@@ -28,15 +28,15 @@ def session_test(session):
 
 def session_py27(session):
     session.interpreter = 'python2.7'
-    session.install('requirements-test.txt')
-    session.install_editable('.')
+    session.install('-r', 'requirements-test.txt')
+    session.install('-e', '.')
     session.run(
         'py.test', '--cov=nox', '--cov-report', 'term-missing', 'tests/')
 
 
 def session_py35(session):
     session.interpreter = 'python3.5'
-    session.install('requirements-test.txt')
-    session.install_editable('.')
+    session.install('-r', 'requirements-test.txt')
+    session.install('-e', '.')
     session.run(
         'py.test', '--cov=nox', '--cov-report', 'term-missing', 'tests/')
