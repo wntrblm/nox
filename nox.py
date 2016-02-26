@@ -31,7 +31,8 @@ def session_py27(session):
     session.install('-r', 'requirements-test.txt')
     session.install('-e', '.')
     session.run(
-        'py.test', '--cov=nox', '--cov-report', 'term-missing', 'tests/')
+        'py.test', '--cov=nox', '--cov-config', '.coveragerc',
+        '--cov-report', 'term-missing', 'tests/')
 
 
 def session_py35(session):
@@ -39,4 +40,5 @@ def session_py35(session):
     session.install('-r', 'requirements-test.txt')
     session.install('-e', '.')
     session.run(
-        'py.test', '--cov=nox', '--cov-report', 'term-missing', 'tests/')
+        'py.test', '--cov=nox', '--cov-config', '.coveragerc',
+        '--cov-report', 'term-missing', 'tests/')

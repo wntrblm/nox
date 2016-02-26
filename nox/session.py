@@ -83,8 +83,7 @@ class Session(object):
                 command.path = self.venv.bin
                 command.env = env
                 command()
-
-            elif isinstance(command, FunctionCommand):
+            else:
                 command()
 
     def execute(self):
