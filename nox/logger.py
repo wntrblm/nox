@@ -27,6 +27,8 @@ class LoggerWithSuccess(logging.getLoggerClass()):
     def success(self, msg, *args, **kwargs):
         if self.isEnabledFor(SUCCESS):
             self._log(SUCCESS, msg, args, **kwargs)
+        else:  # pragma: no cover
+            pass
 
 logging.setLoggerClass(LoggerWithSuccess)
 logger = logging.getLogger('nox')

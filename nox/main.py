@@ -19,6 +19,8 @@ import imp
 from inspect import isfunction
 import os
 
+from six import iteritems
+
 from .logger import setup_logging
 from .session import Session
 
@@ -43,10 +45,10 @@ def load_user_nox_module(module_file_name='nox.py'):
 
 def discover_session_functions(module):
     funcs = []
-    for name, obj in module.__dict__.iteritems():
+    for name, obj in iteritems(module.__dict__):
         if name.startswith('session_') and isfunction(obj):
             funcs.append((name.split('session_', 1).pop(), obj))
-    return funcs
+    return sorted(funcs)
 
 
 def make_sessions(session_functions, global_config):

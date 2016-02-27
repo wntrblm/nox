@@ -22,23 +22,16 @@ def session_lint(session):
         'nox', 'tests')
 
 
-def session_test(session):
-    session.run('python', '-c', 'import sys; print(sys.executable)')
-
-
 def session_py27(session):
     session.interpreter = 'python2.7'
     session.install('-r', 'requirements-test.txt')
     session.install('-e', '.')
+    tests = session.posargs or ['tests/']
     session.run(
         'py.test', '--cov=nox', '--cov-config', '.coveragerc',
-        '--cov-report', 'term-missing', 'tests/')
+        '--cov-report', 'term-missing', *tests)
 
 
 def session_py35(session):
+    session_py27(session)
     session.interpreter = 'python3.5'
-    session.install('-r', 'requirements-test.txt')
-    session.install('-e', '.')
-    session.run(
-        'py.test', '--cov=nox', '--cov-config', '.coveragerc',
-        '--cov-report', 'term-missing', 'tests/')
