@@ -4,5 +4,6 @@ env:
 - NOX_SESSION=py27
 - NOX_SESSION=py34
 - NOX_SESSION=py35
-install: pip install .
+install: pip install coveralls .
 script: nox --session $NOX_SESSION
+after_success: coveralls
