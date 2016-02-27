@@ -18,7 +18,7 @@ def session_lint(session):
     session.run(
         'flake8',
         '--max-complexity=10',
-        '--import-order-style=google'
+        '--import-order-style=google',
         'nox', 'tests')
 
 
@@ -30,6 +30,11 @@ def session_py27(session):
     session.run(
         'py.test', '--cov=nox', '--cov-config', '.coveragerc',
         '--cov-report', 'term-missing', *tests)
+
+
+def session_py34(session):
+    session_py27(session)
+    session.interpreter = 'python3.4'
 
 
 def session_py35(session):

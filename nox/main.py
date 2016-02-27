@@ -18,6 +18,7 @@ import argparse
 import imp
 from inspect import isfunction
 import os
+import sys
 
 from six import iteritems
 
@@ -67,9 +68,11 @@ def run(global_config):
         sessions = [x for x in sessions if x.name in global_config.sessions]
 
     for session in sessions:
-         result = session.execute()
-         if not result and global_config.stop_on_first_error:
-            return
+        result = session.execute()
+        if not result and global_config.stop_on_first_error:
+            return False
+
+    return True
 
 
 def main():
@@ -99,4 +102,7 @@ def main():
 
     setup_logging()
 
-    run(global_config)
+    success = run(global_config)
+
+    if not success:
+        sys.exit(1)

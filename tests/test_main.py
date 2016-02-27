@@ -15,12 +15,10 @@
 import os
 import sys
 
+import contexter
 import mock
 
 import nox.main
-
-import contexter
-import pytest
 
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
@@ -260,3 +258,14 @@ def test_main():
         assert run_mock.called
         config = run_mock.call_args[0][0]
         assert config.posargs == ['1', '2', '3', '-f', '--baz']
+
+
+def test_main_failure():
+    sys.argv = [sys.executable]
+
+    with contexter.ExitStack() as stack:
+        run_mock = stack.enter_context(mock.patch('nox.main.run'))
+        exit_mock = stack.enter_context(mock.patch('sys.exit'))
+        run_mock.return_value = False
+        nox.main.main()
+        exit_mock.assert_called_with(1)

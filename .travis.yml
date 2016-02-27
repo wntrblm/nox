@@ -1,0 +1,12 @@
+language: python
+python:
+- "2.7"
+- "3.4"
+- "3.5"
+env:
+- NOX_SESSION=lint
+- NOX_SESSION=py27
+- NOX_SESSION=py34
+- NOX_SESSION=py35
+install: pip install .
+script: nox --session $NOX_SESSION

@@ -95,7 +95,8 @@ class Session(object):
             self._install_dependencies()
 
             if self.config._dir != '.':
-                logger.info('Changing directory to {}'.format(self.config._dir))
+                logger.info(
+                    'Changing directory to {}'.format(self.config._dir))
 
             cwd = py.path.local(self.config._dir).as_cwd()
             with cwd:
