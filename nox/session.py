@@ -22,19 +22,69 @@ from .virtualenv import VirtualEnv
 
 
 class SessionConfig(object):
+    """SessionConfig is passed into the session function defined in the
+    user's *nox.py*. The session function uses this object to configure the
+    virtualenv and tell nox which commands to run within the session.
+    """
     def __init__(self, posargs=None):
-        self.interpreter = None
         self._dependencies = []
         self._commands = []
         self.env = {}
         self._dir = '.'
+        self.interpreter = None
+        """``None`` or a string indicating the name of the Python interpreter
+        to use in the session's virtualenv. If None, the default system
+        interpreter is used."""
         self.posargs = posargs or []
+        """``None`` or a list of strings. This is set to any extra arguments
+        passed to ``nox`` on the commandline."""
         self.reuse_existing_virtualenv = False
+        """A boolean indicating whether to recreate or reuse the session's
+        virtualenv. If True, then any existing virtualenv will be used. This
+        can also be specified globally using the
+        ``--reuse-existing-virtualenvs`` argument when running ``nox``."""
 
     def chdir(self, dir):
+        """Set the working directory for any commands that run in this
+        session."""
         self._dir = dir
 
     def run(self, *args, **kwargs):
+        """
+        Run a command in the session. Commands must be specified as a list of
+        strings, for example::
+
+            session.run('py.test', '-k', 'fast', 'tests/')
+            session.run('flake8', '--import-order-style=google')
+
+        You **can not** just pass everything as one string. For example, this
+        **will not work**::
+
+            session.run('py.test -k fast tests/')
+
+        You can set environment variables for the command using ``env``::
+
+            session.run(
+                'bash', '-c', 'echo $SOME_ENV',
+                env={'SOME_ENV': 'Hello'})
+
+        You can also tell nox to treat non-zero exit codes as success using
+        ``success_codes``. For example, if you wanted to treat the ``py.test``
+        "tests discovered, but none selected" error as success::
+
+            session.run(
+                'py.test', '-k', 'not slow',
+                success_codes=[0, 5])
+
+        :param env: A dictionary of environment variables to expose to the
+            command. By default, all evironment variables are passed.
+        :type env: dict or None
+        :param bool silent: Silence command output, unless the command fails.
+            ``False`` by default.
+        :param success_codes: A list of return codes that are considered
+            successful. By default, only ``0`` is considered success.
+        :type success_codes: list, tuple, or None
+        """
         if not args:
             raise ValueError('At least one argument required to run().')
         if callable(args[0]):
@@ -46,6 +96,28 @@ class SessionConfig(object):
             self._commands.append(Command(args=args, **kwargs))
 
     def install(self, *args):
+        """Install invokes `pip`_ to install packages inside of the session's
+        virtualenv.
+
+        To install packages directly::
+
+            session.install('py.test')
+            session.install('requests', 'mock')
+            session.install('requests[security]==2.9.1')
+
+        To install packages from a `requirements.txt` file::
+
+            session.install('-r', 'requirements.txt')
+            session.install('-r', 'requirements-dev.txt')
+
+        To install the current package::
+
+            session.install('.')
+            # Install in editable mode.
+            session.install('-e', '.')
+
+        .. _pip: https://pip.readthedocs.org
+        """
         if not args:
             raise ValueError('At least one argument required to install().')
         self._dependencies.append(args)
