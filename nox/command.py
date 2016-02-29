@@ -71,7 +71,13 @@ class Command(object):
                 result = run(*args, **kwargs)
                 return result.stdout.decode('utf-8')
             else:
-                result = run(*args, _out=sys.stdout, _out_bufsize=0, **kwargs)
+                result = run(
+                    *args,
+                    _out=sys.stdout,
+                    _out_bufsize=0,
+                    _err=sys.stderr,
+                    _err_bufsize=0,
+                    **kwargs)
                 result.wait()
                 return True
 

@@ -24,7 +24,7 @@ For example, if you wanted to run your tests against Python 2.7 and Python 3.4 y
         session.install('-r', 'requirements.txt')
         session.run('py.test')
 
-Then you can run both sessions using `nox`. For each session, Nox will automatically create `virtualenv`_ with the appropriate interpreter, install the specified dependencies, and run the commands in order.
+Then you can run both sessions using ``nox``. For each session, Nox will automatically create `virtualenv`_ with the appropriate interpreter, install the specified dependencies, and run the commands in order.
 
 To learn how to install and use Nox, see the :doc:`tutorial`. For documentation on configuring sessions, see :doc:`config`. For documentation on running ``nox``, see :doc:`usage`.
 
