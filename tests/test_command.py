@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import mock
 
 import nox.command
 
 import pytest
+
+PYTHON = sys.executable
 
 
 @pytest.fixture
@@ -54,7 +58,7 @@ def test_constructor_explicit(make_one):
 
 
 def test_run_defaults(make_one, capsys):
-    command = make_one(['echo', '123'])
+    command = make_one([PYTHON, '-c', 'print(123)'])
 
     result = command.run()
 
@@ -62,21 +66,23 @@ def test_run_defaults(make_one, capsys):
 
 
 def test_run_silent(make_one, capsys):
-    command = make_one(['echo', '123'], silent=True)
+    command = make_one([PYTHON, '-c', 'print(123)'], silent=True)
 
     result = command.run()
     out, _ = capsys.readouterr()
 
-    assert result == '123\n'
+    assert '123' in result
     assert out == ''
 
 
 def test_run_env(make_one):
-    command = make_one(['env'], silent=True, env={'SIGIL': '123'})
+    command = make_one(
+        [PYTHON, '-c', 'import os; print(os.environ["SIGIL"])'],
+        silent=True, env={'SIGIL': '123'})
 
     result = command.run()
 
-    assert result == 'SIGIL=123\n'
+    assert '123' in result
 
 
 def test_run_not_found(make_one):
@@ -88,7 +94,7 @@ def test_run_not_found(make_one):
 
 def test_run_path_nonexistent(make_one):
     command = make_one(
-        ['python', '-c', 'import sys; print(sys.executable)'],
+        [PYTHON, '-c', 'import sys; print(sys.executable)'],
         silent=True,
         path='/non/existent')
 
@@ -116,9 +122,9 @@ def test_run_path_existent(make_one, tmpdir, monkeypatch):
 
 def test_exit_codes(make_one):
     command_exit_code_0 = make_one(
-        ['python', '-c', 'import sys; sys.exit(0)'])
+        [PYTHON, '-c', 'import sys; sys.exit(0)'])
     command_exit_code_1 = make_one(
-        ['python', '-c', 'import sys; sys.exit(1)'])
+        [PYTHON, '-c', 'import sys; sys.exit(1)'])
 
     assert command_exit_code_0.run()
 
@@ -131,7 +137,7 @@ def test_exit_codes(make_one):
 
 def test_fail_with_silent(make_one, capsys):
     command = make_one(
-        ['python', '-c',
+        [PYTHON, '-c',
          'import sys; sys.stdout.write("out");'
          'sys.stderr.write("err"); sys.exit(1)'],
         silent=True)

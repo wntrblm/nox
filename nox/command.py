@@ -14,11 +14,11 @@
 
 from __future__ import print_function
 
-import os
 import sys
 
 from nox.logger import logger
 from nox.popen import popen
+import py
 
 
 class CommandFailed(Exception):
@@ -27,14 +27,21 @@ class CommandFailed(Exception):
 
 
 def which(program, path):
-    """Finds the full path to an executable, needed by sh."""
+    """Finds the full path to an executable."""
+    full_path = None
+
     if path:
-        venv_path = os.path.join(path, program)
+        full_path = py.path.local.sysfind(program, paths=[path])
 
-        if os.path.exists(venv_path):
-            return venv_path
+    if full_path:
+        return full_path.strpath
 
-    return program
+    full_path = py.path.local.sysfind(program)
+
+    if full_path:
+        return full_path.strpath
+
+    raise CommandFailed('Program {} not found'.format(program))
 
 
 class Command(object):
@@ -53,6 +60,8 @@ class Command(object):
         logger.info(full_cmd)
 
         cmd_path = which(cmd, self.path)
+
+        logger.debug(cmd_path)
 
         try:
             return_code, output = popen(

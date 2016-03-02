@@ -13,46 +13,34 @@ environment:
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.11"
       PYTHON_ARCH: "32"
-      NOX_SESSION: "py27"
 
-    - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.11"
-      PYTHON_ARCH: "64"
-      NOX_SESSION: "py27"
+    # - PYTHON: "C:\\Python27-x64"
+    #   PYTHON_VERSION: "2.7.11"
+    #   PYTHON_ARCH: "64"
 
-    # Python 3.4.4 is the latest Python 3.4 with a Windows installer
-    # Python 3.4.4 is the overall latest
-    # https://www.python.org/ftp/python/3.4.4/
-    - PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.4"
-      PYTHON_ARCH: "32"
-      NOX_SESSION: "py34"
+    # # Python 3.4.4 is the latest Python 3.4 with a Windows installer
+    # # Python 3.4.4 is the overall latest
+    # # https://www.python.org/ftp/python/3.4.4/
+    # - PYTHON: "C:\\Python34"
+    #   PYTHON_VERSION: "3.4.4"
+    #   PYTHON_ARCH: "32"
 
-    - PYTHON: "C:\\Python34-x64"
-      PYTHON_VERSION: "3.4.4"
-      PYTHON_ARCH: "64"
-      NOX_SESSION: "py34"
+    # - PYTHON: "C:\\Python34-x64"
+    #   PYTHON_VERSION: "3.4.4"
+    #   PYTHON_ARCH: "64"
 
-    # Python 3.5.1 is the latest Python 3.5 with a Windows installer
-    # Python 3.5.1 is the overall latest
-    # https://www.python.org/ftp/python/3.5.1/
-    - PYTHON: "C:\\Python35"
-      PYTHON_VERSION: "3.5.1"
-      PYTHON_ARCH: "32"
-      NOX_SESSION: "py35"
+    # # Python 3.5.1 is the latest Python 3.5 with a Windows installer
+    # # Python 3.5.1 is the overall latest
+    # # https://www.python.org/ftp/python/3.5.1/
+    # - PYTHON: "C:\\Python35"
+    #   PYTHON_VERSION: "3.5.1"
+    #   PYTHON_ARCH: "32"
 
-    - PYTHON: "C:\\Python35-x64"
-      PYTHON_VERSION: "3.5.1"
-      PYTHON_ARCH: "64"
-      NOX_SESSION: "py35"
+    # - PYTHON: "C:\\Python35-x64"
+    #   PYTHON_VERSION: "3.5.1"
+    #   PYTHON_ARCH: "64"
 
 install:
-  - ECHO "Filesystem root:"
-  - ps: "ls \"C:/\""
-
-  - ECHO "Installed SDKs:"
-  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
-
   # Install Python (from the official .msi of http://python.org) and pip when
   # not already installed.
   - ps: if (-not(Test-Path($env:PYTHON))) { & appveyor\install.ps1 }
@@ -74,8 +62,11 @@ install:
   # compiled extensions and are not provided as pre-built wheel packages,
   # pip will build them from source using the MSVC compiler matching the
   # target Python version and architecture
-  - "%CMD_IN_ENV% pip install wheel nox-automation"
+  - "pip install wheel"
+
+build_script:
+  - "pip install ."
 
 test_script:
   # Run the project tests
-  - "%CMD_IN_ENV% nox --session %NOX_SESSION%"
+  - "nox --session default"

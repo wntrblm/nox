@@ -13,12 +13,17 @@
 # limitations under the License.
 
 import os
+import platform
 
 import mock
 
 import nox.virtualenv
 
 import pytest
+
+
+SYSTEM = platform.system()
+IS_WINDOWS = platform.system() == 'Windows'
 
 
 @pytest.fixture
@@ -37,6 +42,8 @@ def test_constructor_defaults(make_one):
     assert venv.reuse_existing is False
 
 
+@pytest.mark.skipif(
+    IS_WINDOWS, reason='Not testing multiple interpreters on Windows.')
 def test_constructor_explicit(make_one):
     venv, _ = make_one(
         interpreter='python3.5',
@@ -87,15 +94,25 @@ def test__clean_location(monkeypatch, make_one):
 
 def test_bin(make_one):
     venv, dir = make_one()
-    assert dir.join('bin').strpath == venv.bin
+
+    if IS_WINDOWS:
+        assert dir.join('Scripts').strpath == venv.bin
+    else:
+        assert dir.join('bin').strpath == venv.bin
 
 
 def test_create(make_one):
     venv, dir = make_one()
     venv.create()
-    assert dir.join('bin', 'python').check()
-    assert dir.join('bin', 'pip').check()
-    assert dir.join('lib').check()
+
+    if IS_WINDOWS:
+        assert dir.join('Scripts', 'python.exe').check()
+        assert dir.join('Scripts', 'pip.exe').check()
+        assert dir.join('Lib').check()
+    else:
+        assert dir.join('bin', 'python').check()
+        assert dir.join('bin', 'pip').check()
+        assert dir.join('lib').check()
 
     # Test running create on an existing environment. It should be deleted.
     dir.ensure('test.txt')
@@ -111,6 +128,8 @@ def test_create(make_one):
     assert dir.join('test.txt').check()
 
 
+@pytest.mark.skipif(
+    IS_WINDOWS, reason='Not testing multiple interpreters on Windows.')
 def test_create_interpreter(make_one):
     venv, dir = make_one(interpreter='python3')
     venv.create()

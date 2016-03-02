@@ -22,8 +22,7 @@ def session_lint(session):
         'nox', 'tests')
 
 
-def session_py27(session):
-    session.interpreter = 'python2.7'
+def session_default(session):
     session.install('-r', 'requirements-test.txt')
     session.install('-e', '.')
     tests = session.posargs or ['tests/']
@@ -32,11 +31,16 @@ def session_py27(session):
         '--cov-report', 'term-missing', *tests)
 
 
+def session_py27(session):
+    session_default(session)
+    session.interpreter = 'python2.7'
+
+
 def session_py34(session):
-    session_py27(session)
+    session_default(session)
     session.interpreter = 'python3.4'
 
 
 def session_py35(session):
-    session_py27(session)
+    session_default(session)
     session.interpreter = 'python3.5'

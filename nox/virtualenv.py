@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import platform
 import shutil
 
 from .command import Command
@@ -47,7 +48,10 @@ class VirtualEnv(object):
     @property
     def bin(self):
         """Returns the location of the virtualenv's bin folder."""
-        return os.path.join(self.location, 'bin')
+        if platform.system() == 'Windows':
+            return os.path.join(self.location, 'Scripts')
+        else:
+            return os.path.join(self.location, 'bin')
 
     def create(self):
         """Create the virtualenv."""
