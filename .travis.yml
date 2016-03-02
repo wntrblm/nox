@@ -7,3 +7,12 @@ env:
 install: pip install codecov .
 script: nox --session $NOX_SESSION
 after_success: codecov
+deploy:
+  provider: pypi
+  user: jonparrott
+  password:
+    secure: ETRTnYg+8cilT0/HidhyPljERgE/u0boKdH9TW+JrY0De40Km5C+TUmPagKJuwPx1Gw8HNN1vN7M1pqaQ/flQaY9iNbuJZr5ZaApiZW1pw5/nO2wWoANx0hiChdjvwbJZdqUFEoba6MS9aBY7TroFlLjW6dUg8MZFSiUFRQDF9rTCyzB/juC7wiLTgrjlFpOvaOmf1qpVOajY5kfn8MLELms8itRUa04X4kqqgtOfifoA1CevObrScGSXlpPtqmoxUrCmwbnHu9qnqgAWLHe3y7fI4ZqscYQv/JCW8NdJgqMTn0jctLXibHt5vC/DtUYo47mFSRBfn55ZwAFiV6IiwVbtDKby0ZdNO2uIFn4B/7l0qrLTwnZbRy4vkPqEeJoS75vl4JQrauGmI+hgdtesHjZxLzs94H4vINVt0fGpkYqbgtMQO8HUQnnj0FJXcGKo4A5OuLjnk5+rgTSvLT/5qNg/cyve5BXkn1ib6ecah21MHSQyhl5CxIFBH6S6BRrGoxXluLqXPVv/w+QA0lxXCpAPfbHuMt4r9522YN/XfGQNHfNqK/836UbLEX5ZXZiZLl01IvVPl+3eC/Qmpc+tNXb51d53Qsm89VtaNGGvuV2eLPBR+gfXcQ8wFB1HW3Q3oshHCGW4KKApyzyYKWq27JPlGV13Yh+NMHWs9PGHyI=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: jonparrott/nox

@@ -21,7 +21,7 @@ long_description = open('README.rst', 'r', encoding='utf-8').read()
 
 
 setup(
-    name='nox',
+    name='nox-automation',
 
     version='0.0.1',
 
