@@ -16,3 +16,4 @@ deploy:
     tags: true
     distributions: sdist bdist_wheel
     repo: jonparrott/nox
+    condition: "$NOX_SESSION = py27"
