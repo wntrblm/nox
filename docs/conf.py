@@ -115,6 +115,8 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
+    'logo': 'alice.gif',
+    'logo_name': True,
     'description': 'Flexible test automation',
     'github_user': 'jonparrott',
     'github_repo': 'nox',
