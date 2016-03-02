@@ -36,12 +36,14 @@ setup(
     license='Apache Software License',
 
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
 
-        # Indicate who your project is intended for
         'Intended Audience :: Developers',
 
         'License :: OSI Approved :: Apache Software License',
+
+        'Topic :: Software Development :: Testing',
+        'Environment :: Console',
 
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
@@ -53,6 +55,7 @@ setup(
         'Operating System :: POSIX',
         'Operating System :: MacOS',
         'Operating System :: Unix',
+        'Operating System :: Microsoft :: Windows'
     ],
 
     keywords='testing automation tox',
@@ -61,7 +64,6 @@ setup(
 
     install_requires=[
         'colorlog>=2.6.1,<3.0.0',
-        'sh>=1.11,<2.0',
         'py>=1.4.31,<2.0.0',
         'six>=1.4.0,<2.0.0'],
 

@@ -17,9 +17,8 @@ from __future__ import print_function
 import os
 import sys
 
-import sh
-
-from .logger import logger
+from nox.logger import logger
+from nox.popen import popen
 
 
 class CommandFailed(Exception):
@@ -35,7 +34,7 @@ def which(program, path):
         if os.path.exists(venv_path):
             return venv_path
 
-    return sh.which(program)
+    return program
 
 
 class Command(object):
@@ -55,40 +54,30 @@ class Command(object):
 
         cmd_path = which(cmd, self.path)
 
-        if not cmd_path:
-            logger.error('Command {} not found.'.format(cmd))
-            raise CommandFailed('Commmand {} not found'.format(cmd))
-
-        run = sh.Command(cmd_path)
-
-        kwargs = {
-            '_env': self.env,
-            '_ok_code': self.success_codes,
-        }
-
         try:
-            if self.silent:
-                result = run(*args, **kwargs)
-                return result.stdout.decode('utf-8')
-            else:
-                result = run(
-                    *args,
-                    _out=sys.stdout,
-                    _out_bufsize=0,
-                    _err=sys.stderr,
-                    _err_bufsize=0,
-                    **kwargs)
-                result.wait()
-                return True
+            return_code, output = popen(
+                [cmd_path] + list(args),
+                silent=self.silent,
+                env=self.env)
 
-        except sh.ErrorReturnCode as e:
-            logger.error('Command {} failed, exit code {}{}'.format(
-                full_cmd, e.exit_code, ':' if self.silent else ''))
+            if return_code not in self.success_codes:
+                logger.error('Command {} failed with exit code {}{}'.format(
+                    full_cmd, return_code, ':' if self.silent else ''))
 
-            if self.silent:
-                sys.stdout.write(e.stdout.decode('utf-8'))
-                sys.stderr.write(e.stderr.decode('utf-8'))
+                if self.silent:
+                    sys.stderr.write(output)
 
+                raise CommandFailed()
+
+            return output if self.silent else True
+
+        except OSError as e:
+            logger.error('Command {} failed, {}'.format(
+                full_cmd, e))
+            raise CommandFailed(e)
+
+        except KeyboardInterrupt as e:
+            logger.error('Interrupted...')
             raise CommandFailed(e)
 
     __call__ = run

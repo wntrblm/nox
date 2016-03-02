@@ -57,10 +57,8 @@ def test_run_defaults(make_one, capsys):
     command = make_one(['echo', '123'])
 
     result = command.run()
-    out, _ = capsys.readouterr()
 
-    assert result
-    assert out == '123\n'
+    assert result is True
 
 
 def test_run_silent(make_one, capsys):
@@ -109,9 +107,11 @@ def test_run_path_existent(make_one, tmpdir, monkeypatch):
         silent=True,
         path=tmpdir.strpath)
 
-    with mock.patch('sh.Command') as mock_command:
+    with mock.patch('nox.command.popen') as mock_command:
+        mock_command.return_value = (0, '')
         command.run()
-        mock_command.assert_called_with(executable.strpath)
+        mock_command.assert_called_with(
+            [executable.strpath], env=None, silent=True)
 
 
 def test_exit_codes(make_one):
@@ -139,8 +139,19 @@ def test_fail_with_silent(make_one, capsys):
     with pytest.raises(nox.command.CommandFailed):
         command.run()
         out, err = capsys.readouterr()
-        assert 'out' in out
+        assert 'out' in err
         assert 'err' in err
+
+
+def test_interrupt(make_one):
+    command = make_one('echo', '123')
+
+    mock_proc = mock.Mock()
+    mock_proc.communicate.side_effect = KeyboardInterrupt()
+
+    with mock.patch('subprocess.Popen', return_value=mock_proc):
+        with pytest.raises(nox.command.CommandFailed):
+            command.run()
 
 
 def test_function_command(make_one_func):
