@@ -14,31 +14,31 @@ environment:
       PYTHON_VERSION: "2.7.11"
       PYTHON_ARCH: "32"
 
-    # - PYTHON: "C:\\Python27-x64"
-    #   PYTHON_VERSION: "2.7.11"
-    #   PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python27-x64"
+      PYTHON_VERSION: "2.7.11"
+      PYTHON_ARCH: "64"
 
-    # # Python 3.4.4 is the latest Python 3.4 with a Windows installer
-    # # Python 3.4.4 is the overall latest
-    # # https://www.python.org/ftp/python/3.4.4/
-    # - PYTHON: "C:\\Python34"
-    #   PYTHON_VERSION: "3.4.4"
-    #   PYTHON_ARCH: "32"
+    # Python 3.4.4 is the latest Python 3.4 with a Windows installer
+    # Python 3.4.4 is the overall latest
+    # https://www.python.org/ftp/python/3.4.4/
+    - PYTHON: "C:\\Python34"
+      PYTHON_VERSION: "3.4.4"
+      PYTHON_ARCH: "32"
 
-    # - PYTHON: "C:\\Python34-x64"
-    #   PYTHON_VERSION: "3.4.4"
-    #   PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python34-x64"
+      PYTHON_VERSION: "3.4.4"
+      PYTHON_ARCH: "64"
 
-    # # Python 3.5.1 is the latest Python 3.5 with a Windows installer
-    # # Python 3.5.1 is the overall latest
-    # # https://www.python.org/ftp/python/3.5.1/
-    # - PYTHON: "C:\\Python35"
-    #   PYTHON_VERSION: "3.5.1"
-    #   PYTHON_ARCH: "32"
+    # Python 3.5.1 is the latest Python 3.5 with a Windows installer
+    # Python 3.5.1 is the overall latest
+    # https://www.python.org/ftp/python/3.5.1/
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5.1"
+      PYTHON_ARCH: "32"
 
-    # - PYTHON: "C:\\Python35-x64"
-    #   PYTHON_VERSION: "3.5.1"
-    #   PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python35-x64"
+      PYTHON_VERSION: "3.5.1"
+      PYTHON_ARCH: "64"
 
 install:
   # Install Python (from the official .msi of http://python.org) and pip when
@@ -69,10 +69,4 @@ build_script:
 
 test_script:
   # Run the project tests
-  - "nox --session default"
-
-init:
-- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
-on_finish:
-- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  - "nox.exe --session default"
