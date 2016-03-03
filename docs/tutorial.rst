@@ -68,8 +68,8 @@ If you want a bunch of sessions to do the same thing but use different interpret
         session.interpreter = 'python2.7'
         common(session)
 
-    def session_py27(session):
-        session.interpreter = 'python2.7'
+    def session_py34(session):
+        session.interpreter = 'python3.4'
         common(session)
 
 Remember, Nox only recognizes functions that start with `session_` as sessions.
