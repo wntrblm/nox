@@ -61,8 +61,6 @@ class Command(object):
 
         cmd_path = which(cmd, self.path)
 
-        logger.debug(cmd_path)
-
         try:
             return_code, output = popen(
                 [cmd_path] + list(args),
@@ -79,11 +77,6 @@ class Command(object):
                 raise CommandFailed()
 
             return output if self.silent else True
-
-        except OSError as e:
-            logger.error('Command {} failed, {}'.format(
-                full_cmd, e))
-            raise CommandFailed(e)
 
         except KeyboardInterrupt as e:
             logger.error('Interrupted...')

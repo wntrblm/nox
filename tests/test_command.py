@@ -150,7 +150,7 @@ def test_fail_with_silent(make_one, capsys):
 
 
 def test_interrupt(make_one):
-    command = make_one('echo', '123')
+    command = make_one([PYTHON, '-c' '123'])
 
     mock_proc = mock.Mock()
     mock_proc.communicate.side_effect = KeyboardInterrupt()

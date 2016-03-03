@@ -101,6 +101,13 @@ def test_bin(make_one):
         assert dir.join('bin').strpath == venv.bin
 
 
+def test_bin_windows(make_one):
+    venv, dir = make_one()
+
+    with mock.patch('platform.system', return_value='Windows'):
+        assert dir.join('Scripts').strpath == venv.bin
+
+
 def test_create(make_one):
     venv, dir = make_one()
     venv.create()
