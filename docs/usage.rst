@@ -47,3 +47,14 @@ Stopping if any session fails
 By default nox will continue to run all sessions even if one fails. You can use ``--stop-on-first-error`` to make nox abort as soon as the first session fails::
 
     nox --stop-on-first-error
+
+
+Windows
+-------
+
+Nox has provisional support for running on Windows. However, depending on your Windows, Python, and virtualenv versions there may be issues. See the following threads for more info:
+
+* `Tox issue 260 <https://bitbucket.org/hpk42/tox/issues/260/fatal-python-error-when-running-32bit>`_
+* `Python issue 24493 <http://bugs.python.org/issue24493>`_
+* `Virtualenv issue 774 <https://github.com/pypa/virtualenv/issues/774>`_
+
