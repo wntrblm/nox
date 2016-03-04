@@ -22,8 +22,8 @@ import sys
 
 from six import iteritems
 
-from .logger import setup_logging
-from .session import Session
+from nox.logger import logger, setup_logging
+from nox.session import Session
 
 
 class GlobalConfig(object):
@@ -60,7 +60,12 @@ def make_sessions(session_functions, global_config):
 
 
 def run(global_config):
-    user_nox_module = load_user_nox_module(global_config.noxfile)
+    try:
+        user_nox_module = load_user_nox_module(global_config.noxfile)
+    except IOError:
+        logger.error('Noxfile {} not found.'.format(global_config.noxfile))
+        return False
+
     session_functions = discover_session_functions(user_nox_module)
     sessions = make_sessions(session_functions, global_config)
 

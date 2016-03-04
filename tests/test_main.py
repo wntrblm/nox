@@ -184,6 +184,13 @@ def test_run(monkeypatch):
         assert sessions[2].execute.called is True
 
 
+def test_run_file_not_found():
+    global_config = Namespace(
+        noxfile='somefile.py')
+    result = nox.main.run(global_config)
+    assert not result
+
+
 def test_main():
     # No args
     sys.argv = [sys.executable]

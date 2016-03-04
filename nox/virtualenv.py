@@ -16,8 +16,8 @@ import os
 import platform
 import shutil
 
-from .command import Command
-from .logger import logger
+from nox.command import Command
+from nox.logger import logger
 
 
 class VirtualEnv(object):

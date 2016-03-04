@@ -16,9 +16,9 @@ import os
 
 import py
 
-from .command import Command, CommandFailed, FunctionCommand
-from .logger import logger
-from .virtualenv import VirtualEnv
+from nox.command import Command, CommandFailed, FunctionCommand
+from nox.logger import logger
+from nox.virtualenv import VirtualEnv
 
 
 class SessionConfig(object):
