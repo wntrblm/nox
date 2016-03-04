@@ -105,6 +105,12 @@ def test_make_sessions():
 
 
 def test_run(monkeypatch):
+
+    class MockSession(object):
+        def __init__(self, return_value=True):
+            self.execute = mock.Mock()
+            self.execute.return_value = return_value
+
     global_config = Namespace(
         noxfile='somefile.py',
         sessions=None,
@@ -112,8 +118,8 @@ def test_run(monkeypatch):
     user_nox_module = mock.Mock()
     session_functions = mock.Mock()
     sessions = [
-        mock.Mock(),
-        mock.Mock()
+        MockSession(),
+        MockSession()
     ]
 
     with contexter.ExitStack() as stack:
@@ -127,7 +133,8 @@ def test_run(monkeypatch):
             'nox.main.make_sessions', side_effect=lambda _1, _2: sessions))
 
         # Default options
-        nox.main.run(global_config)
+        result = nox.main.run(global_config)
+        assert result
 
         mock_load_user_module.assert_called_with('somefile.py')
         mock_discover_session_functions.assert_called_with(user_nox_module)
@@ -138,11 +145,11 @@ def test_run(monkeypatch):
             session.execute.reset_mock()
 
         # One failing session at the beginning, should still execute all.
-        failing_session = mock.Mock()
-        failing_session.execute.return_value = False
+        failing_session = MockSession(return_value=False)
         sessions.insert(0, failing_session)
 
-        nox.main.run(global_config)
+        result = nox.main.run(global_config)
+        assert not result
 
         for session in sessions:
             assert session.execute.called
@@ -151,14 +158,15 @@ def test_run(monkeypatch):
         # Now it should stop after the first failed session.
         global_config.stop_on_first_error = True
 
-        nox.main.run(global_config)
+        result = nox.main.run(global_config)
+        assert not result
 
         assert sessions[0].execute.called is True
         assert sessions[1].execute.called is False
         assert sessions[2].execute.called is False
 
         for session in sessions:
-            session.reset_mock()
+            session.execute.reset_mock()
 
         # This time it should only run a subset of sessions
         sessions[0].execute.return_value = True
@@ -168,7 +176,8 @@ def test_run(monkeypatch):
 
         global_config.sessions = ['1', '3']
 
-        nox.main.run(global_config)
+        result = nox.main.run(global_config)
+        assert result
 
         assert sessions[0].execute.called is True
         assert sessions[1].execute.called is False

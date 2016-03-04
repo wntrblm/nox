@@ -67,12 +67,15 @@ def run(global_config):
     if global_config.sessions:
         sessions = [x for x in sessions if x.name in global_config.sessions]
 
+    success = True
+
     for session in sessions:
         result = session.execute()
-        if not result and global_config.stop_on_first_error:
+        success = success and result
+        if not success and global_config.stop_on_first_error:
             return False
 
-    return True
+    return success
 
 
 def main():
