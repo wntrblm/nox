@@ -14,11 +14,10 @@
 
 import os
 
-import py
-
 from nox.command import Command, CommandFailed, FunctionCommand
 from nox.logger import logger
 from nox.virtualenv import VirtualEnv
+import py
 
 
 class SessionConfig(object):

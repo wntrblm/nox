@@ -20,10 +20,9 @@ from inspect import isfunction
 import os
 import sys
 
-from six import iteritems
-
 from nox.logger import logger, setup_logging
 from nox.session import Session
+from six import iteritems
 
 
 class GlobalConfig(object):
