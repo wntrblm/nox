@@ -1,9 +1,14 @@
 language: python
-env:
-- NOX_SESSION=lint
-- NOX_SESSION=py27
-- NOX_SESSION=py34
-- NOX_SESSION=py35
+matrix:
+  include:
+  - python: '2.7'
+    env: NOX_SESSION=lint
+  - python: '2.7'
+    env: NOX_SESSION=py27
+  - python: '3.4'
+    env: NOX_SESSION=py34
+  - python: '3.5'
+    env: NOX_SESSION=py35
 install: pip install codecov .
 script: nox --session $NOX_SESSION
 after_success: codecov
