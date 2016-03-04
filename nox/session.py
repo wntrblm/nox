@@ -123,8 +123,9 @@ class SessionConfig(object):
 
 
 class Session(object):
-    def __init__(self, name, func, global_config):
+    def __init__(self, name, signature, func, global_config):
         self.name = name
+        self.signature = signature
         self.func = func
         self.global_config = global_config
 
@@ -158,7 +159,8 @@ class Session(object):
                 command()
 
     def execute(self):
-        logger.warning('Running session {}'.format(self.name))
+        logger.warning('Running session {}'.format(
+            self.signature or self.name))
 
         try:
             self._create_config()

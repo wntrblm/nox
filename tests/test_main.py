@@ -18,6 +18,7 @@ import sys
 import contexter
 import mock
 
+import nox
 import nox.main
 
 
@@ -34,6 +35,7 @@ def test_global_config_constructor():
         noxfile='noxfile',
         envdir='dir',
         sessions=['1', '2'],
+        list_sessions=False,
         reuse_existing_virtualenvs=True,
         stop_on_first_error=False,
         posargs=['a', 'b', 'c'])
@@ -43,6 +45,7 @@ def test_global_config_constructor():
     assert config.noxfile == 'noxfile'
     assert config.envdir == os.path.abspath('dir')
     assert config.sessions == ['1', '2']
+    assert config.list_sessions is False
     assert config.reuse_existing_virtualenvs is True
     assert config.stop_on_first_error is False
     assert config.posargs == ['a', 'b', 'c']
@@ -104,16 +107,51 @@ def test_make_sessions():
     assert sessions[1].global_config == global_config
 
 
-def test_run(monkeypatch):
+def test_make_session_parametrized():
+
+    @nox.parametrize('arg', [1, 2])
+    def session_a(arg):
+        pass
+
+    @nox.parametrize('foo', [1, 2])
+    @nox.parametrize('bar', [3, 4])
+    def session_b():
+        pass
+
+    session_functions = [
+        ('a', session_a),
+        ('b', session_b)
+    ]
+    global_config = Namespace()
+    sessions = nox.main.make_sessions(session_functions, global_config)
+
+    assert sessions[0].signature == 'a(arg=1)'
+    assert sessions[0].name == 'a'
+    assert sessions[1].signature == 'a(arg=2)'
+    assert sessions[1].name == 'a'
+    assert sessions[2].signature == 'b(bar=3, foo=1)'
+    assert sessions[2].name == 'b'
+    assert sessions[3].signature == 'b(bar=4, foo=1)'
+    assert sessions[3].name == 'b'
+    assert sessions[4].signature == 'b(bar=3, foo=2)'
+    assert sessions[4].name == 'b'
+    assert sessions[5].signature == 'b(bar=4, foo=2)'
+    assert sessions[5].name == 'b'
+
+
+def test_run(monkeypatch, capsys):
 
     class MockSession(object):
         def __init__(self, return_value=True):
+            self.name = 'session_name'
+            self.signature = None
             self.execute = mock.Mock()
             self.execute.return_value = return_value
 
     global_config = Namespace(
         noxfile='somefile.py',
         sessions=None,
+        list_sessions=False,
         stop_on_first_error=False)
     user_nox_module = mock.Mock()
     session_functions = mock.Mock()
@@ -143,6 +181,16 @@ def test_run(monkeypatch):
         for session in sessions:
             assert session.execute.called
             session.execute.reset_mock()
+
+        # List sessions
+        global_config.list_sessions = True
+        result = nox.main.run(global_config)
+        assert result
+
+        out, _ = capsys.readouterr()
+        assert '* session_name' in out
+
+        global_config.list_sessions = False
 
         # One failing session at the beginning, should still execute all.
         failing_session = MockSession(return_value=False)
@@ -182,6 +230,39 @@ def test_run(monkeypatch):
         assert sessions[0].execute.called is True
         assert sessions[1].execute.called is False
         assert sessions[2].execute.called is True
+
+        for session in sessions:
+            session.execute.reset_mock()
+
+        # Now we'll try with parametrized sessions. Calling the basename
+        # should execute all parametrized versions.
+        sessions[0].name = 'a'
+        sessions[0].signature = 'a(1)'
+        sessions[1].name = 'a'
+        sessions[1].signature = 'a(2)'
+        sessions[2].name = 'b'
+
+        global_config.sessions = ['a']
+
+        result = nox.main.run(global_config)
+        assert result
+
+        assert sessions[0].execute.called is True
+        assert sessions[1].execute.called is True
+        assert sessions[2].execute.called is False
+
+        for session in sessions:
+            session.execute.reset_mock()
+
+        # Calling the signature of should only call one parametrized version.
+        global_config.sessions = ['a(2)']
+
+        result = nox.main.run(global_config)
+        assert result
+
+        assert sessions[0].execute.called is False
+        assert sessions[1].execute.called is True
+        assert sessions[2].execute.called is False
 
 
 def test_run_file_not_found():

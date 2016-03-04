@@ -4,13 +4,13 @@ matrix:
   - python: '2.7'
     env: NOX_SESSION=lint
   - python: '2.7'
-    env: NOX_SESSION=py27
+    env: NOX_SESSION=interpreters(version='2.7')
   - python: '3.4'
-    env: NOX_SESSION=py34
+    env: NOX_SESSION=interpreters(version='3.4')
   - python: '3.5'
-    env: NOX_SESSION=py35
+    env: NOX_SESSION=interpreters(version='3.5')
 install: pip install codecov .
-script: nox --session $NOX_SESSION
+script: nox --session "$NOX_SESSION"
 after_success: codecov
 deploy:
   provider: pypi

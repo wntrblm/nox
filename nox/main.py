@@ -20,6 +20,7 @@ from inspect import isfunction
 import os
 import sys
 
+from nox._parametrize import generate_calls
 from nox.logger import logger, setup_logging
 from nox.session import Session
 from six import iteritems
@@ -30,6 +31,7 @@ class GlobalConfig(object):
         self.noxfile = args.noxfile
         self.envdir = os.path.abspath(args.envdir)
         self.sessions = args.sessions
+        self.list_sessions = args.list_sessions
         self.reuse_existing_virtualenvs = args.reuse_existing_virtualenvs
         self.stop_on_first_error = args.stop_on_first_error
         self.posargs = args.posargs
@@ -54,7 +56,14 @@ def discover_session_functions(module):
 def make_sessions(session_functions, global_config):
     sessions = []
     for name, func in session_functions:
-        sessions.append(Session(name, func, global_config))
+        if not hasattr(func, 'parametrize'):
+            sessions.append(Session(name, None, func, global_config))
+        else:
+            for call in generate_calls(func, func.parametrize):
+                session = Session(
+                    name, name + call.session_signature, call, global_config)
+                sessions.append(session)
+
     return sessions
 
 
@@ -68,8 +77,16 @@ def run(global_config):
     session_functions = discover_session_functions(user_nox_module)
     sessions = make_sessions(session_functions, global_config)
 
+    if global_config.list_sessions:
+        print('Available sessions:')
+        for session in sessions:
+            print('*', session.signature or session.name)
+        return True
+
     if global_config.sessions:
-        sessions = [x for x in sessions if x.name in global_config.sessions]
+        sessions = [x for x in sessions if (
+            x.name in global_config.sessions or
+            x.signature in global_config.sessions)]
 
     success = True
 
@@ -88,6 +105,9 @@ def main():
     parser.add_argument(
         '-f', '--noxfile', default='nox.py',
         help='Location of the Python file containing nox sessions.')
+    parser.add_argument(
+        '-l', '--list-sessions', action='store_true',
+        help='List all available sessions and exit.')
     parser.add_argument(
         '--envdir', default='.nox',
         help='Directory where nox will store virtualenvs.')

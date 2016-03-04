@@ -109,9 +109,10 @@ def test_constructor(make_one):
         pass
 
     global_config = MockConfig()
-    session = make_one('test', mock_func, global_config)
+    session = make_one('test', 'sig', mock_func, global_config)
 
     assert session.name == 'test'
+    assert session.signature == 'sig'
     assert session.func == mock_func
     assert session.global_config == global_config
 
@@ -119,7 +120,7 @@ def test_constructor(make_one):
 def test__create_config(make_one):
     mock_func = mock.Mock()
     global_config = MockConfig(posargs=[1, 2, 3])
-    session = make_one('test', mock_func, global_config)
+    session = make_one('test', 'sig', mock_func, global_config)
 
     session._create_config()
 
@@ -131,7 +132,7 @@ def test__create_venv(make_one):
     global_config = MockConfig(
         envdir='envdir',
         reuse_existing_virtualenvs=False)
-    session = make_one('test', mock.Mock(), global_config)
+    session = make_one('test', 'sig', mock.Mock(), global_config)
 
     with mock.patch('nox.session.VirtualEnv') as venv_mock:
         session.config = MockConfig(
@@ -162,7 +163,7 @@ def test__create_venv(make_one):
 
 
 def test__install_dependencies(make_one):
-    session = make_one('test', mock.Mock(), MockConfig())
+    session = make_one('test', 'sig', mock.Mock(), MockConfig())
 
     session.config = MockConfig(_dependencies=[
         ('pytest',),
@@ -200,7 +201,7 @@ class MockFunctionCommand(nox.command.FunctionCommand):
 
 
 def test__run_commands(make_one):
-    session = make_one('test', mock.Mock(), MockConfig())
+    session = make_one('test', 'sig', mock.Mock(), MockConfig())
 
     cmd1 = MockCommand()
     cmd2 = MockFunctionCommand()
@@ -219,7 +220,7 @@ def test__run_commands(make_one):
 
 
 def test_execute(make_one):
-    session = make_one('test', mock.Mock(), MockConfig())
+    session = make_one('test', 'sig', mock.Mock(), MockConfig())
 
     session.config = MockConfig(_dir='.')
     session._create_config = mock.Mock()
@@ -236,7 +237,7 @@ def test_execute(make_one):
 
 
 def test_execute_chdir(make_one, tmpdir):
-    session = make_one('test', mock.Mock(), MockConfig())
+    session = make_one('test', 'sig', mock.Mock(), MockConfig())
 
     def mock_run_commands():
         assert os.getcwd() == tmpdir.strpath
@@ -251,7 +252,7 @@ def test_execute_chdir(make_one, tmpdir):
 
 
 def test_execute_error(make_one, tmpdir):
-    session = make_one('test', mock.Mock(), MockConfig())
+    session = make_one('test', 'sig', mock.Mock(), MockConfig())
 
     def mock_run_commands():
         raise nox.command.CommandFailed('test')

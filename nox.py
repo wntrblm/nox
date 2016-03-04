@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import nox
+
 
 def session_lint(session):
     session.install('flake8', 'flake8-import-order')
@@ -31,16 +33,7 @@ def session_default(session):
         '--cov-report', 'term-missing', *tests)
 
 
-def session_py27(session):
+@nox.parametrize('version', ['2.7', '3.4', '3.5'])
+def session_interpreters(session, version):
     session_default(session)
-    session.interpreter = 'python2.7'
-
-
-def session_py34(session):
-    session_default(session)
-    session.interpreter = 'python3.4'
-
-
-def session_py35(session):
-    session_default(session)
-    session.interpreter = 'python3.5'
+    session.interpreter = 'python' + version
