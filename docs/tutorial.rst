@@ -14,6 +14,21 @@ Nox can be easily installed via `pip`_::
 Usually you install this globally, similar to ``tox``, ``pip``, and other similar tools.
 
 
+Running Nox
+-----------
+
+The simplest way of running Nox will run all sessions defined in `nox.py`::
+
+    nox
+
+However, if you wish to run a single session or subset of sessions you can use the ``-s`` argument::
+
+    nox --sessions lint py27
+    nox -s lint py27
+
+You can read more about invoking Nox in :doc:`usage`.
+
+
 Creating a noxfile
 ------------------
 
@@ -74,20 +89,6 @@ If you want a bunch of sessions to do the same thing but use different interpret
 
 Remember, Nox only recognizes functions that start with `session_` as sessions.
 
-Running Nox
------------
-
-The simplest way of running Nox will run all sessions defined in `nox.py`::
-
-    nox
-
-However, if you wish to run a single session or subset of sessions you can use the ``-s`` argument::
-
-    nox --sessions lint py27
-    nox -s lint py27
-
-You can read more about invoking Nox in :doc:`usage`.
-
 
 Passing arguments into sessions
 -------------------------------
@@ -120,6 +121,53 @@ Then nox will run::
 
     pytest test_c.py
 
+
+.. _parametrized:
+
+Parametrizing sessions
+----------------------
+
+Session arguments can be parametrized with the :func:`nox.parametrize` decorator. Here's a typical example of parametrizing Python intepreter versions::
+
+    @nox.parametrize('python_version', ['2.7', '3.4', '3.5'])
+    def session_tests(session, python_version):
+        session.interpreter = 'python' + python_version
+        session.install('pytest')
+        session.run('py.test')
+
+When you run ``nox``, it will create a three distinct sessions::
+
+    $ nox
+    nox > Running session tests(python_version='2.7')
+    nox > virtualenv ./.nox/tests -p python2.7
+    ...
+    nox > Running session tests(python_version='3.4')
+    nox > virtualenv ./.nox/tests -p python3.4
+    ...
+    nox > Running session tests(python_version='3.5')
+    nox > virtualenv ./.nox/tests -p python3.5
+
+
+:func:`nox.parametrize` has the same interface and usage as `py.test's parametrize <https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize>`_. You can also stack the decorator to produce sessions that are a combination of the arguments, for example::
+
+
+    @nox.parametrize('python_version', ['2.7', '3.4'])
+    @nox.parametrize('django_version', ['1.8', '1.9'])
+    def session_tests(session, python_version):
+        session.interpreter = 'python' + python_version
+        session.install('pytest', 'django==' + django_version)
+        session.run('py.test')
+
+
+If you run ``nox --list-sessions``, you'll see that this generates the following set of sessions::
+
+    * tests(django_version='1.8', python_version='2.7')
+    * tests(django_version='1.9', python_version='2.7')
+    * tests(django_version='1.8', python_version='3.4')
+    * tests(django_version='1.9', python_version='3.4')
+
+
+If you only want to run one of the parametrized sessions, see :ref:`running_paramed_sessions`.
 
 .. _pip: https://pip.readthedocs.org
 .. _flake8: https://flake8.readthedocs.org

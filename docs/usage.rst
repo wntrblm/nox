@@ -19,17 +19,43 @@ Storing virtualenvs in a different directory
 
 By default nox stores virtualenvs in ``./.nox``, however, you can change this using ``--envdir``::
 
-    nox --envdir /tmp/.nox
+    nox --envdir /tmp/.
+
+
+Listing available sessions
+--------------------------
+
+To list all available sessions, including parametrized sessions::
+
+    nox -l
+    nox --list-sessions
 
 
 Specifying one or more sessions
 -------------------------------
 
-By default nox will run all session defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``:
+By default nox will run all session defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``::
 
     nox --session py27
     nox -s lint py27
     nox -e py34
+
+
+.. _running_paramed_sessions:
+
+Specifying parametrized sessions
+--------------------------------
+
+If you have a `parametrized <parametrized>`_ session such as::
+
+    @nox.parametrize('python_version', ['2.7', '3.4', '3.5'])
+    def session_tests(session, python_version):
+        ...
+
+Then running ``nox --session tests`` will actually run all parametrized versions of the session. If you want the run the session with a particular set of parametrized arguments, you can specify them with the session name::
+
+    nox --session "tests(python_version='2.7')"
+    nox --session "tests(python_version='3.4')"
 
 
 Re-using virtualenvs
