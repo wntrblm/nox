@@ -21,4 +21,4 @@ deploy:
     tags: true
     distributions: sdist bdist_wheel
     repo: jonparrott/nox
-    condition: "$NOX_SESSION = py27"
+    condition: "$NOX_SESSION = \"interpreters(version='2.7')\""
