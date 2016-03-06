@@ -23,7 +23,9 @@ import py
 
 class CommandFailed(Exception):
     """Raised when an executed command returns a non-success status code."""
-    pass
+    def __init__(self, reason=None):
+        super(CommandFailed, self).__init__()
+        self.reason = reason
 
 
 def which(program, path):
@@ -74,13 +76,13 @@ class Command(object):
                 if self.silent:
                     sys.stderr.write(output)
 
-                raise CommandFailed()
+                raise CommandFailed('Returned code {}'.format(return_code))
 
             return output if self.silent else True
 
         except KeyboardInterrupt as e:
             logger.error('Interrupted...')
-            raise CommandFailed(e)
+            raise
 
     __call__ = run
 

@@ -129,7 +129,10 @@ def main():
 
     setup_logging()
 
-    success = run(global_config)
+    try:
+        success = run(global_config)
+    except KeyboardInterrupt:
+        success = False
 
     if not success:
         sys.exit(1)

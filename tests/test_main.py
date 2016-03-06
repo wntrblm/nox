@@ -366,3 +366,14 @@ def test_main_failure():
         run_mock.return_value = False
         nox.main.main()
         exit_mock.assert_called_with(1)
+
+
+def test_main_interrupted():
+    sys.argv = [sys.executable]
+
+    with contexter.ExitStack() as stack:
+        run_mock = stack.enter_context(mock.patch('nox.main.run'))
+        exit_mock = stack.enter_context(mock.patch('sys.exit'))
+        run_mock.side_effect = KeyboardInterrupt()
+        nox.main.main()
+        exit_mock.assert_called_with(1)

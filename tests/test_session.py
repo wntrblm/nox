@@ -264,3 +264,20 @@ def test_execute_error(make_one, tmpdir):
     session._run_commands = mock_run_commands
 
     assert not session.execute()
+
+
+
+def test_execute_interrupted(make_one, tmpdir):
+    session = make_one('test', 'sig', mock.Mock(), MockConfig())
+
+    def mock_run_commands():
+        raise KeyboardInterrupt()
+
+    session.config = MockConfig(_dir='.')
+    session._create_config = mock.Mock()
+    session._create_venv = mock.Mock()
+    session._install_dependencies = mock.Mock()
+    session._run_commands = mock_run_commands
+
+    with pytest.raises(KeyboardInterrupt):
+        session.execute()

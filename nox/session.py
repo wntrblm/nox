@@ -178,6 +178,10 @@ class Session(object):
             logger.success('Session {} successful. :)'.format(self.name))
             return True
 
-        except CommandFailed:
+        except CommandFailed as e:
             logger.error('Session {} failed. :('.format(self.name))
             return False
+
+        except KeyboardInterrupt as e:
+            logger.error('Session {} interrupted.'.format(self.name))
+            raise

@@ -156,7 +156,7 @@ def test_interrupt(make_one):
     mock_proc.communicate.side_effect = KeyboardInterrupt()
 
     with mock.patch('subprocess.Popen', return_value=mock_proc):
-        with pytest.raises(nox.command.CommandFailed):
+        with pytest.raises(KeyboardInterrupt):
             command.run()
 
 

@@ -16,6 +16,7 @@ def popen(args, env=None, silent=False):
         sys.stdout.flush()
 
     except KeyboardInterrupt:
+        proc.terminate()
         proc.wait()
         raise
 
