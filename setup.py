@@ -28,7 +28,7 @@ setup(
     description='Flexible test automation.',
     long_description=long_description,
 
-    url='https://github.com/jonparrott/psq',
+    url='https://nox.readthedocs.org',
 
     author='Jon Wayne Parrott',
     author_email='jonwayne@google.com',
