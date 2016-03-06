@@ -266,7 +266,6 @@ def test_execute_error(make_one, tmpdir):
     assert not session.execute()
 
 
-
 def test_execute_interrupted(make_one, tmpdir):
     session = make_one('test', 'sig', mock.Mock(), MockConfig())
 

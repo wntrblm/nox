@@ -80,7 +80,7 @@ class Command(object):
 
             return output if self.silent else True
 
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             logger.error('Interrupted...')
             raise
 
