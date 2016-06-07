@@ -277,6 +277,19 @@ def test_run(monkeypatch, capsys):
         assert sessions[1].execute.called is True
         assert sessions[2].execute.called is False
 
+        for session in sessions:
+            session.execute.reset_mock()
+
+        # Calling a signature that does not exist should not call any version.
+        global_config.sessions = ['a(1)', 'a(3)', 'b']
+
+        result = nox.main.run(global_config)
+        assert not result
+
+        assert sessions[0].execute.called is False
+        assert sessions[1].execute.called is False
+        assert sessions[2].execute.called is False
+
 
 def test_run_file_not_found():
     global_config = Namespace(
