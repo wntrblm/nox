@@ -17,6 +17,7 @@ from __future__ import print_function
 import argparse
 import imp
 from inspect import isfunction
+import itertools
 import os
 import sys
 
@@ -87,6 +88,13 @@ def run(global_config):
         sessions = [x for x in sessions if (
             x.name in global_config.sessions or
             x.signature in global_config.sessions)]
+        missing_sessions = set(global_config.sessions) - set(
+            itertools.chain(
+                [x.name for x in sessions if x.name],
+                [x.signature for x in sessions if x.signature]))
+        if missing_sessions:
+            logger.error('Sessions {} not found.'.format(missing_sessions))
+            return False
 
     success = True
 
