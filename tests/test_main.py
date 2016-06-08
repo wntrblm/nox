@@ -234,6 +234,19 @@ def test_run(monkeypatch, capsys):
         for session in sessions:
             session.execute.reset_mock()
 
+        # Try to run with a session that doesn't exist.
+        global_config.sessions = ['1', 'doesntexist']
+
+        result = nox.main.run(global_config)
+        assert not result
+
+        assert sessions[0].execute.called is False
+        assert sessions[1].execute.called is False
+        assert sessions[2].execute.called is False
+
+        for session in sessions:
+            session.execute.reset_mock()
+
         # Now we'll try with parametrized sessions. Calling the basename
         # should execute all parametrized versions.
         sessions[0].name = 'a'
@@ -262,6 +275,19 @@ def test_run(monkeypatch, capsys):
 
         assert sessions[0].execute.called is False
         assert sessions[1].execute.called is True
+        assert sessions[2].execute.called is False
+
+        for session in sessions:
+            session.execute.reset_mock()
+
+        # Calling a signature that does not exist should not call any version.
+        global_config.sessions = ['a(1)', 'a(3)', 'b']
+
+        result = nox.main.run(global_config)
+        assert not result
+
+        assert sessions[0].execute.called is False
+        assert sessions[1].execute.called is False
         assert sessions[2].execute.called is False
 
 
