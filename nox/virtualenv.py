@@ -33,7 +33,8 @@ class VirtualEnv(object):
         """Sets environment variables to activate the virtualenv for
         subprocesses."""
         self.env = os.environ.copy()
-        self.env['PATH'] = ':'.join([self.bin, self.env.get('PATH')])
+        self.env['PATH'] = ':'.join(
+            [self.bin, self.env.get('PATH')]).encode('ascii')
 
     def _clean_location(self):
         """Deletes any existing virtualenv"""
