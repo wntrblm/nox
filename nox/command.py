@@ -69,8 +69,8 @@ class Command(object):
         clean_env = {} if self.env is not None else None
         if clean_env is not None:
             # Ensure systemroot is passed down, otherwise Windows will explode.
-            if 'SYSTEMROOT' in os.environ:
-                clean_env[str('SYSTEMROOT')] = os.environ['SYSTEMROOT']
+            clean_env[str('SYSTEMROOT')] = os.environ.get(
+                'SYSTEMROOT', str(''))
 
             for key, value in six.iteritems(self.env):
                 if not isinstance(key, six.text_type):

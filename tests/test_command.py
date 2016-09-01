@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 
 import mock
@@ -95,6 +96,18 @@ def test_run_env_unicode(make_one):
     result = command.run()
 
     assert '123' in result
+
+
+def test_run_env_systemroot(make_one):
+    systemroot = os.environ.setdefault('SYSTEMROOT', str('sigil'))
+
+    command = make_one(
+        [PYTHON, '-c', 'import os; print(os.environ["SYSTEMROOT"])'],
+        silent=True)
+
+    result = command.run()
+
+    assert systemroot in result
 
 
 def test_run_not_found(make_one):
