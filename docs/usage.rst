@@ -66,6 +66,9 @@ By default nox deletes and recreates virtualenvs every time it is run. This is u
     nox -r
     nox --reuse-existing-virtualenvs
 
+.. note::
+    Re-using the existing virtualenv will skip any ``session.install()`` calls!
+
 
 Stopping if any session fails
 -----------------------------

@@ -57,7 +57,7 @@ class VirtualEnv(object):
         """Create the virtualenv."""
         if not self._clean_location():
             logger.debug('Re-using existing virtualenv.')
-            return
+            return False
 
         cmd = ['virtualenv', self.location]
 
@@ -65,6 +65,8 @@ class VirtualEnv(object):
             cmd.extend(['-p', self.interpreter])
 
         self.run(cmd, in_venv=False)
+
+        return True
 
     def run(self, args, in_venv=True):
         """Runs a command. By default, the command runs within the

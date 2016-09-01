@@ -22,6 +22,17 @@ import nox.session
 import pytest
 
 
+def test__normalize_path():
+    assert nox.session._normalize_path('hello') == 'hello'
+    assert nox.session._normalize_path(b'hello') == 'hello'
+    assert nox.session._normalize_path('hello(world)') == 'hello-world'
+    assert nox.session._normalize_path(
+        'hello(world, meep)') == 'hello-world-meep'
+    assert nox.session._normalize_path(
+        'tests(interpreter="python2.7", django="1.10")') == (
+        'tests-interpreter-python2-7-django-1-10')
+
+
 @pytest.fixture
 def make_one_config():
     def factory(*args, **kwargs):
@@ -128,38 +139,51 @@ def test__create_config(make_one):
     assert session.config.posargs == [1, 2, 3]
 
 
+class MockVenv(object):
+    def __init__(self, path, interpreter, reuse_existing=False):
+        self.path = path
+        self.interpreter = interpreter
+        self.reuse_existing = reuse_existing
+        self.install_called = False
+
+    def create(self):
+        return not self.reuse_existing
+
+    def install(self):
+        self.install_called = True
+
+
 def test__create_venv(make_one):
     global_config = MockConfig(
         envdir='envdir',
         reuse_existing_virtualenvs=False)
     session = make_one('test', 'sig', mock.Mock(), global_config)
 
-    with mock.patch('nox.session.VirtualEnv') as venv_mock:
+    with mock.patch('nox.session.VirtualEnv', MockVenv):
         session.config = MockConfig(
             interpreter='interpreter',
             reuse_existing_virtualenv=False)
         session._create_venv()
-        venv_mock.assert_called_with(
-            os.path.join('envdir', 'test'),
-            interpreter='interpreter',
-            reuse_existing=False)
+        assert session.venv.path == os.path.join('envdir', 'sig')
+        assert session.venv.interpreter == 'interpreter'
+        assert session.venv.reuse_existing is False
+        assert session._should_install_deps is True
 
         # Global re-use
         global_config.reuse_existing_virtualenvs = True
         session._create_venv()
-        venv_mock.assert_called_with(
-            os.path.join('envdir', 'test'),
-            interpreter='interpreter',
-            reuse_existing=True)
+        assert session.venv.path == os.path.join('envdir', 'sig')
+        assert session.venv.interpreter == 'interpreter'
+        assert session.venv.reuse_existing is True
+        assert session._should_install_deps is False
 
         # Local re-use
         global_config.reuse_existing_virtualenvs = False
         session.config.reuse_existing_virtualenv = True
         session._create_venv()
-        venv_mock.assert_called_with(
-            os.path.join('envdir', 'test'),
-            interpreter='interpreter',
-            reuse_existing=True)
+        assert session.venv.path == os.path.join('envdir', 'sig')
+        assert session.venv.interpreter == 'interpreter'
+        assert session.venv.reuse_existing is True
 
 
 def test__install_dependencies(make_one):
@@ -180,6 +204,11 @@ def test__install_dependencies(make_one):
         mock.call('-r', 'somefile.txt'),
         mock.call('-e', 'somepath')
     ])
+
+    session.venv.reset_mock()
+    session._should_install_deps = False
+    session._install_dependencies()
+    session.venv.install.assert_not_called()
 
 
 class MockCommand(nox.command.Command):

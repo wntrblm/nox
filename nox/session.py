@@ -13,11 +13,27 @@
 # limitations under the License.
 
 import os
+import re
+import unicodedata
 
 from nox.command import Command, CommandFailed, FunctionCommand
 from nox.logger import logger
 from nox.virtualenv import VirtualEnv
 import py
+import six
+
+
+def _normalize_path(path):
+    """Normalizes a string to be a "safe" filesystem path."""
+    if isinstance(path, six.binary_type):
+        path = path.decode('utf-8')
+
+    path = unicodedata.normalize('NFKD', path).encode('ascii', 'ignore')
+    path = path.decode('ascii')
+    path = re.sub('[^\w\s-]', '-', path).strip().lower()
+    path = re.sub('[-\s]+', '-', path)
+    path = path.strip('-')[:255]
+    return path
 
 
 class SessionConfig(object):
@@ -128,6 +144,7 @@ class Session(object):
         self.signature = signature
         self.func = func
         self.global_config = global_config
+        self._should_install_deps = True
 
     def _create_config(self):
         self.config = SessionConfig(posargs=self.global_config.posargs)
@@ -135,14 +152,18 @@ class Session(object):
 
     def _create_venv(self):
         self.venv = VirtualEnv(
-            os.path.join(self.global_config.envdir, self.name),
+            os.path.join(
+                self.global_config.envdir,
+                _normalize_path(self.signature or self.name)),
             interpreter=self.config.interpreter,
             reuse_existing=(
                 self.config.reuse_existing_virtualenv or
                 self.global_config.reuse_existing_virtualenvs))
-        self.venv.create()
+        self._should_install_deps = self.venv.create()
 
     def _install_dependencies(self):
+        if not self._should_install_deps:
+            return
         for dep in self.config._dependencies:
             self.venv.install(*dep)
 
