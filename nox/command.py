@@ -14,6 +14,7 @@
 
 from __future__ import print_function
 
+import os
 import sys
 
 from nox.logger import logger
@@ -65,8 +66,12 @@ class Command(object):
         cmd_path = which(cmd, self.path)
 
         # Environment variables must be bytestrings.
-        clean_env = {} if self.env else None
-        if self.env:
+        clean_env = {} if self.env is not None else None
+        if clean_env is not None:
+            # Ensure systemroot is passed down, otherwise Windows will explode.
+            if 'SYSTEMROOT' in os.environ:
+                clean_env[str('SYSTEMROOT')] = os.environ['SYSTEMROOT']
+
             for key, value in six.iteritems(self.env):
                 if not isinstance(key, six.text_type):
                     key = key.decode('utf-8')

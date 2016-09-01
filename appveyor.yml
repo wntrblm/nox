@@ -7,16 +7,16 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
-    # # Python 2.7.11 is the latest Python 2.7 with a Windows installer
-    # # Python 2.7.11 is the overall latest
-    # # https://www.python.org/ftp/python/2.7.11/
-    # - PYTHON: "C:\\Python27"
-    #   PYTHON_VERSION: "2.7.11"
-    #   PYTHON_ARCH: "32"
+    # Python 2.7.11 is the latest Python 2.7 with a Windows installer
+    # Python 2.7.11 is the overall latest
+    # https://www.python.org/ftp/python/2.7.11/
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "2.7.11"
+      PYTHON_ARCH: "32"
 
-    # - PYTHON: "C:\\Python27-x64"
-    #   PYTHON_VERSION: "2.7.11"
-    #   PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python27-x64"
+      PYTHON_VERSION: "2.7.11"
+      PYTHON_ARCH: "64"
 
     # Python 3.4.4 is the latest Python 3.4 with a Windows installer
     # Python 3.4.4 is the overall latest
@@ -25,20 +25,20 @@ environment:
       PYTHON_VERSION: "3.4.4"
       PYTHON_ARCH: "32"
 
-    # - PYTHON: "C:\\Python34-x64"
-    #   PYTHON_VERSION: "3.4.4"
-    #   PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python34-x64"
+      PYTHON_VERSION: "3.4.4"
+      PYTHON_ARCH: "64"
 
-    # # Python 3.5.1 is the latest Python 3.5 with a Windows installer
-    # # Python 3.5.1 is the overall latest
-    # # https://www.python.org/ftp/python/3.5.1/
-    # - PYTHON: "C:\\Python35"
-    #   PYTHON_VERSION: "3.5.1"
-    #   PYTHON_ARCH: "32"
+    # Python 3.5.1 is the latest Python 3.5 with a Windows installer
+    # Python 3.5.1 is the overall latest
+    # https://www.python.org/ftp/python/3.5.1/
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5.1"
+      PYTHON_ARCH: "32"
 
-    # - PYTHON: "C:\\Python35-x64"
-    #   PYTHON_VERSION: "3.5.1"
-    #   PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python35-x64"
+      PYTHON_VERSION: "3.5.1"
+      PYTHON_ARCH: "64"
 
 install:
   # Install Python (from the official .msi of http://python.org) and pip when
@@ -63,6 +63,12 @@ install:
   # pip will build them from source using the MSVC compiler matching the
   # target Python version and architecture
   - "pip install wheel"
+
+init:
+  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 build_script:
   - "pip install ."
