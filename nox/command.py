@@ -19,6 +19,7 @@ import sys
 from nox.logger import logger
 from nox.popen import popen
 import py
+import six
 
 
 class CommandFailed(Exception):
@@ -63,11 +64,21 @@ class Command(object):
 
         cmd_path = which(cmd, self.path)
 
+        # Environment variables must be bytestrings.
+        clean_env = {} if self.env else None
+        if self.env:
+            for key, value in six.iteritems(self.env):
+                if isinstance(key, six.text_type):
+                    key = key.encode('utf-8')
+                if isinstance(value, six.text_type):
+                    value = value.encode('utf-8')
+                clean_env[key] = value
+
         try:
             return_code, output = popen(
                 [cmd_path] + list(args),
                 silent=self.silent,
-                env=self.env)
+                env=clean_env)
 
             if return_code not in self.success_codes:
                 logger.error('Command {} failed with exit code {}{}'.format(

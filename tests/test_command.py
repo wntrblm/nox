@@ -75,10 +75,22 @@ def test_run_silent(make_one, capsys):
     assert out == ''
 
 
-def test_run_env(make_one):
+def test_run_env_binary(make_one):
     command = make_one(
         [PYTHON, '-c', 'import os; print(os.environ["SIGIL"])'],
-        silent=True, env={'SIGIL': '123'})
+        silent=True, env={
+            b'SIGIL': b'123'})
+
+    result = command.run()
+
+    assert '123' in result
+
+
+def test_run_env_unicode(make_one):
+    command = make_one(
+        [PYTHON, '-c', 'import os; print(os.environ["SIGIL"])'],
+        silent=True, env={
+            u'SIGIL': u'123'})
 
     result = command.run()
 

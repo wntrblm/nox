@@ -58,7 +58,7 @@ def test__setup_env(monkeypatch, make_one):
     monkeypatch.setenv('SIGIL', '123')
     venv._setup_env()
     assert venv.env['SIGIL'] == '123'
-    assert venv.bin in venv.env['PATH'].decode('ascii')
+    assert venv.bin in venv.env['PATH']
     assert venv.bin not in os.environ['PATH']
 
 

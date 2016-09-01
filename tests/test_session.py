@@ -23,7 +23,7 @@ import pytest
 
 
 def test__normalize_path():
-    assert nox.session._normalize_path('hello') == 'hello'
+    assert nox.session._normalize_path(u'hello') == 'hello'
     assert nox.session._normalize_path(b'hello') == 'hello'
     assert nox.session._normalize_path('hello(world)') == 'hello-world'
     assert nox.session._normalize_path(
