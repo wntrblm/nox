@@ -68,10 +68,10 @@ class Command(object):
         clean_env = {} if self.env else None
         if self.env:
             for key, value in six.iteritems(self.env):
-                if isinstance(key, six.text_type):
-                    key = key.encode('utf-8')
-                if isinstance(value, six.text_type):
-                    value = value.encode('utf-8')
+                if not isinstance(key, six.text_type):
+                    key = key.decode('utf-8')
+                if not isinstance(value, six.text_type):
+                    value = value.decode('utf-8')
                 clean_env[key] = value
 
         try:
