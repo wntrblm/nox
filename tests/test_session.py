@@ -18,6 +18,7 @@ import mock
 
 import nox.command
 import nox.session
+import nox.virtualenv
 
 import pytest
 
@@ -101,6 +102,10 @@ def test_config_install(make_one_config):
     with pytest.raises(ValueError):
         config.install()
 
+    with pytest.raises(ValueError):
+        config.virtualenv = False
+        config.install('mock')
+
 
 @pytest.fixture
 def make_one():
@@ -153,37 +158,57 @@ class MockVenv(object):
         self.install_called = True
 
 
-def test__create_venv(make_one):
+@pytest.fixture
+def venv_session(make_one):
     global_config = MockConfig(
         envdir='envdir',
         reuse_existing_virtualenvs=False)
     session = make_one('test', 'sig', mock.Mock(), global_config)
+    session.config = MockConfig(
+        interpreter='interpreter',
+        reuse_existing_virtualenv=False,
+        virtualenv=True)
 
     with mock.patch('nox.session.VirtualEnv', MockVenv):
-        session.config = MockConfig(
-            interpreter='interpreter',
-            reuse_existing_virtualenv=False)
-        session._create_venv()
-        assert session.venv.path == os.path.join('envdir', 'sig')
-        assert session.venv.interpreter == 'interpreter'
-        assert session.venv.reuse_existing is False
-        assert session._should_install_deps is True
+        yield global_config, session
 
-        # Global re-use
-        global_config.reuse_existing_virtualenvs = True
-        session._create_venv()
-        assert session.venv.path == os.path.join('envdir', 'sig')
-        assert session.venv.interpreter == 'interpreter'
-        assert session.venv.reuse_existing is True
-        assert session._should_install_deps is False
 
-        # Local re-use
-        global_config.reuse_existing_virtualenvs = False
-        session.config.reuse_existing_virtualenv = True
-        session._create_venv()
-        assert session.venv.path == os.path.join('envdir', 'sig')
-        assert session.venv.interpreter == 'interpreter'
-        assert session.venv.reuse_existing is True
+def test__create_venv(venv_session):
+    global_config, session = venv_session
+
+    session._create_venv()
+    assert session.venv.path == os.path.join('envdir', 'sig')
+    assert session.venv.interpreter == 'interpreter'
+    assert session.venv.reuse_existing is False
+    assert session._should_install_deps is True
+
+
+def test__create_venv_global_reuse(venv_session):
+    global_config, session = venv_session
+    global_config.reuse_existing_virtualenvs = True
+    session._create_venv()
+    assert session.venv.path == os.path.join('envdir', 'sig')
+    assert session.venv.interpreter == 'interpreter'
+    assert session.venv.reuse_existing is True
+    assert session._should_install_deps is False
+
+
+def test__create_venv_local_reuse(venv_session):
+    global_config, session = venv_session
+    global_config.reuse_existing_virtualenvs = False
+    session.config.reuse_existing_virtualenv = True
+    session._create_venv()
+    assert session.venv.path == os.path.join('envdir', 'sig')
+    assert session.venv.interpreter == 'interpreter'
+    assert session.venv.reuse_existing is True
+
+
+def test__create_venv_virtualenv_false(venv_session):
+    global_config, session = venv_session
+    session.config.virtualenv = False
+    session._create_venv()
+    assert isinstance(session.venv, nox.virtualenv.ProcessEnv)
+    assert not session._should_install_deps
 
 
 def test__install_dependencies(make_one):

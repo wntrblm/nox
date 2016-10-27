@@ -35,6 +35,14 @@ def make_one(tmpdir):
     return factory
 
 
+def test_process_env_constructor():
+    penv = nox.virtualenv.ProcessEnv()
+    assert not penv.bin
+
+    penv = nox.virtualenv.ProcessEnv(env={'SIGIL': '123'})
+    assert penv.env['SIGIL'] == '123'
+
+
 def test_constructor_defaults(make_one):
     venv, _ = make_one()
     assert venv.location
@@ -53,10 +61,9 @@ def test_constructor_explicit(make_one):
     assert venv.reuse_existing is True
 
 
-def test__setup_env(monkeypatch, make_one):
-    venv, _ = make_one()
+def test_env(monkeypatch, make_one):
     monkeypatch.setenv('SIGIL', '123')
-    venv._setup_env()
+    venv, _ = make_one()
     assert venv.env['SIGIL'] == '123'
     assert venv.bin in venv.env['PATH']
     assert venv.bin not in os.environ['PATH']

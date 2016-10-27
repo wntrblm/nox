@@ -18,7 +18,7 @@ import unicodedata
 
 from nox.command import Command, CommandFailed, FunctionCommand
 from nox.logger import logger
-from nox.virtualenv import VirtualEnv
+from nox.virtualenv import ProcessEnv, VirtualEnv
 import py
 import six
 
@@ -46,6 +46,9 @@ class SessionConfig(object):
         self._commands = []
         self.env = {}
         self._dir = '.'
+        self.virtualenv = True
+        """A boolean indicating whether or not to create a virtualenv. Defaults
+        to True."""
         self.interpreter = None
         """``None`` or a string indicating the name of the Python interpreter
         to use in the session's virtualenv. If None, the default system
@@ -133,6 +136,9 @@ class SessionConfig(object):
 
         .. _pip: https://pip.readthedocs.org
         """
+        if not self.virtualenv:
+            raise ValueError(
+                'A session without a virtualenv can not install dependencies.')
         if not args:
             raise ValueError('At least one argument required to install().')
         self._dependencies.append(args)
@@ -151,6 +157,11 @@ class Session(object):
         self.func(self.config)
 
     def _create_venv(self):
+        if not self.config.virtualenv:
+            self.venv = ProcessEnv()
+            self._should_install_deps = False
+            return
+
         self.venv = VirtualEnv(
             os.path.join(
                 self.global_config.envdir,

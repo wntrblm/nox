@@ -20,20 +20,41 @@ from nox.command import Command
 from nox.logger import logger
 
 
-class VirtualEnv(object):
+class ProcessEnv(object):
+    """A environment with a 'bin' directory and a set of 'env' vars."""
+
+    def __init__(self, bin=None, env=None):
+        self._bin = bin
+        self.env = os.environ.copy()
+
+        if env is not None:
+            self.env.update(env)
+
+        if self.bin:
+            self.env['PATH'] = ':'.join([self.bin, self.env.get('PATH')])
+
+    @property
+    def bin(self):
+        return self._bin
+
+    def run(self, args, in_venv=True):
+        """Runs a command. By default, the command runs within the
+        environment."""
+        return Command(
+            args=args,
+            env=self.env if in_venv else None,
+            silent=True,
+            path=self.bin if in_venv else None).run()
+
+
+class VirtualEnv(ProcessEnv):
     """Virtualenv management class."""
 
     def __init__(self, location, interpreter=None, reuse_existing=False):
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
         self.reuse_existing = reuse_existing
-        self._setup_env()
-
-    def _setup_env(self):
-        """Sets environment variables to activate the virtualenv for
-        subprocesses."""
-        self.env = os.environ.copy()
-        self.env['PATH'] = ':'.join([self.bin, self.env.get('PATH')])
+        super(VirtualEnv, self).__init__()
 
     def _clean_location(self):
         """Deletes any existing virtualenv"""
@@ -67,15 +88,6 @@ class VirtualEnv(object):
         self.run(cmd, in_venv=False)
 
         return True
-
-    def run(self, args, in_venv=True):
-        """Runs a command. By default, the command runs within the
-        virtualenv."""
-        return Command(
-            args=args,
-            env=self.env if in_venv else None,
-            silent=True,
-            path=self.bin if in_venv else None).run()
 
     def install(self, *args):
         self.run(('pip', 'install', '--upgrade') + args)
