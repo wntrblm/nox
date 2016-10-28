@@ -104,10 +104,10 @@ class Command(object):
 
 
 class FunctionCommand(object):
-    def __init__(self, func, args, kwargs):
+    def __init__(self, func, args=None, kwargs=None):
         self.func = func
-        self.args = args
-        self.kwargs = kwargs
+        self.args = args or ()
+        self.kwargs = kwargs or {}
 
     def run(self):
         try:

@@ -36,6 +36,10 @@ def _normalize_path(path):
     return path
 
 
+class _SessionQuit(Exception):
+    pass
+
+
 class SessionConfig(object):
     """SessionConfig is passed into the session function defined in the
     user's *nox.py*. The session function uses this object to configure the
@@ -45,7 +49,6 @@ class SessionConfig(object):
         self._dependencies = []
         self._commands = []
         self.env = {}
-        self._dir = '.'
         self.virtualenv = True
         """A boolean indicating whether or not to create a virtualenv. Defaults
         to True."""
@@ -65,7 +68,7 @@ class SessionConfig(object):
     def chdir(self, dir):
         """Set the working directory for any commands that run in this
         session."""
-        self._dir = dir
+        self.run(os.chdir, dir)
 
     def run(self, *args, **kwargs):
         """
@@ -141,6 +144,13 @@ class SessionConfig(object):
             raise ValueError('At least one argument required to install().')
         self._dependencies.append(args)
 
+    def log(self, *args, **kwargs):
+        logger.info(*args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        logger.error(*args, **kwargs)
+        raise _SessionQuit()
+
 
 class Session(object):
     def __init__(self, name, signature, func, global_config):
@@ -152,7 +162,11 @@ class Session(object):
 
     def _create_config(self):
         self.config = SessionConfig(posargs=self.global_config.posargs)
-        self.func(self.config)
+        try:
+            self.func(self.config)
+            return True
+        except _SessionQuit:
+            return False
 
     def _create_venv(self):
         if not self.config.virtualenv:
@@ -193,15 +207,14 @@ class Session(object):
             self.signature or self.name))
 
         try:
-            self._create_config()
+            if not self._create_config():
+                logger.error('Session {} aborted.'.format(self.name))
+                return False
+
             self._create_venv()
             self._install_dependencies()
 
-            if self.config._dir != '.':
-                logger.info(
-                    'Changing directory to {}'.format(self.config._dir))
-
-            cwd = py.path.local(self.config._dir).as_cwd()
+            cwd = py.path.local(os.getcwd()).as_cwd()
             with cwd:
                 self._run_commands()
 

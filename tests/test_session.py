@@ -48,7 +48,6 @@ def test_config_constructor_defaults(make_one_config):
     assert config._dependencies == []
     assert config._commands == []
     assert config.env == {}
-    assert config._dir == '.'
     assert config.posargs == []
     assert config.reuse_existing_virtualenv is False
 
@@ -61,7 +60,8 @@ def test_config_constructor_args(make_one_config):
 def test_config_chdir(make_one_config):
     config = make_one_config()
     config.chdir('meep')
-    assert config._dir == 'meep'
+    assert config._commands[0].func == os.chdir
+    assert config._commands[0].args == ('meep',)
 
 
 def test_config_run(make_one_config):
@@ -104,6 +104,17 @@ def test_config_install(make_one_config):
     with pytest.raises(ValueError):
         config.virtualenv = False
         config.install('mock')
+
+
+def test_config_log(make_one_config):
+    config = make_one_config()
+    config.log('test', '1', '2')
+
+
+def test_config_error(make_one_config):
+    config = make_one_config()
+    with pytest.raises(nox.session._SessionQuit):
+        config.error('test', '1', '2')
 
 
 @pytest.fixture
@@ -275,7 +286,7 @@ def test__run_commands(make_one):
 def test_execute(make_one):
     session = make_one('test', 'sig', mock.Mock(), MockConfig())
 
-    session.config = MockConfig(_dir='.')
+    session.config = MockConfig()
     session._create_config = mock.Mock()
     session._create_venv = mock.Mock()
     session._install_dependencies = mock.Mock()
@@ -290,18 +301,37 @@ def test_execute(make_one):
 
 
 def test_execute_chdir(make_one, tmpdir):
+    tmpdir.join('dir2').ensure(dir=True)
+
     session = make_one('test', 'sig', mock.Mock(), MockConfig())
+    session.venv = mock.Mock()
+    session.venv.env = {}
 
-    def mock_run_commands():
-        assert os.getcwd() == tmpdir.strpath
+    current_cwd = os.getcwd()
+    observed_cwds = []
 
-    session.config = MockConfig(_dir=tmpdir.strpath)
+    def observe_cwd():
+        observed_cwds.append(os.getcwd())
+
+    commands = [
+        nox.command.FunctionCommand(os.chdir, [tmpdir.strpath]),
+        nox.command.FunctionCommand(observe_cwd),
+        nox.command.FunctionCommand(os.chdir, [tmpdir.join('dir2').strpath]),
+        nox.command.FunctionCommand(observe_cwd),
+    ]
+
+    session.config = MockConfig(_commands=commands, env={})
     session._create_config = mock.Mock()
     session._create_venv = mock.Mock()
     session._install_dependencies = mock.Mock()
-    session._run_commands = mock_run_commands
 
     assert session.execute()
+
+    assert observed_cwds == [
+        tmpdir.strpath,
+        tmpdir.join('dir2').strpath]
+
+    assert os.getcwd() == current_cwd
 
 
 def test_execute_error(make_one, tmpdir):
@@ -333,3 +363,12 @@ def test_execute_interrupted(make_one, tmpdir):
 
     with pytest.raises(KeyboardInterrupt):
         session.execute()
+
+
+def test_execute_session_quit(make_one):
+    def bad_config(session):
+        session.error('meep')
+
+    session = make_one('test', 'sig', bad_config, MockConfig(posargs=[]))
+
+    assert not session.execute()
