@@ -104,15 +104,22 @@ class Command(object):
 
 
 class FunctionCommand(object):
-    def __init__(self, func):
+    def __init__(self, func, args, kwargs):
         self.func = func
+        self.args = args
+        self.kwargs = kwargs
 
     def run(self):
-        func_name = self.func.__name__
-        logger.info('{}()'.format(func_name))
+        try:
+            func_name = self.func.__name__
+        except AttributeError:
+            func_name = '{!r}'.format(self.func)
+
+        logger.info('{}(args={!r}, kwargs={!r})'.format(
+            func_name, self.args, self.kwargs))
 
         try:
-            self.func()
+            self.func(*self.args, **self.kwargs)
             return True
         except Exception as e:
             logger.exception('Function {} raised {}.'.format(

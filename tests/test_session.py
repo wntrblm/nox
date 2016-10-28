@@ -72,19 +72,18 @@ def test_config_run(make_one_config):
     config.run('echo')
     config.run('echo', '1', '2')
     config.run('echo', '1', '2', silent=True)
-    config.run(test_func)
+    config.run(test_func, 1, 2, three=4)
 
     assert config._commands[0].args == ('echo',)
     assert config._commands[1].args == ('echo', '1', '2')
     assert config._commands[2].args == ('echo', '1', '2')
     assert config._commands[2].silent is True
     assert config._commands[3].func == test_func
+    assert config._commands[3].args == (1, 2)
+    assert config._commands[3].kwargs == {'three': 4}
 
     with pytest.raises(ValueError):
         config.run()
-
-    with pytest.raises(ValueError):
-        config.run(test_func, 1)
 
 
 def test_config_install(make_one_config):

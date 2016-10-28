@@ -31,13 +31,6 @@ def make_one():
     return factory
 
 
-@pytest.fixture
-def make_one_func():
-    def factory(*args, **kwargs):
-        return nox.command.FunctionCommand(*args, **kwargs)
-    return factory
-
-
 def test_constructor_defaults(make_one):
     command = make_one(['echo', '123'])
     assert command.args == ['echo', '123']
@@ -185,21 +178,37 @@ def test_interrupt(make_one):
             command.run()
 
 
+@pytest.fixture
+def make_one_func():
+    def factory(*args, **kwargs):
+        return nox.command.FunctionCommand(*args, **kwargs)
+    return factory
+
+
 def test_function_command(make_one_func):
     mock_func = mock.MagicMock()
     mock_func.__name__ = lambda self: 'mock_func'
 
-    command = make_one_func(mock_func)
+    command = make_one_func(mock_func, [1], {'two': 3})
 
     assert command.run()
-    assert mock_func.called
+    mock_func.assert_called_with(1, two=3)
 
 
 def test_function_command_fail(make_one_func):
     mock_func = mock.MagicMock(side_effect=ValueError('123'))
     mock_func.__name__ = lambda self: 'mock_func'
 
-    command = make_one_func(mock_func)
+    command = make_one_func(mock_func, [], {})
 
     with pytest.raises(nox.command.CommandFailed):
         command.run()
+
+
+def test_function_command_callable(make_one_func):
+    mock_func = mock.MagicMock()
+
+    command = make_one_func(mock_func, [1], {'two': 3})
+
+    assert command.run()
+    mock_func.assert_called_with(1, two=3)

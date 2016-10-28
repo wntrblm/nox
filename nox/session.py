@@ -106,10 +106,8 @@ class SessionConfig(object):
         if not args:
             raise ValueError('At least one argument required to run().')
         if callable(args[0]):
-            if len(args) > 1:
-                raise ValueError(
-                    'Only one function can be specified at a time to run()')
-            self._commands.append(FunctionCommand(args[0]))
+            self._commands.append(
+                FunctionCommand(args[0], args[1:], kwargs))
         else:
             self._commands.append(Command(args=args, **kwargs))
 
