@@ -30,6 +30,7 @@ class LoggerWithSuccess(logging.getLoggerClass()):
         else:  # pragma: no cover
             pass
 
+
 logging.setLoggerClass(LoggerWithSuccess)
 logger = logging.getLogger('nox')
 logger.setLevel(logging.DEBUG)

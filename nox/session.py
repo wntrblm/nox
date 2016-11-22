@@ -16,7 +16,8 @@ import os
 import re
 import unicodedata
 
-from nox.command import Command, CommandFailed, FunctionCommand
+from nox.command import (
+    ChdirCommand, Command, CommandFailed, FunctionCommand, InstallCommand)
 from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
 import py
@@ -46,7 +47,6 @@ class SessionConfig(object):
     virtualenv and tell nox which commands to run within the session.
     """
     def __init__(self, posargs=None):
-        self._dependencies = []
         self._commands = []
         self.env = {}
         self.virtualenv = True
@@ -68,7 +68,7 @@ class SessionConfig(object):
     def chdir(self, dir):
         """Set the working directory for any commands that run in this
         session."""
-        self.run(os.chdir, dir)
+        self._commands.append(ChdirCommand(dir))
 
     def run(self, *args, **kwargs):
         """
@@ -142,7 +142,7 @@ class SessionConfig(object):
                 'A session without a virtualenv can not install dependencies.')
         if not args:
             raise ValueError('At least one argument required to install().')
-        self._dependencies.append(args)
+        self._commands.append(InstallCommand(args))
 
     def log(self, *args, **kwargs):
         logger.info(*args, **kwargs)
@@ -184,47 +184,50 @@ class Session(object):
                 self.global_config.reuse_existing_virtualenvs))
         self._should_install_deps = self.venv.create()
 
-    def _install_dependencies(self):
-        if not self._should_install_deps:
-            return
-        for dep in self.config._dependencies:
-            self.venv.install(*dep)
-
     def _run_commands(self):
         env = self.venv.env.copy()
         env.update(self.config.env)
 
         for command in self.config._commands:
             if isinstance(command, Command):
-                command.path = self.venv.bin
-                command.env = env
-                command()
+                command(
+                    path_override=self.venv.bin, env_override=env)
+            elif isinstance(command, InstallCommand):
+                if not self._should_install_deps:
+                    logger.debug(
+                        'Skipping installation of "{}".'.format(command))
+                    continue
+                else:
+                    command(self.venv)
             else:
                 command()
 
     def execute(self):
-        logger.warning('Running session {}'.format(
-            self.signature or self.name))
+        session_friendly_name = self.signature or self.name
+        logger.warning('Running session {}'.format(session_friendly_name))
 
         try:
             if not self._create_config():
-                logger.error('Session {} aborted.'.format(self.name))
+                logger.error('Session {} aborted.'.format(
+                    session_friendly_name))
                 return False
 
             self._create_venv()
-            self._install_dependencies()
 
             cwd = py.path.local(os.getcwd()).as_cwd()
             with cwd:
                 self._run_commands()
 
-            logger.success('Session {} successful. :)'.format(self.name))
+            logger.success('Session {} successful. :)'.format(
+                session_friendly_name))
             return True
 
         except CommandFailed:
-            logger.error('Session {} failed. :('.format(self.name))
+            logger.error('Session {} failed. :('.format(
+                session_friendly_name))
             return False
 
         except KeyboardInterrupt:
-            logger.error('Session {} interrupted.'.format(self.name))
+            logger.error('Session {} interrupted.'.format(
+                session_friendly_name))
             raise

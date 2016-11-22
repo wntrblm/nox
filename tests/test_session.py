@@ -45,7 +45,6 @@ def make_one_config():
 def test_config_constructor_defaults(make_one_config):
     config = make_one_config()
     assert config.interpreter is None
-    assert config._dependencies == []
     assert config._commands == []
     assert config.env == {}
     assert config.posargs == []
@@ -60,8 +59,10 @@ def test_config_constructor_args(make_one_config):
 def test_config_chdir(make_one_config):
     config = make_one_config()
     config.chdir('meep')
-    assert config._commands[0].func == os.chdir
-    assert config._commands[0].args == ('meep',)
+    command = config._commands[0]
+    assert command.func == os.chdir
+    assert command.args == ('meep',)
+    assert str(command) == 'chdir meep'
 
 
 def test_config_run(make_one_config):
@@ -93,10 +94,10 @@ def test_config_install(make_one_config):
     config.install('-r', 'somefile.txt')
     config.install('-e', 'dir')
 
-    assert config._dependencies[0] == ('mock',)
-    assert config._dependencies[1] == ('mock', 'pytest')
-    assert config._dependencies[2] == ('-r', 'somefile.txt')
-    assert config._dependencies[3] == ('-e', 'dir')
+    assert config._commands[0].deps == ('mock',)
+    assert config._commands[1].deps == ('mock', 'pytest')
+    assert config._commands[2].deps == ('-r', 'somefile.txt')
+    assert config._commands[3].deps == ('-e', 'dir')
 
     with pytest.raises(ValueError):
         config.install()
@@ -221,54 +222,11 @@ def test__create_venv_virtualenv_false(venv_session):
     assert not session._should_install_deps
 
 
-def test__install_dependencies(make_one):
-    session = make_one('test', 'sig', mock.Mock(), MockConfig())
-
-    session.config = MockConfig(_dependencies=[
-        ('pytest',),
-        ('-r', 'somefile.txt'),
-        ('-e', 'somepath')
-    ])
-
-    session.venv = mock.Mock()
-
-    session._install_dependencies()
-
-    session.venv.install.assert_has_calls([
-        mock.call('pytest'),
-        mock.call('-r', 'somefile.txt'),
-        mock.call('-e', 'somepath')
-    ])
-
-    session.venv.reset_mock()
-    session._should_install_deps = False
-    session._install_dependencies()
-    session.venv.install.assert_not_called()
-
-
-class MockCommand(nox.command.Command):
-    def __init__(self):
-        self.path = None
-        self.env = None
-        self.called = False
-
-    def __call__(self):
-        self.called = True
-
-
-class MockFunctionCommand(nox.command.FunctionCommand):
-    def __init__(self):
-        self.called = False
-
-    def __call__(self):
-        self.called = True
-
-
 def test__run_commands(make_one):
     session = make_one('test', 'sig', mock.Mock(), MockConfig())
 
-    cmd1 = MockCommand()
-    cmd2 = MockFunctionCommand()
+    cmd1 = mock.Mock(spec=nox.command.Command)
+    cmd2 = mock.Mock(spec=nox.command.FunctionCommand)
 
     session.config = MockConfig(
         _commands=[cmd1, cmd2],
@@ -280,6 +238,9 @@ def test__run_commands(make_one):
     session._run_commands()
 
     assert cmd1.called
+    assert cmd1.call_args[1]['env_override'] == {
+        'SIGIL': '123', 'SIGIL2': '345'}
+    assert cmd1.call_args[1]['path_override'] == session.venv.bin
     assert cmd2.called
 
 
@@ -289,15 +250,40 @@ def test_execute(make_one):
     session.config = MockConfig()
     session._create_config = mock.Mock()
     session._create_venv = mock.Mock()
-    session._install_dependencies = mock.Mock()
     session._run_commands = mock.Mock()
 
     assert session.execute()
 
     assert session._create_config.called
     assert session._create_venv.called
-    assert session._install_dependencies.called
     assert session._run_commands.called
+
+
+def test_execute_install(make_one):
+    session = make_one('test', 'sig', mock.Mock(), MockConfig())
+    session.venv = mock.Mock()
+    commands = [
+        nox.command.InstallCommand(['-r', 'requirements.txt'])
+    ]
+    session.config = MockConfig(_commands=commands, env={})
+
+    session._run_commands()
+
+    session.venv.install.assert_called_with('-r', 'requirements.txt')
+
+
+def test_execute_install_skip(make_one):
+    session = make_one('test', 'sig', mock.Mock(), MockConfig())
+    session.venv = mock.Mock()
+    commands = [
+        nox.command.InstallCommand(['-r', 'requirements.txt'])
+    ]
+    session.config = MockConfig(_commands=commands, env={})
+    session._should_install_deps = False
+
+    session._run_commands()
+
+    assert not session.venv.install.called
 
 
 def test_execute_chdir(make_one, tmpdir):
@@ -323,7 +309,6 @@ def test_execute_chdir(make_one, tmpdir):
     session.config = MockConfig(_commands=commands, env={})
     session._create_config = mock.Mock()
     session._create_venv = mock.Mock()
-    session._install_dependencies = mock.Mock()
 
     assert session.execute()
 
@@ -343,7 +328,6 @@ def test_execute_error(make_one, tmpdir):
     session.config = MockConfig(_dir='.')
     session._create_config = mock.Mock()
     session._create_venv = mock.Mock()
-    session._install_dependencies = mock.Mock()
     session._run_commands = mock_run_commands
 
     assert not session.execute()
@@ -358,7 +342,6 @@ def test_execute_interrupted(make_one, tmpdir):
     session.config = MockConfig(_dir='.')
     session._create_config = mock.Mock()
     session._create_venv = mock.Mock()
-    session._install_dependencies = mock.Mock()
     session._run_commands = mock_run_commands
 
     with pytest.raises(KeyboardInterrupt):

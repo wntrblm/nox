@@ -68,6 +68,30 @@ def make_sessions(session_functions, global_config):
     return sessions
 
 
+def filter_sessions(specified_sessions, available_sessions):
+    sessions = [x for x in available_sessions if (
+        x.name in specified_sessions or
+        x.signature in specified_sessions)]
+    missing_sessions = set(specified_sessions) - set(
+        itertools.chain(
+            [x.name for x in sessions if x.name],
+            [x.signature for x in sessions if x.signature]))
+    if missing_sessions:
+        logger.error('Sessions {} not found.'.format(', '.join(
+            missing_sessions)))
+        return False
+
+    return sessions
+
+
+def print_summary(results):
+    logger.warning('Ran multiple sessions:')
+    for session, result in results:
+        log = logger.success if result else logger.error
+        log('* {}: {}'.format(
+            session, 'passed' if result else 'failed'))
+
+
 def run(global_config):
     try:
         user_nox_module = load_user_nox_module(global_config.noxfile)
@@ -85,24 +109,24 @@ def run(global_config):
         return True
 
     if global_config.sessions:
-        sessions = [x for x in sessions if (
-            x.name in global_config.sessions or
-            x.signature in global_config.sessions)]
-        missing_sessions = set(global_config.sessions) - set(
-            itertools.chain(
-                [x.name for x in sessions if x.name],
-                [x.signature for x in sessions if x.signature]))
-        if missing_sessions:
-            logger.error('Sessions {} not found.'.format(missing_sessions))
-            return False
+        sessions = filter_sessions(global_config.sessions, sessions)
+
+    if not sessions:
+        return False
 
     success = True
+    results = []
 
     for session in sessions:
         result = session.execute()
+        results.append((session.signature or session.name, result))
         success = success and result
         if not success and global_config.stop_on_first_error:
-            return False
+            success = False
+            break
+
+    if len(results) > 1:
+        print_summary(results)
 
     return success
 

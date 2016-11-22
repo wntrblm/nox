@@ -57,22 +57,25 @@ class Command(object):
         self.path = path
         self.success_codes = success_codes or [0]
 
-    def run(self):
+    def run(self, path_override=None, env_override=None):
+        path = self.path if path_override is None else path_override
+        env = self.env if env_override is None else env_override
+
         cmd, args = self.args[0], self.args[1:]
         full_cmd = ' '.join(self.args)
 
         logger.info(full_cmd)
 
-        cmd_path = which(cmd, self.path)
+        cmd_path = which(cmd, path)
 
         # Environment variables must be bytestrings.
-        clean_env = {} if self.env is not None else None
+        clean_env = {} if env is not None else None
         if clean_env is not None:
             # Ensure systemroot is passed down, otherwise Windows will explode.
             clean_env[str('SYSTEMROOT')] = os.environ.get(
                 'SYSTEMROOT', str(''))
 
-            for key, value in six.iteritems(self.env):
+            for key, value in six.iteritems(env):
                 if not isinstance(key, six.text_type):
                     key = key.decode('utf-8')
                 if not isinstance(value, six.text_type):
@@ -108,23 +111,47 @@ class FunctionCommand(object):
         self.func = func
         self.args = args or ()
         self.kwargs = kwargs or {}
+        try:
+            self._func_name = self.func.__name__
+        except AttributeError:
+            self._func_name = '{!r}'.format(self.func)
 
     def run(self):
-        try:
-            func_name = self.func.__name__
-        except AttributeError:
-            func_name = '{!r}'.format(self.func)
-
-        logger.info('{}(args={!r}, kwargs={!r})'.format(
-            func_name, self.args, self.kwargs))
+        logger.info(str(self))
 
         try:
             self.func(*self.args, **self.kwargs)
             return True
         except Exception as e:
             logger.exception('Function {} raised {}.'.format(
-                func_name, e))
+                self._func_name, e))
 
             raise CommandFailed(e)
 
     __call__ = run
+
+    def __str__(self):
+        return '{}(args={!r}, kwargs={!r})'.format(
+            self._func_name, self.args, self.kwargs)
+
+
+class ChdirCommand(FunctionCommand):
+    def __init__(self, path):
+        self.path = path
+        super(ChdirCommand, self).__init__(os.chdir, args=(self.path,))
+
+    def __str__(self):
+        return 'chdir {}'.format(self.path)
+
+
+class InstallCommand(object):
+    def __init__(self, deps):
+        self.deps = deps
+
+    def run(self, venv):
+        venv.install(*self.deps)
+
+    __call__ = run
+
+    def __str__(self):
+        return ' '.join(self.deps)
