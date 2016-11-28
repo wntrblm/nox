@@ -20,6 +20,7 @@ import mock
 
 import nox
 import nox.main
+import nox.session
 
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
@@ -118,9 +119,14 @@ def test_make_session_parametrized():
     def session_b():
         pass
 
+    @nox.parametrize('unused', [])
+    def session_empty():
+        pass
+
     session_functions = [
         ('a', session_a),
-        ('b', session_b)
+        ('b', session_b),
+        ('empty', session_empty)
     ]
     global_config = Namespace()
     sessions = nox.main.make_sessions(session_functions, global_config)
@@ -137,6 +143,8 @@ def test_make_session_parametrized():
     assert sessions[4].name == 'b'
     assert sessions[5].signature == 'b(bar=4, foo=2)'
     assert sessions[5].name == 'b'
+    assert sessions[6].signature is None
+    assert sessions[6].name == 'empty'
 
 
 def test_run(monkeypatch, capsys):
@@ -152,7 +160,8 @@ def test_run(monkeypatch, capsys):
         noxfile='somefile.py',
         sessions=None,
         list_sessions=False,
-        stop_on_first_error=False)
+        stop_on_first_error=False,
+        posargs=[])
     user_nox_module = mock.Mock()
     session_functions = mock.Mock()
     sessions = [
@@ -289,6 +298,13 @@ def test_run(monkeypatch, capsys):
         assert sessions[0].execute.called is False
         assert sessions[1].execute.called is False
         assert sessions[2].execute.called is False
+
+        # Calling a name of an empty parametrized session should work.
+        sessions[:] = [nox.session.Session(
+            'name', None, nox.main._null_session_func, global_config)]
+        global_config.sessions = ['name']
+
+        assert nox.main.run(global_config)
 
 
 def test_run_file_not_found():

@@ -54,16 +54,30 @@ def discover_session_functions(module):
     return sorted(funcs)
 
 
+def _null_session_func(session):
+    session.virtualenv = False
+
+    def empty_session():
+        print('This session had no parameters available.')
+
+    session.run(empty_session)
+
+
 def make_sessions(session_functions, global_config):
     sessions = []
     for name, func in session_functions:
         if not hasattr(func, 'parametrize'):
             sessions.append(Session(name, None, func, global_config))
         else:
-            for call in generate_calls(func, func.parametrize):
+            calls = generate_calls(func, func.parametrize)
+            for call in calls:
                 session = Session(
                     name, name + call.session_signature, call, global_config)
                 sessions.append(session)
+            if not calls:
+                # Add an empty, do-nothing session.
+                sessions.append(Session(
+                    name, None, _null_session_func, global_config))
 
     return sessions
 
