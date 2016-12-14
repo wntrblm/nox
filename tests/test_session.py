@@ -24,14 +24,31 @@ import pytest
 
 
 def test__normalize_path():
-    assert nox.session._normalize_path(u'hello') == 'hello'
-    assert nox.session._normalize_path(b'hello') == 'hello'
-    assert nox.session._normalize_path('hello(world)') == 'hello-world'
+    envdir = 'envdir'
+    assert nox.session._normalize_path(envdir, u'hello') == 'envdir/hello'
+    assert nox.session._normalize_path(envdir, b'hello') == 'envdir/hello'
     assert nox.session._normalize_path(
-        'hello(world, meep)') == 'hello-world-meep'
+        envdir, 'hello(world)') == 'envdir/hello-world'
     assert nox.session._normalize_path(
-        'tests(interpreter="python2.7", django="1.10")') == (
-        'tests-interpreter-python2-7-django-1-10')
+        envdir, 'hello(world, meep)') == 'envdir/hello-world-meep'
+    assert nox.session._normalize_path(
+        envdir, 'tests(interpreter="python2.7", django="1.10")') == (
+        'envdir/tests-interpreter-python2-7-django-1-10')
+
+
+def test__normalize_path_hash():
+    envdir = 'd' * (128 - len('bin/pythonX.Y') - 10)
+    norm_path = nox.session._normalize_path(
+        envdir, 'a-really-long-virtualenv-path')
+    assert 'a-really-long-virtualenv-path' not in norm_path
+    assert len(norm_path) < 128
+
+
+def test__normalize_path_give_up():
+    envdir = 'd' * 128
+    norm_path = nox.session._normalize_path(
+        envdir, 'any-path')
+    assert 'any-path' in norm_path
 
 
 @pytest.fixture
