@@ -22,6 +22,7 @@ from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
 import py
 import six
+import hashlib
 
 
 def _normalize_path(path):
@@ -34,6 +35,7 @@ def _normalize_path(path):
     path = re.sub('[^\w\s-]', '-', path).strip().lower()
     path = re.sub('[-\s]+', '-', path)
     path = path.strip('-')[:255]
+    path = hashlib.sha1(path).hexdigest()[:8]
     return path
 
 
