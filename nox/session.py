@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hashlib
 import os
 import re
 import unicodedata
@@ -24,8 +25,8 @@ import py
 import six
 
 
-def _normalize_path(path):
-    """Normalizes a string to be a "safe" filesystem path."""
+def _normalize_path(envdir, path):
+    """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
     if isinstance(path, six.binary_type):
         path = path.decode('utf-8')
 
@@ -33,8 +34,22 @@ def _normalize_path(path):
     path = path.decode('ascii')
     path = re.sub('[^\w\s-]', '-', path).strip().lower()
     path = re.sub('[-\s]+', '-', path)
-    path = path.strip('-')[:255]
-    return path
+    path = path.strip('-')
+
+    full_path = os.path.join(envdir, path)
+    if len(full_path) > 128 - len('bin/pythonX.Y'):
+        if len(envdir) < 128 - 9:
+            path = hashlib.sha1(path.encode('ascii')).hexdigest()[:8]
+            full_path = os.path.join(envdir, path)
+            logger.warning(
+                'The virtualenv name was hashed to avoid being too long.')
+        else:
+            logger.error(
+                'The virtualenv path {} is too long and will cause issues on '
+                'some environments. Use the --envdir path to modify where '
+                'nox stores virtualenvs.'.format(full_path))
+
+    return full_path
 
 
 class _SessionQuit(Exception):
@@ -175,9 +190,8 @@ class Session(object):
             return
 
         self.venv = VirtualEnv(
-            os.path.join(
-                self.global_config.envdir,
-                _normalize_path(self.signature or self.name)),
+            _normalize_path(
+                self.global_config.envdir, self.signature or self.name),
             interpreter=self.config.interpreter,
             reuse_existing=(
                 self.config.reuse_existing_virtualenv or
