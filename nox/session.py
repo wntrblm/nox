@@ -39,7 +39,7 @@ def _normalize_path(envdir, path):
     full_path = os.path.join(envdir, path)
     if len(full_path) > 128 - len('bin/pythonX.Y'):
         if len(envdir) < 128 - 9:
-            path = hashlib.sha1(path).hexdigest()[:8]
+            path = hashlib.sha1(path.encode('ascii')).hexdigest()[:8]
             full_path = os.path.join(envdir, path)
             logger.warning(
                 'The virtualenv name was hashed to avoid being too long.')
