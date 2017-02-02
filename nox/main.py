@@ -18,6 +18,7 @@ import argparse
 import imp
 from inspect import isfunction
 import itertools
+import json
 import os
 import sys
 
@@ -36,6 +37,7 @@ class GlobalConfig(object):
         self.reuse_existing_virtualenvs = args.reuse_existing_virtualenvs
         self.stop_on_first_error = args.stop_on_first_error
         self.posargs = args.posargs
+        self.report = args.report
 
         if self.posargs and self.posargs[0] == '--':
             self.posargs.pop(0)
@@ -103,7 +105,25 @@ def print_summary(results):
     for session, result in results:
         log = logger.success if result else logger.error
         log('* {}: {}'.format(
-            session, 'passed' if result else 'failed'))
+            session.signature or session.name,
+            'passed' if result else 'failed'))
+
+
+def create_report(report_filename, success, results):
+    with open(report_filename, 'w') as report_file:
+        json.dump({
+            'result': success,
+            'sessions': [
+                {
+                    'name': session.name,
+                    'signature': session.signature,
+                    'result': result,
+                    'args': (
+                        session.func.call_spec
+                        if hasattr(session.func, 'call_spec') else {})
+                } for session, result in results
+            ]
+        }, report_file, indent=2)
 
 
 def run(global_config):
@@ -133,7 +153,7 @@ def run(global_config):
 
     for session in sessions:
         result = session.execute()
-        results.append((session.signature or session.name, result))
+        results.append((session, result))
         success = success and result
         if not success and global_config.stop_on_first_error:
             success = False
@@ -141,6 +161,9 @@ def run(global_config):
 
     if len(results) > 1:
         print_summary(results)
+
+    if global_config.report is not None:
+        create_report(global_config.report, success, results)
 
     return success
 
@@ -166,6 +189,9 @@ def main():
     parser.add_argument(
         '--stop-on-first-error', action='store_true',
         help='Stop after the first error.')
+    parser.add_argument(
+        '--report', default=None,
+        help='Output a report of all sessions.')
     parser.add_argument(
         'posargs', nargs=argparse.REMAINDER,
         help='Arguments that are passed through to the sessions.')

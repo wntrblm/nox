@@ -65,6 +65,7 @@ def generate_calls(func, call_specs):
 
         call = make_call_wrapper(call_spec)
         call.session_signature = generate_session_signature(func, call_spec)
+        call.call_spec = call_spec
         calls.append(call)
 
     return calls

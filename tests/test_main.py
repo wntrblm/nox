@@ -39,7 +39,8 @@ def test_global_config_constructor():
         list_sessions=False,
         reuse_existing_virtualenvs=True,
         stop_on_first_error=False,
-        posargs=['a', 'b', 'c'])
+        posargs=['a', 'b', 'c'],
+        report=None)
 
     config = nox.main.GlobalConfig(args)
 
@@ -147,7 +148,7 @@ def test_make_session_parametrized():
     assert sessions[6].name == 'empty'
 
 
-def test_run(monkeypatch, capsys):
+def test_run(monkeypatch, capsys, tmpdir):
 
     class MockSession(object):
         def __init__(self, return_value=True):
@@ -161,7 +162,8 @@ def test_run(monkeypatch, capsys):
         sessions=None,
         list_sessions=False,
         stop_on_first_error=False,
-        posargs=[])
+        posargs=[],
+        report=None)
     user_nox_module = mock.Mock()
     session_functions = mock.Mock()
     sessions = [
@@ -304,6 +306,10 @@ def test_run(monkeypatch, capsys):
             'name', None, nox.main._null_session_func, global_config)]
         global_config.sessions = ['name']
 
+        assert nox.main.run(global_config)
+
+        # Reporting should work
+        global_config.report = str(tmpdir.join('report.json'))
         assert nox.main.run(global_config)
 
 
