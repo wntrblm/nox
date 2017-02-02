@@ -19,7 +19,6 @@ def session_lint(session):
     session.install('flake8', 'flake8-import-order')
     session.run(
         'flake8',
-        '--max-complexity=10',
         '--import-order-style=google',
         'nox', 'tests')
 
