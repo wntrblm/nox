@@ -37,15 +37,15 @@ def test__normalize_path():
 
 
 def test__normalize_path_hash():
-    envdir = 'd' * (128 - len('bin/pythonX.Y') - 10)
+    envdir = 'd' * (100 - len('bin/pythonX.Y') - 10)
     norm_path = nox.session._normalize_path(
         envdir, 'a-really-long-virtualenv-path')
     assert 'a-really-long-virtualenv-path' not in norm_path
-    assert len(norm_path) < 128
+    assert len(norm_path) < 100
 
 
 def test__normalize_path_give_up():
-    envdir = 'd' * 128
+    envdir = 'd' * 100
     norm_path = nox.session._normalize_path(
         envdir, 'any-path')
     assert 'any-path' in norm_path

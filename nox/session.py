@@ -37,8 +37,8 @@ def _normalize_path(envdir, path):
     path = path.strip('-')
 
     full_path = os.path.join(envdir, path)
-    if len(full_path) > 128 - len('bin/pythonX.Y'):
-        if len(envdir) < 128 - 9:
+    if len(full_path) > 100 - len('bin/pythonX.Y'):
+        if len(envdir) < 100 - 9:
             path = hashlib.sha1(path.encode('ascii')).hexdigest()[:8]
             full_path = os.path.join(envdir, path)
             logger.warning(
