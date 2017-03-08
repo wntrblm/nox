@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 import os
 import sys
 
@@ -20,6 +21,7 @@ import mock
 
 import nox
 import nox.main
+import nox.registry
 import nox.sessions
 
 
@@ -64,7 +66,7 @@ def test_load_user_nox_module():
     assert noxfile_module.SIGIL == '123'
 
 
-def test_discover_session_functions():
+def test_discover_session_functions_naming_convention():
     def session_1():
         pass
 
@@ -75,16 +77,68 @@ def test_discover_session_functions():
         pass
 
     mock_module = Namespace(
+        __name__='irrelevant',
         session_1=session_1,
         session_2=session_2,
         notasession=notasession)
 
     session_functions = nox.main.discover_session_functions(mock_module)
 
-    assert session_functions == [
+    assert session_functions == collections.OrderedDict((
         ('1', session_1),
-        ('2', session_2)
-    ]
+        ('2', session_2),
+    ))
+
+
+def test_discover_session_functions_decorator():
+    @nox.session
+    def foo():
+        pass
+
+    @nox.session
+    def bar():
+        pass
+
+    def notasession():
+        pass
+
+    mock_module = Namespace(
+        __name__=foo.__module__,
+        foo=foo,
+        bar=bar,
+        notasession=notasession,
+    )
+    session_functions = nox.main.discover_session_functions(mock_module)
+
+    assert session_functions == collections.OrderedDict((
+        ('foo', foo),
+        ('bar', bar),
+    ))
+
+
+def test_discover_session_functions_mix():
+    @nox.session
+    def foo():
+        pass
+
+    def session_bar():
+        pass
+
+    def notasession():
+        pass
+
+    mock_module = Namespace(
+        __name__=foo.__module__,
+        foo=foo,
+        session_bar=session_bar,
+        notasession=notasession,
+    )
+    session_functions = nox.main.discover_session_functions(mock_module)
+
+    assert session_functions == collections.OrderedDict((
+        ('foo', foo),
+        ('bar', session_bar),
+    ))
 
 
 def test_make_sessions():
@@ -94,10 +148,10 @@ def test_make_sessions():
     def session_2():
         pass
 
-    session_functions = [
+    session_functions = collections.OrderedDict((
         ('1', session_1),
-        ('2', session_2)
-    ]
+        ('2', session_2),
+    ))
     global_config = Namespace()
     sessions = nox.main.make_sessions(session_functions, global_config)
 
@@ -124,11 +178,11 @@ def test_make_session_parametrized():
     def session_empty():
         pass
 
-    session_functions = [
+    session_functions = collections.OrderedDict((
         ('a', session_a),
         ('b', session_b),
-        ('empty', session_empty)
-    ]
+        ('empty', session_empty),
+    ))
     global_config = Namespace()
     sessions = nox.main.make_sessions(session_functions, global_config)
 

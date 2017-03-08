@@ -32,7 +32,16 @@ You can read more about invoking Nox in :doc:`usage`.
 Creating a noxfile
 ------------------
 
-When you run ``nox``, it looks for a file named `nox.py` in the current directory. This file contains all of the session definitions. A *session* is an environment and a set of commands to run in that environment. Sessions are analogous to *environments* in tox. Sessions are defined via functions in `nox.py` that start with ``session_``. A simple session for running `flake8`_ would look like this::
+When you run ``nox``, it looks for a file named `nox.py` in the current directory. This file contains all of the session definitions. A *session* is an environment and a set of commands to run in that environment. Sessions are analogous to *environments* in tox.
+
+Sessions can be defined in two ways. The preferred way is to define a session with the `@nox.session` decorator:
+
+    @nox.session
+    def lint(session):
+        session.install('flake8')
+        session.run('flake8')
+
+Alternatively, sessions may be designated by the naming convention of beginning a function with `session_`.
 
     def session_lint(session):
         session.install('flake8')
@@ -47,13 +56,21 @@ If you run this via `nox` you should see output similar to this::
     nox > Session lint successful. :)
 
 
+.. note::
+
+    You may define sessions using either the decorator or the naming convention. There is one difference between these: if you use the decorator, then sessions will be run by nox in the order that they appear in the `nox.py` file. If you define sessions using the naming convention, they run in alphabetical order.
+
+    If you mix and match the two methods, all sessions defined using the decorator are run first (in order), followed by all sessions defined by the naming convention, alphabetically.
+
+
 Setting up virtualenvs and installing dependencies
 --------------------------------------------------
 
 Nox automatically creates a separate `virtualenv`_ for every session. You can choose which Python interpreter to use when creating the session. When you install dependencies or run commands within a session, they all use the session's virtualenv. Here's an example of a session that uses Python 2.7, installs dependencies in various ways, and runs a command::
 
 
-    def session_py27(session):
+    @nox.session
+    def py27(session):
         # Use Python 2.7.
         session.interpreter = 'python2.7'
         # Install py.test
@@ -79,15 +96,17 @@ If you want a bunch of sessions to do the same thing but use different interpret
         session.install('-r', 'requirements-dev.txt')
         session.run('py.test')
 
-    def session_py27(session):
+    @nox.session
+    def py27(session):
         session.interpreter = 'python2.7'
         common(session)
 
-    def session_py34(session):
+    @nox.session
+    def py34(session):
         session.interpreter = 'python3.4'
         common(session)
 
-Remember, Nox only recognizes functions that start with `session_` as sessions.
+Remember, Nox only recognizes functions as sessions if they are decorated with `@nox.session` or start with `session_`.
 
 
 Passing arguments into sessions
@@ -95,7 +114,8 @@ Passing arguments into sessions
 
 Often it's useful to pass arguments into your test session. Here's a quick example that demonstrates how to use arguments to run tests against a particular file::
 
-    def session_test(session):
+    @nox.session
+    def test(session):
         session.install('py.test')
 
         if session.posargs:
@@ -129,8 +149,9 @@ Parametrizing sessions
 
 Session arguments can be parametrized with the :func:`nox.parametrize` decorator. Here's a typical example of parametrizing Python intepreter versions::
 
+    @nox.session
     @nox.parametrize('python_version', ['2.7', '3.4', '3.5'])
-    def session_tests(session, python_version):
+    def tests(session, python_version):
         session.interpreter = 'python' + python_version
         session.install('pytest')
         session.run('py.test')
@@ -151,9 +172,10 @@ When you run ``nox``, it will create a three distinct sessions::
 :func:`nox.parametrize` has the same interface and usage as `py.test's parametrize <https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize>`_. You can also stack the decorator to produce sessions that are a combination of the arguments, for example::
 
 
+    @nox.session
     @nox.parametrize('python_version', ['2.7', '3.4'])
     @nox.parametrize('django_version', ['1.8', '1.9'])
-    def session_tests(session, python_version):
+    def tests(session, python_version):
         session.interpreter = 'python' + python_version
         session.install('pytest', 'django==' + django_version)
         session.run('py.test')
