@@ -17,7 +17,7 @@ import os
 import mock
 
 import nox.command
-import nox.session
+import nox.sessions
 import nox.virtualenv
 
 import pytest
@@ -25,20 +25,20 @@ import pytest
 
 def test__normalize_path():
     envdir = 'envdir'
-    assert nox.session._normalize_path(envdir, u'hello') == 'envdir/hello'
-    assert nox.session._normalize_path(envdir, b'hello') == 'envdir/hello'
-    assert nox.session._normalize_path(
+    assert nox.sessions._normalize_path(envdir, u'hello') == 'envdir/hello'
+    assert nox.sessions._normalize_path(envdir, b'hello') == 'envdir/hello'
+    assert nox.sessions._normalize_path(
         envdir, 'hello(world)') == 'envdir/hello-world'
-    assert nox.session._normalize_path(
+    assert nox.sessions._normalize_path(
         envdir, 'hello(world, meep)') == 'envdir/hello-world-meep'
-    assert nox.session._normalize_path(
+    assert nox.sessions._normalize_path(
         envdir, 'tests(interpreter="python2.7", django="1.10")') == (
         'envdir/tests-interpreter-python2-7-django-1-10')
 
 
 def test__normalize_path_hash():
     envdir = 'd' * (100 - len('bin/pythonX.Y') - 10)
-    norm_path = nox.session._normalize_path(
+    norm_path = nox.sessions._normalize_path(
         envdir, 'a-really-long-virtualenv-path')
     assert 'a-really-long-virtualenv-path' not in norm_path
     assert len(norm_path) < 100
@@ -46,7 +46,7 @@ def test__normalize_path_hash():
 
 def test__normalize_path_give_up():
     envdir = 'd' * 100
-    norm_path = nox.session._normalize_path(
+    norm_path = nox.sessions._normalize_path(
         envdir, 'any-path')
     assert 'any-path' in norm_path
 
@@ -54,7 +54,7 @@ def test__normalize_path_give_up():
 @pytest.fixture
 def make_one_config():
     def factory(*args, **kwargs):
-        config = nox.session.SessionConfig(*args, **kwargs)
+        config = nox.sessions.SessionConfig(*args, **kwargs)
         return config
     return factory
 
@@ -131,14 +131,14 @@ def test_config_log(make_one_config):
 
 def test_config_error(make_one_config):
     config = make_one_config()
-    with pytest.raises(nox.session._SessionQuit):
+    with pytest.raises(nox.sessions._SessionQuit):
         config.error('test', '1', '2')
 
 
 @pytest.fixture
 def make_one():
     def factory(*args, **kwargs):
-        session = nox.session.Session(*args, **kwargs)
+        session = nox.sessions.Session(*args, **kwargs)
         return session
     return factory
 
@@ -197,7 +197,7 @@ def venv_session(make_one):
         reuse_existing_virtualenv=False,
         virtualenv=True)
 
-    with mock.patch('nox.session.VirtualEnv', MockVenv):
+    with mock.patch('nox.sessions.VirtualEnv', MockVenv):
         yield global_config, session
 
 
