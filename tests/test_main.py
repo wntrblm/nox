@@ -20,7 +20,7 @@ import mock
 
 import nox
 import nox.main
-import nox.session
+import nox.sessions
 
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
@@ -302,7 +302,7 @@ def test_run(monkeypatch, capsys, tmpdir):
         assert sessions[2].execute.called is False
 
         # Calling a name of an empty parametrized session should work.
-        sessions[:] = [nox.session.Session(
+        sessions[:] = [nox.sessions.Session(
             'name', None, nox.main._null_session_func, global_config)]
         global_config.sessions = ['name']
 

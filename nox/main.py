@@ -24,7 +24,7 @@ import sys
 
 from nox._parametrize import generate_calls
 from nox.logger import logger, setup_logging
-from nox.session import Session
+from nox.sessions import Session
 from six import iteritems
 
 
