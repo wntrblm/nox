@@ -24,8 +24,9 @@ import sys
 
 from nox._parametrize import generate_calls
 from nox.logger import logger, setup_logging
+from nox.registry import SessionRegistry
 from nox.sessions import Session
-from six import iteritems
+from six import iterkeys
 
 
 class GlobalConfig(object):
@@ -49,11 +50,21 @@ def load_user_nox_module(module_file_name='nox.py'):
 
 
 def discover_session_functions(module):
-    funcs = []
-    for name, obj in iteritems(module.__dict__):
+    # Find any function added to the session registry (meaning it was
+    # decorated with @nox.session); do not sort these, as they are being
+    # sorted by decorator call time.
+    funcs = SessionRegistry.get(module.__name__).sessions
+
+    # Find any function conforming to the session_* naming convention.
+    # Sort these in alphabetical order.
+    for name in sorted(iterkeys(module.__dict__)):
+        obj = module.__dict__[name]
         if name.startswith('session_') and isfunction(obj):
-            funcs.append((name.split('session_', 1).pop(), obj))
-    return sorted(funcs)
+            session_name = name.split('session_', 1).pop()
+            funcs[session_name] = obj
+
+    # Return the final dictionary of session functions.
+    return funcs
 
 
 def _null_session_func(session):
@@ -67,7 +78,7 @@ def _null_session_func(session):
 
 def make_sessions(session_functions, global_config):
     sessions = []
-    for name, func in session_functions:
+    for name, func in session_functions.items():
         if not hasattr(func, 'parametrize'):
             sessions.append(Session(name, None, func, global_config))
         else:
