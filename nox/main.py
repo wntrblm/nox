@@ -22,9 +22,9 @@ import json
 import os
 import sys
 
+from nox import registry
 from nox._parametrize import generate_calls
 from nox.logger import logger, setup_logging
-from nox.registry import SessionRegistry
 from nox.sessions import Session
 from six import iterkeys
 
@@ -53,7 +53,7 @@ def discover_session_functions(module):
     # Find any function added to the session registry (meaning it was
     # decorated with @nox.session); do not sort these, as they are being
     # sorted by decorator call time.
-    funcs = SessionRegistry.get(module.__name__).sessions
+    funcs = registry.get()
 
     # Find any function conforming to the session_* naming convention.
     # Sort these in alphabetical order.
