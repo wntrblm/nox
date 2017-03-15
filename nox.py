@@ -15,15 +15,8 @@
 import nox
 
 
-def session_lint(session):
-    session.install('flake8', 'flake8-import-order')
-    session.run(
-        'flake8',
-        '--import-order-style=google',
-        'nox', 'tests')
-
-
-def session_default(session):
+@nox.session
+def default(session):
     session.install('-r', 'requirements-test.txt')
     session.install('-e', '.')
     tests = session.posargs or ['tests/']
@@ -32,7 +25,17 @@ def session_default(session):
         '--cov-report', 'term-missing', *tests)
 
 
-@nox.parametrize('version', ['2.7', '3.4', '3.5'])
-def session_interpreters(session, version):
-    session_default(session)
+@nox.session
+@nox.parametrize('version', ['2.7', '3.4', '3.5', '3.6'])
+def interpreters(session, version):
+    default(session)
     session.interpreter = 'python' + version
+
+
+@nox.session
+def lint(session):
+    session.install('flake8', 'flake8-import-order')
+    session.run(
+        'flake8',
+        '--import-order-style=google',
+        'nox', 'tests')
