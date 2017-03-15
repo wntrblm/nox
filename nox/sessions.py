@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import hashlib
-import inspect
 import os
 import re
 import unicodedata
@@ -180,14 +179,9 @@ class Session(object):
         self.config = SessionConfig(posargs=self.global_config.posargs)
 
         # By default, nox should quietly change to the directory where
-        # the nox.py file is located; however, do not be overly stringent
-        # about this. If we cannot easily inspect that location, just give up
-        # and skip that command.
-        try:
-            cwd = os.path.dirname(inspect.getsourcefile(self.func))
-            self.config.chdir(cwd, debug=True)
-        except TypeError:
-            pass
+        # the nox.py file is located.
+        cwd = os.path.realpath(os.path.dirname(self.global_config.noxfile))
+        self.config.chdir(cwd, debug=True)
 
         # Run the actual session function, passing it the newly-created
         # SessionConfig object.

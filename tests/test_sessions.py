@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import inspect
 import os
 
 import mock
@@ -146,6 +145,7 @@ def make_one():
 
 class MockConfig(object):
     def __init__(self, **kwargs):
+        self.__dict__['noxfile'] = './nox.py'
         self.__dict__.update(**kwargs)
 
 
@@ -176,13 +176,12 @@ def test__create_config(make_one):
 def test__create_config_auto_chdir(make_one):
     def session_func(sess):
         pass
-    global_config = MockConfig(posargs=[1, 2, 3])
+    global_config = MockConfig(posargs=[1, 2, 3], noxfile='/path/to/nox.py')
     session = make_one('test', 'sig', session_func, global_config)
     session._create_config()
     assert len(session.config._commands) == 1
     assert isinstance(session.config._commands[0], nox.command.ChdirCommand)
-    path = os.path.dirname(inspect.getsourcefile(session_func))
-    assert session.config._commands[0].path == path
+    assert session.config._commands[0].path == '/path/to'
 
 
 class MockVenv(object):
