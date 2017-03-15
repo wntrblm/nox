@@ -107,8 +107,9 @@ class Command(object):
 
 
 class FunctionCommand(object):
-    def __init__(self, func, args=None, kwargs=None):
+    def __init__(self, func, args=None, kwargs=None, debug=False):
         self.func = func
+        self.debug = debug
         self.args = args or ()
         self.kwargs = kwargs or {}
         try:
@@ -117,7 +118,10 @@ class FunctionCommand(object):
             self._func_name = '{!r}'.format(self.func)
 
     def run(self):
-        logger.info(str(self))
+        if self.debug:
+            logger.debug(str(self))
+        else:
+            logger.info(str(self))
 
         try:
             self.func(*self.args, **self.kwargs)
@@ -136,9 +140,10 @@ class FunctionCommand(object):
 
 
 class ChdirCommand(FunctionCommand):
-    def __init__(self, path):
+    def __init__(self, path, debug=False):
         self.path = path
-        super(ChdirCommand, self).__init__(os.chdir, args=(self.path,))
+        super(ChdirCommand, self).__init__(os.chdir, args=(self.path,),
+                                           debug=debug)
 
     def __str__(self):
         return 'chdir {}'.format(self.path)

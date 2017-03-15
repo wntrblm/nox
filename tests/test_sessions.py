@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import os
 
 import mock
@@ -170,6 +171,18 @@ def test__create_config(make_one):
 
     mock_func.assert_called_with(session.config)
     assert session.config.posargs == [1, 2, 3]
+
+
+def test__create_config_auto_chdir(make_one):
+    def session_func(sess):
+        pass
+    global_config = MockConfig(posargs=[1, 2, 3])
+    session = make_one('test', 'sig', session_func, global_config)
+    session._create_config()
+    assert len(session.config._commands) == 1
+    assert isinstance(session.config._commands[0], nox.command.ChdirCommand)
+    path = os.path.dirname(inspect.getsourcefile(session_func))
+    assert session.config._commands[0].path == path
 
 
 class MockVenv(object):
