@@ -139,8 +139,9 @@ def create_report(report_filename, success, results):
 
 def run(global_config):
     try:
+        os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
         user_nox_module = load_user_nox_module(global_config.noxfile)
-    except IOError:
+    except (IOError, OSError):
         logger.error('Noxfile {} not found.'.format(global_config.noxfile))
         return False
 
