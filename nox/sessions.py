@@ -80,10 +80,10 @@ class SessionConfig(object):
         can also be specified globally using the
         ``--reuse-existing-virtualenvs`` argument when running ``nox``."""
 
-    def chdir(self, dir):
+    def chdir(self, dir, debug=False):
         """Set the working directory for any commands that run in this
-        session."""
-        self._commands.append(ChdirCommand(dir))
+        session after this point."""
+        self._commands.append(ChdirCommand(dir, debug=debug))
 
     def run(self, *args, **kwargs):
         """
@@ -177,6 +177,14 @@ class Session(object):
 
     def _create_config(self):
         self.config = SessionConfig(posargs=self.global_config.posargs)
+
+        # By default, nox should quietly change to the directory where
+        # the nox.py file is located.
+        cwd = os.path.realpath(os.path.dirname(self.global_config.noxfile))
+        self.config.chdir(cwd, debug=True)
+
+        # Run the actual session function, passing it the newly-created
+        # SessionConfig object.
         try:
             self.func(self.config)
             return True
