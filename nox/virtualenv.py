@@ -14,10 +14,13 @@
 
 import os
 import platform
+import re
 import shutil
 
 from nox.command import Command
 from nox.logger import logger
+
+import py
 
 
 class ProcessEnv(object):
@@ -67,6 +70,46 @@ class VirtualEnv(ProcessEnv):
         return True
 
     @property
+    def _resolved_interpreter(self):
+        """Return the interpreter, appropriately resolved for the platform.
+
+        Based heavily on tox's implementation (tox/interpreters.py).
+        """
+        # Sanity check: If there is no assigned interpreter, then
+        # do nothing.
+        if not self.interpreter:
+            return self.interpreter
+
+        # Sanity check: We only need special behavior on Windows.
+        if platform.system() != 'Windows':
+            return self.interpreter
+
+        # We may have gotten a fully-qualified intepreter path (for someone
+        # _only_ testing on Windows); accept this.
+        if py.path.local.sysfind(self.interpreter):
+            return self.interpreter
+
+        # If this is a standard Unix "pythonX.Y" name, it should be found
+        # in a standard location in Windows.
+        match = re.match(r'^python(?P<maj>\d)\.(?P<min>\d)$', self.interpreter)
+        if match:
+            version = match.groupdict()
+            potential_paths = (
+                r'c:\python{maj}{min}\python.exe'.format(**version),
+                r'c:\python{maj}{min}-x64\python.exe'.format(**version),
+            )
+            for path in potential_paths:
+                actual = py.path.local(path)
+                if actual.check():
+                    return str(path)
+
+        # If we got this far, then we were unable to resolve the interpreter
+        # to an actual executable; raise an exception.
+        raise RuntimeError('Unable to locate Python interpreter "{}".'.format(
+            self.interpreter,
+        ))
+
+    @property
     def bin(self):
         """Returns the location of the virtualenv's bin folder."""
         if platform.system() == 'Windows':
@@ -83,7 +126,7 @@ class VirtualEnv(ProcessEnv):
         cmd = ['virtualenv', self.location]
 
         if self.interpreter:
-            cmd.extend(['-p', self.interpreter])
+            cmd.extend(['-p', self._resolved_interpreter])
 
         self.run(cmd, in_venv=False)
 

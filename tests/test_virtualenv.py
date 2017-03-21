@@ -19,6 +19,8 @@ import mock
 
 import nox.virtualenv
 
+import py
+
 import pytest
 
 
@@ -187,3 +189,89 @@ def test_install(make_one):
         venv.install('-r', 'somefile.txt')
         mock_run.assert_called_with(
             ('pip', 'install', '--upgrade', '-r', 'somefile.txt'))
+
+
+def test__resolved_interpreter_none(make_one):
+    # Establish that the _resolved_interpreter method is a no-op if the
+    # interpeter is not set.
+    venv, _ = make_one(interpreter=None)
+    assert venv._resolved_interpreter is venv.interpreter is None
+
+
+def test__resolved_interpreter_non_windows(make_one):
+    # Establish that the interpreter is simply passed through resolution
+    # on non-Windows.
+    venv, _ = make_one(interpreter='python3.6')
+    with mock.patch.object(platform, 'system') as system:
+        system.return_value = 'Linux'
+        assert venv._resolved_interpreter == 'python3.6'
+        system.assert_called_once_with()
+
+
+def test__resolved_interpreter_windows_full_path(make_one):
+    # Establish that if we get a fully-qualified system path on Windows
+    # and the path exists, that we accept it.
+    venv, _ = make_one(interpreter=r'c:\Python36\python.exe')
+    with mock.patch.object(platform, 'system') as system:
+        system.return_value = 'Windows'
+        with mock.patch.object(py.path.local, 'sysfind') as sysfind:
+            sysfind.return_value = True
+            assert venv._resolved_interpreter == r'c:\Python36\python.exe'
+            system.assert_called_once_with()
+            sysfind.assert_called_once_with(r'c:\Python36\python.exe')
+
+
+@mock.patch.object(platform, 'system')
+@mock.patch.object(py._path.local.LocalPath, 'check')
+@mock.patch.object(py.path.local, 'sysfind')
+def test__resolved_interpreter_windows_stloc(sysfind, check, system, make_one):
+    # Establish that if we get a standard pythonX.Y path, we map it to
+    # standard locations on Windows.
+    venv, _ = make_one(interpreter='python3.6')
+
+    # Trick the system into thinking we are on Windows.
+    system.return_value = 'Windows'
+
+    # Trick the system into thinking that it cannot find python3.6
+    # (it likely will on Unix).
+    sysfind.return_value = False
+
+    # Trick the system into thinking it _can_ find it in the Windows
+    # standard location.
+    check.return_value = True
+
+    # Okay now run the test.
+    assert venv._resolved_interpreter == r'c:\python36\python.exe'
+    check.assert_called_once_with()
+    sysfind.assert_called_once_with('python3.6')
+    system.assert_called()
+
+
+@mock.patch.object(platform, 'system')
+@mock.patch.object(py._path.local.LocalPath, 'check')
+@mock.patch.object(py.path.local, 'sysfind')
+def test__resolved_interpreter_not_found(sysfind, check, system, make_one):
+    # Establish that if an interpreter cannot be found at a standard
+    # location on Windows, we raise a useful error.
+    venv, _ = make_one(interpreter='python3.6')
+
+    # We are on Windows, and nothing can be found.
+    system.return_value = 'Windows'
+    sysfind.return_value = False
+    check.return_value = False
+
+    # Run the test.
+    with pytest.raises(RuntimeError):
+        venv._resolved_interpreter
+
+
+def test__resolved_interpreter_nonstandard(make_one):
+    # Establish that we do not try to resolve non-standard locations
+    # on Windows.
+    venv, _ = make_one(interpreter='goofy')
+
+    with mock.patch.object(platform, 'system') as system:
+        system.return_value = 'Windows'
+        with pytest.raises(RuntimeError):
+            venv._resolved_interpreter
+        system.assert_called_once_with()

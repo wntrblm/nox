@@ -19,6 +19,8 @@ import sys
 
 from nox.logger import logger
 from nox.popen import popen
+from nox.utils import coerce_str
+
 import py
 import six
 
@@ -68,7 +70,9 @@ class Command(object):
 
         cmd_path = which(cmd, path)
 
-        # Environment variables must be bytestrings.
+        # Environment variables must be the "str" type.
+        # In other words, they must be bytestrings in Python 2, and Unicode
+        # text strings in Python 3.
         clean_env = {} if env is not None else None
         if clean_env is not None:
             # Ensure systemroot is passed down, otherwise Windows will explode.
@@ -76,10 +80,8 @@ class Command(object):
                 'SYSTEMROOT', str(''))
 
             for key, value in six.iteritems(env):
-                if not isinstance(key, six.text_type):
-                    key = key.decode('utf-8')
-                if not isinstance(value, six.text_type):
-                    value = value.decode('utf-8')
+                key = coerce_str(key)
+                value = coerce_str(value)
                 clean_env[key] = value
 
         try:
