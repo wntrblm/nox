@@ -25,15 +25,16 @@ import pytest
 
 def test__normalize_path():
     envdir = 'envdir'
-    assert nox.sessions._normalize_path(envdir, u'hello') == 'envdir/hello'
-    assert nox.sessions._normalize_path(envdir, b'hello') == 'envdir/hello'
-    assert nox.sessions._normalize_path(
-        envdir, 'hello(world)') == 'envdir/hello-world'
-    assert nox.sessions._normalize_path(
-        envdir, 'hello(world, meep)') == 'envdir/hello-world-meep'
-    assert nox.sessions._normalize_path(
+    normalize = nox.sessions._normalize_path
+    assert normalize(envdir, u'hello') == os.path.join('envdir', 'hello')
+    assert normalize(envdir, b'hello') == os.path.join('envdir', 'hello')
+    assert normalize(envdir, 'hello(world)') == os.path.join(
+        'envdir', 'hello-world')
+    assert normalize(envdir, 'hello(world, meep)') == os.path.join(
+        'envdir', 'hello-world-meep')
+    assert normalize(
         envdir, 'tests(interpreter="python2.7", django="1.10")') == (
-        'envdir/tests-interpreter-python2-7-django-1-10')
+        os.path.join('envdir', 'tests-interpreter-python2-7-django-1-10'))
 
 
 def test__normalize_path_hash():
@@ -181,7 +182,8 @@ def test__create_config_auto_chdir(make_one):
     session._create_config()
     assert len(session.config._commands) == 1
     assert isinstance(session.config._commands[0], nox.command.ChdirCommand)
-    assert session.config._commands[0].path == '/path/to'
+    assert session.config._commands[0].path.endswith(
+        os.path.join('path', 'to'))
 
 
 class MockVenv(object):

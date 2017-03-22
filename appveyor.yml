@@ -13,10 +13,12 @@ environment:
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.11"
       PYTHON_ARCH: "32"
+      NOX_SESSION: "interpreters(version='2.7')"
 
     - PYTHON: "C:\\Python27-x64"
       PYTHON_VERSION: "2.7.11"
       PYTHON_ARCH: "64"
+      NOX_SESSION: "interpreters(version='2.7')"
 
     # Python 3.4.4 is the latest Python 3.4 with a Windows installer
     # Python 3.4.4 is the overall latest
@@ -24,10 +26,12 @@ environment:
     - PYTHON: "C:\\Python34"
       PYTHON_VERSION: "3.4.4"
       PYTHON_ARCH: "32"
+      NOX_SESSION: "interpreters(version='3.4')"
 
     - PYTHON: "C:\\Python34-x64"
       PYTHON_VERSION: "3.4.4"
       PYTHON_ARCH: "64"
+      NOX_SESSION: "interpreters(version='3.4')"
 
     # Python 3.5.1 is the latest Python 3.5 with a Windows installer
     # Python 3.5.1 is the overall latest
@@ -35,10 +39,12 @@ environment:
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.1"
       PYTHON_ARCH: "32"
+      NOX_SESSION: "interpreters(version='3.5')"
 
     - PYTHON: "C:\\Python35-x64"
       PYTHON_VERSION: "3.5.1"
       PYTHON_ARCH: "64"
+      NOX_SESSION: "interpreters(version='3.5')"
 
 install:
   # Install Python (from the official .msi of http://python.org) and pip when
@@ -76,3 +82,4 @@ build_script:
 test_script:
   # Run the project tests
   - "nox.exe --session default"
+  - "nox.exe --session \"%NOX_SESSION%\""
