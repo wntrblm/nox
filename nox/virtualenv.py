@@ -99,7 +99,7 @@ class VirtualEnv(ProcessEnv):
                 r'c:\python{maj}{min}-x64\python.exe'.format(**version),
             )
             for path in potential_paths:
-                if py.path.local(path).check()
+                if py.path.local(path).check():
                     return str(path)
 
         # If we got this far, then we were unable to resolve the interpreter
