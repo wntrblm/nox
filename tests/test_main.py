@@ -240,7 +240,7 @@ def test_run(monkeypatch, capsys, tmpdir):
         assert result
 
         # The `load_user_module` function receives an absolute path,
-        # but it ishould end with the noxfile argument.
+        # but it should end with the noxfile argument.
         mock_load_user_module.assert_called_once()
         _, args, _ = mock_load_user_module.mock_calls[0]
         assert args[0].endswith('somefile.py')
