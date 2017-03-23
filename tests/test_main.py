@@ -239,7 +239,12 @@ def test_run(monkeypatch, capsys, tmpdir):
         result = nox.main.run(global_config)
         assert result
 
-        mock_load_user_module.assert_called_with('somefile.py')
+        # The `load_user_module` function receives an absolute path,
+        # but it should end with the noxfile argument.
+        mock_load_user_module.assert_called_once()
+        _, args, _ = mock_load_user_module.mock_calls[0]
+        assert args[0].endswith('somefile.py')
+
         mock_discover_session_functions.assert_called_with(user_nox_module)
         mock_make_sessions.assert_called_with(session_functions, global_config)
 
