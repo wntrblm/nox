@@ -139,9 +139,17 @@ def create_report(report_filename, success, results):
 
 def run(global_config):
     try:
+        # Save the absolute path to the Noxfile.
+        # This will innoculate it if nox changes paths because of an implicit
+        # or explicit chdir (like the one below).
+        global_config.noxfile = os.path.realpath(global_config.noxfile)
+
+        # Move to the path where the Noxfile is.
+        # This will ensure that the Noxfile's path is on sys.path, and that
+        # import-time path resolutions work the way the Noxfile author would
+        # guess.
         os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
-        noxfile = global_config.noxfile.split(os.path.sep)[-1]
-        user_nox_module = load_user_nox_module(noxfile)
+        user_nox_module = load_user_nox_module(global_config.noxfile)
     except (IOError, OSError):
         logger.error('Noxfile {} not found.'.format(global_config.noxfile))
         return False
