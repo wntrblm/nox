@@ -119,7 +119,8 @@ class VirtualEnv(ProcessEnv):
     def create(self):
         """Create the virtualenv."""
         if not self._clean_location():
-            logger.debug('Re-using existing virtualenv.')
+            logger.debug(
+                'Re-using existing virtualenv at {}.'.format(self.location))
             return False
 
         cmd = ['virtualenv', self.location]
