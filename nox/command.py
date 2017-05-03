@@ -28,7 +28,7 @@ import six
 class CommandFailed(Exception):
     """Raised when an executed command returns a non-success status code."""
     def __init__(self, reason=None):
-        super(CommandFailed, self).__init__()
+        super(CommandFailed, self).__init__(reason)
         self.reason = reason
 
 
@@ -47,6 +47,7 @@ def which(program, path):
     if full_path:
         return full_path.strpath
 
+    logger.error('Program {} not found.'.format(program))
     raise CommandFailed('Program {} not found'.format(program))
 
 

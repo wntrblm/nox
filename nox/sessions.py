@@ -244,7 +244,7 @@ class Session(object):
                 session_friendly_name))
             return True
 
-        except CommandFailed:
+        except CommandFailed as e:
             logger.error('Session {} failed. :('.format(
                 session_friendly_name))
             return False
