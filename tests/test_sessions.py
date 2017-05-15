@@ -144,8 +144,9 @@ def make_one():
     return factory
 
 
-class MockConfig(object):
+class MockConfig(nox.sessions.SessionConfig):
     def __init__(self, **kwargs):
+        super(MockConfig, self).__init__()
         self.__dict__['noxfile'] = './nox.py'
         self.__dict__.update(**kwargs)
 
@@ -251,6 +252,16 @@ def test__create_venv_virtualenv_false(venv_session):
     session._create_venv()
     assert isinstance(session.venv, nox.virtualenv.ProcessEnv)
     assert not session._should_install_deps
+
+
+def test__create_venv_explicit_name(venv_session):
+    global_config, session = venv_session
+    session.config.virtualenv_dirname = 'meep'
+    session._create_venv()
+    assert session.venv.path == os.path.join('envdir', 'meep')
+    assert session.venv.interpreter == 'interpreter'
+    assert session.venv.reuse_existing is False
+    assert session._should_install_deps is True
 
 
 def test__run_commands(make_one):

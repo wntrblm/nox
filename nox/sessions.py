@@ -64,9 +64,15 @@ class SessionConfig(object):
     def __init__(self, posargs=None):
         self._commands = []
         self.env = {}
+        """A dictionary of environment variables to pass into all commands."""
         self.virtualenv = True
         """A boolean indicating whether or not to create a virtualenv. Defaults
         to True."""
+        self.virtualenv_dirname = None
+        """An optional string that determines the name of the directory
+        where the virtualenv will be created. This is relative to the
+        --envdir option passed into the nox command. By default, nox will
+        generate the name based on the function signature."""
         self.interpreter = None
         """``None`` or a string indicating the name of the Python interpreter
         to use in the session's virtualenv. If None, the default system
@@ -197,9 +203,11 @@ class Session(object):
             self._should_install_deps = False
             return
 
+        virtualenv_name = (
+            self.config.virtualenv_dirname or self.signature or self.name)
         self.venv = VirtualEnv(
             _normalize_path(
-                self.global_config.envdir, self.signature or self.name),
+                self.global_config.envdir, virtualenv_name),
             interpreter=self.config.interpreter,
             reuse_existing=(
                 self.config.reuse_existing_virtualenv or
