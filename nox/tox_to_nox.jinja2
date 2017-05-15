@@ -1,0 +1,35 @@
+import nox
+
+{% for envname, envconfig in config.envconfigs.items()|sort: %}
+@nox.session
+def {{envname}}(session):
+    {%- if envconfig.basepython %}
+    session.interpreter = '{{envconfig.basepython}}'
+    {%- endif %}
+
+    {%- set envs = dict(envconfig.setenv) -%}
+    {%- do envs.pop('PYTHONHASHSEED') -%}
+    {%- for key, value in envs.items()|sort: %}
+    session.env['{{key}}'] = '{{value}}'
+    {%- endfor %}
+
+    {%- if envconfig.deps %}
+    session.install({{wrapjoin(envconfig.deps)}})
+    {%- endif %}
+
+    {%- if not envconfig.skip_install %}
+    {%- if envconfig.usedevelop %}
+    session.install('-e', '.')
+    {%- else %}
+    session.install('.')
+    {%- endif -%}
+    {%- endif %}
+
+    {%- if envconfig.changedir and config.toxinidir.bestrelpath(envconfig.changedir) != '.' %}
+    session.chdir('{{config.toxinidir.bestrelpath(envconfig.changedir)}}')
+    {%- endif %}
+
+    {%- for command in envconfig.commands %}
+    session.run({{wrapjoin(command)}})
+    {%- endfor %}
+{% endfor %}

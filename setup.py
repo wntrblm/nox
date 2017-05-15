@@ -63,15 +63,22 @@ setup(
 
     packages=['nox'],
 
+    include_package_data=True,
+
     install_requires=[
         'colorlog>=2.6.1,<3.0.0',
         'py>=1.4.0,<2.0.0',
         'six>=1.4.0,<2.0.0',
         'virtualenv>=14.0.0'],
 
+    extras_require={
+        'tox-to-nox': ['jinja2', 'tox']
+    },
+
     entry_points={
         'console_scripts': [
             'nox=nox.main:main',
+            'tox-to-nox=nox.tox_to_nox:main [tox-to-nox]'
         ],
     },
 )

@@ -94,3 +94,25 @@ Nox has provisional support for running on Windows. However, depending on your W
 * `Python issue 24493 <http://bugs.python.org/issue24493>`_
 * `Virtualenv issue 774 <https://github.com/pypa/virtualenv/issues/774>`_
 
+
+Converting from tox
+-------------------
+
+Nox has experimental support for converting ``tox.ini`` files into ``nox.py`` files. This doesn't support every feature of tox and is intended to just do most of the mechanical work of converting over- you'll likely still need to make a few changes to the converted ``nox.py``.
+
+To use the converter, install ``nox`` with the ``tox-to-nox`` extra::
+
+    pip install nox[tox-to-nox]
+
+Then, just run ``tox-to-nox`` in the directory where your ``tox.ini`` resides::
+
+    tox-to-nox
+
+This will create a ``nox.py`` based on the environments in your ``tox.ini``. Some things to note:
+
+- `Generative environments`_ work, but will be converted as individual environments. ``tox-to-nox`` isn't quite smart enough to turn these into :ref:`parametrized <running_paramed_sessions>` sessions, but it should be straightforward to manually pull out common configuration for parametrization.
+- Due to the way tox parses its configuration, all `substitutions`_ are baked in when converting. This means you'll need to replace the static strings in the ``nox.py`` with appropriate variables.
+- Several non-common tox options aren't implemented, but it's possible to do so. Please file a feature request if you run into one you think will be useful.
+
+.. _Generative environments: http://tox.readthedocs.io/en/latest/config.html#generating-environments-conditional-settings
+.. _substitutions: http://tox.readthedocs.io/en/latest/config.html#substitutions
