@@ -91,6 +91,8 @@ class SessionConfig(object):
         session after this point."""
         self._commands.append(ChdirCommand(dir, debug=debug))
 
+    cd = chdir
+
     def run(self, *args, **kwargs):
         """
         Run a command in the session. Commands must be specified as a list of
