@@ -87,6 +87,42 @@ You can create as many session as you want. Typically, you will create one sessi
 
 You can read more about configuring sessions in :doc:`config`.
 
+Running commands
+----------------
+
+Running a command in a session is easy - just pass the command name an arguments to :func:`session.run`::
+
+    @nox.session
+    def py27(session):
+        session.install('pytest')
+        session.run('pytest', '-k', 'not slow')
+
+Sessions are **declarative**. Your commands are not run immediately, instead, the session gathers up the commands from your function and then executes all of the commands in order. This means if you do something like change directory in your session, it won't necessarily work the way you expect. Changing directory can be handled by :func:`session.chdir`::
+
+    session.chdir('docs')
+    session.run('sphinx-build', 'html')
+
+If you want to run arbitrary Python, you can pass a function directly into :func:`session.run`::
+
+    def clean_up():
+        shutil.rmtree('build')
+
+    @nox.session
+    def build_wheel(session):
+        session.run('python', 'setup.py', 'bdist_wheel')
+        session.run(clean_up)
+
+Nox will make sure your function is executed in the right order with the rest of the commands. The ``nox`` output will also reflect that it was executed, for example::
+
+    nox > Running session build_wheel
+    nox > python setup.py bdist_wheel
+    running bdist_wheel
+    ...
+    nox > clean_up(args=(), kwargs={})
+    nox > Session build_wheel successful. :)
+
+This makes it easier to keep track of exactly what's executed during your build.
+
 Sharing configuration between sessions
 --------------------------------------
 

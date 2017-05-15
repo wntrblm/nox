@@ -16,19 +16,21 @@ Install nox via `pip`_::
 
     pip install nox-automation
 
-Nox is configured via a ``nox.py`` file in your project's directory. Here's a simple noxfile that runs `py.test`_ with Python 2.7 and Python 3.4::
+Nox is configured via a ``nox.py`` file in your project's directory. Here's a simple noxfile that runs lint and some tests::
 
-    def session_py27(session):
-        session.interpreter = 'python2.7'
-        session.install('-r', 'requirements.txt')
+    import nox
+
+    @nox.session
+    def tests(session):
+        session.install('py.test')
         session.run('py.test')
 
-    def session_py34(session):
-        session.interpreter = 'python3.4'
-        session.install('-r', 'requirements.txt')
-        session.run('py.test')
+    @nox.session
+    def lint(session):
+        session.install('flake8')
+        session.run('flake8', '--import-order-style', 'google')
 
-To run both of these sessions, execute::
+To run both of these sessions, just run::
 
     nox
 
