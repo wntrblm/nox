@@ -24,7 +24,7 @@ The simplest way of running Nox will run all sessions defined in `nox.py`::
 However, if you wish to run a single session or subset of sessions you can use the ``-s`` argument::
 
     nox --sessions lint py27
-    nox -s lint py27
+    nox -s lint
 
 You can read more about invoking Nox in :doc:`usage`.
 
@@ -34,20 +34,20 @@ Creating a noxfile
 
 When you run ``nox``, it looks for a file named `nox.py` in the current directory. This file contains all of the session definitions. A *session* is an environment and a set of commands to run in that environment. Sessions are analogous to *environments* in tox.
 
-Sessions can be defined in two ways. The preferred way is to define a session with the `@nox.session` decorator:
+Sessions can be defined in two ways. The preferred way is to define a session with the ``@nox.session`` decorator::
 
     @nox.session
     def lint(session):
         session.install('flake8')
         session.run('flake8')
 
-Alternatively, sessions may be designated by the naming convention of beginning a function with `session_`.
+Alternatively, sessions may be designated by the naming convention of beginning a function with ``session_``::
 
     def session_lint(session):
         session.install('flake8')
         session.run('flake8')
 
-If you run this via `nox` you should see output similar to this::
+If you run this via ``nox`` you should see output similar to this::
 
     nox > Running session lint
     nox > virtualenv /tmp/example/.nox/lint
@@ -106,7 +106,7 @@ If you want a bunch of sessions to do the same thing but use different interpret
         session.interpreter = 'python3.4'
         common(session)
 
-Remember, Nox only recognizes functions as sessions if they are decorated with `@nox.session` or start with `session_`.
+Remember, Nox only recognizes functions as sessions if they are decorated with ``@nox.session`` or start with ``session_``.
 
 
 Passing arguments into sessions
