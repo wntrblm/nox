@@ -22,7 +22,7 @@ import jinja2
 import tox.config
 
 _TEMPLATE = jinja2.Template(
-    pkgutil.get_data(__name__, 'tox_to_nox.jinja2'),
+    pkgutil.get_data(__name__, 'tox_to_nox.jinja2').decode('utf-8'),
     extensions=['jinja2.ext.do'])
 
 
