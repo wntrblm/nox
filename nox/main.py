@@ -34,6 +34,7 @@ class GlobalConfig(object):
         self.noxfile = args.noxfile
         self.envdir = os.path.abspath(args.envdir)
         self.sessions = args.sessions
+        self.keywords = args.keywords
         self.list_sessions = args.list_sessions
         self.reuse_existing_virtualenvs = args.reuse_existing_virtualenvs
         self.stop_on_first_error = args.stop_on_first_error
@@ -45,11 +46,13 @@ class GlobalConfig(object):
 
 
 def load_user_nox_module(module_file_name='nox.py'):
+    """Load the user's noxfile and return the module object for it."""
     module = imp.load_source('user_nox_module', module_file_name)
     return module
 
 
 def discover_session_functions(module):
+    """Discover all session functions in the noxfile module."""
     # Find any function added to the session registry (meaning it was
     # decorated with @nox.session); do not sort these, as they are being
     # sorted by decorator call time.
@@ -68,6 +71,8 @@ def discover_session_functions(module):
 
 
 def _null_session_func(session):
+    """A do-nothing session for patemetrized sessions that have no available
+    parameters."""
     session.virtualenv = False
 
     def empty_session():
@@ -77,6 +82,8 @@ def _null_session_func(session):
 
 
 def make_sessions(session_functions, global_config):
+    """Create session objects from the session functions and the global
+    configuration."""
     sessions = []
     for name, func in session_functions.items():
         if not hasattr(func, 'parametrize'):
@@ -95,10 +102,12 @@ def make_sessions(session_functions, global_config):
     return sessions
 
 
-def filter_sessions(specified_sessions, available_sessions):
+def filter_sessions_by_name(specified_sessions, available_sessions):
+    """Filter sessions based on the user-specified names."""
     sessions = [x for x in available_sessions if (
         x.name in specified_sessions or
         x.signature in specified_sessions)]
+
     missing_sessions = set(specified_sessions) - set(
         itertools.chain(
             [x.name for x in sessions if x.name],
@@ -109,6 +118,37 @@ def filter_sessions(specified_sessions, available_sessions):
         return False
 
     return sessions
+
+
+class KeywordLocals(object):
+    """Eval locals using keywords.
+
+    When looking up a local variable the variable name is compared against
+    the set of keywords. If the local variable name matches any *substring* of
+    any keyword, then the name lookup returns True. Otherwise, the name lookup
+    returns False.
+    """
+    def __init__(self, keywords):
+        self._keywords = keywords
+
+    def __getitem__(self, variable_name):
+        for keyword in self._keywords:
+            if variable_name in keyword:
+                return True
+        return False
+
+
+def keyword_match(expression, keywords):
+    """See if an expression matches the given set of keywords."""
+    locals = KeywordLocals(set(keywords))
+    return eval(expression, {}, locals)
+
+
+def filter_sessions_by_keywords(keywords, available_sessions):
+    """Filter sessions using pytest-like keyword expressions."""
+    return [
+        x for x in available_sessions
+        if keyword_match(keywords, [x.signature or x.name])]
 
 
 def print_summary(results):
@@ -157,14 +197,18 @@ def run(global_config):
     session_functions = discover_session_functions(user_nox_module)
     sessions = make_sessions(session_functions, global_config)
 
+    if global_config.sessions:
+        sessions = filter_sessions_by_name(global_config.sessions, sessions)
+
+    if global_config.keywords:
+        sessions = filter_sessions_by_keywords(
+            global_config.keywords, sessions)
+
     if global_config.list_sessions:
         print('Available sessions:')
         for session in sessions:
             print('*', session.signature or session.name)
         return True
-
-    if global_config.sessions:
-        sessions = filter_sessions(global_config.sessions, sessions)
 
     if not sessions:
         return False
@@ -204,6 +248,9 @@ def main():
     parser.add_argument(
         '-s', '-e', '--sessions', nargs='*',
         help='Which sessions to run, by default, all sessions will run.')
+    parser.add_argument(
+        '-k', '--keywords',
+        help='Only run sessions that match the given expression.')
     parser.add_argument(
         '-r', '--reuse-existing-virtualenvs', action='store_true',
         help='Re-use existing virtualenvs instead of recreating them.')

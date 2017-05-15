@@ -41,6 +41,13 @@ By default nox will run all session defined in the noxfile. However, you can cho
     nox -e py34
 
 
+You can also use `pytest-style keywords`_ to filter test sessions::
+
+    nox -k "not lint"
+    nox -k "tests and not lint"
+
+.. _pytest-style keywords: https://docs.pytest.org/en/latest/usage.html#specifying-tests-selecting-tests
+
 .. _running_paramed_sessions:
 
 Specifying parametrized sessions

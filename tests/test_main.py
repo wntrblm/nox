@@ -38,6 +38,7 @@ def test_global_config_constructor():
         noxfile='noxfile',
         envdir='dir',
         sessions=['1', '2'],
+        keywords='red and blue',
         list_sessions=False,
         reuse_existing_virtualenvs=True,
         stop_on_first_error=False,
@@ -49,6 +50,7 @@ def test_global_config_constructor():
     assert config.noxfile == 'noxfile'
     assert config.envdir == os.path.abspath('dir')
     assert config.sessions == ['1', '2']
+    assert config.keywords == 'red and blue'
     assert config.list_sessions is False
     assert config.reuse_existing_virtualenvs is True
     assert config.stop_on_first_error is False
@@ -202,22 +204,37 @@ def test_make_session_parametrized():
     assert sessions[6].name == 'empty'
 
 
+def test_keyword_match():
+    keywords = ['red', 'blue', 'purple']
+    assert nox.main.keyword_match('red', keywords)
+    assert nox.main.keyword_match('blue', keywords)
+    assert not nox.main.keyword_match('green', keywords)
+    assert nox.main.keyword_match('red and blue', keywords)
+    assert nox.main.keyword_match('red or blue', keywords)
+    assert nox.main.keyword_match('red or green', keywords)
+    assert not nox.main.keyword_match('red and green', keywords)
+    assert nox.main.keyword_match('purp', keywords)
+    assert nox.main.keyword_match('ple', keywords)
+
+
 def test_run(monkeypatch, capsys, tmpdir):
 
-    class MockSession(object):
-        def __init__(self, return_value=True):
-            self.name = 'session_name'
-            self.signature = None
+    class MockSession(nox.sessions.Session):
+        def __init__(self, name='session_name', signature=None,
+                     global_config=None, return_value=True):
+            super(MockSession, self).__init__(
+                name, signature, None, global_config)
             self.execute = mock.Mock()
             self.execute.return_value = return_value
 
     global_config = Namespace(
         noxfile='somefile.py',
         sessions=None,
+        keywords=None,
         list_sessions=False,
         stop_on_first_error=False,
         posargs=[],
-        report=None)
+        report=None,)
     user_nox_module = mock.Mock()
     session_functions = mock.Mock()
     sessions = [
@@ -367,9 +384,26 @@ def test_run(monkeypatch, capsys, tmpdir):
 
         assert nox.main.run(global_config)
 
-        # Reporting should work
-        global_config.report = str(tmpdir.join('report.json'))
+        # Using -k should filter sessions
+        sessions[:] = [
+            MockSession('red', 'red()'),
+            MockSession('blue', 'blue()'),
+            MockSession('red', 'red(blue)'),
+            MockSession('redder', 'redder()')]
+        global_config.sessions = None
+        global_config.keywords = 'red and not blue'
+
         assert nox.main.run(global_config)
+        assert sessions[0].execute.called
+        assert not sessions[1].execute.called
+        assert not sessions[2].execute.called
+        assert sessions[3].execute.called
+
+        # Reporting should work
+        report = tmpdir.join('report.json')
+        global_config.report = str(report)
+        assert nox.main.run(global_config)
+        assert report.exists()
 
 
 def test_run_file_not_found():
