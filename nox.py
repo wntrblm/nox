@@ -18,7 +18,7 @@ import nox
 @nox.session
 def default(session):
     session.install('-r', 'requirements-test.txt')
-    session.install('-e', '.[tox-to-nox]')
+    session.install('-e', '.[tox_to_nox]')
     tests = session.posargs or ['tests/']
     session.run(
         'py.test', '--cov=nox', '--cov-config', '.coveragerc',
