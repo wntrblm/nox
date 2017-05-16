@@ -23,7 +23,7 @@ long_description = open('README.rst', 'r', encoding='utf-8').read()
 setup(
     name='nox-automation',
 
-    version='0.14.0',
+    version='0.15.0',
 
     description='Flexible test automation.',
     long_description=long_description,
@@ -72,13 +72,13 @@ setup(
         'virtualenv>=14.0.0'],
 
     extras_require={
-        'tox-to-nox': ['jinja2', 'tox']
+        'tox_to_nox': ['jinja2', 'tox']
     },
 
     entry_points={
         'console_scripts': [
             'nox=nox.main:main',
-            'tox-to-nox=nox.tox_to_nox:main [tox-to-nox]'
+            'tox-to-nox=nox.tox_to_nox:main [tox_to_nox]'
         ],
     },
 )
