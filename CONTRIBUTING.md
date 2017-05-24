@@ -29,7 +29,7 @@ side of including lots of information, such as:
 Nox runs its own tests (it's recursive!). The best thing to do is start with
 a known-good nox installation, e.g. from PyPI:
 
-    pip install nox-automation
+    pip install --upgrade nox-automation
 
 To just check for lint errors, run:
 
