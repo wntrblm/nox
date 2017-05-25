@@ -64,10 +64,11 @@ class Command(object):
         path = self.path if path_override is None else path_override
 
         env = env_fallback.copy() if env_fallback is not None else None
-        if env is not None and self.env is not None:
-            env.update(self.env)
-        else:
-            env = self.env
+        if self.env is not None:
+            if env is None:
+                env = self.env
+            else:
+                env.update(self.env)
 
         cmd, args = self.args[0], self.args[1:]
         full_cmd = ' '.join(self.args)

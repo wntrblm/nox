@@ -95,12 +95,35 @@ def test_run_env_fallback(make_one):
     command = make_one(
         [PYTHON, '-c',
          'import os; print(os.environ["SIGIL"] + os.environ["SIGIL2"] )'],
+        silent=True)
+
+    result = command.run(env_fallback={u'SIGIL': u'abc', u'SIGIL2': u'456'})
+
+    assert result.strip() == 'abc456'
+
+
+def test_env_no_fallback(make_one):
+    command = make_one(
+        [PYTHON, '-c',
+         'import os; print(os.environ["SIGIL"])'],
+        silent=True, env={
+            u'SIGIL': u'123'})
+
+    result = command.run()
+
+    assert result.strip() == '123'
+
+
+def test_run_env_and_env_fallback(make_one):
+    command = make_one(
+        [PYTHON, '-c',
+         'import os; print(os.environ["SIGIL"] + os.environ["SIGIL2"] )'],
         silent=True, env={
             u'SIGIL': u'123'})
 
     result = command.run(env_fallback={u'SIGIL': u'abc', u'SIGIL2': u'456'})
 
-    assert '123456' in result
+    assert result.strip() == '123456'
 
 
 def test_run_env_systemroot(make_one):
