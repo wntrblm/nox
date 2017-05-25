@@ -223,7 +223,7 @@ class Session(object):
         for command in self.config._commands:
             if isinstance(command, Command):
                 command(
-                    path_override=self.venv.bin, env_override=env)
+                    path_override=self.venv.bin, env_fallback=env)
             elif isinstance(command, InstallCommand):
                 if not self._should_install_deps:
                     logger.debug(

@@ -280,7 +280,7 @@ def test__run_commands(make_one):
     session._run_commands()
 
     assert cmd1.called
-    assert cmd1.call_args[1]['env_override'] == {
+    assert cmd1.call_args[1]['env_fallback'] == {
         'SIGIL': '123', 'SIGIL2': '345'}
     assert cmd1.call_args[1]['path_override'] == session.venv.bin
     assert cmd2.called

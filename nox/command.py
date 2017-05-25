@@ -60,9 +60,14 @@ class Command(object):
         self.path = path
         self.success_codes = success_codes or [0]
 
-    def run(self, path_override=None, env_override=None):
+    def run(self, path_override=None, env_fallback=None):
         path = self.path if path_override is None else path_override
-        env = self.env if env_override is None else env_override
+
+        env = env_fallback.copy() if env_fallback is not None else None
+        if env is not None and self.env is not None:
+            env.update(self.env)
+        else:
+            env = self.env
 
         cmd, args = self.args[0], self.args[1:]
         full_cmd = ' '.join(self.args)
