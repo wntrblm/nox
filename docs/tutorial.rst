@@ -9,7 +9,7 @@ Installation
 
 Nox can be easily installed via `pip`_::
 
-    pip install nox-automation
+    pip install --upgrade nox-automation
 
 Usually you install this globally, similar to ``tox``, ``pip``, and other similar tools.
 

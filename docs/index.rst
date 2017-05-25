@@ -14,7 +14,7 @@ Welcome to Nox
 
 Install nox via `pip`_::
 
-    pip install nox-automation
+    pip install --upgrade nox-automation
 
 Nox is configured via a ``nox.py`` file in your project's directory. Here's a simple noxfile that runs lint and some tests::
 
