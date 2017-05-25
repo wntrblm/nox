@@ -91,6 +91,18 @@ def test_run_env_unicode(make_one):
     assert '123' in result
 
 
+def test_run_env_fallback(make_one):
+    command = make_one(
+        [PYTHON, '-c',
+         'import os; print(os.environ["SIGIL"] + os.environ["SIGIL2"] )'],
+        silent=True, env={
+            u'SIGIL': u'123'})
+
+    result = command.run(env_fallback={u'SIGIL': u'abc', u'SIGIL2': u'456'})
+
+    assert '123456' in result
+
+
 def test_run_env_systemroot(make_one):
     systemroot = os.environ.setdefault('SYSTEMROOT', str('sigil'))
 
