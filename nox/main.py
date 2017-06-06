@@ -26,6 +26,8 @@ from nox import registry
 from nox._parametrize import generate_calls
 from nox.logger import logger, setup_logging
 from nox.sessions import Session
+
+import pkg_resources
 from six import iterkeys
 
 
@@ -263,8 +265,17 @@ def main():
     parser.add_argument(
         'posargs', nargs=argparse.REMAINDER,
         help='Arguments that are passed through to the sessions.')
+    parser.add_argument(
+        '--version', action='store_true',
+        help='Output the nox version and exit.')
 
     args = parser.parse_args()
+
+    if args.version:
+        dist = pkg_resources.get_distribution('nox-automation')
+        print(dist.version, file=sys.stderr)
+        return
+
     global_config = GlobalConfig(args)
 
     setup_logging()

@@ -24,8 +24,11 @@ import nox.main
 import nox.registry
 import nox.sessions
 
+import pkg_resources
+
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
+VERSION = pkg_resources.get_distribution('nox-automation').version
 
 
 class Namespace(object):
@@ -496,6 +499,19 @@ def test_main():
         assert run_mock.called
         config = run_mock.call_args[0][0]
         assert config.posargs == ['1', '2', '3', '-f', '--baz']
+
+
+def test_main_version(capsys):
+    sys.argv = [sys.executable, '--version']
+
+    with contexter.ExitStack() as stack:
+        run_mock = stack.enter_context(mock.patch('nox.main.run'))
+        exit_mock = stack.enter_context(mock.patch('sys.exit'))
+        nox.main.main()
+        _, err = capsys.readouterr()
+        assert VERSION in err
+        exit_mock.assert_not_called()
+        run_mock.assert_not_called()
 
 
 def test_main_failure():
