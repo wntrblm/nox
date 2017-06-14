@@ -43,6 +43,7 @@ def lint(session):
 
 @nox.session
 def docs(session):
+    session.skip('skipping')
     session.install('sphinx')
     session.install('-e', '.')
     session.chdir('docs')

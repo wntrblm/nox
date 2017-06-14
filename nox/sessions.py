@@ -56,6 +56,16 @@ class _SessionQuit(Exception):
     pass
 
 
+class _SessionSkip(Exception):
+    pass
+
+
+class SessionStatus(object):
+    FAIL = False
+    SUCCESS = True
+    SKIP = 3
+
+
 class SessionConfig(object):
     """SessionConfig is passed into the session function defined in the
     user's *nox.py*. The session function uses this object to configure the
@@ -171,8 +181,14 @@ class SessionConfig(object):
         logger.info(*args, **kwargs)
 
     def error(self, *args, **kwargs):
-        logger.error(*args, **kwargs)
+        if args or kwargs:
+            logger.error(*args, **kwargs)
         raise _SessionQuit()
+
+    def skip(self, *args, **kwargs):
+        if args or kwargs:
+            logger.warning(*args, **kwargs)
+        raise _SessionSkip()
 
 
 class Session(object):
@@ -195,9 +211,11 @@ class Session(object):
         # SessionConfig object.
         try:
             self.func(self.config)
-            return True
+            return SessionStatus.SUCCESS
         except _SessionQuit:
-            return False
+            return SessionStatus.FAIL
+        except _SessionSkip:
+            return SessionStatus.SKIP
 
     def _create_venv(self):
         if not self.config.virtualenv:
@@ -239,10 +257,16 @@ class Session(object):
         logger.warning('Running session {}'.format(session_friendly_name))
 
         try:
-            if not self._create_config():
+            status = self._create_config()
+
+            if status == SessionStatus.FAIL:
                 logger.error('Session {} aborted.'.format(
                     session_friendly_name))
-                return False
+                return status
+            elif status == SessionStatus.SKIP:
+                logger.warning('Session {} skipped.'.format(
+                    session_friendly_name))
+                return status
 
             self._create_venv()
 
@@ -252,12 +276,12 @@ class Session(object):
 
             logger.success('Session {} successful. :)'.format(
                 session_friendly_name))
-            return True
+            return SessionStatus.SUCCESS
 
         except CommandFailed:
             logger.error('Session {} failed. :('.format(
                 session_friendly_name))
-            return False
+            return SessionStatus.FAIL
 
         except KeyboardInterrupt:
             logger.error('Session {} interrupted.'.format(

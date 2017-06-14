@@ -25,7 +25,7 @@ import sys
 from nox import registry
 from nox._parametrize import generate_calls
 from nox.logger import logger, setup_logging
-from nox.sessions import Session
+from nox.sessions import Session, SessionStatus
 
 import pkg_resources
 from six import iterkeys
@@ -75,12 +75,7 @@ def discover_session_functions(module):
 def _null_session_func(session):
     """A do-nothing session for patemetrized sessions that have no available
     parameters."""
-    session.virtualenv = False
-
-    def empty_session():
-        print('This session had no parameters available.')
-
-    session.run(empty_session)
+    session.skip('This session had no parameters available.')
 
 
 def make_sessions(session_functions, global_config):
@@ -155,17 +150,25 @@ def filter_sessions_by_keywords(keywords, available_sessions):
 
 def print_summary(results):
     logger.warning('Ran multiple sessions:')
-    for session, result in results:
-        log = logger.success if result else logger.error
+    for session, status in results:
+        if status == SessionStatus.SUCCESS:
+            log = logger.success
+            status = 'passed'
+        elif status == SessionStatus.SKIP:
+            log = logger.warning
+            status = 'skipped'
+        else:
+            log = logger.error
+            status = 'failed'
+
         log('* {}: {}'.format(
-            session.signature or session.name,
-            'passed' if result else 'failed'))
+            session.signature or session.name, status))
 
 
-def create_report(report_filename, success, results):
+def create_report(report_filename, status, results):
     with open(report_filename, 'w') as report_file:
         json.dump({
-            'result': success,
+            'result': status,
             'sessions': [
                 {
                     'name': session.name,

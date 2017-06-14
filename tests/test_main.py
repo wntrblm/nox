@@ -306,8 +306,24 @@ def test_run(monkeypatch, capsys, tmpdir):
         for session in sessions:
             session.execute.reset_mock()
 
-        # This time it should only run a subset of sessions
         sessions[0].execute.return_value = True
+
+        # Add a skipped session
+        skipped_session = MockSession(
+            return_value=nox.sessions.SessionStatus.SKIP)
+        sessions.insert(0, skipped_session)
+
+        result = nox.main.run(global_config)
+        assert result
+
+        assert sessions[0].execute.called is True
+        assert sessions[1].execute.called is True
+        assert sessions[2].execute.called is True
+
+        for session in sessions:
+            session.execute.reset_mock()
+
+        # This time it should only run a subset of sessions
         sessions[0].name = '1'
         sessions[1].name = '2'
         sessions[2].name = '3'
