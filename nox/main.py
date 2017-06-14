@@ -157,9 +157,11 @@ def print_summary(results):
         elif status == SessionStatus.SKIP:
             log = logger.warning
             status = 'skipped'
-        else:
+        elif status == SessionStatus.FAIL:
             log = logger.error
             status = 'failed'
+        else:
+            raise ValueError('Unexpected session status: {}'.format(status))
 
         log('* {}: {}'.format(
             session.signature or session.name, status))
