@@ -178,14 +178,17 @@ class SessionConfig(object):
         self._commands.append(InstallCommand(args))
 
     def log(self, *args, **kwargs):
+        """Outputs a log during the session."""
         logger.info(*args, **kwargs)
 
     def error(self, *args, **kwargs):
+        """Immediately aborts the session and optionally logs an error."""
         if args or kwargs:
             logger.error(*args, **kwargs)
         raise _SessionQuit()
 
     def skip(self, *args, **kwargs):
+        """Immediately skips the session and optionally logs a warning."""
         if args or kwargs:
             logger.warning(*args, **kwargs)
         raise _SessionSkip()
