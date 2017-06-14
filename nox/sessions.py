@@ -63,7 +63,7 @@ class _SessionSkip(Exception):
 class SessionStatus(object):
     FAIL = False
     SUCCESS = True
-    SKIP = 3
+    SKIP = 2
 
 
 class SessionConfig(object):
