@@ -23,7 +23,7 @@ long_description = open('README.rst', 'r', encoding='utf-8').read()
 setup(
     name='nox-automation',
 
-    version='0.16.1',
+    version='0.17.0',
 
     description='Flexible test automation.',
     long_description=long_description,
