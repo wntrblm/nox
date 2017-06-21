@@ -3,3 +3,4 @@ mock
 pytest
 pytest-cov
 contexter
+sphinx==1.6.2

@@ -44,7 +44,7 @@ def lint(session):
 
 @nox.session
 def docs(session):
-    session.install('sphinx')
-    session.install('-e', '.')
+    session.install('-r', 'requirements-test.txt')
+    session.install('-e', '.[tox_to_nox]')
     session.chdir('docs')
     session.run('make', 'html')
