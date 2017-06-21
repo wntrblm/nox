@@ -22,13 +22,13 @@ import json
 import os
 import sys
 
+import pkg_resources
+from six import iterkeys
+
 from nox import registry
 from nox._parametrize import generate_calls
 from nox.logger import logger, setup_logging
 from nox.sessions import Session, SessionStatus
-
-import pkg_resources
-from six import iterkeys
 
 
 class GlobalConfig(object):

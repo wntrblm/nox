@@ -16,11 +16,11 @@ import os
 
 import mock
 
+import pytest
+
 import nox.command
 import nox.sessions
 import nox.virtualenv
-
-import pytest
 
 
 def test__normalize_path():

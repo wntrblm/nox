@@ -15,9 +15,9 @@
 import sys
 import textwrap
 
-from nox import tox_to_nox
-
 import pytest
+
+from nox import tox_to_nox
 
 
 @pytest.fixture

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nox import registry
-
 import pytest
+
+from nox import registry
 
 
 @pytest.fixture

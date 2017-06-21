@@ -16,12 +16,10 @@ import os
 import platform
 
 import mock
+import py
+import pytest
 
 import nox.virtualenv
-
-import py
-
-import pytest
 
 
 SYSTEM = platform.system()

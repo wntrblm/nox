@@ -17,12 +17,13 @@ import os
 import re
 import unicodedata
 
+import py
+import six
+
 from nox.command import (
     ChdirCommand, Command, CommandFailed, FunctionCommand, InstallCommand)
 from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
-import py
-import six
 
 
 def _normalize_path(envdir, path):

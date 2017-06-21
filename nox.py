@@ -38,6 +38,7 @@ def lint(session):
     session.run(
         'flake8',
         '--import-order-style=google',
+        '--application-import-names=nox,tests',
         'nox', 'tests')
 
 

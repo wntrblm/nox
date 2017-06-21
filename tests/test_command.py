@@ -16,10 +16,9 @@ import os
 import sys
 
 import mock
+import pytest
 
 import nox.command
-
-import pytest
 
 PYTHON = sys.executable
 
@@ -244,6 +243,16 @@ def test_function_command_callable(make_one_func):
     mock_func = mock.MagicMock()
 
     command = make_one_func(mock_func, [1], {'two': 3})
+
+    assert command.run()
+    mock_func.assert_called_with(1, two=3)
+
+
+def test_function_command_debug(make_one_func):
+    mock_func = mock.MagicMock()
+    mock_func.__name__ = lambda self: 'mock_func'
+
+    command = make_one_func(mock_func, [1], {'two': 3}, debug=True)
 
     assert command.run()
     mock_func.assert_called_with(1, two=3)

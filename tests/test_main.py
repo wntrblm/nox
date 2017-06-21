@@ -18,13 +18,13 @@ import sys
 
 import contexter
 import mock
+import pkg_resources
+import pytest
 
 import nox
 import nox.main
 import nox.registry
 import nox.sessions
-
-import pkg_resources
 
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
@@ -418,11 +418,21 @@ def test_run(monkeypatch, capsys, tmpdir):
         assert not sessions[2].execute.called
         assert sessions[3].execute.called
 
+        global_config.keywords = None
+
         # Reporting should work
         report = tmpdir.join('report.json')
         global_config.report = str(report)
         assert nox.main.run(global_config)
         assert report.exists()
+
+        global_config.report = None
+
+        # Summary should fail if there's an invalid status
+        sessions[0].execute.return_value = 2990
+        global_config.sessions = [sessions[0].name]
+        with pytest.raises(ValueError):
+            nox.main.run(global_config)
 
 
 def test_run_file_not_found():
