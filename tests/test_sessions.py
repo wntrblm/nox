@@ -16,11 +16,11 @@ import os
 
 import mock
 
+import pytest
+
 import nox.command
 import nox.sessions
 import nox.virtualenv
-
-import pytest
 
 
 def test__normalize_path():
@@ -132,8 +132,22 @@ def test_config_log(make_one_config):
 
 def test_config_error(make_one_config):
     config = make_one_config()
+
+    with pytest.raises(nox.sessions._SessionQuit):
+        config.error()
+
     with pytest.raises(nox.sessions._SessionQuit):
         config.error('test', '1', '2')
+
+
+def test_config_skip(make_one_config):
+    config = make_one_config()
+
+    with pytest.raises(nox.sessions._SessionSkip):
+        config.skip()
+
+    with pytest.raises(nox.sessions._SessionSkip):
+        config.skip('test', '1', '2')
 
 
 @pytest.fixture
@@ -397,3 +411,12 @@ def test_execute_session_quit(make_one):
     session = make_one('test', 'sig', bad_config, MockConfig(posargs=[]))
 
     assert not session.execute()
+
+
+def test_execute_session_skip(make_one):
+    def skip_config(session):
+        session.skip('meep')
+
+    session = make_one('test', 'sig', skip_config, MockConfig(posargs=[]))
+
+    assert session.execute() == nox.sessions.SessionStatus.SKIP

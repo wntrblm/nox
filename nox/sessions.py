@@ -17,12 +17,13 @@ import os
 import re
 import unicodedata
 
+import py
+import six
+
 from nox.command import (
     ChdirCommand, Command, CommandFailed, FunctionCommand, InstallCommand)
 from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
-import py
-import six
 
 
 def _normalize_path(envdir, path):
@@ -54,6 +55,16 @@ def _normalize_path(envdir, path):
 
 class _SessionQuit(Exception):
     pass
+
+
+class _SessionSkip(Exception):
+    pass
+
+
+class SessionStatus(object):
+    FAIL = False
+    SUCCESS = True
+    SKIP = 2
 
 
 class SessionConfig(object):
@@ -168,11 +179,20 @@ class SessionConfig(object):
         self._commands.append(InstallCommand(args))
 
     def log(self, *args, **kwargs):
+        """Outputs a log during the session."""
         logger.info(*args, **kwargs)
 
     def error(self, *args, **kwargs):
-        logger.error(*args, **kwargs)
+        """Immediately aborts the session and optionally logs an error."""
+        if args or kwargs:
+            logger.error(*args, **kwargs)
         raise _SessionQuit()
+
+    def skip(self, *args, **kwargs):
+        """Immediately skips the session and optionally logs a warning."""
+        if args or kwargs:
+            logger.warning(*args, **kwargs)
+        raise _SessionSkip()
 
 
 class Session(object):
@@ -195,9 +215,11 @@ class Session(object):
         # SessionConfig object.
         try:
             self.func(self.config)
-            return True
+            return SessionStatus.SUCCESS
         except _SessionQuit:
-            return False
+            return SessionStatus.FAIL
+        except _SessionSkip:
+            return SessionStatus.SKIP
 
     def _create_venv(self):
         if not self.config.virtualenv:
@@ -239,10 +261,16 @@ class Session(object):
         logger.warning('Running session {}'.format(session_friendly_name))
 
         try:
-            if not self._create_config():
+            status = self._create_config()
+
+            if status == SessionStatus.FAIL:
                 logger.error('Session {} aborted.'.format(
                     session_friendly_name))
-                return False
+                return status
+            elif status == SessionStatus.SKIP:
+                logger.warning('Session {} skipped.'.format(
+                    session_friendly_name))
+                return status
 
             self._create_venv()
 
@@ -252,12 +280,12 @@ class Session(object):
 
             logger.success('Session {} successful. :)'.format(
                 session_friendly_name))
-            return True
+            return SessionStatus.SUCCESS
 
         except CommandFailed:
             logger.error('Session {} failed. :('.format(
                 session_friendly_name))
-            return False
+            return SessionStatus.FAIL
 
         except KeyboardInterrupt:
             logger.error('Session {} interrupted.'.format(

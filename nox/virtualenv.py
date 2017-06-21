@@ -17,10 +17,10 @@ import platform
 import re
 import shutil
 
+import py
+
 from nox.command import Command
 from nox.logger import logger
-
-import py
 
 
 class ProcessEnv(object):

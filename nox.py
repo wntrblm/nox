@@ -38,11 +38,13 @@ def lint(session):
     session.run(
         'flake8',
         '--import-order-style=google',
+        '--application-import-names=nox,tests',
         'nox', 'tests')
 
 
 @nox.session
 def docs(session):
+    session.skip('skipping')
     session.install('sphinx')
     session.install('-e', '.')
     session.chdir('docs')

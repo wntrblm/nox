@@ -17,12 +17,12 @@ from __future__ import print_function
 import os
 import sys
 
+import py
+import six
+
 from nox.logger import logger
 from nox.popen import popen
 from nox.utils import coerce_str
-
-import py
-import six
 
 
 class CommandFailed(Exception):
