@@ -45,7 +45,13 @@ def lint(session):
 @nox.session
 def docs(session):
     session.interpreter = 'python3.6'
-    session.install('-r', 'requirements-test.txt')
-    session.install('.')
     session.run('rm', '-rf', 'docs/_build')
-    session.run('make', '-C', 'docs', 'html')
+    session.install('-r', 'requirements-test.txt')
+    # Readthedocs uses setuptools to install the package, so we do as well.
+    session.run('python', 'setup.py', 'install')
+    session.cd('docs')
+    session.run(
+        'sphinx-build',
+        '-b', 'html',
+        '-d', '_build/doctrees',
+        '.', '_build/html')
