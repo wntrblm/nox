@@ -39,4 +39,5 @@ SessionConfig object
 Nox will call your sessions functions with a :class:`SessionConfig` object.
 
 .. autoclass:: SessionConfig
-   :members:
+    :members:
+    :undoc-members:

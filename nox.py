@@ -44,7 +44,8 @@ def lint(session):
 
 @nox.session
 def docs(session):
+    session.interpreter = 'python3.6'
     session.install('-r', 'requirements-test.txt')
-    session.install('-e', '.[tox_to_nox]')
-    session.chdir('docs')
-    session.run('make', 'html')
+    session.install('.')
+    session.run('rm', '-rf', 'docs/_build')
+    session.run('make', '-C', 'docs', 'html')
