@@ -5,8 +5,8 @@ def parametrize_decorator(arg_names, arg_values_list):
 
     Add new invocations to the underlying session function using the list of
     ``arg_values_list`` for the given ``arg_names``. Parametrization is
-    performed during session discovery and each invocation appears as a separate
-    session to nox.
+    performed during session discovery and each invocation appears as a
+    separate session to nox.
 
     Args:
         arg_names (Sequence[str]): A list of argument names.
