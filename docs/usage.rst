@@ -1,5 +1,5 @@
-Usage
-=====
+Command-line usage
+==================
 
 Nox is normally invoked on the command line::
 
@@ -30,6 +30,24 @@ To list all available sessions, including parametrized sessions::
     nox -l
     nox --list-sessions
 
+.. _session_execution_order:
+
+Running all sessions
+--------------------
+
+You can run every session by just executing `nox` without any arguments:
+
+    nox
+
+The order that sessions are executed is determined by how they are defined in
+your noxfile. if you use the :func:`decorator <nox.session>`, ``@nox.session``,
+then sessions will be run by nox in the order that they appear in the noxfile.
+If you define sessions using the naming convention, ``def sesssion_<name>```
+they run in alphabetical order.
+
+If you mix and match the two methods, all sessions defined using the decorator
+are run first (in order), followed by all sessions defined by the naming
+convention, alphabetically.
 
 Specifying one or more sessions
 -------------------------------
@@ -40,6 +58,7 @@ By default nox will run all session defined in the noxfile. However, you can cho
     nox -s lint py27
     nox -e py34
 
+Nox will run these session in the same order they are specified.
 
 You can also use `pytest-style keywords`_ to filter test sessions::
 
@@ -53,7 +72,7 @@ You can also use `pytest-style keywords`_ to filter test sessions::
 Specifying parametrized sessions
 --------------------------------
 
-If you have a `parametrized <parametrized>`_ session such as::
+If you have a :ref:`parametrized <parametrized>` session such as::
 
     @nox.parametrize('python_version', ['2.7', '3.4', '3.5'])
     def session_tests(session, python_version):

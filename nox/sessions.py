@@ -106,8 +106,9 @@ class SessionConfig(object):
 
     def run(self, *args, **kwargs):
         """
-        Run a command in the session. Commands must be specified as a list of
-        strings, for example::
+        Schedule a command or function to in the session.
+
+        Commands must be specified as a list of strings, for example::
 
             session.run('py.test', '-k', 'fast', 'tests/')
             session.run('flake8', '--import-order-style=google')
@@ -139,6 +140,12 @@ class SessionConfig(object):
         :param success_codes: A list of return codes that are considered
             successful. By default, only ``0`` is considered success.
         :type success_codes: list, tuple, or None
+
+        Functions can be scheduled just by passing the function and any args,
+        just like :func:`functools.partial`::
+
+            session.run(shutil.rmtree, 'docs/_build')
+
         """
         if not args:
             raise ValueError('At least one argument required to run().')

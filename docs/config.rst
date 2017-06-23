@@ -1,12 +1,22 @@
-Configuration
-=============
+Configuration & API
+===================
 
 Noxfile
 -------
 
-Nox looks for configuration in a file named `nox.py` by default. You can specify a different file using the ``--noxfile`` argument when running ``nox``.
+Nox looks for configuration åin a file named `nox.py` by default. You can specify
+a different file using the ``--noxfile`` argument when running ``nox``.
 
-Nox sessions are configured via standard Python functions that are decoratored with ``@nox.session`` or start with ``session_``. For example, these are all sessions::
+Defining sessions
+-----------------
+
+.. autofunction:: nox.session
+
+Nox sessions are configured via standard Python functions that are decorated
+with ``@nox.session`` or start with ``session_``. For example, these are all
+sessions::
+
+    import nox
 
     def session_a(session):
         pass
@@ -26,17 +36,22 @@ These are **not**::
     def other_func(session):
         pass
 
+You may define sessions using either the decorator or the naming convention.
+This can affect the execution order as described in the
+:ref:`usage docs<session_execution_order>`.
 
-You may define sessions using either the decorator or the naming convention. There is one difference between these: if you use the decorator, then sessions will be run by nox in the order that they appear in the noxfile. If you define sessions using the naming convention, they run in alphabetical order.
+You can also parametrize sessions as described in
+:ref:`parametrized sessions <parametrized>`.
 
-If you mix and match the two methods, all sessions defined using the decorator are run first (in order), followed by all sessions defined by the naming convention, alphabetically.
-
-SessionConfig object
+Configuring sessions
 --------------------
 
 .. module:: nox.sessions
 
-Nox will call your sessions functions with a :class:`SessionConfig` object.
+Nox will call your session functions with a :class:`SessionConfig` object. You
+use this object to tell nox how to create your session and which actions to
+run. Session configuration is *declarative*, nox runs your session function
+first to gather the list of things to do, then executes them separately.
 
 .. autoclass:: SessionConfig
     :members:

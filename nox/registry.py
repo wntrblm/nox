@@ -8,11 +8,9 @@ _REGISTRY = collections.OrderedDict()
 
 
 def session_decorator(func):
-    """Designate the wrapped function as a session.
-
-    This adds the given function to the _REGISTRY ordered dictionary, which
-    is checked by `nox.main.discover_session_functions`.
-    """
+    """Designate the decorated function as a session."""
+    # This adds the given function to the _REGISTRY ordered dictionary, which
+    # is checked by `nox.main.discover_session_functions`.
     _REGISTRY[func.__name__] = func
     return func
 

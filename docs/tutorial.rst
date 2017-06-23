@@ -205,8 +205,11 @@ When you run ``nox``, it will create a three distinct sessions::
     nox > virtualenv ./.nox/tests -p python3.5
 
 
-:func:`nox.parametrize` has the same interface and usage as `py.test's parametrize <https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize>`_. You can also stack the decorator to produce sessions that are a combination of the arguments, for example::
+:func:`nox.parametrize` has an interface and usage intentionally similar to `py.test's parametrize <https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize>`_.
 
+.. autofunction:: nox.parametrize
+
+You can also stack the decorator to produce sessions that are a combination of the arguments, for example::
 
     @nox.session
     @nox.parametrize('python_version', ['2.7', '3.4'])

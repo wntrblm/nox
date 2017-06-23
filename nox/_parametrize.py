@@ -1,6 +1,23 @@
 
 
 def parametrize_decorator(arg_names, arg_values_list):
+    """Parametrize a session.
+
+    Add new invocations to the underlying session function using the list of
+    ``arg_values_list`` for the given ``arg_names``. Parametrization is
+    performed during session discovery and each invocation appears as a separate
+    session to nox.
+
+    Args:
+        arg_names (Sequence[str]): A list of argument names.
+        arg_values_list (Sequence[Union[Any, Tuple]]): The list of argument
+            values determines how often a session is invoked with different
+            argument values. If only one argument names was specified then
+            this is a simple list of values, for example ``[1, 2, 3]``. If N
+            argument names were specified, this must be a list of N-tuples,
+            where each tuple-element specifies a value for its respective
+            argument name, for example ``[(1, 'a'), (2, 'b')]``.
+    """
 
     # Allow args to be specified as any of 'arg', 'arg,arg2' or ('arg', 'arg2')
     if not isinstance(arg_names, (list, tuple)):
