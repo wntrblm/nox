@@ -42,7 +42,7 @@ You can run every session by just executing `nox` without any arguments:
 The order that sessions are executed is determined by how they are defined in
 your noxfile. if you use the :func:`decorator <nox.session>`, ``@nox.session``,
 then sessions will be run by nox in the order that they appear in the noxfile.
-If you define sessions using the naming convention, ``def sesssion_<name>```
+If you define sessions using the naming convention, ``def session_<name>```
 they run in alphabetical order.
 
 If you mix and match the two methods, all sessions defined using the decorator

@@ -99,7 +99,9 @@ class SessionConfig(object):
 
     def chdir(self, dir, debug=False):
         """Set the working directory for any commands that run in this
-        session after this point."""
+        session after this point.
+
+        cd() is an alias for chdir()."""
         self._commands.append(ChdirCommand(dir, debug=debug))
 
     cd = chdir
