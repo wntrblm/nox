@@ -101,7 +101,7 @@ class SessionConfig(object):
         """Set the working directory for any commands that run in this
         session after this point.
 
-        cd() and chdir() are identical."""
+        cd() is an alias for chdir()."""
         self._commands.append(ChdirCommand(dir, debug=debug))
 
     cd = chdir
