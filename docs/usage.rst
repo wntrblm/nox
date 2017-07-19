@@ -52,13 +52,13 @@ convention, alphabetically.
 Specifying one or more sessions
 -------------------------------
 
-By default nox will run all session defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``::
+By default nox will run all sessions defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``::
 
     nox --session py27
     nox -s lint py27
     nox -e py34
 
-Nox will run these session in the same order they are specified.
+Nox will run these sessions in the same order they are specified.
 
 You can also use `pytest-style keywords`_ to filter test sessions::
 
