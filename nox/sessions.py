@@ -205,11 +205,12 @@ class SessionConfig(object):
 
 
 class Session(object):
-    def __init__(self, name, signature, func, global_config):
+    def __init__(self, name, signature, func, global_config, manifest=None):
         self.name = name
         self.signature = signature
         self.func = func
         self.global_config = global_config
+        self.manifest = manifest
         self._should_install_deps = True
 
     def _create_config(self):

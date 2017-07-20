@@ -146,80 +146,6 @@ def test_discover_session_functions_mix():
     ))
 
 
-def test_make_sessions():
-    def session_1():
-        pass
-
-    def session_2():
-        pass
-
-    session_functions = collections.OrderedDict((
-        ('1', session_1),
-        ('2', session_2),
-    ))
-    global_config = Namespace()
-    sessions = nox.main.make_sessions(session_functions, global_config)
-
-    assert sessions[0].name == '1'
-    assert sessions[0].func == session_1
-    assert sessions[0].global_config == global_config
-    assert sessions[1].name == '2'
-    assert sessions[1].func == session_2
-    assert sessions[1].global_config == global_config
-
-
-def test_make_session_parametrized():
-
-    @nox.parametrize('arg', [1, 2])
-    def session_a(arg):
-        pass
-
-    @nox.parametrize('foo', [1, 2])
-    @nox.parametrize('bar', [3, 4])
-    def session_b():
-        pass
-
-    @nox.parametrize('unused', [])
-    def session_empty():
-        pass
-
-    session_functions = collections.OrderedDict((
-        ('a', session_a),
-        ('b', session_b),
-        ('empty', session_empty),
-    ))
-    global_config = Namespace()
-    sessions = nox.main.make_sessions(session_functions, global_config)
-
-    assert sessions[0].signature == 'a(arg=1)'
-    assert sessions[0].name == 'a'
-    assert sessions[1].signature == 'a(arg=2)'
-    assert sessions[1].name == 'a'
-    assert sessions[2].signature == 'b(bar=3, foo=1)'
-    assert sessions[2].name == 'b'
-    assert sessions[3].signature == 'b(bar=4, foo=1)'
-    assert sessions[3].name == 'b'
-    assert sessions[4].signature == 'b(bar=3, foo=2)'
-    assert sessions[4].name == 'b'
-    assert sessions[5].signature == 'b(bar=4, foo=2)'
-    assert sessions[5].name == 'b'
-    assert sessions[6].signature is None
-    assert sessions[6].name == 'empty'
-
-
-def test_keyword_match():
-    keywords = ['red', 'blue', 'purple']
-    assert nox.main.keyword_match('red', keywords)
-    assert nox.main.keyword_match('blue', keywords)
-    assert not nox.main.keyword_match('green', keywords)
-    assert nox.main.keyword_match('red and blue', keywords)
-    assert nox.main.keyword_match('red or blue', keywords)
-    assert nox.main.keyword_match('red or green', keywords)
-    assert not nox.main.keyword_match('red and green', keywords)
-    assert nox.main.keyword_match('purp', keywords)
-    assert nox.main.keyword_match('ple', keywords)
-
-
 def test_run(monkeypatch, capsys, tmpdir):
 
     class MockSession(nox.sessions.Session):
@@ -239,7 +165,7 @@ def test_run(monkeypatch, capsys, tmpdir):
         posargs=[],
         report=None,)
     user_nox_module = mock.Mock()
-    session_functions = mock.Mock()
+    session_functions = {'foo': mock.Mock(), 'bar': mock.Mock()}
     sessions = [
         MockSession(),
         MockSession()
@@ -252,8 +178,8 @@ def test_run(monkeypatch, capsys, tmpdir):
         mock_discover_session_functions = stack.enter_context(mock.patch(
             'nox.main.discover_session_functions',
             side_effect=lambda _: session_functions))
-        mock_make_sessions = stack.enter_context(mock.patch(
-            'nox.main.make_sessions', side_effect=lambda _1, _2: sessions))
+        mock_make_session = stack.enter_context(mock.patch(
+            'nox.manifest.Manifest.make_session', side_effect=[sessions]))
 
         # Default options
         result = nox.main.run(global_config)
@@ -266,7 +192,10 @@ def test_run(monkeypatch, capsys, tmpdir):
         assert args[0].endswith('somefile.py')
 
         mock_discover_session_functions.assert_called_with(user_nox_module)
-        mock_make_sessions.assert_called_with(session_functions, global_config)
+        calls = mock_make_session.call_args_list
+        assert len(calls) == 2
+        assert calls[0][0] == ('foo', session_functions['foo'])
+        assert calls[1][0] == ('bar', session_functions['bar'])
 
         for session in sessions:
             assert session.execute.called

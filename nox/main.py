@@ -17,7 +17,6 @@ from __future__ import print_function
 import argparse
 import imp
 from inspect import isfunction
-import itertools
 import json
 import os
 import sys
@@ -26,9 +25,9 @@ import pkg_resources
 from six import iterkeys
 
 from nox import registry
-from nox._parametrize import generate_calls
 from nox.logger import logger, setup_logging
-from nox.sessions import Session, SessionStatus
+from nox.manifest import Manifest
+from nox.sessions import SessionStatus
 
 
 class GlobalConfig(object):
@@ -70,82 +69,6 @@ def discover_session_functions(module):
 
     # Return the final dictionary of session functions.
     return funcs
-
-
-def _null_session_func(session):
-    """A do-nothing session for patemetrized sessions that have no available
-    parameters."""
-    session.skip('This session had no parameters available.')
-
-
-def make_sessions(session_functions, global_config):
-    """Create session objects from the session functions and the global
-    configuration."""
-    sessions = []
-    for name, func in session_functions.items():
-        if not hasattr(func, 'parametrize'):
-            sessions.append(Session(name, None, func, global_config))
-        else:
-            calls = generate_calls(func, func.parametrize)
-            for call in calls:
-                session = Session(
-                    name, name + call.session_signature, call, global_config)
-                sessions.append(session)
-            if not calls:
-                # Add an empty, do-nothing session.
-                sessions.append(Session(
-                    name, None, _null_session_func, global_config))
-
-    return sessions
-
-
-def filter_sessions_by_name(specified_sessions, available_sessions):
-    """Filter sessions based on the user-specified names."""
-    sessions = [x for x in available_sessions if (
-        x.name in specified_sessions or
-        x.signature in specified_sessions)]
-
-    missing_sessions = set(specified_sessions) - set(
-        itertools.chain(
-            [x.name for x in sessions if x.name],
-            [x.signature for x in sessions if x.signature]))
-    if missing_sessions:
-        logger.error('Sessions {} not found.'.format(', '.join(
-            missing_sessions)))
-        return False
-
-    return sessions
-
-
-class KeywordLocals(object):
-    """Eval locals using keywords.
-
-    When looking up a local variable the variable name is compared against
-    the set of keywords. If the local variable name matches any *substring* of
-    any keyword, then the name lookup returns True. Otherwise, the name lookup
-    returns False.
-    """
-    def __init__(self, keywords):
-        self._keywords = keywords
-
-    def __getitem__(self, variable_name):
-        for keyword in self._keywords:
-            if variable_name in keyword:
-                return True
-        return False
-
-
-def keyword_match(expression, keywords):
-    """See if an expression matches the given set of keywords."""
-    locals = KeywordLocals(set(keywords))
-    return eval(expression, {}, locals)
-
-
-def filter_sessions_by_keywords(keywords, available_sessions):
-    """Filter sessions using pytest-like keyword expressions."""
-    return [
-        x for x in available_sessions
-        if keyword_match(keywords, [x.signature or x.name])]
 
 
 def print_summary(results):
@@ -202,28 +125,27 @@ def run(global_config):
         return False
 
     session_functions = discover_session_functions(user_nox_module)
-    sessions = make_sessions(session_functions, global_config)
+    manifest = Manifest(session_functions, global_config)
 
-    if global_config.sessions:
-        sessions = filter_sessions_by_name(global_config.sessions, sessions)
-
-    if global_config.keywords:
-        sessions = filter_sessions_by_keywords(
-            global_config.keywords, sessions)
-
+    # If the user just asked for a list of sessinos, print that
+    # and be done.
     if global_config.list_sessions:
         print('Available sessions:')
-        for session in sessions:
+        for session in manifest:
             print('*', session.signature or session.name)
         return True
 
-    if not sessions:
+    if not manifest:
         return False
 
     success = True
     results = []
 
-    for session in sessions:
+    # Iterate over each session in the manifest, and execute it.
+    #
+    # Note that it is possible for the manifest to be altered in any given
+    # iteration.
+    for session in manifest:
         result = session.execute()
         results.append((session, result))
         success = success and result
