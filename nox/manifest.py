@@ -24,16 +24,17 @@ from nox.sessions import Session
 class Manifest(object):
     """Session manifest.
 
-    The session manifest provides the final list of sessions that should be
-    run by nox.
+    The session manifest provides the source of truth for the sequence of
+    sessions that should be run by nox.
 
     It is possible for this to be mutated during execution. This allows for
-    useful use cases, such as for one session to "notify" another.
+    useful use cases, such as for one session to "notify" another or
+    "chain" to another.
 
     Args:
         session_functions (Mapping[str, function]): The registry of discovered
             session functions.
-        global_config (): The global configuration.
+        global_config (.nox.main.GlobalConfig): The global configuration.
     """
     def __init__(self, session_functions, global_config):
         self._all_sessions = []
