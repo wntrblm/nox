@@ -127,7 +127,7 @@ def run(global_config):
     session_functions = discover_session_functions(user_nox_module)
     manifest = Manifest(session_functions, global_config)
 
-    # If the user just asked for a list of sessinos, print that
+    # If the user just asked for a list of sessions, print that
     # and be done.
     if global_config.list_sessions:
         print('Available sessions:')
