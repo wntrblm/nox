@@ -12,22 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
+"""The nox `main` module.
+
+This is the entrypoint for the ``nox`` command (specifically, the ``main``
+function). This module primarily loads configuration, and then passes
+control to :meth:``nox.workflow.execute``.
+"""
+
+from __future__ import absolute_import, print_function
 
 import argparse
-import imp
-from inspect import isfunction
-import json
 import os
 import sys
 
 import pkg_resources
-from six import iterkeys
 
-from nox import registry
-from nox.logger import logger, setup_logging
-from nox.manifest import Manifest
-from nox.sessions import SessionStatus
+from nox import tasks
+from nox import workflow
+from nox.logger import setup_logging
 
 
 class GlobalConfig(object):
@@ -44,122 +46,6 @@ class GlobalConfig(object):
 
         if self.posargs and self.posargs[0] == '--':
             self.posargs.pop(0)
-
-
-def load_user_nox_module(module_file_name='nox.py'):
-    """Load the user's noxfile and return the module object for it."""
-    module = imp.load_source('user_nox_module', module_file_name)
-    return module
-
-
-def discover_session_functions(module):
-    """Discover all session functions in the noxfile module."""
-    # Find any function added to the session registry (meaning it was
-    # decorated with @nox.session); do not sort these, as they are being
-    # sorted by decorator call time.
-    funcs = registry.get()
-
-    # Find any function conforming to the session_* naming convention.
-    # Sort these in alphabetical order.
-    for name in sorted(iterkeys(module.__dict__)):
-        obj = module.__dict__[name]
-        if name.startswith('session_') and isfunction(obj):
-            session_name = name.split('session_', 1).pop()
-            funcs[session_name] = obj
-
-    # Return the final dictionary of session functions.
-    return funcs
-
-
-def print_summary(results):
-    logger.warning('Ran multiple sessions:')
-    for session, status in results:
-        if status == SessionStatus.SUCCESS:
-            log = logger.success
-            status = 'passed'
-        elif status == SessionStatus.SKIP:
-            log = logger.warning
-            status = 'skipped'
-        elif status == SessionStatus.FAIL:
-            log = logger.error
-            status = 'failed'
-        else:
-            raise ValueError('Unexpected session status: {}'.format(status))
-
-        log('* {}: {}'.format(
-            session.signature or session.name, status))
-
-
-def create_report(report_filename, status, results):
-    with open(report_filename, 'w') as report_file:
-        json.dump({
-            'result': status,
-            'sessions': [
-                {
-                    'name': session.name,
-                    'signature': session.signature,
-                    'result': result,
-                    'args': (
-                        session.func.call_spec
-                        if hasattr(session.func, 'call_spec') else {})
-                } for session, result in results
-            ]
-        }, report_file, indent=2)
-
-
-def run(global_config):
-    try:
-        # Save the absolute path to the Noxfile.
-        # This will innoculate it if nox changes paths because of an implicit
-        # or explicit chdir (like the one below).
-        global_config.noxfile = os.path.realpath(global_config.noxfile)
-
-        # Move to the path where the Noxfile is.
-        # This will ensure that the Noxfile's path is on sys.path, and that
-        # import-time path resolutions work the way the Noxfile author would
-        # guess.
-        os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
-        user_nox_module = load_user_nox_module(global_config.noxfile)
-    except (IOError, OSError):
-        logger.error('Noxfile {} not found.'.format(global_config.noxfile))
-        return False
-
-    session_functions = discover_session_functions(user_nox_module)
-    manifest = Manifest(session_functions, global_config)
-
-    # If the user just asked for a list of sessions, print that
-    # and be done.
-    if global_config.list_sessions:
-        print('Available sessions:')
-        for session in manifest:
-            print('*', session.signature or session.name)
-        return True
-
-    if not manifest:
-        return False
-
-    success = True
-    results = []
-
-    # Iterate over each session in the manifest, and execute it.
-    #
-    # Note that it is possible for the manifest to be altered in any given
-    # iteration.
-    for session in manifest:
-        result = session.execute()
-        results.append((session, result))
-        success = success and result
-        if not success and global_config.stop_on_first_error:
-            success = False
-            break
-
-    if len(results) > 1:
-        print_summary(results)
-
-    if global_config.report is not None:
-        create_report(global_config.report, success, results)
-
-    return success
 
 
 def main():
@@ -204,13 +90,20 @@ def main():
         return
 
     global_config = GlobalConfig(args)
-
     setup_logging()
 
-    try:
-        success = run(global_config)
-    except KeyboardInterrupt:
-        success = False
+    # Execute the appropriate tasks.
+    exit_code = workflow.execute(
+        global_config=global_config,
+        workflow=(
+            tasks.load_nox_module,
+            tasks.discover_manifest,
+            tasks.filter_manifest,
+            tasks.honor_list_request,
+            tasks.verify_manifest_nonempty,
+            tasks.run_manifest,
+        ),
+    )
 
-    if not success:
-        sys.exit(1)
+    # Done; exit.
+    sys.exit(exit_code)

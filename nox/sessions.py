@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import enum
 import hashlib
 import os
 import re
@@ -20,6 +21,7 @@ import unicodedata
 import py
 import six
 
+from nox import utils
 from nox.command import (
     ChdirCommand, Command, CommandFailed, FunctionCommand, InstallCommand)
 from nox.logger import logger
@@ -61,10 +63,11 @@ class _SessionSkip(Exception):
     pass
 
 
-class SessionStatus(object):
-    FAIL = False
-    SUCCESS = True
-    SKIP = 2
+class Status(enum.Enum):
+    ABORTED = -1
+    FAILED = 0
+    SUCCESS = 1
+    SKIPPED = 2
 
 
 class SessionConfig(object):
@@ -213,6 +216,9 @@ class Session(object):
         self.manifest = manifest
         self._should_install_deps = True
 
+    def __str__(self):
+        return utils.coerce_str(self.signature or self.name)
+
     def _create_config(self):
         self.config = SessionConfig(posargs=self.global_config.posargs)
 
@@ -223,13 +229,7 @@ class Session(object):
 
         # Run the actual session function, passing it the newly-created
         # SessionConfig object.
-        try:
-            self.func(self.config)
-            return SessionStatus.SUCCESS
-        except _SessionQuit:
-            return SessionStatus.FAIL
-        except _SessionSkip:
-            return SessionStatus.SKIP
+        self.func(self.config)
 
     def _create_venv(self):
         if not self.config.virtualenv:
@@ -271,33 +271,88 @@ class Session(object):
         logger.warning('Running session {}'.format(session_friendly_name))
 
         try:
-            status = self._create_config()
-
-            if status == SessionStatus.FAIL:
-                logger.error('Session {} aborted.'.format(
-                    session_friendly_name))
-                return status
-            elif status == SessionStatus.SKIP:
-                logger.warning('Session {} skipped.'.format(
-                    session_friendly_name))
-                return status
-
+            # Set up the SessionConfig object (which session functions refer
+            # to as `session`) and then the virtualenv.
+            self._create_config()
             self._create_venv()
 
+            # Run the actual commands prescribed by the session.
             cwd = py.path.local(os.getcwd()).as_cwd()
             with cwd:
                 self._run_commands()
 
-            logger.success('Session {} successful. :)'.format(
-                session_friendly_name))
-            return SessionStatus.SUCCESS
+            # Nothing went wrong; return a success.
+            return Result(self, Status.SUCCESS)
+
+        except _SessionQuit:
+            return Result(self, Status.ABORTED)
+
+        except _SessionSkip:
+            return Result(self, Status.SKIPPED)
 
         except CommandFailed:
-            logger.error('Session {} failed. :('.format(
-                session_friendly_name))
-            return SessionStatus.FAIL
+            return Result(self, Status.FAILED)
 
         except KeyboardInterrupt:
-            logger.error('Session {} interrupted.'.format(
-                session_friendly_name))
+            logger.error('Session {} interrupted.'.format(self))
             raise
+
+
+class Result(object):
+    """An object representing the result of a session."""
+
+    def __init__(self, session, status):
+        """Initialize the Result object.
+
+        Args:
+            session (~nox.sessions.Session): The session which ran.
+            status (~nox.sessions.Status): The final result status.
+        """
+        self.session = session
+        self.status = status
+
+    def __bool__(self):
+        return self.status.value > 0
+
+    def __nonzero__(self):
+        return self.__bool__()
+
+    @property
+    def imperfect(self):
+        """Return the English imperfect tense for the status.
+
+        Returns:
+            str: A word or phrase representing the status.
+        """
+        if self.status == Status.SUCCESS:
+            return 'was successful'
+        return self.status.name.lower()
+
+    def log(self, message):
+        """Log a message using the appropriate log function.
+
+        Args:
+            message (str): The message to be logged.
+        """
+        log_function = logger.info
+        if self.status == Status.SUCCESS:
+            log_function = logger.success
+        if self.status == Status.SKIPPED:
+            log_function = logger.warning
+        if self.status.value <= 0:
+            log_function = logger.error
+        log_function(message)
+
+    def serialize(self):
+        """Return a serialized representation of this result.
+
+        Returns:
+            dict: The serialized result.
+        """
+        return {
+            'args': getattr(self.session.func, 'call_spec', {}),
+            'name': self.session.name,
+            'result': self.status.name.lower(),
+            'result_code': self.status.value,
+            'signature': self.session.signature,
+        }

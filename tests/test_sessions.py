@@ -21,6 +21,8 @@ import pytest
 import nox.command
 import nox.sessions
 import nox.virtualenv
+from nox._testing import Namespace
+from nox.logger import logger
 
 
 def test__normalize_path():
@@ -409,8 +411,9 @@ def test_execute_session_quit(make_one):
         session.error('meep')
 
     session = make_one('test', 'sig', bad_config, MockConfig(posargs=[]))
-
-    assert not session.execute()
+    result = session.execute()
+    assert result.status == nox.sessions.Status.ABORTED
+    assert not result
 
 
 def test_execute_session_skip(make_one):
@@ -419,4 +422,69 @@ def test_execute_session_skip(make_one):
 
     session = make_one('test', 'sig', skip_config, MockConfig(posargs=[]))
 
-    assert session.execute() == nox.sessions.SessionStatus.SKIP
+    assert session.execute().status == nox.sessions.Status.SKIPPED
+
+
+def test_result_init():
+    result = nox.sessions.Result(
+        session=mock.sentinel.SESSION,
+        status=mock.sentinel.STATUS,
+    )
+    assert result.session == mock.sentinel.SESSION
+    assert result.status == mock.sentinel.STATUS
+
+
+def test_result_bool_true():
+    for status in (nox.sessions.Status.SUCCESS, nox.sessions.Status.SKIPPED):
+        result = nox.sessions.Result(session=object(), status=status)
+        assert bool(result)
+        assert result.__bool__()
+        assert result.__nonzero__()
+
+
+def test_result_bool_false():
+    for status in (nox.sessions.Status.FAILED, nox.sessions.Status.ABORTED):
+        result = nox.sessions.Result(session=object(), status=status)
+        assert not bool(result)
+        assert not result.__bool__()
+        assert not result.__nonzero__()
+
+
+def test_result_imperfect():
+    result = nox.sessions.Result(object(), nox.sessions.Status.SUCCESS)
+    assert result.imperfect == 'was successful'
+    result = nox.sessions.Result(object(), nox.sessions.Status.FAILED)
+    assert result.imperfect == 'failed'
+
+
+def test_result_log_success():
+    result = nox.sessions.Result(object(), nox.sessions.Status.SUCCESS)
+    with mock.patch.object(logger, 'success') as success:
+        result.log('foo')
+        success.assert_called_once_with('foo')
+
+
+def test_result_log_warning():
+    result = nox.sessions.Result(object(), nox.sessions.Status.SKIPPED)
+    with mock.patch.object(logger, 'warning') as warning:
+        result.log('foo')
+        warning.assert_called_once_with('foo')
+
+
+def test_result_log_error():
+    result = nox.sessions.Result(object(), nox.sessions.Status.FAILED)
+    with mock.patch.object(logger, 'error') as error:
+        result.log('foo')
+        error.assert_called_once_with('foo')
+
+
+def test_result_serialize():
+    result = nox.sessions.Result(
+        session=Namespace(signature='siggy', name='namey', func=mock.Mock()),
+        status=nox.sessions.Status.SUCCESS,
+    )
+    answer = result.serialize()
+    assert answer['name'] == 'namey'
+    assert answer['result'] == 'success'
+    assert answer['result_code'] == 1
+    assert answer['signature'] == 'siggy'

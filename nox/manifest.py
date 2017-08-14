@@ -13,11 +13,9 @@
 # limitations under the License.
 
 from __future__ import absolute_import
-import copy
 import itertools
 
 from nox._parametrize import generate_calls
-from nox.logger import logger
 from nox.sessions import Session
 
 
@@ -38,24 +36,31 @@ class Manifest(object):
     """
     def __init__(self, session_functions, global_config):
         self._all_sessions = []
+        self._queue = []
+        self._consumed = []
         self._config = global_config
 
         # Create the sessions based on the provided session functions.
         for name, func in session_functions.items():
-            self.make_session(name, func)
+            for session in self.make_session(name, func):
+                self.add_session(session)
 
-        # By default, every available session starts off in the queue.
-        self._queue = copy.copy(self._all_sessions)
-        self._consumed = []
-
-        # If the configuration specified filters, apply those now.
-        if self._config.sessions:
-            self.filter_by_name(self._config.sessions)
-        if self._config.keywords:
-            self.filter_by_keywords(self._config.keywords)
+    def __contains__(self, needle):
+        if needle in self._queue or needle in self._consumed:
+            return True
+        for session in self._queue + self._consumed:
+            if session.name == needle or session.signature == needle:
+                return True
+        return False
 
     def __iter__(self):
         return self
+
+    def __getitem__(self, key):
+        for session in self._queue + self._consumed:
+            if session.name == key or session.signature == key:
+                return session
+        raise KeyError(key)
 
     def __next__(self):
         """Return the next item in the queue.
@@ -69,8 +74,20 @@ class Manifest(object):
         self._consumed.append(session)
         return session
 
-    def __nonzero__(self):
-        return bool(self._queue) or bool(self._consumed)
+    def __len__(self):
+        return len(self._queue) + len(self._consumed)
+
+    def add_session(self, session):
+        """Add the given session to the manifest.
+
+        Args:
+            session (~nox.sessions.Session): A session object, such as
+                one returned from ``make_session``.
+        """
+        if session not in self._all_sessions:
+            self._all_sessions.append(session)
+        if session not in self._queue:
+            self._queue.append(session)
 
     def filter_by_name(self, specified_sessions):
         """Filter sessions in the queue based on the user-specified names.
@@ -78,6 +95,9 @@ class Manifest(object):
         Args:
             specified_sessions (Sequence[str]): A list of specified
                 session names.
+
+        Raises:
+            KeyError: If any explicitly listed sessions are not found.
         """
         # Filter the sessions remaining in the queue based on
         # whether they are individually specified.
@@ -91,15 +111,15 @@ class Manifest(object):
                 [x.name for x in self._all_sessions if x.name],
                 [x.signature for x in self._all_sessions if x.signature]))
         if missing_sessions:
-            logger.error('Sessions {} not found.'.format(', '.join(
-                missing_sessions)))
-            return False
+            raise KeyError(
+                'Sessions not found: {}'.format(', '.join(missing_sessions)),
+            )
 
     def filter_by_keywords(self, keywords):
         """Filter sessions using pytest-like keyword expressions.
 
         Args:
-            keywords (Collection[str]): A collection of keywords which
+            keywords (str): A Python expression of keywords which
                 session names are checked against.
         """
         self._queue = [
@@ -114,24 +134,32 @@ class Manifest(object):
             func (function): The session function.
 
         Returns:
-            nox.sessions.Session: A session object. The object is also
-                automatically added to the manifest.
+            Sequence[~nox.session.Session]: A sequence of Session objects
+                bound to this manifest and configuration.
         """
+        # Simple case: If this function is not parametrized, then make
+        # a simple session
         if not hasattr(func, 'parametrize'):
             session = Session(name, None, func, self._config, self)
-            self._all_sessions.append(session)
-        else:
-            calls = generate_calls(func, func.parametrize)
-            for call in calls:
-                long_name = name + call.session_signature
-                session = Session(name, long_name, call, self._config, self)
-                self._all_sessions.append(session)
-            if not calls:
-                # Add an empty, do-nothing session.
-                session = Session(
-                    name, None, _null_session_func, self._config, self)
-                self._all_sessions.append(session)
-        return session
+            return (session,)
+
+        # Since this function is parametrized, we need to add a distinct
+        # session for each permutation.
+        sessions = []
+        calls = generate_calls(func, func.parametrize)
+        for call in calls:
+            long_name = name + call.session_signature
+            sessions.append(Session(name, long_name, call, self._config, self))
+
+        # Edge case: If the parameters made it such that there were no valid
+        # calls, add an empty, do-nothing session.
+        if not calls:
+            sessions.append(
+                Session(name, None, _null_session_func, self._config, self),
+            )
+
+        # Return the list of sessions.
+        return sessions
 
     def next(self):
         return self.__next__()
@@ -162,6 +190,5 @@ def keyword_match(expression, keywords):
 
 
 def _null_session_func(session):
-    """A do-nothing session for patemetrized sessions that have no available
-    parameters."""
+    """A no-op session for patemetrized sessions with no available params."""
     session.skip('This session had no parameters available.')
