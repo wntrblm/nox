@@ -9,7 +9,11 @@ matrix:
     env: NOX_SESSION="interpreters(version='3.4')"
   - python: '3.5'
     env: NOX_SESSION="interpreters(version='3.5')"
-install: pip install codecov .
+  - python: '3.6'
+    env: NOX_SESSION="interpreters(version='3.6')"
+install:
+  - pip install --upgrade setuptools
+  - pip install codecov .
 script: nox --session "$NOX_SESSION"
 after_success: codecov
 deploy:
