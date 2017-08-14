@@ -72,7 +72,7 @@ setup(
         'virtualenv>=14.0.0'],
 
     extras_require={
-        ':python_version<"3.4"': ['enum34'],
+        ":python_version<'3.4'": ['enum34'],
         'tox_to_nox': ['jinja2', 'tox']
     },
 
