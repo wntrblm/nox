@@ -23,6 +23,12 @@ def coerce_str(maybe_str):
 
     This is what is expected for environment variables, where sending a
     unicode on Python 2 or a bytes on Python 3 will raise an exception.
+
+    Args:
+        maybe_str (Union[str,bytes,unicode]): A text or byte string.
+
+    Returns:
+        str: A str literal.
     """
     # If we already have a string, we are done.
     if isinstance(maybe_str, str):
