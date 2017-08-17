@@ -20,10 +20,10 @@ import mock
 import pkg_resources
 
 import nox
+from nox._testing import Namespace
 import nox.main
 import nox.registry
 import nox.sessions
-from nox._testing import Namespace
 
 
 VERSION = pkg_resources.get_distribution('nox-automation').version

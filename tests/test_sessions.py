@@ -18,11 +18,11 @@ import mock
 
 import pytest
 
+from nox._testing import Namespace
 import nox.command
+from nox.logger import logger
 import nox.sessions
 import nox.virtualenv
-from nox._testing import Namespace
-from nox.logger import logger
 
 
 def test__normalize_path():
