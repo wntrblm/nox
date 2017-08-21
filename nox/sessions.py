@@ -201,7 +201,7 @@ class SessionConfig(object):
         have no effect.
 
         Args:
-            target (Union[str|Callable]): The session to be notified. This
+            target (Union[str, Callable]): The session to be notified. This
                 may be specified as the appropropriate string or using
                 the function object.
         """
