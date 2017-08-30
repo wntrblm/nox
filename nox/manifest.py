@@ -164,6 +164,37 @@ class Manifest(object):
     def next(self):
         return self.__next__()
 
+    def notify(self, session):
+        """Enqueue the specified session in the queue.
+
+        If the session is already in the queue, or has been run already,
+        then this is a no-op.
+
+        Args:
+            session (Union[str, ~nox.session.Session]): The session to be
+                enqueued.
+
+        Returns:
+            bool: Whether the session was added to the queue.
+
+        Raises:
+            ValueError: If the session was not found.
+        """
+        # Sanity check: If this session is already in the queue, this is
+        # a no-op.
+        if session in self:
+            return False
+
+        # Locate the session in the list of all sessions, and place it at
+        # the end of the queue.
+        for s in self._all_sessions:
+            if s == session or s.name == session or s.signature == session:
+                self._queue.append(s)
+                return True
+
+        # The session was not found in the list of sessions.
+        raise ValueError('Session %s not found.' % session)
+
 
 class KeywordLocals(object):
     """Eval locals using keywords.

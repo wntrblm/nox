@@ -176,6 +176,52 @@ def test_add_session_parametrized_noop():
     assert len(manifest) == 1
 
 
+def test_notify():
+    manifest = Manifest({}, mock.sentinel.CONFIG)
+
+    # Define a session.
+    def my_session(session):
+        pass
+    def notified(session):
+        pass
+
+    # Add the sessions to the manifest.
+    for session in manifest.make_session('my_session', my_session):
+        manifest.add_session(session)
+    for session in manifest.make_session('notified', notified):
+        manifest.add_session(session)
+    assert len(manifest) == 2
+
+    # Filter so only the first session is included in the queue.
+    manifest.filter_by_name(('my_session',))
+    assert len(manifest) == 1
+
+    # Notify the notified session.
+    manifest.notify('notified')
+    assert len(manifest) == 2
+
+
+def test_notify_noop():
+    manifest = Manifest({}, mock.sentinel.CONFIG)
+
+    # Define a session and add it to the manifest.
+    def my_session(session):
+        pass
+    for session in manifest.make_session('my_session', my_session):
+        manifest.add_session(session)
+    assert len(manifest) == 1
+
+    # Establish idempotency; notifying a session already in the queue no-ops.
+    manifest.notify('my_session')
+    assert len(manifest) == 1
+
+
+def test_notify_error():
+    manifest = Manifest({}, mock.sentinel.CONFIG)
+    with pytest.raises(ValueError):
+        manifest.notify('does_not_exist')
+
+
 def test_add_session_idempotent():
     manifest = Manifest({}, mock.sentinel.CONFIG)
     for session in manifest.make_session('my_session', lambda session: None):

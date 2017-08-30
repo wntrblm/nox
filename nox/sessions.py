@@ -22,8 +22,12 @@ import py
 import six
 
 from nox import utils
-from nox.command import (
-    ChdirCommand, Command, CommandFailed, FunctionCommand, InstallCommand)
+from nox.command import ChdirCommand
+from nox.command import Command
+from nox.command import CommandFailed
+from nox.command import FunctionCommand
+from nox.command import InstallCommand
+from nox.command import NotifyCommand
 from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
 
@@ -190,6 +194,19 @@ class SessionConfig(object):
             raise ValueError('At least one argument required to install().')
         self._commands.append(InstallCommand(args))
 
+    def notify(self, target):
+        """Place the given session at the end of the queue.
+
+        This method is idempotent; multiple notifications to the same session
+        have no effect.
+
+        Args:
+            target (Union[str, Callable]): The session to be notified. This
+                may be specified as the appropropriate string or using
+                the function object.
+        """
+        self._commands.append(NotifyCommand(target))
+
     def log(self, *args, **kwargs):
         """Outputs a log during the session."""
         logger.info(*args, **kwargs)
@@ -255,7 +272,10 @@ class Session(object):
         for command in self.config._commands:
             if isinstance(command, Command):
                 command(
-                    path_override=self.venv.bin, env_fallback=env)
+                    env_fallback=env,
+                    path_override=self.venv.bin,
+                    session=self,
+                )
             elif isinstance(command, InstallCommand):
                 if not self._should_install_deps:
                     logger.debug(

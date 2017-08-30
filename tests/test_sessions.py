@@ -85,6 +85,13 @@ def test_config_chdir(make_one_config):
     assert str(command) == 'chdir meep'
 
 
+def test_config_notify(make_one_config):
+    config = make_one_config()
+    config.notify('foo')
+    command = config._commands[0]
+    assert isinstance(command, nox.command.NotifyCommand)
+
+
 def test_config_run(make_one_config):
     def test_func():
         pass

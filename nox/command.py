@@ -60,7 +60,7 @@ class Command(object):
         self.path = path
         self.success_codes = success_codes or [0]
 
-    def run(self, path_override=None, env_fallback=None):
+    def run(self, path_override=None, env_fallback=None, **kwargs):
         path = self.path if path_override is None else path_override
 
         env = env_fallback.copy() if env_fallback is not None else None
@@ -169,3 +169,15 @@ class InstallCommand(object):
 
     def __str__(self):
         return ' '.join(self.deps)
+
+
+class NotifyCommand(Command):
+    """Notify the given session and add it to the queue."""
+
+    def __init__(self, target, debug=False):
+        self.target = target
+        self.debug = debug
+
+    def __call__(self, session, **kwargs):
+        logger.info('Notifying session: %s' % self.target)
+        session.manifest.notify(self.target)

@@ -256,3 +256,10 @@ def test_function_command_debug(make_one_func):
 
     assert command.run()
     mock_func.assert_called_with(1, two=3)
+
+
+def test_notify_command():
+    command = nox.command.NotifyCommand('foo')
+    m = mock.Mock()
+    command(m)
+    m.manifest.notify.assert_called_once_with('foo')

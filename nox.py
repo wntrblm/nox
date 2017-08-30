@@ -22,7 +22,8 @@ def default(session):
     tests = session.posargs or ['tests/']
     session.run(
         'py.test', '--cov=nox', '--cov-config', '.coveragerc',
-        '--cov-report', 'term-missing', *tests)
+        '--cov-report=', *tests)
+    session.notify('cover')
 
 
 @nox.session
@@ -30,6 +31,13 @@ def default(session):
 def interpreters(session, version):
     default(session)
     session.interpreter = 'python' + version
+
+
+@nox.session
+def cover(session):
+    session.install('coverage')
+    session.run('coverage', 'report', '--fail-under=100', '--show-missing')
+    session.run('coverage', 'erase')
 
 
 @nox.session
