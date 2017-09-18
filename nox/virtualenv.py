@@ -16,6 +16,7 @@ import os
 import platform
 import re
 import shutil
+import sys
 
 import py
 
@@ -123,7 +124,7 @@ class VirtualEnv(ProcessEnv):
                 'Re-using existing virtualenv at {}.'.format(self.location))
             return False
 
-        cmd = ['virtualenv', self.location]
+        cmd = [sys.executable, '-m', 'virtualenv', self.location]
 
         if self.interpreter:
             cmd.extend(['-p', self._resolved_interpreter])
