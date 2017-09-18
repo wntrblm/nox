@@ -69,6 +69,12 @@ def test_env(monkeypatch, make_one):
     assert venv.bin not in os.environ['PATH']
 
 
+def test_blacklisted_env(monkeypatch, make_one):
+    monkeypatch.setenv('__PYVENV_LAUNCHER__', 'meep')
+    venv, _ = make_one()
+    assert '__PYVENV_LAUNCHER__' not in venv.bin
+
+
 def test__clean_location(monkeypatch, make_one):
     venv, dir = make_one()
 

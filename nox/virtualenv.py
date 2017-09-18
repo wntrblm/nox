@@ -23,6 +23,14 @@ import py
 from nox.command import Command
 from nox.logger import logger
 
+# Problematic environment variables that are stripped from all commands inside
+# of a virtualenv. See https://github.com/jonparrott/nox/issues/44
+_BLACKLISTED_ENV_VARS = frozenset([
+    'PIP_RESPECT_VIRTUALENV',
+    'PIP_REQUIRE_VIRTUALENV',
+    '__PYVENV_LAUNCHER__',
+])
+
 
 class ProcessEnv(object):
     """A environment with a 'bin' directory and a set of 'env' vars."""
@@ -33,6 +41,9 @@ class ProcessEnv(object):
 
         if env is not None:
             self.env.update(env)
+
+        for key in _BLACKLISTED_ENV_VARS:
+            self.env.pop(key, None)
 
         if self.bin:
             self.env['PATH'] = ':'.join([self.bin, self.env.get('PATH')])
