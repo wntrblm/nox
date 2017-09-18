@@ -112,7 +112,8 @@ class Command(object):
             logger.error('Interrupted...')
             raise
 
-    __call__ = run
+    def __call__(self, *args, **kwargs):
+        return self.run(*args, **kwargs)
 
 
 class FunctionCommand(object):
@@ -141,7 +142,8 @@ class FunctionCommand(object):
 
             raise CommandFailed(e)
 
-    __call__ = run
+    def __call__(self, *args, **kwargs):
+        return self.run(*args, **kwargs)
 
     def __str__(self):
         return '{}(args={!r}, kwargs={!r})'.format(
@@ -165,7 +167,8 @@ class InstallCommand(object):
     def run(self, venv):
         venv.install(*self.deps)
 
-    __call__ = run
+    def __call__(self, *args, **kwargs):
+        return self.run(*args, **kwargs)
 
     def __str__(self):
         return ' '.join(self.deps)
