@@ -182,6 +182,7 @@ def test_notify():
     # Define a session.
     def my_session(session):
         pass
+
     def notified(session):
         pass
 
