@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import distutils.spawn
 import os
 import platform
 import re
 import shutil
+import subprocess
 import sys
 
 import py
@@ -62,6 +64,23 @@ class ProcessEnv(object):
             path=self.bin if in_venv else None).run()
 
 
+def locate_via_py(v_maj, v_min):
+    """Find the Python executable using the Windows launcher.
+
+    Code taken from tox (tox/interpreters.py).
+    """
+    ver = "-%s.%s" % (v_maj, v_min)
+    script = "import sys; print(sys.executable)"
+    py_exe = distutils.spawn.find_executable('py')
+    if py_exe:
+        proc = subprocess.Popen(
+            (py_exe, ver, '-c', script), stdout=subprocess.PIPE,
+        )
+        out, _ = proc.communicate()
+        if not proc.returncode:
+            return out.decode('UTF-8').strip()
+
+
 class VirtualEnv(ProcessEnv):
     """Virtualenv management class."""
 
@@ -102,10 +121,12 @@ class VirtualEnv(ProcessEnv):
             return self.interpreter
 
         # If this is a standard Unix "pythonX.Y" name, it should be found
-        # in a standard location in Windows.
+        # in a standard location in Windows, and if not, the py.exe launcher
+        # should be able to find it from the information in the registry.
         match = re.match(r'^python(?P<maj>\d)\.(?P<min>\d)$', self.interpreter)
         if match:
             version = match.groupdict()
+            # First try some standard locations.
             potential_paths = (
                 r'c:\python{maj}{min}\python.exe'.format(**version),
                 r'c:\python{maj}{min}-x64\python.exe'.format(**version),
@@ -113,6 +134,12 @@ class VirtualEnv(ProcessEnv):
             for path in potential_paths:
                 if py.path.local(path).check():
                     return str(path)
+            # If we're still struggling, ask the Python launcher.
+            # TODO: Should this go first? The code above prefers 32-bit
+            # versions, which may not be what the user wants...
+            path_from_launcher = locate_via_py(version['maj'], version['min'])
+            if path_from_launcher:
+                return path_from_launcher
 
         # If we got this far, then we were unable to resolve the interpreter
         # to an actual executable; raise an exception.
