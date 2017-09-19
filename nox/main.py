@@ -102,6 +102,8 @@ def main():
             tasks.honor_list_request,
             tasks.verify_manifest_nonempty,
             tasks.run_manifest,
+            tasks.print_summary,
+            tasks.create_report,
             tasks.final_reduce,
         ),
     )
