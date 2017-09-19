@@ -58,6 +58,14 @@ def test_run_defaults(make_one, capsys):
     assert result is True
 
 
+def test___call___calls_run(make_one, capsys):
+    command = make_one([PYTHON, '-c', 'print(123)'])
+
+    result = command()
+
+    assert result is True
+
+
 def test_run_silent(make_one, capsys):
     command = make_one([PYTHON, '-c', 'print(123)'], silent=True)
 

@@ -15,7 +15,7 @@
 import six
 
 
-def coerce_str(maybe_str):
+def coerce_str(maybe_str):  # pragma: no cover
     """Returns a str object, on both Python 2 and Python 3.
 
     This means that Python 2 gets a bytes, and Python 3 gets a Unicode
