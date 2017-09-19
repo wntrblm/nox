@@ -1,3 +1,8 @@
+## v0.18.1
+
+* Fix nox not returning a non-zero exit code on failure. (#55)
+* Restore result and report output. (#57)
+
 ## v0.18.0
 
 * Blacklist problematic virtualenv environment variables (#49)
