@@ -62,6 +62,24 @@ class ProcessEnv(object):
             path=self.bin if in_venv else None).run()
 
 
+def locate_via_py(version):
+    """Find the Python executable using the Windows launcher.
+
+    This is based on :pep:397 which details that executing
+    ``py.exe -{version}`` should execute python with the requested
+    version. We then make the python process print out its full
+    executable path which we use as the location for the version-
+    specific Python interpreter.
+    """
+    script = "import sys; print(sys.executable)"
+    py_exe = py.path.local.sysfind('py')
+    if py_exe:
+        try:
+            return py_exe.sysexec('-' + version, '-c', script).strip()
+        except py.process.cmdexec.Error:
+            return None
+
+
 class VirtualEnv(ProcessEnv):
     """Virtualenv management class."""
 
@@ -102,17 +120,15 @@ class VirtualEnv(ProcessEnv):
             return self.interpreter
 
         # If this is a standard Unix "pythonX.Y" name, it should be found
-        # in a standard location in Windows.
-        match = re.match(r'^python(?P<maj>\d)\.(?P<min>\d)$', self.interpreter)
+        # in a standard location in Windows, and if not, the py.exe launcher
+        # should be able to find it from the information in the registry.
+        match = re.match(r'^python(?P<ver>\d\.\d)$', self.interpreter)
         if match:
-            version = match.groupdict()
-            potential_paths = (
-                r'c:\python{maj}{min}\python.exe'.format(**version),
-                r'c:\python{maj}{min}-x64\python.exe'.format(**version),
-            )
-            for path in potential_paths:
-                if py.path.local(path).check():
-                    return str(path)
+            version = match.group('ver')
+            # Ask the Python launcher to find the interpreter.
+            path_from_launcher = locate_via_py(version)
+            if path_from_launcher:
+                return path_from_launcher
 
         # If we got this far, then we were unable to resolve the interpreter
         # to an actual executable; raise an exception.
