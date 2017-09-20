@@ -219,7 +219,7 @@ def test__resolved_interpreter_windows_full_path(make_one):
     with mock.patch.object(platform, 'system') as system:
         system.return_value = 'Windows'
         with mock.patch.object(py.path.local, 'sysfind') as sysfind:
-            sysfind.return_value = True
+            sysfind.return_value = py.path.local(venv.interpreter)
             assert venv._resolved_interpreter == r'c:\Python36\python.exe'
             system.assert_called_once_with()
             sysfind.assert_called_once_with(r'c:\Python36\python.exe')
@@ -286,7 +286,7 @@ def test__resolved_interpreter_not_found(sysfind, check, system, make_one):
 
     # We are on Windows, and nothing can be found.
     system.return_value = 'Windows'
-    sysfind.return_value = False
+    sysfind.return_value = None
     check.return_value = False
 
     # Run the test.
