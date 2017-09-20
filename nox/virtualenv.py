@@ -70,10 +70,17 @@ def locate_via_py(version):
     version. We then make the python process print out its full
     executable path which we use as the location for the version-
     specific Python interpreter.
+
+    Args:
+        version (str): The desired Python version.
+
+    Returns:
+        Optional[str]: The full executable path for the Python ``version``,
+        if it is found.
     """
-    script = "import sys; print(sys.executable)"
+    script = 'import sys; print(sys.executable)'
     py_exe = py.path.local.sysfind('py')
-    if py_exe:
+    if py_exe is not None:
         try:
             return py_exe.sysexec('-' + version, '-c', script).strip()
         except py.process.cmdexec.Error:
