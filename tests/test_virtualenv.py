@@ -226,11 +226,15 @@ def test__resolved_interpreter_windows_full_path(make_one):
 
 
 @mock.patch.object(platform, 'system')
-@mock.patch.object(py._path.local.LocalPath, 'check')
+@mock.patch.object(nox.virtualenv, 'locate_via_py')
 @mock.patch.object(py.path.local, 'sysfind')
-def test__resolved_interpreter_windows_stloc(sysfind, check, system, make_one):
-    # Establish that if we get a standard pythonX.Y path, we map it to
-    # standard locations on Windows.
+def test__resolved_interpreter_windows_pyexe(sysfind, locate_via_py, system, make_one):
+    # Establish that if we get a standard pythonX.Y path, we look it
+    # up via the py launcher on Windows.
+
+    # TODO: With a bit more work, we could probably mock the internals
+    #       of locate_via_py rather than just patching it out with a
+    #       fixed return value. But it's not clear if this is worth it.
     venv, _ = make_one(interpreter='python3.6')
 
     # Trick the system into thinking we are on Windows.
@@ -240,13 +244,13 @@ def test__resolved_interpreter_windows_stloc(sysfind, check, system, make_one):
     # (it likely will on Unix).
     sysfind.return_value = False
 
-    # Trick the system into thinking it _can_ find it in the Windows
-    # standard location.
-    check.return_value = True
+    # Trick the launcher check into thinking it _can_ find it in the
+    # expected location.
+    locate_via_py.return_value = r'c:\python36\python.exe'
 
     # Okay now run the test.
     assert venv._resolved_interpreter == r'c:\python36\python.exe'
-    check.assert_called_once_with()
+    locate_via_py.assert_called_once_with('3.6')
     sysfind.assert_called_once_with('python3.6')
     system.assert_called()
 

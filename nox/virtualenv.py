@@ -64,21 +64,18 @@ class ProcessEnv(object):
             path=self.bin if in_venv else None).run()
 
 
-def locate_via_py(v_maj, v_min):
+def locate_via_py(version):
     """Find the Python executable using the Windows launcher.
 
     Code taken from tox (tox/interpreters.py).
     """
-    ver = "-%s.%s" % (v_maj, v_min)
     script = "import sys; print(sys.executable)"
-    py_exe = distutils.spawn.find_executable('py')
+    py_exe = py.path.local.sysfind('py')
     if py_exe:
-        proc = subprocess.Popen(
-            (py_exe, ver, '-c', script), stdout=subprocess.PIPE,
-        )
-        out, _ = proc.communicate()
-        if not proc.returncode:
-            return out.decode('UTF-8').strip()
+        try:
+            return py_exe.sysexec('-' + version, '-c', script).strip()
+        except py.process.cmdexec.Error:
+            return None
 
 
 class VirtualEnv(ProcessEnv):
@@ -123,21 +120,11 @@ class VirtualEnv(ProcessEnv):
         # If this is a standard Unix "pythonX.Y" name, it should be found
         # in a standard location in Windows, and if not, the py.exe launcher
         # should be able to find it from the information in the registry.
-        match = re.match(r'^python(?P<maj>\d)\.(?P<min>\d)$', self.interpreter)
+        match = re.match(r'^python(?P<ver>\d\.\d)$', self.interpreter)
         if match:
-            version = match.groupdict()
-            # First try some standard locations.
-            potential_paths = (
-                r'c:\python{maj}{min}\python.exe'.format(**version),
-                r'c:\python{maj}{min}-x64\python.exe'.format(**version),
-            )
-            for path in potential_paths:
-                if py.path.local(path).check():
-                    return str(path)
-            # If we're still struggling, ask the Python launcher.
-            # TODO: Should this go first? The code above prefers 32-bit
-            # versions, which may not be what the user wants...
-            path_from_launcher = locate_via_py(version['maj'], version['min'])
+            version = match.group('ver')
+            # Ask the Python launcher to find the interpreter.
+            path_from_launcher = locate_via_py(version)
             if path_from_launcher:
                 return path_from_launcher
 
