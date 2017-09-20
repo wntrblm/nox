@@ -226,32 +226,53 @@ def test__resolved_interpreter_windows_full_path(make_one):
 
 
 @mock.patch.object(platform, 'system')
-@mock.patch.object(nox.virtualenv, 'locate_via_py')
 @mock.patch.object(py.path.local, 'sysfind')
-def test__resolved_interpreter_windows_pyexe(sysfind, locate_via_py, system, make_one):
+def test__resolved_interpreter_windows_pyexe(sysfind, system, make_one):
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the py launcher on Windows.
-
-    # TODO: With a bit more work, we could probably mock the internals
-    #       of locate_via_py rather than just patching it out with a
-    #       fixed return value. But it's not clear if this is worth it.
     venv, _ = make_one(interpreter='python3.6')
 
     # Trick the system into thinking we are on Windows.
     system.return_value = 'Windows'
 
     # Trick the system into thinking that it cannot find python3.6
-    # (it likely will on Unix).
-    sysfind.return_value = False
-
-    # Trick the launcher check into thinking it _can_ find it in the
-    # expected location.
-    locate_via_py.return_value = r'c:\python36\python.exe'
+    # (it likely will on Unix). Also, when the system looks for the
+    # py launcher, give it a dummy that returns our test value when
+    # run.
+    attrs = {'sysexec.return_value': r'c:\python36\python.exe'}
+    mock_py = mock.Mock()
+    mock_py.configure_mock(**attrs)
+    sysfind.side_effect = lambda arg: mock_py if arg == 'py' else False
 
     # Okay now run the test.
     assert venv._resolved_interpreter == r'c:\python36\python.exe'
-    locate_via_py.assert_called_once_with('3.6')
-    sysfind.assert_called_once_with('python3.6')
+    sysfind.assert_any_call('python3.6')
+    sysfind.assert_any_call('py')
+    system.assert_called()
+
+
+@mock.patch.object(platform, 'system')
+@mock.patch.object(py.path.local, 'sysfind')
+def test__resolved_interpreter_windows_pyexe_fails(sysfind, system, make_one):
+    # Establish that if the py launcher fails, we give the right error.
+    venv, _ = make_one(interpreter='python3.6')
+
+    # Trick the system into thinking we are on Windows.
+    system.return_value = 'Windows'
+
+    # Trick the system into thinking that it cannot find python3.6
+    # (it likely will on Unix). Also, when the system looks for the
+    # py launcher, give it a dummy that fails.
+    attrs = {'sysexec.side_effect': py.process.cmdexec.Error(1, 1, '', '', '')}
+    mock_py = mock.Mock()
+    mock_py.configure_mock(**attrs)
+    sysfind.side_effect = lambda arg: mock_py if arg == 'py' else False
+
+    # Okay now run the test.
+    with pytest.raises(RuntimeError):
+        venv._resolved_interpreter
+    sysfind.assert_any_call('python3.6')
+    sysfind.assert_any_call('py')
     system.assert_called()
 
 
