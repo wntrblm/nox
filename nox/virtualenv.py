@@ -64,7 +64,7 @@ class ProcessEnv(object):
 
 def locate_via_py(version):
     """Find the Python executable using the Windows launcher.
-    
+
     This is based on :pep:397 which details that executing
     ``py.exe -{version}`` should execute python with the requested
     version. We then make the python process print out its full
