@@ -64,8 +64,12 @@ class ProcessEnv(object):
 
 def locate_via_py(version):
     """Find the Python executable using the Windows launcher.
-
-    Code taken from tox (tox/interpreters.py).
+    
+    This is based on :pep:397 which details that executing
+    ``py.exe -{version}`` should execute python with the requested
+    version. We then make the python process print out its full
+    executable path which we use as the location for the version-
+    specific Python interpreter.
     """
     script = "import sys; print(sys.executable)"
     py_exe = py.path.local.sysfind('py')
