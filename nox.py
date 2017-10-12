@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import nox
+
+
+ON_APPVEYOR = os.environ.get('APPVEYOR') == 'True'
 
 
 @nox.session
@@ -36,7 +41,16 @@ def interpreters(session, version):
 @nox.session
 def cover(session):
     session.install('coverage')
-    session.run('coverage', 'report', '--fail-under=100', '--show-missing')
+    if ON_APPVEYOR:
+        fail_under = '--fail-under=99'
+    else:
+        fail_under = '--fail-under=100'
+    session.run(
+        'coverage',
+        'report',
+        fail_under,
+        '--show-missing',
+    )
     session.run('coverage', 'erase')
 
 
