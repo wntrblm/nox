@@ -1,5 +1,8 @@
 version: 1.0.{build}.{branch}
 
+matrix:
+  fast_finish: true
+
 environment:
   matrix:
 
