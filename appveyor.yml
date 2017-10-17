@@ -36,6 +36,7 @@ install:
 
   # Check that we have the expected version and architecture for Python
   - "python --version"
+  - "py -3.6 --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
