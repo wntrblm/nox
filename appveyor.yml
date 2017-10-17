@@ -28,6 +28,12 @@ environment:
     - PYTHON: "C:\\Python35-x64"
       NOX_SESSION: "interpreters(version='3.5')"
 
+    - PYTHON: "C:\\Python36"
+      NOX_SESSION: "interpreters(version='3.6')"
+
+    - PYTHON: "C:\\Python36-x64"
+      NOX_SESSION: "interpreters(version='3.6')"
+
 install:
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
