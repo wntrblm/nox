@@ -1,7 +1,7 @@
 Nox - Flexible test automation for Python
 =========================================
 
-|Build Status| |Coverage Status| |PyPI Version| |Docs|
+|Travis Build| |AppVeyor Build| |Coverage Status| |PyPI Version| |Docs|
 
 ``nox`` is a command-line tool that automates testing in multiple Python
 environments, similar to `tox`_. Unlike tox, Nox uses a standard Python
@@ -11,9 +11,12 @@ The latest documentation is available on `Read the Docs`_.
 
 The source code is available on `GitHub`_.
 
-
-.. |Build Status| image:: https://travis-ci.org/jonparrott/nox.svg
+.. |Travis Build| image:: https://img.shields.io/travis/jonparrott/nox/master.svg?maxAge=3600&label=Linux
    :target: https://travis-ci.org/jonparrott/nox
+   :alt: Travis Build
+.. |AppVeyor Build| image:: https://img.shields.io/appveyor/ci/jonparrott/nox/master.svg?maxAge=3600&label=Windows
+   :target: https://ci.appveyor.com/project/jonparrott/nox
+   :alt: AppVeyor CI Build
 .. |Coverage Status| image:: https://codecov.io/github/jonparrott/nox/coverage.svg?branch=master
    :target: https://codecov.io/github/jonparrott/nox?branch=master
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/nox-automation.svg
