@@ -65,6 +65,10 @@ build_script:
 
 test_script:
   - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore
+  - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore\3.5
+  - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore\3.5-32
+  - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore\3.6
+  - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore\3.6-32
   - reg.exe query HKEY_LOCAL_MACHINE\Software\Python\PythonCore
   - reg.exe query HKEY_LOCAL_MACHINE\Software\Wow6432Node\Python\PythonCore
   - py.exe -2.6 -c "import sys; print(sys.version)"
@@ -73,10 +77,11 @@ test_script:
   - py.exe -2.7-32 -c "import sys; print(sys.version)"
   - py.exe -3.4 -c "import sys; print(sys.version)"
   - py.exe -3.4-32 -c "import sys; print(sys.version)"
-  - py.exe -3.5 -c "import sys; print(sys.version)"
-  - py.exe -3.5-32 -c "import sys; print(sys.version)"
-  - py.exe -3.6 -c "import sys; print(sys.version)"
-  - py.exe -3.6-32 -c "import sys; print(sys.version)"
+  # http://help.appveyor.com/discussions/questions/752-how-to-ignore-exit-codes-of-a-cmd
+  - py.exe -3.5 -c "import sys; print(sys.version)" && exit 0
+  - py.exe -3.5-32 -c "import sys; print(sys.version)" && exit 0
+  - py.exe -3.6 -c "import sys; print(sys.version)" && exit 0
+  - py.exe -3.6-32 -c "import sys; print(sys.version)" && exit 0
   # Run the project tests
   - "nox.exe --session default"
   - "nox.exe --session \"%NOX_SESSION%\""
