@@ -6,54 +6,29 @@ matrix:
 environment:
   matrix:
 
-    # Pre-installed Python versions, which Appveyor may upgrade to
+    # Pre-installed Python versions, which AppVeyor may upgrade to
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
-    # Python 2.7.11 is the latest Python 2.7 with a Windows installer
-    # Python 2.7.11 is the overall latest
-    # https://www.python.org/ftp/python/2.7.11/
     - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.11"
-      PYTHON_ARCH: "32"
       NOX_SESSION: "interpreters(version='2.7')"
 
     - PYTHON: "C:\\Python27-x64"
-      PYTHON_VERSION: "2.7.11"
-      PYTHON_ARCH: "64"
       NOX_SESSION: "interpreters(version='2.7')"
 
-    # Python 3.4.4 is the latest Python 3.4 with a Windows installer
-    # Python 3.4.4 is the overall latest
-    # https://www.python.org/ftp/python/3.4.4/
     - PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.4"
-      PYTHON_ARCH: "32"
       NOX_SESSION: "interpreters(version='3.4')"
 
     - PYTHON: "C:\\Python34-x64"
-      PYTHON_VERSION: "3.4.4"
-      PYTHON_ARCH: "64"
       NOX_SESSION: "interpreters(version='3.4')"
 
-    # Python 3.5.1 is the latest Python 3.5 with a Windows installer
-    # Python 3.5.1 is the overall latest
-    # https://www.python.org/ftp/python/3.5.1/
     - PYTHON: "C:\\Python35"
-      PYTHON_VERSION: "3.5.1"
-      PYTHON_ARCH: "32"
       NOX_SESSION: "interpreters(version='3.5')"
 
     - PYTHON: "C:\\Python35-x64"
-      PYTHON_VERSION: "3.5.1"
-      PYTHON_ARCH: "64"
       NOX_SESSION: "interpreters(version='3.5')"
 
 install:
-  # Install Python (from the official .msi of http://python.org) and pip when
-  # not already installed.
-  - ps: if (-not(Test-Path($env:PYTHON))) { & appveyor\install.ps1 }
-
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
