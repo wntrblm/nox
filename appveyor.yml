@@ -64,6 +64,16 @@ build_script:
   - "pip install ."
 
 test_script:
+  - py.exe -2.6 -c "import sys; print(sys.version)"
+  - py.exe -2.6-32 -c "import sys; print(sys.version)"
+  - py.exe -2.7 -c "import sys; print(sys.version)"
+  - py.exe -2.7-32 -c "import sys; print(sys.version)"
+  - py.exe -3.4 -c "import sys; print(sys.version)"
+  - py.exe -3.4-32 -c "import sys; print(sys.version)"
+  - py.exe -3.5 -c "import sys; print(sys.version)"
+  - py.exe -3.5-32 -c "import sys; print(sys.version)"
+  - py.exe -3.6 -c "import sys; print(sys.version)"
+  - py.exe -3.6-32 -c "import sys; print(sys.version)"
   # Run the project tests
   - "nox.exe --session default"
   - "nox.exe --session \"%NOX_SESSION%\""
