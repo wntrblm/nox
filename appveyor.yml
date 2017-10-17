@@ -64,6 +64,9 @@ build_script:
   - "pip install ."
 
 test_script:
+  - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore
+  - reg.exe query HKEY_LOCAL_MACHINE\Software\Python\PythonCore
+  - reg.exe query HKEY_LOCAL_MACHINE\Software\Wow6432Node\Python\PythonCore
   - py.exe -2.6 -c "import sys; print(sys.version)"
   - py.exe -2.6-32 -c "import sys; print(sys.version)"
   - py.exe -2.7 -c "import sys; print(sys.version)"
