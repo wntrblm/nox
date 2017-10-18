@@ -37,6 +37,10 @@ environment:
 install:
   # Check if `py.exe` is known **before** %PATH% modification.
   - where.exe py.exe || exit 0
+
+  - ps: .\appveyor\install_python354.ps1
+  - ps: .\appveyor\install_python363.ps1
+
   # Get debug output for launcher
   # https://docs.python.org/3/using/windows.html#diagnostics
   - SET PYLAUNCH_DEBUG=1
