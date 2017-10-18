@@ -32,7 +32,8 @@ $downloadFile = "$py_url/3.6.3/python-3.6.3${exe_suffix}.exe"
 Write-Host "Downloading $downloadFile..."
 (New-Object Net.WebClient).DownloadFile($downloadFile, $exePath)
 Write-Host "Installing..."
-cmd /c start /wait $exePath /quiet TargetDir="$target_dir" Shortcuts=0 Include_launcher=$launcher InstallLauncherAllUsers=$launcher
+# WAS: cmd /c start /wait $exePath /quiet TargetDir="$target_dir" Shortcuts=0 Include_launcher=$launcher InstallLauncherAllUsers=$launcher
+cmd /c start /wait $exePath TargetDir="$target_dir" Shortcuts=0 Include_launcher=$launcher InstallLauncherAllUsers=$launcher
 Write-Host "Python 3.6.3 installed to $target_dir"
 
 echo "$(& $target_dir\python.exe --version 2> $null)"
