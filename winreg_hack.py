@@ -67,9 +67,9 @@ def print_tree(path):
 
 def main():
     paths = (
-        r'HKEY_CURRENT_USER\Software\Python\PythonCore',
-        r'HKEY_LOCAL_MACHINE\Software\Python\PythonCore',
-        r'HKEY_LOCAL_MACHINE\Software\Wow6432Node\Python\PythonCore',
+        r'HKEY_CURRENT_USER\Software\Python',
+        r'HKEY_LOCAL_MACHINE\Software\Python',
+        r'HKEY_LOCAL_MACHINE\Software\Wow6432Node\Python',
     )
     for path in paths:
         print_tree(path)
