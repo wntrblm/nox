@@ -1,0 +1,18 @@
+--- danny-27-32.txt	2017-10-17 23:18:27.983332700 -0700
++++ appveyor-27-32.txt	2017-10-17 23:23:53.762353300 -0700
+@@ -2,12 +2,12 @@
+   2.7\
+     Help\
+       Main Python Documentation\
+-         (REG_SZ) = 'C:\\Python27-32\\Doc\\python2714.chm'
++         (REG_SZ) = 'C:\\Python27\\Doc\\python2713.chm'
+     InstallPath\
+-       (REG_SZ) = 'C:\\Python27-32\\'
++       (REG_SZ) = 'C:\\Python27\\'
+       InstallGroup\
+          (REG_SZ) = 'Python 2.7'
+     Modules\
+ 
+     PythonPath\
+-       (REG_SZ) = 'C:\\Python27-32\\Lib;C:\\Python27-32\\DLLs;C:\\Python27-32\\Lib\\lib-tk'
++       (REG_SZ) = 'C:\\Python27\\Lib;C:\\Python27\\DLLs;C:\\Python27\\Lib\\lib-tk'
