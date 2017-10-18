@@ -64,6 +64,7 @@ build_script:
   - "pip install ."
 
 test_script:
+  - reg.exe add HKEY_CURRENT_USER\Software\Python\PythonCore\3.5-32\PythonPath /ve /t REG_SZ /d C:\Python35\Lib\;C:\Python35\DLLs\ /f
   - C:\Python36-x64\python.exe .\winreg_hack.py
   # - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore
   # - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore\3.5
