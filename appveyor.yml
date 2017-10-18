@@ -37,6 +37,8 @@ environment:
 install:
   # Check if `py.exe` is known **before** %PATH% modification.
   - where.exe py.exe || exit 0
+  # Get debug output for launcher
+  - SET PYLAUNCH_DEBUG=1
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
