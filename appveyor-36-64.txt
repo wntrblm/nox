@@ -1,0 +1,29 @@
+HKEY_CURRENT_USER\Software\Python\PythonCore\
+  DisplayName (REG_SZ) = 'Python Software Foundation'
+  SupportUrl (REG_SZ) = 'http://www.python.org/'
+  3.6\
+    DisplayName (REG_SZ) = 'Python 3.6 (64-bit)'
+    SupportUrl (REG_SZ) = 'http://www.python.org/'
+    Version (REG_SZ) = '3.6.1'
+    SysVersion (REG_SZ) = '3.6'
+    SysArchitecture (REG_SZ) = '64bit'
+    Help\
+      Main Python Documentation\
+         (REG_SZ) = 'C:\\Python36-x64\\Doc\\python361.chm'
+    Idle\
+       (REG_SZ) = 'C:\\Python36-x64\\Lib\\idlelib\\idle.pyw'
+    InstalledFeatures\
+      dev (REG_SZ) = '3.6.1150.0'
+      exe (REG_SZ) = '3.6.1150.0'
+      lib (REG_SZ) = '3.6.1150.0'
+      test (REG_SZ) = '3.6.1150.0'
+      doc (REG_SZ) = '3.6.1150.0'
+      tools (REG_SZ) = '3.6.1150.0'
+      tcltk (REG_SZ) = '3.6.1150.0'
+      pip (REG_SZ) = '3.6.1150.0'
+    InstallPath\
+       (REG_SZ) = 'C:\\Python36-x64\\'
+      ExecutablePath (REG_SZ) = 'C:\\Python36-x64\\python.exe'
+      WindowedExecutablePath (REG_SZ) = 'C:\\Python36-x64\\pythonw.exe'
+    PythonPath\
+       (REG_SZ) = 'C:\\Python36-x64\\Lib\\;C:\\Python36-x64\\DLLs\\'

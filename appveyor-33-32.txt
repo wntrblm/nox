@@ -1,0 +1,13 @@
+HKEY_LOCAL_MACHINE\Software\Wow6432Node\Python\PythonCore\
+  3.3\
+    Help\
+      Main Python Documentation\
+         (REG_SZ) = 'C:\\Python33\\Doc\\python335.chm'
+    InstallPath\
+       (REG_SZ) = 'C:\\Python33\\'
+      InstallGroup\
+         (REG_SZ) = 'Python 3.3'
+    Modules\
+
+    PythonPath\
+       (REG_SZ) = 'C:\\Python33\\Lib;C:\\Python33\\DLLs'

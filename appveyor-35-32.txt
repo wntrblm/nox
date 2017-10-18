@@ -1,0 +1,22 @@
+HKEY_CURRENT_USER\Software\Python\PythonCore\
+  DisplayName (REG_SZ) = 'Python Software Foundation'
+  SupportUrl (REG_SZ) = 'http://www.python.org/'
+  3.5-32\
+    Help\
+      Main Python Documentation\
+         (REG_SZ) = 'C:\\Python35\\Doc\\python353.chm'
+    Idle\
+       (REG_SZ) = 'C:\\Python35\\Lib\\idlelib\\idle.pyw'
+    InstalledFeatures\
+      dev (REG_SZ) = '3.5.3150.0'
+      exe (REG_SZ) = '3.5.3150.0'
+      lib (REG_SZ) = '3.5.3150.0'
+      test (REG_SZ) = '3.5.3150.0'
+      doc (REG_SZ) = '3.5.3150.0'
+      tools (REG_SZ) = '3.5.3150.0'
+      tcltk (REG_SZ) = '3.5.3150.0'
+      pip (REG_SZ) = '3.5.3150.0'
+    InstallPath\
+       (REG_SZ) = 'C:\\Python35\\'
+      ExecutablePath (REG_SZ) = 'C:\\Python35\\python.exe'
+    PythonPath\

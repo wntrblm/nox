@@ -1,0 +1,13 @@
+HKEY_LOCAL_MACHINE\Software\Wow6432Node\Python\PythonCore\
+  2.7\
+    Help\
+      Main Python Documentation\
+         (REG_SZ) = 'C:\\Python27\\Doc\\python2713.chm'
+    InstallPath\
+       (REG_SZ) = 'C:\\Python27\\'
+      InstallGroup\
+         (REG_SZ) = 'Python 2.7'
+    Modules\
+
+    PythonPath\
+       (REG_SZ) = 'C:\\Python27\\Lib;C:\\Python27\\DLLs;C:\\Python27\\Lib\\lib-tk'
