@@ -38,6 +38,9 @@ install:
   # Check if `py.exe` is known **before** %PATH% modification.
   - where.exe py.exe || exit 0
 
+  # Manually "uninstall" the Python launcher.
+  - del C:\Windows\py.exe
+
   - ps: .\appveyor\install_python354.ps1
   - ps: .\appveyor\install_python363.ps1
 
