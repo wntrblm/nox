@@ -35,6 +35,9 @@ environment:
       NOX_SESSION: "interpreters(version='3.6')"
 
 install:
+  # Check if `py.exe` is known **before** %PATH% modification.
+  - where.exe py.exe || exit 0
+
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
@@ -86,6 +89,7 @@ test_script:
   - py.exe -3.6 -c "import sys; print(sys.version)" || exit 0
   - py.exe -3.6-32 -c "import sys; print(sys.version)" || exit 0
   - py.exe -h
+  - where.exe py.exe
   # Fail on purpose.
   - exit 1
   # Run the project tests
