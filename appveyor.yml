@@ -88,7 +88,7 @@ test_script:
   - py.exe -3.4 -c "import sys; print(sys.version)"
   - py.exe -3.4-32 -c "import sys; print(sys.version)"
   - py.exe -3.5 -c "import sys; print(sys.version)" || exit 0
-  - py.exe -3.5-32 -c "import sys; print(sys.version)"
+  - py.exe -3.5-32 -c "import sys; print(sys.version)" || exit 0
   - py.exe -3.6 -c "import sys; print(sys.version)" || exit 0
   - py.exe -3.6-32 -c "import sys; print(sys.version)" || exit 0
   - py.exe -h
