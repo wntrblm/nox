@@ -1,6 +1,6 @@
---- danny-35-32.txt	2017-10-17 23:18:08.408588600 -0700
-+++ appveyor-35-32.txt	2017-10-17 23:22:51.538556000 -0700
-@@ -4,26 +4,19 @@
+--- danny-35-32.txt	2017-10-17 23:35:11.247326700 -0700
++++ appveyor-35-32.txt	2017-10-17 23:49:58.837693900 -0700
+@@ -4,26 +4,20 @@
    3.5-32\
      Help\
        Main Python Documentation\
@@ -39,3 +39,4 @@
 +      ExecutablePath (REG_SZ) = 'C:\\Python35\\python.exe'
      PythonPath\
 -       (REG_SZ) = 'C:\\Users\\dhermes\\AppData\\Local\\Programs\\Python\\Python35-32\\Lib\\;C:\\Users\\dhermes\\AppData\\Local\\Programs\\Python\\Python35-32\\DLLs\\'
++       (REG_SZ) = 'C:\\Python35\\Lib\\;C:\\Python35\\DLLs\\'
