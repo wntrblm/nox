@@ -84,7 +84,7 @@ test_script:
   - py.exe -3.5-32 -c "import sys; print(sys.version)" || exit 0
   - py.exe -3.6 -c "import sys; print(sys.version)" || exit 0
   - py.exe -3.6-32 -c "import sys; print(sys.version)" || exit 0
-  - py.exe -help
+  - py.exe -h
   # Fail on purpose.
   - exit 1
   # Run the project tests
