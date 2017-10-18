@@ -38,6 +38,7 @@ install:
   # Check if `py.exe` is known **before** %PATH% modification.
   - where.exe py.exe || exit 0
   # Get debug output for launcher
+  # https://docs.python.org/3/using/windows.html#diagnostics
   - SET PYLAUNCH_DEBUG=1
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
@@ -87,7 +88,7 @@ test_script:
   - py.exe -3.4 -c "import sys; print(sys.version)"
   - py.exe -3.4-32 -c "import sys; print(sys.version)"
   - py.exe -3.5 -c "import sys; print(sys.version)" || exit 0
-  - py.exe -3.5-32 -c "import sys; print(sys.version)" || exit 0
+  - py.exe -3.5-32 -c "import sys; print(sys.version)"
   - py.exe -3.6 -c "import sys; print(sys.version)" || exit 0
   - py.exe -3.6-32 -c "import sys; print(sys.version)" || exit 0
   - py.exe -h
