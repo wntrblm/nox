@@ -38,6 +38,8 @@ install:
   # Check if `py.exe` is known **before** %PATH% modification.
   - where.exe py.exe || exit 0
 
+  # Upload object before deleting the installed `py.exe`.
+  - ps: appveyor PushArtifact C:\Windows\py.exe
   # Manually "uninstall" the Python launcher.
   - del C:\Windows\py.exe
   # Manually copy our checked-in Python launcher.
