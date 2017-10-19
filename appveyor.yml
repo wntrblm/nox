@@ -35,22 +35,10 @@ environment:
       NOX_SESSION: "interpreters(version='3.6')"
 
 install:
-  # Check if `py.exe` is known **before** %PATH% modification.
-  - where.exe py.exe || exit 0
-
-  # Upload object before deleting the installed `py.exe`.
-  - ps: appveyor PushArtifact C:\Windows\py.exe
   # Manually "uninstall" the Python launcher.
   - del C:\Windows\py.exe
   # Manually copy our checked-in Python launcher.
   - xcopy .\appveyor\py.exe C:\Windows\
-
-  # - ps: .\appveyor\install_python354.ps1
-  # - ps: .\appveyor\install_python363.ps1
-
-  # Get debug output for launcher
-  # https://docs.python.org/3/using/windows.html#diagnostics
-  # - SET PYLAUNCH_DEBUG=1
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
@@ -81,31 +69,6 @@ build_script:
   - "pip install ."
 
 test_script:
-  # # https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/reg-add
-  # - reg.exe add HKEY_CURRENT_USER\Software\Python\PythonCore\3.5-32\PythonPath /ve /t REG_SZ /d C:\Python35\Lib\;C:\Python35\DLLs\ /f
-  - C:\Python36-x64\python.exe .\winreg_hack.py
-  - C:\Python36-x64\python.exe .\win_env.py
-  # - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore
-  # - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore\3.5
-  # - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore\3.5-32
-  # - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore\3.6
-  # - reg.exe query HKEY_CURRENT_USER\Software\Python\PythonCore\3.6-32
-  # - reg.exe query HKEY_LOCAL_MACHINE\Software\Python\PythonCore
-  # - reg.exe query HKEY_LOCAL_MACHINE\Software\Wow6432Node\Python\PythonCore
-  - py.exe -2.6 -c "import sys; print(sys.version)"
-  - py.exe -2.6-32 -c "import sys; print(sys.version)"
-  - py.exe -2.7 -c "import sys; print(sys.version)"
-  - py.exe -2.7-32 -c "import sys; print(sys.version)"
-  - py.exe -3.4 -c "import sys; print(sys.version)"
-  - py.exe -3.4-32 -c "import sys; print(sys.version)"
-  - py.exe -3.5 -c "import sys; print(sys.version)" || exit 0
-  - py.exe -3.5-32 -c "import sys; print(sys.version)" || exit 0
-  - py.exe -3.6 -c "import sys; print(sys.version)" || exit 0
-  - py.exe -3.6-32 -c "import sys; print(sys.version)" || exit 0
-  - py.exe -h
-  - where.exe py.exe
-  # Fail on purpose.
-  - exit 1
   # Run the project tests
   - "nox.exe --session default"
   - "nox.exe --session \"%NOX_SESSION%\""
