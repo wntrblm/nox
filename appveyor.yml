@@ -28,7 +28,18 @@ environment:
     - PYTHON: "C:\\Python35-x64"
       NOX_SESSION: "interpreters(version='3.5')"
 
+    - PYTHON: "C:\\Python36"
+      NOX_SESSION: "interpreters(version='3.6')"
+
+    - PYTHON: "C:\\Python36-x64"
+      NOX_SESSION: "interpreters(version='3.6')"
+
 install:
+  # Manually "uninstall" the Python launcher.
+  - del C:\Windows\py.exe
+  # Manually copy our checked-in Python launcher.
+  - xcopy .\appveyor\py.exe C:\Windows\
+
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
