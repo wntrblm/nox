@@ -48,7 +48,7 @@ install:
 
   # Get debug output for launcher
   # https://docs.python.org/3/using/windows.html#diagnostics
-  - SET PYLAUNCH_DEBUG=1
+  # - SET PYLAUNCH_DEBUG=1
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
