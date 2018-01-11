@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from __future__ import absolute_import
+
 import itertools
 
 from nox._parametrize import generate_calls

@@ -15,7 +15,6 @@
 import os
 
 import mock
-
 import pytest
 
 from nox._testing import Namespace
