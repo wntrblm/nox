@@ -16,8 +16,7 @@ import copy
 import io
 import json
 import os
-
-import mock
+from unittest import mock
 
 import nox
 from nox import sessions

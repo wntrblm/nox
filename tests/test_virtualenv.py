@@ -14,8 +14,8 @@
 
 import os
 import platform
+from unittest import mock
 
-import mock
 import py
 import pytest
 

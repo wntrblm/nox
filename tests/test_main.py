@@ -14,9 +14,9 @@
 
 import os
 import sys
+from unittest import mock
 
 import contexter
-import mock
 import pkg_resources
 
 import nox
