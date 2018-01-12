@@ -1,4 +1,4 @@
-# Copyright 2017 Jon Wayne Parrott
+# Copyright 2018 Jon Wayne Parrott
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest import mock
+"""py.test shared testing configuration.
 
-from nox import logger
+This monkey-patches ``mock`` as ``unittest.mock`` for Python 2.7.
+"""
+
+import sys
+import unittest
+
+import six
 
 
-def test_success():
-    with mock.patch.object(logger.LoggerWithSuccess, '_log') as _log:
-        logger.LoggerWithSuccess('foo').success('bar')
-        _log.assert_called_once_with(logger.SUCCESS, 'bar', ())
+if six.PY2:
+    import mock  # pylint: disable=import-error
+    unittest.mock = mock
+    sys.modules['unittest.mock'] = unittest.mock

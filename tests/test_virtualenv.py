@@ -14,8 +14,8 @@
 
 import os
 import platform
+from unittest import mock
 
-import mock
 import py
 import pytest
 
@@ -248,7 +248,7 @@ def test__resolved_interpreter_windows_pyexe(sysfind, system, make_one):
     assert venv._resolved_interpreter == r'c:\python36\python.exe'
     sysfind.assert_any_call('python3.6')
     sysfind.assert_any_call('py')
-    system.assert_called()
+    system.assert_called_with()
 
 
 @mock.patch.object(platform, 'system')
@@ -273,7 +273,7 @@ def test__resolved_interpreter_windows_pyexe_fails(sysfind, system, make_one):
         venv._resolved_interpreter
     sysfind.assert_any_call('python3.6')
     sysfind.assert_any_call('py')
-    system.assert_called()
+    system.assert_called_with()
 
 
 @mock.patch.object(platform, 'system')

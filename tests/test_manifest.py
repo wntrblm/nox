@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import collections
+from unittest import mock
 
-import mock
 import pytest
 
 import nox

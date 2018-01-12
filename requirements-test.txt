@@ -1,5 +1,5 @@
 flask
-mock
+mock; python_version < '3'
 pytest
 pytest-cov
 contexter
