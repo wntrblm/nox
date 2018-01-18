@@ -167,5 +167,8 @@ class VirtualEnv(ProcessEnv):
 
         return True
 
-    def install(self, *args):
+    def install(self, *args, **kwargs):
+        env = kwargs.get('env', None)
+        if env:
+            self.env.update(env)
         self.run(('pip', 'install', '--upgrade') + args)
