@@ -55,12 +55,12 @@ class ProcessEnv(object):
     def run(self, args, in_venv=True, env=None):
         """Runs a command. By default, the command runs within the
         environment."""
-        env_copy = self.env.copy() if in_venv else None
-        if env_copy is not None and env is not None:
-            env_copy.update(env)
+        if in_venv:
+            env = env or {}
+            env.update(self.env)
         return Command(
             args=args,
-            env=env_copy,
+            env=env,
             silent=True,
             path=self.bin if in_venv else None).run()
 
