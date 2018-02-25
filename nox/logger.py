@@ -36,25 +36,33 @@ logger = logging.getLogger('nox')
 logger.setLevel(logging.DEBUG)
 
 
-def setup_logging():  # pragma: no cover
+def setup_logging(color):  # pragma: no cover
+    """Setup logging.
+
+    Args:
+        color (bool): If true, the ouput will be colored using
+            colorlog. Otherwise, it will be plaintext.
+    """
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler()
 
-    formatter = ColoredFormatter(
-        "%(cyan)s%(name)s > %(log_color)s%(message)s",
-        reset=True,
-        log_colors={
-            'DEBUG': 'cyan',
-            'INFO': 'blue',
-            'WARNING': 'yellow',
-            'ERROR': 'red',
-            'CRITICAL': 'red,bg_white',
-            'SUCCESS': 'green'
-        }
-    )
+    if color is True:
+        formatter = ColoredFormatter(
+            "%(cyan)s%(name)s > %(log_color)s%(message)s",
+            reset=True,
+            log_colors={
+                'DEBUG': 'cyan',
+                'INFO': 'blue',
+                'WARNING': 'yellow',
+                'ERROR': 'red',
+                'CRITICAL': 'red,bg_white',
+                'SUCCESS': 'green'
+            }
+        )
 
-    handler.setFormatter(formatter)
+        handler.setFormatter(formatter)
+
     root_logger.addHandler(handler)
 
     # Silence noisy loggers

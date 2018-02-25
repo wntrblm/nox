@@ -76,6 +76,13 @@ def main():
         '--report', default=None,
         help='Output a report of all sessions.')
     parser.add_argument(
+        '--nocolor', default=not sys.stderr.isatty(), action='store_true',
+        help='Disable all color output.')
+    parser.add_argument(
+        '--forcecolor', default=False, action='store_true',
+        help=('Force color output, even if stdout is not an interactive '
+              'terminal.'))
+    parser.add_argument(
         'posargs', nargs=argparse.REMAINDER,
         help='Arguments that are passed through to the sessions.')
     parser.add_argument(
@@ -90,7 +97,7 @@ def main():
         return
 
     global_config = GlobalConfig(args)
-    setup_logging()
+    setup_logging(color=not args.nocolor or args.forcecolor)
 
     # Execute the appropriate tasks.
     exit_code = workflow.execute(
