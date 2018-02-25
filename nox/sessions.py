@@ -231,7 +231,6 @@ class Session(object):
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
-        self._should_install_deps = True
 
     def __str__(self):
         return utils.coerce_str(self.signature or self.name)
@@ -251,7 +250,6 @@ class Session(object):
     def _create_venv(self):
         if not self.config.virtualenv:
             self.venv = ProcessEnv()
-            self._should_install_deps = False
             return
 
         virtualenv_name = (
@@ -263,7 +261,7 @@ class Session(object):
             reuse_existing=(
                 self.config.reuse_existing_virtualenv or
                 self.global_config.reuse_existing_virtualenvs))
-        self._should_install_deps = self.venv.create()
+        self.venv.create()
 
     def _run_commands(self):
         env = self.venv.env.copy()
@@ -277,12 +275,7 @@ class Session(object):
                     session=self,
                 )
             elif isinstance(command, InstallCommand):
-                if not self._should_install_deps:
-                    logger.debug(
-                        'Skipping installation of "{}".'.format(command))
-                    continue
-                else:
-                    command(self.venv)
+                command(self.venv)
             else:
                 command()
 

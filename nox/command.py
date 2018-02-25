@@ -170,9 +170,6 @@ class InstallCommand(object):
     def __call__(self, *args, **kwargs):
         return self.run(*args, **kwargs)
 
-    def __str__(self):
-        return ' '.join(self.deps)
-
 
 class NotifyCommand(Command):
     """Notify the given session and add it to the queue."""
