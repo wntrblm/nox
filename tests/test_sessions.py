@@ -245,7 +245,6 @@ def test__create_venv(venv_session):
     assert session.venv.path == os.path.join('envdir', 'sig')
     assert session.venv.interpreter == 'interpreter'
     assert session.venv.reuse_existing is False
-    assert session._should_install_deps is True
 
 
 def test__create_venv_global_reuse(venv_session):
@@ -255,7 +254,6 @@ def test__create_venv_global_reuse(venv_session):
     assert session.venv.path == os.path.join('envdir', 'sig')
     assert session.venv.interpreter == 'interpreter'
     assert session.venv.reuse_existing is True
-    assert session._should_install_deps is False
 
 
 def test__create_venv_local_reuse(venv_session):
@@ -273,7 +271,6 @@ def test__create_venv_virtualenv_false(venv_session):
     session.config.virtualenv = False
     session._create_venv()
     assert isinstance(session.venv, nox.virtualenv.ProcessEnv)
-    assert not session._should_install_deps
 
 
 def test__create_venv_explicit_name(venv_session):
@@ -283,7 +280,6 @@ def test__create_venv_explicit_name(venv_session):
     assert session.venv.path == os.path.join('envdir', 'meep')
     assert session.venv.interpreter == 'interpreter'
     assert session.venv.reuse_existing is False
-    assert session._should_install_deps is True
 
 
 def test__run_commands(make_one):
@@ -334,20 +330,6 @@ def test_execute_install(make_one):
     session._run_commands()
 
     session.venv.install.assert_called_with('-r', 'requirements.txt')
-
-
-def test_execute_install_skip(make_one):
-    session = make_one('test', 'sig', mock.Mock(), MockConfig())
-    session.venv = mock.Mock()
-    commands = [
-        nox.command.InstallCommand(['-r', 'requirements.txt'])
-    ]
-    session.config = MockConfig(_commands=commands, env={})
-    session._should_install_deps = False
-
-    session._run_commands()
-
-    assert not session.venv.install.called
 
 
 def test_execute_chdir(make_one, tmpdir):
