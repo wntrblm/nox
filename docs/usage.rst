@@ -104,6 +104,23 @@ By default nox will continue to run all sessions even if one fails. You can use 
     nox --stop-on-first-error
 
 
+Controlling color output
+------------------------
+
+By default, Nox will output colorful logs if you're using in an interactive
+terminal. However, if you are redirecting ``stderr`` to a file or otherwise
+not using an interactive terminal, nox with output in plaintext.
+
+You can manually control Nox's output using the ``--nocolor`` and ``--forcecolor`` flags.
+
+For example, this will always output colorful logs::
+
+    nox --forcecolor
+
+However, this will never output colorful logs::
+
+    nox --nocolor
+
 Windows
 -------
 
