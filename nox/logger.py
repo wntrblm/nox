@@ -40,7 +40,7 @@ def setup_logging(color):  # pragma: no cover
     """Setup logging.
 
     Args:
-        color (bool): If true, the ouput will be colored using
+        color (bool): If true, the output will be colored using
             colorlog. Otherwise, it will be plaintext.
     """
     root_logger = logging.getLogger()
