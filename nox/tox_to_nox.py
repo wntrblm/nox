@@ -37,7 +37,7 @@ def main():
 
     args = parser.parse_args()
 
-    config = tox.config.parseconfig()
+    config = tox.config.parseconfig([])
     output = _TEMPLATE.render(config=config, wrapjoin=wrapjoin)
 
     with io.open(args.output, 'w') as outfile:
