@@ -214,7 +214,7 @@ You can also stack the decorator to produce sessions that are a combination of t
     @nox.session
     @nox.parametrize('python_version', ['2.7', '3.4'])
     @nox.parametrize('django_version', ['1.8', '1.9'])
-    def tests(session, python_version):
+    def tests(session, python_version, django_version):
         session.interpreter = 'python' + python_version
         session.install('pytest', 'django==' + django_version)
         session.run('py.test')
