@@ -1,3 +1,14 @@
+## v0.19.0
+
+* Add missing parameter in docs (#89)
+* Don't skip install commands when re-using existing virtualenvs. (#86)
+* Add --nocolor and --forcecolor options (#85)
+* Simulating `unittest.mock` backport in the Python 2 standard library. (#81)
+* Fixing tox-to-nox docs reference. (#80)
+* Removing patch of `py.exe` on AppVeyor. (#74)
+* Adding Python 3.6 to AppVeyor. (#69)
+* Adding AppVeyor badge to README. (#70)
+
 ## v0.18.2
 
 * On Windows, use the `py.exe` [launcher][2] (e.g. `py.exe -2.7`) to locate
