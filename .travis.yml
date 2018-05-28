@@ -23,5 +23,5 @@ deploy:
   on:
     tags: true
     distributions: sdist bdist_wheel
-    repo: jonparrott/nox
+    repo: theacodes/nox
     condition: "$NOX_SESSION = \"interpreters(version='2.7')\""
