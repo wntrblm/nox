@@ -1,4 +1,4 @@
-# Copyright 2016 Jon Wayne Parrott
+# Copyright 2016 Alethea Katherine Flowers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ setup(
 
     url='https://nox.readthedocs.org',
 
-    author='Jon Wayne Parrott',
-    author_email='jonwayne@google.com',
+    author='Alethea Katherine Flowers',
+    author_email='me@thea.codes',
 
     license='Apache Software License',
 

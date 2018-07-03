@@ -29,5 +29,5 @@
 * Changed some instances of session to be plural (#37)
 * Small documentation updates (#36)
 
-[1]: https://github.com/jonparrott/nox/pull/53
+[1]: https://github.com/theacodes/nox/pull/53
 [2]: https://docs.python.org/3/using/windows.html#launcher

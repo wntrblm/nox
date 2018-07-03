@@ -1,4 +1,4 @@
-# Copyright 2016 Jon Wayne Parrott
+# Copyright 2016 Alethea Katherine Flowers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ from nox.command import Command
 from nox.logger import logger
 
 # Problematic environment variables that are stripped from all commands inside
-# of a virtualenv. See https://github.com/jonparrott/nox/issues/44
+# of a virtualenv. See https://github.com/theacodes/nox/issues/44
 _BLACKLISTED_ENV_VARS = frozenset([
     'PIP_RESPECT_VIRTUALENV',
     'PIP_REQUIRE_VIRTUALENV',
