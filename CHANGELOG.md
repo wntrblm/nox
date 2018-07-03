@@ -1,3 +1,7 @@
+## v0.19.1
+
+* Updates copyright information and contact addresses. No code changes.
+
 ## v0.19.0
 
 * Add missing parameter in docs (#89)
