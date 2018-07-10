@@ -194,6 +194,12 @@ def test_install(make_one):
         mock_run.assert_called_with(
             ('pip', 'install', '--upgrade', '-r', 'somefile.txt'))
 
+        venv.install('foo', env={'DEBUG': 'true'})
+        mock_run.assert_called_with(
+            ('pip', 'install', '--upgrade', 'foo'))
+        assert 'DEBUG' in venv.env
+        assert venv.env['DEBUG'] == 'true'
+
 
 def test__resolved_interpreter_none(make_one):
     # Establish that the _resolved_interpreter method is a no-op if the

@@ -52,12 +52,15 @@ class ProcessEnv(object):
     def bin(self):
         return self._bin
 
-    def run(self, args, in_venv=True):
+    def run(self, args, in_venv=True, env=None):
         """Runs a command. By default, the command runs within the
         environment."""
+        if in_venv:
+            env = env or {}
+            env.update(self.env)
         return Command(
             args=args,
-            env=self.env if in_venv else None,
+            env=env,
             silent=True,
             path=self.bin if in_venv else None).run()
 
@@ -167,5 +170,6 @@ class VirtualEnv(ProcessEnv):
 
         return True
 
-    def install(self, *args):
-        self.run(('pip', 'install', '--upgrade') + args)
+    def install(self, *args, **kwargs):
+        env = kwargs.get('env', None)
+        self.run(('pip', 'install', '--upgrade') + args, env=env)
