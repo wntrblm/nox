@@ -22,12 +22,8 @@ import py
 import six
 
 from nox import utils
-from nox.command import ChdirCommand
 from nox.command import Command
 from nox.command import CommandFailed
-from nox.command import FunctionCommand
-from nox.command import InstallCommand
-from nox.command import NotifyCommand
 from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
 
@@ -103,12 +99,13 @@ class Session(object):
         """The bin directory for the virtualenv."""
         return self._runner.venv.bin
 
-    def chdir(self, dir, debug=False):
+    def chdir(self, dir):
         """Set the working directory for any commands that run in this
         session after this point.
 
         cd() is an alias for chdir()."""
-        ChdirCommand(dir, debug=debug)()
+        self.log('cd {}'.format(dir))
+        os.chdir(dir)
 
     cd = chdir
 
@@ -157,13 +154,25 @@ class Session(object):
         """
         if not args:
             raise ValueError('At least one argument required to run().')
+
+        # Legacy support - run a function given.
         if callable(args[0]):
-            FunctionCommand(args[0], args[1:], kwargs)()
-        else:
-            Command(args=args, **kwargs)(
-                env_fallback=self.env,
-                path_override=self.bin,
-            )
+            func = args[0]
+            args = args[1:]
+            self.log('{}(args={!r}, kwargs={!r})'.format(
+                func, args, kwargs))
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                logger.exception('Function {!r} raised {!r}.'.format(
+                    func, e))
+                raise CommandFailed()
+
+        # Run a shell command.
+        Command(args=args, **kwargs)(
+            env_fallback=self.env,
+            path_override=self.bin,
+        )
 
     def install(self, *args):
         """Install invokes `pip`_ to install packages inside of the session's
@@ -193,7 +202,7 @@ class Session(object):
                 'A session without a virtualenv can not install dependencies.')
         if not args:
             raise ValueError('At least one argument required to install().')
-        InstallCommand(args)(self.virtualenv)
+        self.virtualenv.install(*args)
 
     def notify(self, target):
         """Place the given session at the end of the queue.
@@ -206,7 +215,7 @@ class Session(object):
                 may be specified as the appropropriate string or using
                 the function object.
         """
-        NotifyCommand(target)()
+        self._runner.manifest.notify(target)
 
     def log(self, *args, **kwargs):
         """Outputs a log during the session."""

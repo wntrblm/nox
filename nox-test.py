@@ -36,3 +36,9 @@ def multi_param(session, meep):
 @nox.session(python=nox.python('3.6', reuse=True, virtualenv='meep'))
 def custom(session):
     session.run('which', 'python')
+    session.run(print, 'meep')
+
+    def bad():
+        raise ValueError('bad')
+
+    session.run(bad)

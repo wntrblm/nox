@@ -44,7 +44,7 @@ def session_decorator(func=None, python=None):
 def get():
     """Return a shallow copy of the registry.
 
-    This ensures that the reigstry is not accidentally modified by
+    This ensures that the registry is not accidentally modified by
     calling code that retrieves a registry and mutates it.
     """
     return copy.copy(_REGISTRY)
