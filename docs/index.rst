@@ -38,6 +38,21 @@ For each session, Nox will automatically create `virtualenv`_ with the appropria
 
 To learn how to install and use Nox, see the :doc:`tutorial`. For documentation on configuring sessions, see :doc:`config`. For documentation on running ``nox``, see :doc:`usage`.
 
+Projects that use Nox
+---------------------
+
+Nox is lucky to have several wonderful projects that use it and provide feedback and contributions.
+
+- `Bezier <https://github.com/dhermes/bezier>`__
+- `Zazo <https://github.com/pradyunsg/zazo>`__
+- `packaging.python.org <https://github.com/pypa/python-packaging-user-guide/>`__
+- `google-cloud-python <https://github.com/googlecloudplatform/google-cloud-python>`__
+- `gapic-generator-python <https://github.com/googleapis/gapic-generator-python>`__
+- `google-resumable-media-python <https://github.com/GoogleCloudPlatform/google-resumable-media-python>`__
+- `Google Assistant SDK <https://github.com/googlesamples/assistant-sdk-python>`__
+- `OpenCensus Pyhon <https://github.com/census-instrumentation/opencensus-python>`__
+- `Subpar <https://github.com/google/subpar>`__
+
 .. _tox: https://tox.readthedocs.org
 .. _pip: https://pip.readthedocs.org
 .. _py.test: http://pytest.org
