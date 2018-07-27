@@ -14,10 +14,26 @@
 
 from __future__ import absolute_import
 
+import copy
+import functools
 import itertools
+import types
 
 from nox._parametrize import generate_calls
 from nox.sessions import Session
+
+
+def _copy_func(src, name=None):
+    dst = types.FunctionType(
+        src.__code__,
+        src.__globals__,
+        name=name or src.__name__,
+        argdefs=src.__defaults__,
+        closure=src.__closure__)
+    dst.__dict__.update(copy.deepcopy(src.__dict__))
+    dst = functools.update_wrapper(dst, src)
+    dst.__kwdefaults__ = src.__kwdefaults__
+    return dst
 
 
 class Manifest(object):
@@ -138,15 +154,27 @@ class Manifest(object):
             Sequence[~nox.session.Session]: A sequence of Session objects
                 bound to this manifest and configuration.
         """
+        sessions = []
+
+        # If the func has the python attribute set to a list, we'll need to
+        # expand them.
+        if isinstance(func.python, (list, tuple, set)):
+            for python in func.python:
+                single_func = _copy_func(func)
+                single_func.python = python
+                sessions.extend(self.make_session(
+                    '{}-{}'.format(name, python), single_func))
+
+            return sessions
+
         # Simple case: If this function is not parametrized, then make
         # a simple session
         if not hasattr(func, 'parametrize'):
             session = Session(name, None, func, self._config, self)
-            return (session,)
+            return [session]
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
-        sessions = []
         calls = generate_calls(func, func.parametrize)
         for call in calls:
             long_name = name + call.session_signature

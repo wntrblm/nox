@@ -2,16 +2,22 @@ from __future__ import absolute_import
 
 import collections
 import copy
+import functools
 
 
 _REGISTRY = collections.OrderedDict()
 
 
-def session_decorator(func):
+def session_decorator(func=None, python=None):
     """Designate the decorated function as a session."""
+    if func is None:
+        return functools.partial(session_decorator, python=python)
+
     # This adds the given function to the _REGISTRY ordered dictionary, which
     # is checked by `nox.main.discover_session_functions`.
+    func.python = python
     _REGISTRY[func.__name__] = func
+
     return func
 
 
