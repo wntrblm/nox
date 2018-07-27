@@ -71,9 +71,10 @@ class Status(enum.Enum):
 
 
 class Session(object):
-    """TODO is passed into the session function defined in the
-    user's *nox.py*. The session function uses this object to configure the
-    virtualenv and tell nox which commands to run within the session.
+    """The Session object is passed into each Nox session.
+
+    This is your primary means for installing package and running commands in
+    your Nox session.
     """
     def __init__(self, runner):
         self._runner = runner
@@ -100,14 +101,12 @@ class Session(object):
         return self._runner.venv.bin
 
     def chdir(self, dir):
-        """Set the working directory for any commands that run in this
-        session after this point.
-
-        cd() is an alias for chdir()."""
+        """Change the current working directory."""
         self.log('cd {}'.format(dir))
         os.chdir(dir)
 
     cd = chdir
+    """An alias for :meth:`chdir`."""
 
     def _run_func(self, func, args, kwargs):
         """Legacy support for running a function through :func`run`."""
@@ -121,8 +120,7 @@ class Session(object):
             raise CommandFailed()
 
     def run(self, *args, **kwargs):
-        """
-        Schedule a command or function to in the session.
+        """Run a command.
 
         Commands must be specified as a list of strings, for example::
 
@@ -156,12 +154,6 @@ class Session(object):
         :param success_codes: A list of return codes that are considered
             successful. By default, only ``0`` is considered success.
         :type success_codes: list, tuple, or None
-
-        Functions can be scheduled just by passing the function and any args,
-        just like :func:`functools.partial`::
-
-            session.run(shutil.rmtree, 'docs/_build')
-
         """
         if not args:
             raise ValueError('At least one argument required to run().')
@@ -214,8 +206,8 @@ class Session(object):
 
         Args:
             target (Union[str, Callable]): The session to be notified. This
-                may be specified as the appropropriate string or using
-                the function object.
+                may be specified as the appropriate string (same as used for
+                ``nox -s``) or using the function object.
         """
         self._runner.manifest.notify(target)
 
