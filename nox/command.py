@@ -53,12 +53,13 @@ def which(program, path):
 
 class Command(object):
     def __init__(self, args, env=None, silent=False, path=None,
-                 success_codes=None):
+                 success_codes=None, log=True):
         self.args = args
         self.silent = silent
         self.env = env
         self.path = path
         self.success_codes = success_codes or [0]
+        self.log = log
 
     def run(self, path_override=None, env_fallback=None, **kwargs):
         path = self.path if path_override is None else path_override
@@ -73,7 +74,8 @@ class Command(object):
         cmd, args = self.args[0], self.args[1:]
         full_cmd = ' '.join(self.args)
 
-        logger.info(full_cmd)
+        if self.log:
+            logger.info(full_cmd)
 
         cmd_path = which(cmd, path)
 

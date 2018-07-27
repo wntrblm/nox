@@ -20,7 +20,7 @@ import itertools
 import types
 
 from nox._parametrize import generate_calls
-from nox.sessions import Session
+from nox.sessions import SessionRunner
 
 
 def _copy_func(src, name=None):
@@ -162,29 +162,35 @@ class Manifest(object):
             for python in func.python:
                 single_func = _copy_func(func)
                 single_func.python = python
-                sessions.extend(self.make_session(
-                    '{}-{}'.format(name, python), single_func))
+                sessions.extend(self.make_session(name, single_func))
 
             return sessions
 
         # Simple case: If this function is not parametrized, then make
         # a simple session
         if not hasattr(func, 'parametrize'):
-            session = Session(name, None, func, self._config, self)
+            if func.python is not None:
+                long_name = '{}-{}'.format(name, func.python)
+            else:
+                long_name = name
+            session = SessionRunner(name, long_name, func, self._config, self)
             return [session]
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
         calls = generate_calls(func, func.parametrize)
         for call in calls:
-            long_name = name + call.session_signature
-            sessions.append(Session(name, long_name, call, self._config, self))
+            long_name = '{}-{}{}'.format(
+                name, func.python, call.session_signature)
+            sessions.append(
+                SessionRunner(name, long_name, call, self._config, self))
 
         # Edge case: If the parameters made it such that there were no valid
         # calls, add an empty, do-nothing session.
         if not calls:
             sessions.append(
-                Session(name, None, _null_session_func, self._config, self),
+                SessionRunner(
+                    name, None, _null_session_func, self._config, self),
             )
 
         # Return the list of sessions.
