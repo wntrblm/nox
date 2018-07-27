@@ -38,7 +38,15 @@ def custom(session):
     session.run('which', 'python')
     session.run(print, 'meep')
 
+
+@nox.session(python=nox.python(virtualenv=False))
+def bad_func(session):
     def bad():
         raise ValueError('bad')
 
     session.run(bad)
+
+
+@nox.session(python=nox.python(virtualenv=False))
+def exception(session):
+    raise ValueError('meep')

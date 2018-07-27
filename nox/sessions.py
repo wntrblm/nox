@@ -265,13 +265,6 @@ class SessionRunner(object):
             reuse_existing=reuse_existing)
         self.venv.create()
 
-    def _run_session(self):
-        session = Session(self)
-
-        # Run the actual session function, passing it the newly-created
-        # session object.
-        self.func(session)
-
     def execute(self):
         session_friendly_name = self.signature or self.name
         logger.warning('Running session {}'.format(session_friendly_name))
@@ -284,7 +277,8 @@ class SessionRunner(object):
 
             with cwd:
                 self._create_venv()
-                self._run_session()
+                session = Session(self)
+                self.func(session)
 
             # Nothing went wrong; return a success.
             return Result(self, Status.SUCCESS)
@@ -301,6 +295,11 @@ class SessionRunner(object):
         except KeyboardInterrupt:
             logger.error('Session {} interrupted.'.format(self))
             raise
+
+        except Exception as exc:
+            logger.exception(
+                'Session {} raised exception {!r}'.format(self, exc))
+            return Result(self, Status.FAILED)
 
 
 class Result(object):
