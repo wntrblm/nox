@@ -31,3 +31,8 @@ def multi(session):
 @nox.parametrize('meep', ['moop', 'boop'])
 def multi_param(session, meep):
     session.run('which', 'python')
+
+
+@nox.session(python=nox.python('3.6', reuse=True, virtualenv='meep'))
+def custom(session):
+    session.run('which', 'python')

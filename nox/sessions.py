@@ -188,9 +188,9 @@ class Session(object):
 
         .. _pip: https://pip.readthedocs.org
         """
-        # if not self.venv:
-        #     raise ValueError(
-        #         'A session without a virtualenv can not install dependencies.')
+        if not isinstance(self.virtualenv, VirtualEnv):
+            raise ValueError(
+                'A session without a virtualenv can not install dependencies.')
         if not args:
             raise ValueError('At least one argument required to install().')
         InstallCommand(args)(self.virtualenv)
@@ -238,12 +238,19 @@ class SessionRunner(object):
         return utils.coerce_str(self.signature or self.name)
 
     def _create_venv(self):
-        name = self.signature or self.name
+        if self.func.python_config.virtualenv is False:
+            self.venv = ProcessEnv()
+            return
+
+        name = (
+            self.func.python_config.virtualenv or self.signature or self.name)
         path = _normalize_path(self.global_config.envdir, name)
-        reuse_existing = self.global_config.reuse_existing_virtualenvs
+        reuse_existing = (
+            self.func.python_config.reuse or
+            self.global_config.reuse_existing_virtualenvs)
         self.venv = VirtualEnv(
             path,
-            interpreter=self.func.python,
+            interpreter=self.func.python_config.python,
             reuse_existing=reuse_existing)
         self.venv.create()
 

@@ -156,12 +156,12 @@ class Manifest(object):
         """
         sessions = []
 
-        # If the func has the python attribute set to a list, we'll need to
-        # expand them.
-        if isinstance(func.python, (list, tuple, set)):
-            for python in func.python:
+        # If the func has the python_config attribute set to a list, we'll need
+        # to expand them.
+        if isinstance(func.python_config, (list, tuple, set)):
+            for python_config in func.python_config:
                 single_func = _copy_func(func)
-                single_func.python = python
+                single_func.python_config = python_config
                 sessions.extend(self.make_session(name, single_func))
 
             return sessions
@@ -169,8 +169,8 @@ class Manifest(object):
         # Simple case: If this function is not parametrized, then make
         # a simple session
         if not hasattr(func, 'parametrize'):
-            if func.python is not None:
-                long_name = '{}-{}'.format(name, func.python)
+            if func.python_config.python is not None:
+                long_name = '{}-{}'.format(name, func.python_config.python)
             else:
                 long_name = name
             session = SessionRunner(name, long_name, func, self._config, self)
@@ -181,7 +181,7 @@ class Manifest(object):
         calls = generate_calls(func, func.parametrize)
         for call in calls:
             long_name = '{}-{}{}'.format(
-                name, func.python, call.session_signature)
+                name, func.python_config.python, call.session_signature)
             sessions.append(
                 SessionRunner(name, long_name, call, self._config, self))
 

@@ -4,8 +4,22 @@ import collections
 import copy
 import functools
 
+import attr
 
 _REGISTRY = collections.OrderedDict()
+
+
+@attr.s
+class PythonConfig:
+    python = attr.ib(default=None)
+    virtualenv = attr.ib(default=None)
+    reuse = attr.ib(default=None)
+
+
+def _to_python_config(value):
+    if not isinstance(value, PythonConfig):
+        return PythonConfig(python=value)
+    return value
 
 
 def session_decorator(func=None, python=None):
@@ -15,7 +29,12 @@ def session_decorator(func=None, python=None):
 
     # This adds the given function to the _REGISTRY ordered dictionary, which
     # is checked by `nox.main.discover_session_functions`.
-    func.python = python
+    if isinstance(python, (list, tuple, str)):
+        python = [_to_python_config(value) for value in python]
+    else:
+        python = _to_python_config(python)
+
+    func.python_config = python
     _REGISTRY[func.__name__] = func
 
     return func
