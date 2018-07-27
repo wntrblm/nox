@@ -14,6 +14,7 @@
 
 from __future__ import absolute_import
 
+import collections
 import copy
 import functools
 import itertools
@@ -158,7 +159,7 @@ class Manifest(object):
 
         # If the func has the python_config attribute set to a list, we'll need
         # to expand them.
-        if isinstance(func.python_config, (list, tuple, set)):
+        if isinstance(func.python_config, collections.Collection):
             for python_config in func.python_config:
                 single_func = _copy_func(func)
                 single_func.python_config = python_config

@@ -29,7 +29,7 @@ def session_decorator(func=None, python=None):
 
     # This adds the given function to the _REGISTRY ordered dictionary, which
     # is checked by `nox.main.discover_session_functions`.
-    if isinstance(python, (list, tuple, str)):
+    if isinstance(python, collections.Collection):
         python = [_to_python_config(value) for value in python]
     else:
         python = _to_python_config(python)
