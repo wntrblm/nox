@@ -109,6 +109,17 @@ class Session(object):
 
     cd = chdir
 
+    def _run_func(self, func, args, kwargs):
+        """Legacy support for running a function through :func`run`."""
+        self.log('{}(args={!r}, kwargs={!r})'.format(
+            func, args, kwargs))
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.exception('Function {!r} raised {!r}.'.format(
+                func, e))
+            raise CommandFailed()
+
     def run(self, *args, **kwargs):
         """
         Schedule a command or function to in the session.
@@ -157,16 +168,7 @@ class Session(object):
 
         # Legacy support - run a function given.
         if callable(args[0]):
-            func = args[0]
-            args = args[1:]
-            self.log('{}(args={!r}, kwargs={!r})'.format(
-                func, args, kwargs))
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                logger.exception('Function {!r} raised {!r}.'.format(
-                    func, e))
-                raise CommandFailed()
+            return self._run_func(args[0], args[1:], kwargs)
 
         # Run a shell command.
         Command(args=args, **kwargs)(
