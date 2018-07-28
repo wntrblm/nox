@@ -11,16 +11,16 @@ environment:
     # See: http://www.appveyor.com/docs/installed-software#python
 
     - PYTHON: "C:\\Python35"
-      NOX_SESSION: "interpreters(version='3.5')"
+      NOX_SESSION: "tests-3.5"
 
     - PYTHON: "C:\\Python35-x64"
-      NOX_SESSION: "interpreters(version='3.5')"
+      NOX_SESSION: "tests-3.5"
 
     - PYTHON: "C:\\Python36"
-      NOX_SESSION: "interpreters(version='3.6')"
+      NOX_SESSION: "tests-3.6"
 
     - PYTHON: "C:\\Python36-x64"
-      NOX_SESSION: "interpreters(version='3.6')"
+      NOX_SESSION: "tests-3.6"
 
 install:
   # Prepend newly installed Python to the PATH of this build (this cannot be

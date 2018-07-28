@@ -4,9 +4,9 @@ matrix:
   - python: '3.6'
     env: NOX_SESSION=lint
   - python: '3.5'
-    env: NOX_SESSION="interpreters(version='3.5')"
+    env: NOX_SESSION="tests-3.5"
   - python: '3.6'
-    env: NOX_SESSION="interpreters(version='3.6')"
+    env: NOX_SESSION="tests-3.6"
 install:
   - pip install --upgrade pip setuptools
   - pip install .
