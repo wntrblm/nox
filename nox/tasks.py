@@ -15,12 +15,9 @@
 from __future__ import absolute_import, print_function
 
 import imp
-import inspect
 import io
 import json
 import os
-
-import six
 
 from nox import registry
 from nox.logger import logger
