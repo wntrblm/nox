@@ -53,5 +53,4 @@ build_script:
 
 test_script:
   # Run the project tests
-  - "nox.exe --session default"
   - "nox.exe --session \"%NOX_SESSION%\""
