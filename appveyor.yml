@@ -10,18 +10,6 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
-    - PYTHON: "C:\\Python27"
-      NOX_SESSION: "interpreters(version='2.7')"
-
-    - PYTHON: "C:\\Python27-x64"
-      NOX_SESSION: "interpreters(version='2.7')"
-
-    - PYTHON: "C:\\Python34"
-      NOX_SESSION: "interpreters(version='3.4')"
-
-    - PYTHON: "C:\\Python34-x64"
-      NOX_SESSION: "interpreters(version='3.4')"
-
     - PYTHON: "C:\\Python35"
       NOX_SESSION: "interpreters(version='3.5')"
 
