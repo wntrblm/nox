@@ -216,7 +216,7 @@ class TestSessionRunner:
 
         runner._create_venv()
 
-        create.assert_called_once_with()
+        create.assert_called_once_with(runner.venv)
         assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
         assert runner.venv.location.endswith(
             os.path.join('envdir', 'test-1-2'))
@@ -232,7 +232,7 @@ class TestSessionRunner:
 
         runner._create_venv()
 
-        create.assert_called_once_with()
+        create.assert_called_once_with(runner.venv)
         assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
         assert runner.venv.location.endswith(
             os.path.join('envdir', 'meep'))
