@@ -73,14 +73,6 @@ def discover_manifest(module, global_config):
     # sorted by decorator call time.
     functions = registry.get()
 
-    # Find any function conforming to the session_* naming convention.
-    # Sort these in alphabetical order.
-    for name in sorted(six.iterkeys(module.__dict__)):
-        obj = module.__dict__[name]
-        if name.startswith('session_') and inspect.isfunction(obj):
-            session_name = name.split('session_', 1).pop()
-            functions[session_name] = obj
-
     # Return the final dictionary of session functions.
     return Manifest(functions, global_config)
 

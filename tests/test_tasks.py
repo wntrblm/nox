@@ -19,6 +19,7 @@ import os
 from unittest import mock
 
 import nox
+from nox import registry
 from nox import sessions
 from nox import tasks
 from nox._testing import Namespace
@@ -26,6 +27,13 @@ from nox.manifest import Manifest
 
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
+
+
+def session_func():
+    pass
+
+
+session_func.python_config = registry.PythonConfig()
 
 
 def test_load_nox_module():
@@ -37,33 +45,6 @@ def test_load_nox_module():
 def test_load_nox_module_not_found():
     config = Namespace(noxfile='bogus.py')
     assert tasks.load_nox_module(config) == 2
-
-
-def test_discover_manifest_naming_convention():
-    # Define sessions with the correct naming convention.
-    def session_1():
-        pass
-
-    def session_2():
-        pass
-
-    def notasession():
-        pass
-
-    # Mock up a nox.py module and configuration.
-    mock_module = Namespace(
-        __name__='irrelevant',
-        session_1=session_1,
-        session_2=session_2,
-        notasession=notasession,
-    )
-    config = Namespace(sessions=(), keywords=())
-
-    # Get the manifest and establish that it looks like what we expect.
-    manifest = tasks.discover_manifest(mock_module, config)
-    sessions = list(manifest)
-    assert [s.func for s in sessions] == [session_1, session_2]
-    assert [str(i) for i in sessions] == ['1', '2']
 
 
 def test_discover_session_functions_decorator():
@@ -95,39 +76,11 @@ def test_discover_session_functions_decorator():
     assert [str(i) for i in sessions] == ['foo', 'bar']
 
 
-def test_discover_session_functions_mix():
-    # Define sessions using both mechanisms.
-    @nox.session
-    def foo():
-        pass
-
-    def session_bar():
-        pass
-
-    def notasession():
-        pass
-
-    # Mock up a nox.py module and configuration.
-    mock_module = Namespace(
-        __name__=foo.__module__,
-        foo=foo,
-        session_bar=session_bar,
-        notasession=notasession,
-    )
-    config = Namespace(sessions=(), keywords=())
-
-    # Get the manifest and establish that it looks like what we expect.
-    manifest = tasks.discover_manifest(mock_module, config)
-    sessions = list(manifest)
-    assert [s.func for s in sessions] == [foo, session_bar]
-    assert [str(i) for i in sessions] == ['foo', 'bar']
-
-
 def test_filter_manifest():
     config = Namespace(sessions=(), keywords=())
     manifest = Manifest({
-        'foo': mock.Mock(spec=()),
-        'bar': mock.Mock(spec=()),
+        'foo': session_func,
+        'bar': session_func,
     }, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
@@ -137,8 +90,8 @@ def test_filter_manifest():
 def test_filter_manifest_not_found():
     config = Namespace(sessions=('baz',), keywords=())
     manifest = Manifest({
-        'foo': mock.Mock(spec=()),
-        'bar': mock.Mock(spec=()),
+        'foo': session_func,
+        'bar': session_func,
     }, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value == 3
@@ -147,9 +100,9 @@ def test_filter_manifest_not_found():
 def test_filter_manifest_keywords():
     config = Namespace(sessions=(), keywords='foo or bar')
     manifest = Manifest({
-        'foo': mock.Mock(spec=()),
-        'bar': mock.Mock(spec=()),
-        'baz': mock.Mock(spec=()),
+        'foo': session_func,
+        'bar': session_func,
+        'baz': session_func,
     }, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
@@ -182,7 +135,7 @@ def test_verify_manifest_empty():
 
 def test_verify_manifest_nonempty():
     config = Namespace(sessions=(), keywords=())
-    manifest = Manifest({'session': lambda session: None}, config)
+    manifest = Manifest({'session': session_func}, config)
     return_value = tasks.verify_manifest_nonempty(
         manifest,
         global_config=config,
@@ -194,8 +147,8 @@ def test_run_manifest():
     # Set up a valid manifest.
     config = Namespace(stop_on_first_error=False)
     sessions_ = [
-        mock.Mock(spec=sessions.Session),
-        mock.Mock(spec=sessions.Session),
+        mock.Mock(spec=sessions.SessionRunner),
+        mock.Mock(spec=sessions.SessionRunner),
     ]
     manifest = Manifest({}, config)
     manifest._queue = copy.copy(sessions_)
@@ -223,8 +176,8 @@ def test_run_manifest_abort_on_first_failure():
     # Set up a valid manifest.
     config = Namespace(stop_on_first_error=True)
     sessions_ = [
-        mock.Mock(spec=sessions.Session),
-        mock.Mock(spec=sessions.Session),
+        mock.Mock(spec=sessions.SessionRunner),
+        mock.Mock(spec=sessions.SessionRunner),
     ]
     manifest = Manifest({}, config)
     manifest._queue = copy.copy(sessions_)
