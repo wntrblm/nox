@@ -24,8 +24,10 @@ from nox.manifest import Manifest
 
 def create_mock_sessions():
     sessions = collections.OrderedDict()
-    sessions['foo'] = mock.Mock(spec=())
-    sessions['bar'] = mock.Mock(spec=())
+    sessions['foo'] = mock.Mock(
+        spec=(), python_config=nox.registry.PythonConfig())
+    sessions['bar'] = mock.Mock(
+        spec=(), python_config=nox.registry.PythonConfig())
     return sessions
 
 
@@ -143,9 +145,28 @@ def test_filter_by_keyword():
 
 def test_add_session_plain():
     manifest = Manifest({}, mock.sentinel.CONFIG)
-    for session in manifest.make_session('my_session', lambda session: None):
+    session_func = mock.Mock(
+        spec=(), python_config=nox.registry.PythonConfig())
+    for session in manifest.make_session('my_session', session_func):
         manifest.add_session(session)
     assert len(manifest) == 1
+
+
+def test_add_session_multiple_pythons():
+    manifest = Manifest({}, mock.sentinel.CONFIG)
+
+    def session_func():
+        pass
+
+    session_func.python_config = [
+        nox.registry.PythonConfig(python='3.6'),
+        nox.registry.PythonConfig(python='3.7'),
+    ]
+
+    for session in manifest.make_session('my_session', session_func):
+        manifest.add_session(session)
+
+    assert len(manifest) == 2
 
 
 def test_add_session_parametrized():
@@ -155,6 +176,8 @@ def test_add_session_parametrized():
     @nox.parametrize('param', ('a', 'b', 'c'))
     def my_session(session, param):
         pass
+
+    my_session.python_config = nox.registry.PythonConfig()
 
     # Add the session to the manifest.
     for session in manifest.make_session('my_session', my_session):
@@ -170,6 +193,8 @@ def test_add_session_parametrized_noop():
     def my_session(session, param):
         pass
 
+    my_session.python_config = nox.registry.PythonConfig()
+
     # Add the session to the manifest.
     for session in manifest.make_session('my_session', my_session):
         manifest.add_session(session)
@@ -183,8 +208,12 @@ def test_notify():
     def my_session(session):
         pass
 
+    my_session.python_config = nox.registry.PythonConfig()
+
     def notified(session):
         pass
+
+    notified.python_config = nox.registry.PythonConfig()
 
     # Add the sessions to the manifest.
     for session in manifest.make_session('my_session', my_session):
@@ -208,8 +237,12 @@ def test_notify_noop():
     # Define a session and add it to the manifest.
     def my_session(session):
         pass
+
+    my_session.python_config = nox.registry.PythonConfig()
+
     for session in manifest.make_session('my_session', my_session):
         manifest.add_session(session)
+
     assert len(manifest) == 1
 
     # Establish idempotency; notifying a session already in the queue no-ops.
@@ -225,7 +258,9 @@ def test_notify_error():
 
 def test_add_session_idempotent():
     manifest = Manifest({}, mock.sentinel.CONFIG)
-    for session in manifest.make_session('my_session', lambda session: None):
+    session_func = mock.Mock(
+        spec=(), python_config=nox.registry.PythonConfig())
+    for session in manifest.make_session('my_session', session_func):
         manifest.add_session(session)
         manifest.add_session(session)
     assert len(manifest) == 1
