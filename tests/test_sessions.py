@@ -216,7 +216,7 @@ class TestSessionRunner:
 
         runner._create_venv()
 
-        create.assert_called_once()
+        create.assert_called_once_with()
         assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
         assert runner.venv.location.endswith(
             os.path.join('envdir', 'test-1-2'))
@@ -232,7 +232,7 @@ class TestSessionRunner:
 
         runner._create_venv()
 
-        create.assert_called_once()
+        create.assert_called_once_with()
         assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
         assert runner.venv.location.endswith(
             os.path.join('envdir', 'meep'))
@@ -252,7 +252,7 @@ class TestSessionRunner:
         result = runner.execute()
 
         assert result
-        runner.func.assert_called_once()
+        runner.func.assert_called_once_with(mock.ANY)
         assert 'Running session test(1, 2)' in caplog.text
 
     def test_execute_quit(self):
