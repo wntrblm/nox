@@ -39,24 +39,16 @@ You can run every session by just executing `nox` without any arguments:
 
     nox
 
-The order that sessions are executed is determined by how they are defined in
-your noxfile. if you use the :func:`decorator <nox.session>`, ``@nox.session``,
-then sessions will be run by nox in the order that they appear in the noxfile.
-If you define sessions using the naming convention, ``def session_<name>```
-they run in alphabetical order.
-
-If you mix and match the two methods, all sessions defined using the decorator
-are run first (in order), followed by all sessions defined by the naming
-convention, alphabetically.
+The order that sessions are executed is the order that they appear in the Noxfile.
 
 Specifying one or more sessions
 -------------------------------
 
 By default nox will run all sessions defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``::
 
-    nox --session py27
-    nox -s lint py27
-    nox -e py34
+    nox --session tests
+    nox -s lint tests
+    nox -e lint
 
 Nox will run these sessions in the same order they are specified.
 
@@ -74,14 +66,14 @@ Specifying parametrized sessions
 
 If you have a :ref:`parametrized <parametrized>` session such as::
 
-    @nox.parametrize('python_version', ['2.7', '3.4', '3.5'])
-    def session_tests(session, python_version):
+    @nox.parametrize('django', ['1.9', '2.0'])
+    def session_tests(session, django):
         ...
 
 Then running ``nox --session tests`` will actually run all parametrized versions of the session. If you want the run the session with a particular set of parametrized arguments, you can specify them with the session name::
 
-    nox --session "tests(python_version='2.7')"
-    nox --session "tests(python_version='3.4')"
+    nox --session "tests(django='1.9')"
+    nox --session "tests(django='2.0')"
 
 
 Re-using virtualenvs
