@@ -14,6 +14,7 @@
 
 import os
 import platform
+import sys
 from unittest import mock
 
 import py
@@ -199,7 +200,7 @@ def test__resolved_interpreter_none(make_one):
     # Establish that the _resolved_interpreter method is a no-op if the
     # interpeter is not set.
     venv, _ = make_one(interpreter=None)
-    assert venv._resolved_interpreter is venv.interpreter is None
+    assert venv._resolved_interpreter == sys.executable
 
 
 def test__resolved_interpreter_non_windows(make_one):
