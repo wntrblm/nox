@@ -113,10 +113,10 @@ class VirtualEnv(ProcessEnv):
 
         Based heavily on tox's implementation (tox/interpreters.py).
         """
-        # Sanity check: If there is no assigned interpreter, then
-        # do nothing.
+        # If there is no assigned interpreter, then use the same one used by
+        # Nox.
         if self.interpreter is None:
-            return self.interpreter
+            return sys.executable
 
         # If this is just a X.Y or X.Y.Z string, stick `python` in front of it.
         if re.match(r'^\d\.\d\.?\d?$', self.interpreter):
@@ -170,7 +170,7 @@ class VirtualEnv(ProcessEnv):
 
         logger.info(
             'Creating virtualenv using {} in {}'.format(
-                self._resolved_interpreter, self.location))
+                os.path.basename(self._resolved_interpreter), self.location))
         self.run(cmd, in_venv=False, log=False)
 
         return True
