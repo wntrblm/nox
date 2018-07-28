@@ -71,7 +71,7 @@ class Status(enum.Enum):
 
 
 class Session(object):
-    """The Session object is passed into each Nox session.
+    """The Session object is passed into each user-defined session function.
 
     This is your primary means for installing package and running commands in
     your Nox session.
@@ -163,7 +163,7 @@ class Session(object):
             return self._run_func(args[0], args[1:], kwargs)
 
         # Run a shell command.
-        Command(args=args, **kwargs)(
+        return Command(args=args, **kwargs)(
             env_fallback=self.env,
             path_override=self.bin,
         )
@@ -264,8 +264,9 @@ class SessionRunner(object):
         try:
             # By default, nox should quietly change to the directory where
             # the nox.py file is located.
-            wd = os.path.realpath(os.path.dirname(self.global_config.noxfile))
-            cwd = py.path.local(wd).as_cwd()
+            cwd = py.path.local(
+                os.path.realpath(
+                    os.path.dirname(self.global_config.noxfile))).as_cwd()
 
             with cwd:
                 self._create_venv()
@@ -301,7 +302,8 @@ class Result(object):
         """Initialize the Result object.
 
         Args:
-            session (~nox.sessions.Session): The session which ran.
+            session (~nox.sessions.SessionRunner):
+                The session runner which ran.
             status (~nox.sessions.Status): The final result status.
         """
         self.session = session
