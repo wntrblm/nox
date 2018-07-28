@@ -203,6 +203,15 @@ def test__resolved_interpreter_none(make_one):
     assert venv._resolved_interpreter == sys.executable
 
 
+def test__resolved_interpreter_numerical_non_windows(make_one):
+    # Establish that specifying just '3.6' expands to 'python3.6'
+    venv, _ = make_one(interpreter='3.6')
+    with mock.patch.object(platform, 'system') as system:
+        system.return_value = 'Linux'
+        assert venv._resolved_interpreter == 'python3.6'
+        system.assert_called_once_with()
+
+
 def test__resolved_interpreter_non_windows(make_one):
     # Establish that the interpreter is simply passed through resolution
     # on non-Windows.
