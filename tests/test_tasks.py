@@ -19,7 +19,6 @@ import os
 from unittest import mock
 
 import nox
-from nox import registry
 from nox import sessions
 from nox import tasks
 from nox._testing import Namespace
@@ -33,7 +32,7 @@ def session_func():
     pass
 
 
-session_func.python_config = registry.PythonConfig()
+session_func.python = None
 
 
 def test_load_nox_module():

@@ -4,38 +4,25 @@ import collections
 import copy
 import functools
 
-import attr
-
 _REGISTRY = collections.OrderedDict()
 
 
-@attr.s
-class PythonConfig:
-    python = attr.ib(default=None)
-    virtualenv = attr.ib(default=None)
-    reuse = attr.ib(default=None)
-
-
-def _to_python_config(value):
-    if not isinstance(value, PythonConfig):
-        return PythonConfig(python=value)
-    return value
-
-
-def session_decorator(func=None, python=None):
+def session_decorator(
+        func=None, python=None, reuse_venv=None):
     """Designate the decorated function as a session."""
+    # If `func` is provided, then this is the decorator call with the function
+    # being sent as part of the Python syntax (`@nox.session`).
+    # If `func` is None, however, then this is a plain function call, and it
+    # must return the decorator that ultimately is applied
+    # (`@nox.session(...)`).
+    #
+    # This is what makes the syntax with and without parentheses both work.
     if func is None:
-        return functools.partial(session_decorator, python=python)
+        return functools.partial(
+            session_decorator, python=python, reuse_venv=reuse_venv)
 
-    # This adds the given function to the _REGISTRY ordered dictionary, which
-    # is checked by `nox.main.discover_session_functions`.
-    if (isinstance(python, (list, tuple, set))
-            and not isinstance(python, str)):
-        python = [_to_python_config(value) for value in python]
-    else:
-        python = _to_python_config(python)
-
-    func.python_config = python
+    func.python = python
+    func.reuse_venv = reuse_venv
     _REGISTRY[func.__name__] = func
 
     return func

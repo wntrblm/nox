@@ -1,12 +1,14 @@
 language: python
 matrix:
   include:
-  - python: '3.6'
+  - python: '3.7'
     env: NOX_SESSION=lint
   - python: '3.5'
     env: NOX_SESSION="tests-3.5"
   - python: '3.6'
     env: NOX_SESSION="tests-3.6"
+  - python: '3.7'
+    env: NOX_SESSION="tests-3.7"
 install:
   - pip install --upgrade pip setuptools
   - pip install .
@@ -20,4 +22,4 @@ deploy:
     tags: true
     distributions: sdist bdist_wheel
     repo: theacodes/nox
-    condition: "$NOX_SESSION = \"interpreters(version='3.6')\""
+    condition: "$NOX_SESSION = \"interpreters(version='3.7')\""

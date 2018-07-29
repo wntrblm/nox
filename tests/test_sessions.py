@@ -180,7 +180,8 @@ class TestSession:
 class TestSessionRunner:
     def make_runner(self):
         func = mock.Mock()
-        func.python_config = nox.registry.PythonConfig()
+        func.python = None
+        func.reuse_venv = False
         runner = nox.sessions.SessionRunner(
             name='test',
             signature='test(1, 2)',
@@ -204,7 +205,7 @@ class TestSessionRunner:
 
     def test__create_venv_process_env(self):
         runner = self.make_runner()
-        runner.func.python_config.virtualenv = False
+        runner.func.python = False
 
         runner._create_venv()
 
@@ -224,18 +225,15 @@ class TestSessionRunner:
         assert runner.venv.reuse_existing is False
 
     @mock.patch('nox.virtualenv.VirtualEnv.create', autospec=True)
-    def test__create_venv_opptions(self, create):
+    def test__create_venv_options(self, create):
         runner = self.make_runner()
-        runner.func.python_config.python = 'coolpython'
-        runner.func.python_config.reuse = True
-        runner.func.python_config.virtualenv = 'meep'
+        runner.func.python = 'coolpython'
+        runner.func.reuse_venv = True
 
         runner._create_venv()
 
         create.assert_called_once_with(runner.venv)
         assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
-        assert runner.venv.location.endswith(
-            os.path.join('envdir', 'meep'))
         assert runner.venv.interpreter is 'coolpython'
         assert runner.venv.reuse_existing is True
 

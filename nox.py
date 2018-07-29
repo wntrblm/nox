@@ -20,7 +20,7 @@ import nox
 ON_APPVEYOR = os.environ.get('APPVEYOR') == 'True'
 
 
-@nox.session(python=['3.4', '3.5', '3.6'])
+@nox.session(python=['3.5', '3.6', '3.7'])
 def tests(session):
     session.install('-r', 'requirements-test.txt')
     session.install('-e', '.[tox_to_nox]')

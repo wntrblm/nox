@@ -18,8 +18,8 @@ with ``@nox.session``. For example::
     import nox
 
     @nox.session
-    def b(session):
-        pass
+    def tests(session):
+        session.run('pytest')
 
 You can also configure sessions to run against multiple Python versions as described in :ref:`virtualenv config` and  parametrize sessions as described in :ref:`parametrized sessions <parametrized>`.
 
@@ -42,34 +42,9 @@ You can also tell Nox to run your session against multiple Python interpreters. 
     def tests(session):
         pass
 
-You can use ``nox.python`` to specify even more advanced configuration. For example, if you want to turn off the virtualenv creation::
+When you provide a version number, Nox automatically prepends python to determine the name of the executable. However, Nox also accepts the full executable name. If you want to test using pypy, for example::
 
-    @nox.session(python=nox.python(virtualenv=False))
-    def tests(session):
-        pass
-
-You can also specify that the virtualenv should *always* be reused or change the virtualenv name::
-
-    @nox.session(
-        python=nox.python(
-            python='3.6',
-            virtualenv='custom-name',
-            reuse=True))
-    def tests(session):
-        pass
-
-Finally, you can use multiple instances of ``nox.python`` to specify more than one customization::
-
-    @nox.session(
-        python=[
-            nox.python(
-                python='3.6',
-                virtualenv='custom-name',
-                reuse=True),
-            nox.python(
-                python='3.5',
-                reuse=True),
-        ])
+    @nox.session(python=['2.7', '3.6', 'pypy-6.0'])
     def tests(session):
         pass
 
@@ -87,6 +62,20 @@ Will produce these sessions::
     * tests-3.7
 
 Note that this expansion happens *before* parameterization occurs, so you can still parametrize sessions with multiple interpreters.
+
+If you want to disable virtualenv creation altogether, you can set ``python`` to ``False``:
+
+    @nox.session(python=False)
+    def tests(session):
+        pass
+
+Finally you can also specify that the virtualenv should *always* be reused instead of recreated every time::
+
+    @nox.session(
+        python=['2.7', '3.6'],
+        reuse_venv=True)
+    def tests(session):
+        pass
 
 
 Using the session object

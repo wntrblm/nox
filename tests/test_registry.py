@@ -39,43 +39,31 @@ def test_session_decorator(cleanup_registry):
     answer = registry.get()
     assert 'unit_tests' in answer
     assert answer['unit_tests'] is unit_tests
-    assert isinstance(unit_tests.python_config, registry.PythonConfig)
+    assert unit_tests.python is None
 
 
-def test_session_decorator_single_string_python(cleanup_registry):
+def test_session_decorator_single_python(cleanup_registry):
     @registry.session_decorator(python='3.6')
     def unit_tests(session):
         pass
 
-    assert isinstance(unit_tests.python_config, registry.PythonConfig)
-    assert unit_tests.python_config.python == '3.6'
+    assert unit_tests.python == '3.6'
 
 
-def test_session_decorator_list_string_python(cleanup_registry):
+def test_session_decorator_list_of_pythons(cleanup_registry):
     @registry.session_decorator(python=['3.5', '3.6'])
     def unit_tests(session):
         pass
 
-    assert isinstance(unit_tests.python_config, list)
-    assert len(unit_tests.python_config) == 2
-    assert unit_tests.python_config[0].python == '3.5'
-    assert unit_tests.python_config[1].python == '3.6'
+    assert unit_tests.python == ['3.5', '3.6']
 
 
-def test_session_decorator_list_mixed(cleanup_registry):
-    @registry.session_decorator(
-        python=[
-            '3.5',
-            registry.PythonConfig(python='3.6', reuse=True)])
+def test_session_decorator_reuse(cleanup_registry):
+    @registry.session_decorator(reuse_venv=True)
     def unit_tests(session):
         pass
 
-    assert isinstance(unit_tests.python_config, list)
-    assert len(unit_tests.python_config) == 2
-    assert unit_tests.python_config[0].python == '3.5'
-    assert unit_tests.python_config[0].reuse is None
-    assert unit_tests.python_config[1].python == '3.6'
-    assert unit_tests.python_config[1].reuse is True
+    assert unit_tests.reuse_venv is True
 
 
 def test_get(cleanup_registry):

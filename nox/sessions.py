@@ -241,19 +241,18 @@ class SessionRunner(object):
         return utils.coerce_str(self.signature or self.name)
 
     def _create_venv(self):
-        if self.func.python_config.virtualenv is False:
+        if self.func.python is False:
             self.venv = ProcessEnv()
             return
 
-        name = (
-            self.func.python_config.virtualenv or self.signature or self.name)
+        name = self.signature or self.name
         path = _normalize_path(self.global_config.envdir, name)
         reuse_existing = (
-            self.func.python_config.reuse or
+            self.func.reuse_venv or
             self.global_config.reuse_existing_virtualenvs)
         self.venv = VirtualEnv(
             path,
-            interpreter=self.func.python_config.python,
+            interpreter=self.func.python,
             reuse_existing=reuse_existing)
         self.venv.create()
 
