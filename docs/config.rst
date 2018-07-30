@@ -13,46 +13,78 @@ Defining sessions
 .. autofunction:: nox.session
 
 Nox sessions are configured via standard Python functions that are decorated
-with ``@nox.session`` or start with ``session_``. For example, these are all
-sessions::
+with ``@nox.session``. For example::
 
     import nox
 
-    def session_a(session):
-        pass
-
-    def session_123(session):
-        pass
-
     @nox.session
-    def b(session):
+    def tests(session):
+        session.run('pytest')
+
+You can also configure sessions to run against multiple Python versions as described in :ref:`virtualenv config` and  parametrize sessions as described in :ref:`parametrized sessions <parametrized>`.
+
+.. _virtualenv config:
+
+Configuring a session's virtualenv
+----------------------------------
+
+By default, Nox will create a new virtualenv for each session using the same interpreter that Nox uses. If you installed Nox using Python 3.6, Nox will use Python 3.6 by default for all of your sessions.
+
+You can tell Nox to use a different Python interpreter/version by specifying the ``python`` argument to ``@nox.session``::
+
+    @nox.session(python='2.7')
+    def tests(session):
         pass
 
-These are **not**::
+You can also tell Nox to run your session against multiple Python interpreters. Nox will create a separate virtualenv and run the session for each interpreter you specify. For example, this session will run twice - once for Python 2.7 and once for Python 3.6::
 
-    def some_session(session):
+    @nox.session(python=['2.7', '3.6'])
+    def tests(session):
         pass
 
-    def other_func(session):
+When you provide a version number, Nox automatically prepends python to determine the name of the executable. However, Nox also accepts the full executable name. If you want to test using pypy, for example::
+
+    @nox.session(python=['2.7', '3.6', 'pypy-6.0'])
+    def tests(session):
         pass
 
-You may define sessions using either the decorator or the naming convention.
-This can affect the execution order as described in the
-:ref:`usage docs<session_execution_order>`.
+When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sesions when running ``nox --list-sessions``. For example this Noxfile::
 
-You can also parametrize sessions as described in
-:ref:`parametrized sessions <parametrized>`.
+    @nox.session(python=['2.7', '3.5', 3.6', '3.7'])
+    def tests(session):
+        pass
 
-Configuring sessions
---------------------
+Will produce these sessions::
+
+    * tests-2.7
+    * tests-3.5
+    * tests-3.6
+    * tests-3.7
+
+Note that this expansion happens *before* parameterization occurs, so you can still parametrize sessions with multiple interpreters.
+
+If you want to disable virtualenv creation altogether, you can set ``python`` to ``False``:
+
+    @nox.session(python=False)
+    def tests(session):
+        pass
+
+Finally you can also specify that the virtualenv should *always* be reused instead of recreated every time::
+
+    @nox.session(
+        python=['2.7', '3.6'],
+        reuse_venv=True)
+    def tests(session):
+        pass
+
+
+Using the session object
+------------------------
 
 .. module:: nox.sessions
 
-Nox will call your session functions with a :class:`SessionConfig` object. You
-use this object to tell nox how to create your session and which actions to
-run. Session configuration is *declarative*, nox runs your session function
-first to gather the list of things to do, then executes them separately.
+Nox will call your session functions with a :class:`Session` object. You use this object to to run various commands in your session.
 
-.. autoclass:: SessionConfig
+.. autoclass:: Session
     :members:
     :undoc-members:

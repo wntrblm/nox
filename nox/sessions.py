@@ -22,12 +22,8 @@ import py
 import six
 
 from nox import utils
-from nox.command import ChdirCommand
 from nox.command import Command
 from nox.command import CommandFailed
-from nox.command import FunctionCommand
-from nox.command import InstallCommand
-from nox.command import NotifyCommand
 from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
 
@@ -74,48 +70,57 @@ class Status(enum.Enum):
     SKIPPED = 2
 
 
-class SessionConfig(object):
-    """SessionConfig is passed into the session function defined in the
-    user's *nox.py*. The session function uses this object to configure the
-    virtualenv and tell nox which commands to run within the session.
+class Session(object):
+    """The Session object is passed into each user-defined session function.
+
+    This is your primary means for installing package and running commands in
+    your Nox session.
     """
-    def __init__(self, posargs=None):
-        self._commands = []
-        self.env = {}
+    def __init__(self, runner):
+        self._runner = runner
+
+    @property
+    def env(self):
         """A dictionary of environment variables to pass into all commands."""
-        self.virtualenv = True
-        """A boolean indicating whether or not to create a virtualenv. Defaults
-        to True."""
-        self.virtualenv_dirname = None
-        """An optional string that determines the name of the directory
-        where the virtualenv will be created. This is relative to the
-        --envdir option passed into the nox command. By default, nox will
-        generate the name based on the function signature."""
-        self.interpreter = None
-        """``None`` or a string indicating the name of the Python interpreter
-        to use in the session's virtualenv. If None, the default system
-        interpreter is used."""
-        self.posargs = posargs or []
-        """``None`` or a list of strings. This is set to any extra arguments
+        return self._runner.venv.env
+
+    @property
+    def posargs(self):
+        """This is set to any extra arguments
         passed to ``nox`` on the commandline."""
-        self.reuse_existing_virtualenv = False
-        """A boolean indicating whether to recreate or reuse the session's
-        virtualenv. If True, then any existing virtualenv will be used. This
-        can also be specified globally using the
-        ``--reuse-existing-virtualenvs`` argument when running ``nox``."""
+        return self._runner.global_config.posargs
 
-    def chdir(self, dir, debug=False):
-        """Set the working directory for any commands that run in this
-        session after this point.
+    @property
+    def virtualenv(self):
+        """The virtualenv that all commands are run in."""
+        return self._runner.venv
 
-        cd() is an alias for chdir()."""
-        self._commands.append(ChdirCommand(dir, debug=debug))
+    @property
+    def bin(self):
+        """The bin directory for the virtualenv."""
+        return self._runner.venv.bin
+
+    def chdir(self, dir):
+        """Change the current working directory."""
+        self.log('cd {}'.format(dir))
+        os.chdir(dir)
 
     cd = chdir
+    """An alias for :meth:`chdir`."""
+
+    def _run_func(self, func, args, kwargs):
+        """Legacy support for running a function through :func`run`."""
+        self.log('{}(args={!r}, kwargs={!r})'.format(
+            func, args, kwargs))
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.exception('Function {!r} raised {!r}.'.format(
+                func, e))
+            raise CommandFailed()
 
     def run(self, *args, **kwargs):
-        """
-        Schedule a command or function to in the session.
+        """Run a command.
 
         Commands must be specified as a list of strings, for example::
 
@@ -149,20 +154,19 @@ class SessionConfig(object):
         :param success_codes: A list of return codes that are considered
             successful. By default, only ``0`` is considered success.
         :type success_codes: list, tuple, or None
-
-        Functions can be scheduled just by passing the function and any args,
-        just like :func:`functools.partial`::
-
-            session.run(shutil.rmtree, 'docs/_build')
-
         """
         if not args:
             raise ValueError('At least one argument required to run().')
+
+        # Legacy support - run a function given.
         if callable(args[0]):
-            self._commands.append(
-                FunctionCommand(args[0], args[1:], kwargs))
-        else:
-            self._commands.append(Command(args=args, **kwargs))
+            return self._run_func(args[0], args[1:], kwargs)
+
+        # Run a shell command.
+        return Command(args=args, **kwargs)(
+            env_fallback=self.env,
+            path_override=self.bin,
+        )
 
     def install(self, *args):
         """Install invokes `pip`_ to install packages inside of the session's
@@ -187,12 +191,12 @@ class SessionConfig(object):
 
         .. _pip: https://pip.readthedocs.org
         """
-        if not self.virtualenv:
+        if not isinstance(self.virtualenv, VirtualEnv):
             raise ValueError(
                 'A session without a virtualenv can not install dependencies.')
         if not args:
             raise ValueError('At least one argument required to install().')
-        self._commands.append(InstallCommand(args))
+        self.virtualenv.install(*args)
 
     def notify(self, target):
         """Place the given session at the end of the queue.
@@ -202,10 +206,10 @@ class SessionConfig(object):
 
         Args:
             target (Union[str, Callable]): The session to be notified. This
-                may be specified as the appropropriate string or using
-                the function object.
+                may be specified as the appropriate string (same as used for
+                ``nox -s``) or using the function object.
         """
-        self._commands.append(NotifyCommand(target))
+        self._runner.manifest.notify(target)
 
     def log(self, *args, **kwargs):
         """Outputs a log during the session."""
@@ -224,75 +228,49 @@ class SessionConfig(object):
         raise _SessionSkip()
 
 
-class Session(object):
+class SessionRunner(object):
     def __init__(self, name, signature, func, global_config, manifest=None):
         self.name = name
         self.signature = signature
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
+        self.venv = None
 
     def __str__(self):
         return utils.coerce_str(self.signature or self.name)
 
-    def _create_config(self):
-        self.config = SessionConfig(posargs=self.global_config.posargs)
-
-        # By default, nox should quietly change to the directory where
-        # the nox.py file is located.
-        cwd = os.path.realpath(os.path.dirname(self.global_config.noxfile))
-        self.config.chdir(cwd, debug=True)
-
-        # Run the actual session function, passing it the newly-created
-        # SessionConfig object.
-        self.func(self.config)
-
     def _create_venv(self):
-        if not self.config.virtualenv:
+        if self.func.python is False:
             self.venv = ProcessEnv()
             return
 
-        virtualenv_name = (
-            self.config.virtualenv_dirname or self.signature or self.name)
+        name = self.signature or self.name
+        path = _normalize_path(self.global_config.envdir, name)
+        reuse_existing = (
+            self.func.reuse_venv or
+            self.global_config.reuse_existing_virtualenvs)
         self.venv = VirtualEnv(
-            _normalize_path(
-                self.global_config.envdir, virtualenv_name),
-            interpreter=self.config.interpreter,
-            reuse_existing=(
-                self.config.reuse_existing_virtualenv or
-                self.global_config.reuse_existing_virtualenvs))
+            path,
+            interpreter=self.func.python,
+            reuse_existing=reuse_existing)
         self.venv.create()
-
-    def _run_commands(self):
-        env = self.venv.env.copy()
-        env.update(self.config.env)
-
-        for command in self.config._commands:
-            if isinstance(command, Command):
-                command(
-                    env_fallback=env,
-                    path_override=self.venv.bin,
-                    session=self,
-                )
-            elif isinstance(command, InstallCommand):
-                command(self.venv)
-            else:
-                command()
 
     def execute(self):
         session_friendly_name = self.signature or self.name
         logger.warning('Running session {}'.format(session_friendly_name))
 
         try:
-            # Set up the SessionConfig object (which session functions refer
-            # to as `session`) and then the virtualenv.
-            self._create_config()
-            self._create_venv()
+            # By default, nox should quietly change to the directory where
+            # the nox.py file is located.
+            cwd = py.path.local(
+                os.path.realpath(
+                    os.path.dirname(self.global_config.noxfile))).as_cwd()
 
-            # Run the actual commands prescribed by the session.
-            cwd = py.path.local(os.getcwd()).as_cwd()
             with cwd:
-                self._run_commands()
+                self._create_venv()
+                session = Session(self)
+                self.func(session)
 
             # Nothing went wrong; return a success.
             return Result(self, Status.SUCCESS)
@@ -310,6 +288,11 @@ class Session(object):
             logger.error('Session {} interrupted.'.format(self))
             raise
 
+        except Exception as exc:
+            logger.exception(
+                'Session {} raised exception {!r}'.format(self, exc))
+            return Result(self, Status.FAILED)
+
 
 class Result(object):
     """An object representing the result of a session."""
@@ -318,7 +301,8 @@ class Result(object):
         """Initialize the Result object.
 
         Args:
-            session (~nox.sessions.Session): The session which ran.
+            session (~nox.sessions.SessionRunner):
+                The session runner which ran.
             status (~nox.sessions.Status): The final result status.
         """
         self.session = session

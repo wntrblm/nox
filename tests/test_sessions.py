@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
+import sys
 from unittest import mock
 
 import pytest
@@ -20,6 +22,8 @@ import pytest
 from nox._testing import Namespace
 import nox.command
 from nox.logger import logger
+import nox.manifest
+import nox.registry
 import nox.sessions
 import nox.virtualenv
 
@@ -53,426 +57,319 @@ def test__normalize_path_give_up():
     assert 'any-path' in norm_path
 
 
-@pytest.fixture
-def make_one_config():
-    def factory(*args, **kwargs):
-        config = nox.sessions.SessionConfig(*args, **kwargs)
-        return config
-    return factory
+class TestSession:
+    def make_session_and_runner(self):
+        runner = nox.sessions.SessionRunner(
+            name='test',
+            signature='test',
+            func=mock.sentinel.func,
+            global_config=Namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest))
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.env = {}
+        return nox.sessions.Session(runner=runner), runner
 
+    def test_properties(self):
+        session, runner = self.make_session_and_runner()
 
-def test_config_constructor_defaults(make_one_config):
-    config = make_one_config()
-    assert config.interpreter is None
-    assert config._commands == []
-    assert config.env == {}
-    assert config.posargs == []
-    assert config.reuse_existing_virtualenv is False
+        assert session.env is runner.venv.env
+        assert session.posargs is runner.global_config.posargs
+        assert session.virtualenv is runner.venv
+        assert session.bin is runner.venv.bin
 
+    def test_chdir(self, tmpdir):
+        cdto = str(tmpdir.join('cdbby').ensure(dir=True))
+        current_cwd = os.getcwd()
 
-def test_config_constructor_args(make_one_config):
-    config = make_one_config([1, 2, 3])
-    assert config.posargs == [1, 2, 3]
+        session, _ = self.make_session_and_runner()
 
+        session.chdir(cdto)
 
-def test_config_chdir(make_one_config):
-    config = make_one_config()
-    config.chdir('meep')
-    command = config._commands[0]
-    assert command.func == os.chdir
-    assert command.args == ('meep',)
-    assert str(command) == 'chdir meep'
+        assert os.getcwd() == cdto
+        os.chdir(current_cwd)
 
+    def test_run_bad_args(self):
+        session, _ = self.make_session_and_runner()
 
-def test_config_notify(make_one_config):
-    config = make_one_config()
-    config.notify('foo')
-    command = config._commands[0]
-    assert isinstance(command, nox.command.NotifyCommand)
+        with pytest.raises(ValueError, match='arg'):
+            session.run()
 
+    def test_run_with_func(self):
+        session, _ = self.make_session_and_runner()
 
-def test_config_run(make_one_config):
-    def test_func():
-        pass
+        assert session.run(lambda a, b: a+b, 1, 2) == 3
 
-    config = make_one_config()
-    config.run('echo')
-    config.run('echo', '1', '2')
-    config.run('echo', '1', '2', silent=True)
-    config.run(test_func, 1, 2, three=4)
+    def test_run_with_func_error(self):
+        session, _ = self.make_session_and_runner()
 
-    assert config._commands[0].args == ('echo',)
-    assert config._commands[1].args == ('echo', '1', '2')
-    assert config._commands[2].args == ('echo', '1', '2')
-    assert config._commands[2].silent is True
-    assert config._commands[3].func == test_func
-    assert config._commands[3].args == (1, 2)
-    assert config._commands[3].kwargs == {'three': 4}
+        def raise_value_error():
+            raise ValueError('meep')
 
-    with pytest.raises(ValueError):
-        config.run()
+        with pytest.raises(nox.sessions.CommandFailed):
+            assert session.run(raise_value_error)
 
+    def test_run_success(self):
+        session, _ = self.make_session_and_runner()
+        result = session.run(sys.executable, '-c', 'print(123)')
+        assert result
 
-def test_config_install(make_one_config):
-    config = make_one_config()
-    config.install('mock')
-    config.install('mock', 'pytest')
-    config.install('-r', 'somefile.txt')
-    config.install('-e', 'dir')
+    def test_run_error(self):
+        session, _ = self.make_session_and_runner()
 
-    assert config._commands[0].deps == ('mock',)
-    assert config._commands[1].deps == ('mock', 'pytest')
-    assert config._commands[2].deps == ('-r', 'somefile.txt')
-    assert config._commands[3].deps == ('-e', 'dir')
+        with pytest.raises(nox.sessions.CommandFailed):
+            session.run(sys.executable, '-c', 'import sys; sys.exit(1)')
 
-    with pytest.raises(ValueError):
-        config.install()
+    def test_install_bad_args(self):
+        session, _ = self.make_session_and_runner()
 
-    with pytest.raises(ValueError):
-        config.virtualenv = False
-        config.install('mock')
+        with pytest.raises(ValueError, match='arg'):
+            session.install()
 
+    def test_install_not_a_virtualenv(self):
+        session, runner = self.make_session_and_runner()
 
-def test_config_log(make_one_config):
-    config = make_one_config()
-    config.log('test', '1', '2')
+        runner.venv = None
 
+        with pytest.raises(ValueError, match='virtualenv'):
+            session.install()
 
-def test_config_error(make_one_config):
-    config = make_one_config()
+    def test_install(self):
+        session, runner = self.make_session_and_runner()
 
-    with pytest.raises(nox.sessions._SessionQuit):
-        config.error()
+        session.install('requests', 'urllib3')
 
-    with pytest.raises(nox.sessions._SessionQuit):
-        config.error('test', '1', '2')
+        runner.venv.install.assert_called_once_with('requests', 'urllib3')
 
+    def test_notify(self):
+        session, runner = self.make_session_and_runner()
 
-def test_config_skip(make_one_config):
-    config = make_one_config()
+        session.notify('other')
 
-    with pytest.raises(nox.sessions._SessionSkip):
-        config.skip()
+        runner.manifest.notify.assert_called_once_with('other')
 
-    with pytest.raises(nox.sessions._SessionSkip):
-        config.skip('test', '1', '2')
+    def test_log(self, caplog):
+        caplog.set_level(logging.INFO)
+        session, _ = self.make_session_and_runner()
 
+        session.log('meep')
 
-@pytest.fixture
-def make_one():
-    def factory(*args, **kwargs):
-        session = nox.sessions.Session(*args, **kwargs)
-        return session
-    return factory
+        assert 'meep' in caplog.text
 
+    def test_error(self, caplog):
+        caplog.set_level(logging.ERROR)
+        session, _ = self.make_session_and_runner()
 
-class MockConfig(nox.sessions.SessionConfig):
-    def __init__(self, **kwargs):
-        super(MockConfig, self).__init__()
-        self.__dict__['noxfile'] = './nox.py'
-        self.__dict__.update(**kwargs)
+        with pytest.raises(nox.sessions._SessionQuit):
+            session.error('meep')
 
+        assert 'meep' in caplog.text
 
-def test_constructor(make_one):
-    def mock_func():
-        pass
+    def test_error_no_log(self):
+        session, _ = self.make_session_and_runner()
 
-    global_config = MockConfig()
-    session = make_one('test', 'sig', mock_func, global_config)
+        with pytest.raises(nox.sessions._SessionQuit):
+            session.error()
 
-    assert session.name == 'test'
-    assert session.signature == 'sig'
-    assert session.func == mock_func
-    assert session.global_config == global_config
+    def test_skip_no_log(self):
+        session, _ = self.make_session_and_runner()
 
+        with pytest.raises(nox.sessions._SessionSkip):
+            session.skip()
 
-def test__create_config(make_one):
-    mock_func = mock.Mock()
-    global_config = MockConfig(posargs=[1, 2, 3])
-    session = make_one('test', 'sig', mock_func, global_config)
 
-    session._create_config()
+class TestSessionRunner:
+    def make_runner(self):
+        func = mock.Mock()
+        func.python = None
+        func.reuse_venv = False
+        runner = nox.sessions.SessionRunner(
+            name='test',
+            signature='test(1, 2)',
+            func=func,
+            global_config=Namespace(
+                noxfile=os.path.join(os.getcwd(), 'nox.py'),
+                envdir='envdir',
+                posargs=mock.sentinel.posargs,
+                reuse_existing_virtualenvs=False),
+            manifest=mock.create_autospec(nox.manifest.Manifest))
+        return runner
 
-    mock_func.assert_called_with(session.config)
-    assert session.config.posargs == [1, 2, 3]
+    def test_properties(self):
+        runner = self.make_runner()
 
+        assert runner.name == 'test'
+        assert runner.signature == 'test(1, 2)'
+        assert runner.func is not None
+        assert runner.global_config.posargs == mock.sentinel.posargs
+        assert isinstance(runner.manifest, nox.manifest.Manifest)
 
-def test__create_config_auto_chdir(make_one):
-    def session_func(sess):
-        pass
-    global_config = MockConfig(posargs=[1, 2, 3], noxfile='/path/to/nox.py')
-    session = make_one('test', 'sig', session_func, global_config)
-    session._create_config()
-    assert len(session.config._commands) == 1
-    assert isinstance(session.config._commands[0], nox.command.ChdirCommand)
-    assert session.config._commands[0].path.endswith(
-        os.path.join('path', 'to'))
+    def test__create_venv_process_env(self):
+        runner = self.make_runner()
+        runner.func.python = False
 
+        runner._create_venv()
 
-class MockVenv(object):
-    def __init__(self, path, interpreter, reuse_existing=False):
-        self.path = path
-        self.interpreter = interpreter
-        self.reuse_existing = reuse_existing
-        self.install_called = False
+        assert isinstance(runner.venv, nox.virtualenv.ProcessEnv)
 
-    def create(self):
-        return not self.reuse_existing
+    @mock.patch('nox.virtualenv.VirtualEnv.create', autospec=True)
+    def test__create_venv(self, create):
+        runner = self.make_runner()
 
-    def install(self):
-        self.install_called = True
+        runner._create_venv()
 
+        create.assert_called_once_with(runner.venv)
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
+        assert runner.venv.location.endswith(
+            os.path.join('envdir', 'test-1-2'))
+        assert runner.venv.interpreter is None
+        assert runner.venv.reuse_existing is False
 
-@pytest.fixture
-def venv_session(make_one):
-    global_config = MockConfig(
-        envdir='envdir',
-        reuse_existing_virtualenvs=False)
-    session = make_one('test', 'sig', mock.Mock(), global_config)
-    session.config = MockConfig(
-        interpreter='interpreter',
-        reuse_existing_virtualenv=False,
-        virtualenv=True)
+    @mock.patch('nox.virtualenv.VirtualEnv.create', autospec=True)
+    def test__create_venv_options(self, create):
+        runner = self.make_runner()
+        runner.func.python = 'coolpython'
+        runner.func.reuse_venv = True
 
-    with mock.patch('nox.sessions.VirtualEnv', MockVenv):
-        yield global_config, session
+        runner._create_venv()
 
+        create.assert_called_once_with(runner.venv)
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
+        assert runner.venv.interpreter is 'coolpython'
+        assert runner.venv.reuse_existing is True
 
-def test__create_venv(venv_session):
-    global_config, session = venv_session
+    def make_runner_with_mock_venv(self):
+        runner = self.make_runner()
+        runner._create_venv = mock.Mock()
+        return runner
 
-    session._create_venv()
-    assert session.venv.path == os.path.join('envdir', 'sig')
-    assert session.venv.interpreter == 'interpreter'
-    assert session.venv.reuse_existing is False
+    def test_execute_noop_success(self, caplog):
+        caplog.set_level(logging.DEBUG)
 
+        runner = self.make_runner_with_mock_venv()
 
-def test__create_venv_global_reuse(venv_session):
-    global_config, session = venv_session
-    global_config.reuse_existing_virtualenvs = True
-    session._create_venv()
-    assert session.venv.path == os.path.join('envdir', 'sig')
-    assert session.venv.interpreter == 'interpreter'
-    assert session.venv.reuse_existing is True
+        result = runner.execute()
 
+        assert result
+        runner.func.assert_called_once_with(mock.ANY)
+        assert 'Running session test(1, 2)' in caplog.text
 
-def test__create_venv_local_reuse(venv_session):
-    global_config, session = venv_session
-    global_config.reuse_existing_virtualenvs = False
-    session.config.reuse_existing_virtualenv = True
-    session._create_venv()
-    assert session.venv.path == os.path.join('envdir', 'sig')
-    assert session.venv.interpreter == 'interpreter'
-    assert session.venv.reuse_existing is True
+    def test_execute_quit(self):
+        runner = self.make_runner_with_mock_venv()
 
+        def func(session):
+            session.error('meep')
 
-def test__create_venv_virtualenv_false(venv_session):
-    global_config, session = venv_session
-    session.config.virtualenv = False
-    session._create_venv()
-    assert isinstance(session.venv, nox.virtualenv.ProcessEnv)
+        runner.func = func
 
+        result = runner.execute()
 
-def test__create_venv_explicit_name(venv_session):
-    global_config, session = venv_session
-    session.config.virtualenv_dirname = 'meep'
-    session._create_venv()
-    assert session.venv.path == os.path.join('envdir', 'meep')
-    assert session.venv.interpreter == 'interpreter'
-    assert session.venv.reuse_existing is False
+        assert result.status == nox.sessions.Status.ABORTED
 
+    def test_execute_skip(self):
+        runner = self.make_runner_with_mock_venv()
 
-def test__run_commands(make_one):
-    session = make_one('test', 'sig', mock.Mock(), MockConfig())
+        def func(session):
+            session.skip('meep')
 
-    cmd1 = mock.Mock(spec=nox.command.Command)
-    cmd2 = mock.Mock(spec=nox.command.FunctionCommand)
+        runner.func = func
 
-    session.config = MockConfig(
-        _commands=[cmd1, cmd2],
-        env={'SIGIL2': '345'})
-    session.venv = mock.Mock()
-    session.venv.env = {'SIGIL': '123'}
-    session.venv.bin = '/venv/bin'
+        result = runner.execute()
 
-    session._run_commands()
+        assert result.status == nox.sessions.Status.SKIPPED
 
-    assert cmd1.called
-    assert cmd1.call_args[1]['env_fallback'] == {
-        'SIGIL': '123', 'SIGIL2': '345'}
-    assert cmd1.call_args[1]['path_override'] == session.venv.bin
-    assert cmd2.called
+    def test_execute_failed(self):
+        runner = self.make_runner_with_mock_venv()
 
+        def func(session):
+            raise nox.sessions.CommandFailed()
 
-def test_execute(make_one):
-    session = make_one('test', 'sig', mock.Mock(), MockConfig())
+        runner.func = func
 
-    session.config = MockConfig()
-    session._create_config = mock.Mock()
-    session._create_venv = mock.Mock()
-    session._run_commands = mock.Mock()
+        result = runner.execute()
 
-    assert session.execute()
+        assert result.status == nox.sessions.Status.FAILED
 
-    assert session._create_config.called
-    assert session._create_venv.called
-    assert session._run_commands.called
+    def test_execute_interrupted(self):
+        runner = self.make_runner_with_mock_venv()
 
+        def func(session):
+            raise KeyboardInterrupt()
 
-def test_execute_install(make_one):
-    session = make_one('test', 'sig', mock.Mock(), MockConfig())
-    session.venv = mock.Mock()
-    commands = [
-        nox.command.InstallCommand(['-r', 'requirements.txt'])
-    ]
-    session.config = MockConfig(_commands=commands, env={})
+        runner.func = func
 
-    session._run_commands()
+        with pytest.raises(KeyboardInterrupt):
+            runner.execute()
 
-    session.venv.install.assert_called_with('-r', 'requirements.txt')
+    def test_execute_exception(self):
+        runner = self.make_runner_with_mock_venv()
 
+        def func(session):
+            raise ValueError('meep')
 
-def test_execute_chdir(make_one, tmpdir):
-    tmpdir.join('dir2').ensure(dir=True)
+        runner.func = func
 
-    session = make_one('test', 'sig', mock.Mock(), MockConfig())
-    session.venv = mock.Mock()
-    session.venv.env = {}
+        result = runner.execute()
 
-    current_cwd = os.getcwd()
-    observed_cwds = []
+        assert result.status == nox.sessions.Status.FAILED
 
-    def observe_cwd():
-        observed_cwds.append(os.getcwd())
 
-    commands = [
-        nox.command.FunctionCommand(os.chdir, [tmpdir.strpath]),
-        nox.command.FunctionCommand(observe_cwd),
-        nox.command.FunctionCommand(os.chdir, [tmpdir.join('dir2').strpath]),
-        nox.command.FunctionCommand(observe_cwd),
-    ]
+class TestResult:
+    def test_init(self):
+        result = nox.sessions.Result(
+            session=mock.sentinel.SESSION,
+            status=mock.sentinel.STATUS,
+        )
+        assert result.session == mock.sentinel.SESSION
+        assert result.status == mock.sentinel.STATUS
 
-    session.config = MockConfig(_commands=commands, env={})
-    session._create_config = mock.Mock()
-    session._create_venv = mock.Mock()
+    def test__bool_true(self):
+        for status in (
+                nox.sessions.Status.SUCCESS, nox.sessions.Status.SKIPPED):
+            result = nox.sessions.Result(session=object(), status=status)
+            assert bool(result)
+            assert result.__bool__()
+            assert result.__nonzero__()
 
-    assert session.execute()
+    def test__bool_false(self):
+        for status in (
+                nox.sessions.Status.FAILED, nox.sessions.Status.ABORTED):
+            result = nox.sessions.Result(session=object(), status=status)
+            assert not bool(result)
+            assert not result.__bool__()
+            assert not result.__nonzero__()
 
-    assert observed_cwds == [
-        tmpdir.strpath,
-        tmpdir.join('dir2').strpath]
+    def test__imperfect(self):
+        result = nox.sessions.Result(object(), nox.sessions.Status.SUCCESS)
+        assert result.imperfect == 'was successful'
+        result = nox.sessions.Result(object(), nox.sessions.Status.FAILED)
+        assert result.imperfect == 'failed'
 
-    assert os.getcwd() == current_cwd
+    def test__log_success(self):
+        result = nox.sessions.Result(object(), nox.sessions.Status.SUCCESS)
+        with mock.patch.object(logger, 'success') as success:
+            result.log('foo')
+            success.assert_called_once_with('foo')
 
+    def test__log_warning(self):
+        result = nox.sessions.Result(object(), nox.sessions.Status.SKIPPED)
+        with mock.patch.object(logger, 'warning') as warning:
+            result.log('foo')
+            warning.assert_called_once_with('foo')
 
-def test_execute_error(make_one, tmpdir):
-    session = make_one('test', 'sig', mock.Mock(), MockConfig())
+    def test__log_error(self):
+        result = nox.sessions.Result(object(), nox.sessions.Status.FAILED)
+        with mock.patch.object(logger, 'error') as error:
+            result.log('foo')
+            error.assert_called_once_with('foo')
 
-    def mock_run_commands():
-        raise nox.command.CommandFailed('test')
-
-    session.config = MockConfig(_dir='.')
-    session._create_config = mock.Mock()
-    session._create_venv = mock.Mock()
-    session._run_commands = mock_run_commands
-
-    assert not session.execute()
-
-
-def test_execute_interrupted(make_one, tmpdir):
-    session = make_one('test', 'sig', mock.Mock(), MockConfig())
-
-    def mock_run_commands():
-        raise KeyboardInterrupt()
-
-    session.config = MockConfig(_dir='.')
-    session._create_config = mock.Mock()
-    session._create_venv = mock.Mock()
-    session._run_commands = mock_run_commands
-
-    with pytest.raises(KeyboardInterrupt):
-        session.execute()
-
-
-def test_execute_session_quit(make_one):
-    def bad_config(session):
-        session.error('meep')
-
-    session = make_one('test', 'sig', bad_config, MockConfig(posargs=[]))
-    result = session.execute()
-    assert result.status == nox.sessions.Status.ABORTED
-    assert not result
-
-
-def test_execute_session_skip(make_one):
-    def skip_config(session):
-        session.skip('meep')
-
-    session = make_one('test', 'sig', skip_config, MockConfig(posargs=[]))
-
-    assert session.execute().status == nox.sessions.Status.SKIPPED
-
-
-def test_result_init():
-    result = nox.sessions.Result(
-        session=mock.sentinel.SESSION,
-        status=mock.sentinel.STATUS,
-    )
-    assert result.session == mock.sentinel.SESSION
-    assert result.status == mock.sentinel.STATUS
-
-
-def test_result_bool_true():
-    for status in (nox.sessions.Status.SUCCESS, nox.sessions.Status.SKIPPED):
-        result = nox.sessions.Result(session=object(), status=status)
-        assert bool(result)
-        assert result.__bool__()
-        assert result.__nonzero__()
-
-
-def test_result_bool_false():
-    for status in (nox.sessions.Status.FAILED, nox.sessions.Status.ABORTED):
-        result = nox.sessions.Result(session=object(), status=status)
-        assert not bool(result)
-        assert not result.__bool__()
-        assert not result.__nonzero__()
-
-
-def test_result_imperfect():
-    result = nox.sessions.Result(object(), nox.sessions.Status.SUCCESS)
-    assert result.imperfect == 'was successful'
-    result = nox.sessions.Result(object(), nox.sessions.Status.FAILED)
-    assert result.imperfect == 'failed'
-
-
-def test_result_log_success():
-    result = nox.sessions.Result(object(), nox.sessions.Status.SUCCESS)
-    with mock.patch.object(logger, 'success') as success:
-        result.log('foo')
-        success.assert_called_once_with('foo')
-
-
-def test_result_log_warning():
-    result = nox.sessions.Result(object(), nox.sessions.Status.SKIPPED)
-    with mock.patch.object(logger, 'warning') as warning:
-        result.log('foo')
-        warning.assert_called_once_with('foo')
-
-
-def test_result_log_error():
-    result = nox.sessions.Result(object(), nox.sessions.Status.FAILED)
-    with mock.patch.object(logger, 'error') as error:
-        result.log('foo')
-        error.assert_called_once_with('foo')
-
-
-def test_result_serialize():
-    result = nox.sessions.Result(
-        session=Namespace(signature='siggy', name='namey', func=mock.Mock()),
-        status=nox.sessions.Status.SUCCESS,
-    )
-    answer = result.serialize()
-    assert answer['name'] == 'namey'
-    assert answer['result'] == 'success'
-    assert answer['result_code'] == 1
-    assert answer['signature'] == 'siggy'
+    def test__serialize(self):
+        result = nox.sessions.Result(
+            session=Namespace(
+                signature='siggy', name='namey', func=mock.Mock()),
+            status=nox.sessions.Status.SUCCESS,
+        )
+        answer = result.serialize()
+        assert answer['name'] == 'namey'
+        assert answer['result'] == 'success'
+        assert answer['result_code'] == 1
+        assert answer['signature'] == 'siggy'

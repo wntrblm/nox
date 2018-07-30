@@ -15,12 +15,9 @@
 from __future__ import absolute_import, print_function
 
 import imp
-import inspect
 import io
 import json
 import os
-
-import six
 
 from nox import registry
 from nox.logger import logger
@@ -72,14 +69,6 @@ def discover_manifest(module, global_config):
     # decorated with @nox.session); do not sort these, as they are being
     # sorted by decorator call time.
     functions = registry.get()
-
-    # Find any function conforming to the session_* naming convention.
-    # Sort these in alphabetical order.
-    for name in sorted(six.iterkeys(module.__dict__)):
-        obj = module.__dict__[name]
-        if name.startswith('session_') and inspect.isfunction(obj):
-            session_name = name.split('session_', 1).pop()
-            functions[session_name] = obj
 
     # Return the final dictionary of session functions.
     return Manifest(functions, global_config)

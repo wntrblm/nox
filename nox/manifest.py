@@ -14,10 +14,26 @@
 
 from __future__ import absolute_import
 
+import copy
+import functools
 import itertools
+import types
 
 from nox._parametrize import generate_calls
-from nox.sessions import Session
+from nox.sessions import SessionRunner
+
+
+def _copy_func(src, name=None):
+    dst = types.FunctionType(
+        src.__code__,
+        src.__globals__,
+        name=name or src.__name__,
+        argdefs=src.__defaults__,
+        closure=src.__closure__)
+    dst.__dict__.update(copy.deepcopy(src.__dict__))
+    dst = functools.update_wrapper(dst, src)
+    dst.__kwdefaults__ = src.__kwdefaults__
+    return dst
 
 
 class Manifest(object):
@@ -138,25 +154,48 @@ class Manifest(object):
             Sequence[~nox.session.Session]: A sequence of Session objects
                 bound to this manifest and configuration.
         """
+        sessions = []
+
+        # If the func has the python attribute set to a list, we'll need
+        # to expand them.
+        if isinstance(func.python, (list, tuple, set)):
+            for python in func.python:
+                single_func = _copy_func(func)
+                single_func.python = python
+                sessions.extend(self.make_session(name, single_func))
+
+            return sessions
+
         # Simple case: If this function is not parametrized, then make
         # a simple session
         if not hasattr(func, 'parametrize'):
-            session = Session(name, None, func, self._config, self)
-            return (session,)
+            if func.python:
+                long_name = '{}-{}'.format(name, func.python)
+            else:
+                long_name = name
+            session = SessionRunner(name, long_name, func, self._config, self)
+            return [session]
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
-        sessions = []
         calls = generate_calls(func, func.parametrize)
         for call in calls:
-            long_name = name + call.session_signature
-            sessions.append(Session(name, long_name, call, self._config, self))
+            if func.python:
+                long_name = '{}-{}{}'.format(
+                    name, func.python, call.session_signature)
+            else:
+                long_name = '{}{}'.format(
+                    name, call.session_signature)
+
+            sessions.append(
+                SessionRunner(name, long_name, call, self._config, self))
 
         # Edge case: If the parameters made it such that there were no valid
         # calls, add an empty, do-nothing session.
         if not calls:
             sessions.append(
-                Session(name, None, _null_session_func, self._config, self),
+                SessionRunner(
+                    name, None, _null_session_func, self._config, self),
             )
 
         # Return the list of sessions.

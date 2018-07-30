@@ -39,6 +39,31 @@ def test_session_decorator(cleanup_registry):
     answer = registry.get()
     assert 'unit_tests' in answer
     assert answer['unit_tests'] is unit_tests
+    assert unit_tests.python is None
+
+
+def test_session_decorator_single_python(cleanup_registry):
+    @registry.session_decorator(python='3.6')
+    def unit_tests(session):
+        pass
+
+    assert unit_tests.python == '3.6'
+
+
+def test_session_decorator_list_of_pythons(cleanup_registry):
+    @registry.session_decorator(python=['3.5', '3.6'])
+    def unit_tests(session):
+        pass
+
+    assert unit_tests.python == ['3.5', '3.6']
+
+
+def test_session_decorator_reuse(cleanup_registry):
+    @registry.session_decorator(reuse_venv=True)
+    def unit_tests(session):
+        pass
+
+    assert unit_tests.reuse_venv is True
 
 
 def test_get(cleanup_registry):

@@ -10,29 +10,23 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
-    - PYTHON: "C:\\Python27"
-      NOX_SESSION: "interpreters(version='2.7')"
-
-    - PYTHON: "C:\\Python27-x64"
-      NOX_SESSION: "interpreters(version='2.7')"
-
-    - PYTHON: "C:\\Python34"
-      NOX_SESSION: "interpreters(version='3.4')"
-
-    - PYTHON: "C:\\Python34-x64"
-      NOX_SESSION: "interpreters(version='3.4')"
-
     - PYTHON: "C:\\Python35"
-      NOX_SESSION: "interpreters(version='3.5')"
+      NOX_SESSION: "tests-3.5"
 
     - PYTHON: "C:\\Python35-x64"
-      NOX_SESSION: "interpreters(version='3.5')"
+      NOX_SESSION: "tests-3.5"
 
     - PYTHON: "C:\\Python36"
-      NOX_SESSION: "interpreters(version='3.6')"
+      NOX_SESSION: "tests-3.6"
 
     - PYTHON: "C:\\Python36-x64"
-      NOX_SESSION: "interpreters(version='3.6')"
+      NOX_SESSION: "tests-3.6"
+
+    - PYTHON: "C:\\Python37"
+      NOX_SESSION: "tests-3.7"
+
+    - PYTHON: "C:\\Python37-x64"
+      NOX_SESSION: "tests-3.7"
 
 install:
   # Prepend newly installed Python to the PATH of this build (this cannot be
@@ -46,7 +40,7 @@ install:
 
   # Upgrade to the latest version of pip to avoid it displaying warnings
   # about it being out of date.
-  - "pip install --disable-pip-version-check --user --upgrade pip"
+  - "python -m pip install --disable-pip-version-check --user --upgrade pip"
 
   # Install the build dependencies of the project. If some dependencies contain
   # compiled extensions and are not provided as pre-built wheel packages,
@@ -65,5 +59,4 @@ build_script:
 
 test_script:
   # Run the project tests
-  - "nox.exe --session default"
   - "nox.exe --session \"%NOX_SESSION%\""

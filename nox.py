@@ -20,8 +20,8 @@ import nox
 ON_APPVEYOR = os.environ.get('APPVEYOR') == 'True'
 
 
-@nox.session
-def default(session):
+@nox.session(python=['3.5', '3.6', '3.7'])
+def tests(session):
     session.install('-r', 'requirements-test.txt')
     session.install('-e', '.[tox_to_nox]')
     tests = session.posargs or ['tests/']
@@ -29,13 +29,6 @@ def default(session):
         'py.test', '--cov=nox', '--cov-config', '.coveragerc',
         '--cov-report=', *tests)
     session.notify('cover')
-
-
-@nox.session
-@nox.parametrize('version', ['2.7', '3.4', '3.5', '3.6'])
-def interpreters(session, version):
-    default(session)
-    session.interpreter = 'python' + version
 
 
 @nox.session

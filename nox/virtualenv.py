@@ -52,14 +52,15 @@ class ProcessEnv(object):
     def bin(self):
         return self._bin
 
-    def run(self, args, in_venv=True):
+    def run(self, args, in_venv=True, **kwargs):
         """Runs a command. By default, the command runs within the
         environment."""
         return Command(
             args=args,
             env=self.env if in_venv else None,
             silent=True,
-            path=self.bin if in_venv else None).run()
+            path=self.bin if in_venv else None,
+            **kwargs).run()
 
 
 def locate_via_py(version):
@@ -112,12 +113,16 @@ class VirtualEnv(ProcessEnv):
 
         Based heavily on tox's implementation (tox/interpreters.py).
         """
-        # Sanity check: If there is no assigned interpreter, then
-        # do nothing.
+        # If there is no assigned interpreter, then use the same one used by
+        # Nox.
         if self.interpreter is None:
-            return self.interpreter
+            return sys.executable
 
-        # Sanity check: We only need special behavior on Windows.
+        # If this is just a X.Y or X.Y.Z string, stick `python` in front of it.
+        if re.match(r'^\d\.\d\.?\d?$', self.interpreter):
+            self.interpreter = 'python{}'.format(self.interpreter)
+
+        # Sanity check: We only need the rest of this behavior on Windows.
         if platform.system() != 'Windows':
             return self.interpreter
 
@@ -163,7 +168,10 @@ class VirtualEnv(ProcessEnv):
         if self.interpreter:
             cmd.extend(['-p', self._resolved_interpreter])
 
-        self.run(cmd, in_venv=False)
+        logger.info(
+            'Creating virtualenv using {} in {}'.format(
+                os.path.basename(self._resolved_interpreter), self.location))
+        self.run(cmd, in_venv=False, log=False)
 
         return True
 
