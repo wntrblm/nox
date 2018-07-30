@@ -19,8 +19,6 @@ function). This module primarily loads configuration, and then passes
 control to :meth:``nox.workflow.execute``.
 """
 
-from __future__ import absolute_import, print_function
-
 import argparse
 import os
 import sys
