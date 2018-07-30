@@ -128,7 +128,7 @@ class TestSession:
             '-c', 'import os; print(os.environ["A"], os.environ["B"])',
             env={'B': '3'},
             silent=True)
-        assert result == '1 3\n'
+        assert result.strip() == '1 3'
 
     def test_install_bad_args(self):
         session, _ = self.make_session_and_runner()
