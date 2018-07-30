@@ -19,7 +19,6 @@ import re
 import unicodedata
 
 import py
-import six
 
 import nox.command
 from nox.logger import logger
@@ -28,7 +27,7 @@ from nox.virtualenv import ProcessEnv, VirtualEnv
 
 def _normalize_path(envdir, path):
     """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
-    if isinstance(path, six.binary_type):
+    if isinstance(path, bytes):
         path = path.decode('utf-8')
 
     path = unicodedata.normalize('NFKD', path).encode('ascii', 'ignore')

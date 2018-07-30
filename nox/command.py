@@ -18,7 +18,6 @@ import os
 import sys
 
 import py
-import six
 
 from nox.logger import logger
 from nox.popen import popen
@@ -60,7 +59,7 @@ def _clean_env(env):
     # Ensure systemroot is passed down, otherwise Windows will explode.
     clean_env['SYSTEMROOT'] = os.environ.get('SYSTEMROOT', '')
 
-    for key, value in six.iteritems(env):
+    for key, value in env.items():
         key = key.decode('utf-8') if isinstance(key, bytes) else key
         value = (
             value.decode('utf-8') if isinstance(value, bytes) else value)
