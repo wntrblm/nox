@@ -52,16 +52,6 @@ class ProcessEnv(object):
     def bin(self):
         return self._bin
 
-    def run(self, args, in_venv=True, **kwargs):
-        """Runs a command. By default, the command runs within the
-        environment."""
-        return nox.command.run(
-            args=args,
-            env=self.env if in_venv else None,
-            silent=True,
-            path=self.bin if in_venv else None,
-            **kwargs)
-
 
 def locate_via_py(version):
     """Find the Python executable using the Windows launcher.
@@ -171,9 +161,6 @@ class VirtualEnv(ProcessEnv):
         logger.info(
             'Creating virtualenv using {} in {}'.format(
                 os.path.basename(self._resolved_interpreter), self.location))
-        self.run(cmd, in_venv=False, log=False)
+        nox.command.run(cmd, silent=True, log=False)
 
         return True
-
-    def install(self, *args):
-        self.run(('pip', 'install', '--upgrade') + args)

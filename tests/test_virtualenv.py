@@ -158,48 +158,6 @@ def test_create_interpreter(make_one):
     assert dir.join('bin', 'python3').check()
 
 
-def test_run(make_one):
-    venv, _ = make_one(interpreter='python3')
-    venv.env['SIGIL'] = '123'
-
-    with mock.patch('nox.command.run', autospec=True) as run:
-        run.return_value = 'okay :)'
-        assert venv.run(['test', 'command']) == 'okay :)'
-
-    run.assert_called_once_with(
-        ['test', 'command'],
-        silent=True,
-        path=venv.bin,
-        env=venv.env)
-
-
-def test_run_outside_venv(make_one):
-    venv, _ = make_one(interpreter='python3')
-
-    with mock.patch('nox.command.run', autospec=True) as run:
-        run.return_value = 'okay :)'
-        assert venv.run(['test', 'command'], in_venv=False) == 'okay :)'
-
-    run.assert_called_once_with(
-        ['test', 'command'],
-        silent=True,
-        path=None,
-        env=None)
-
-
-def test_install(make_one):
-    venv, _ = make_one()
-    with mock.patch.object(venv, 'run') as mock_run:
-
-        venv.install('blah')
-        mock_run.assert_called_with(
-            ('pip', 'install', '--upgrade', 'blah'))
-
-        venv.install('-r', 'somefile.txt')
-        mock_run.assert_called_with(
-            ('pip', 'install', '--upgrade', '-r', 'somefile.txt'))
-
-
 def test__resolved_interpreter_none(make_one):
     # Establish that the _resolved_interpreter method is a no-op if the
     # interpeter is not set.

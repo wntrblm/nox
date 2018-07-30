@@ -147,9 +147,11 @@ class TestSession:
     def test_install(self):
         session, runner = self.make_session_and_runner()
 
-        session.install('requests', 'urllib3')
-
-        runner.venv.install.assert_called_once_with('requests', 'urllib3')
+        with mock.patch.object(session, 'run', autospec=True) as run:
+            session.install('requests', 'urllib3')
+            run.assert_called_once_with(
+                'pip', 'install', '--upgrade', 'requests', 'urllib3',
+                silent=True)
 
     def test_notify(self):
         session, runner = self.make_session_and_runner()

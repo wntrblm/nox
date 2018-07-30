@@ -176,7 +176,7 @@ class Session(object):
             **kwargs
         )
 
-    def install(self, *args):
+    def install(self, *args, **kwargs):
         """Install invokes `pip`_ to install packages inside of the session's
         virtualenv.
 
@@ -197,6 +197,8 @@ class Session(object):
             # Install in editable mode.
             session.install('-e', '.')
 
+        Additional keyword args are the same as for :meth:`run`.
+
         .. _pip: https://pip.readthedocs.org
         """
         if not isinstance(self.virtualenv, VirtualEnv):
@@ -204,7 +206,10 @@ class Session(object):
                 'A session without a virtualenv can not install dependencies.')
         if not args:
             raise ValueError('At least one argument required to install().')
-        self.virtualenv.install(*args)
+
+        self.run(
+            'pip', 'install', '--upgrade', *args,
+            silent=True, **kwargs)
 
     def notify(self, target):
         """Place the given session at the end of the queue.
