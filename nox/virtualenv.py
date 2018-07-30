@@ -20,7 +20,7 @@ import sys
 
 import py
 
-from nox.command import Command
+import nox.command
 from nox.logger import logger
 
 # Problematic environment variables that are stripped from all commands inside
@@ -55,12 +55,12 @@ class ProcessEnv(object):
     def run(self, args, in_venv=True, **kwargs):
         """Runs a command. By default, the command runs within the
         environment."""
-        return Command(
+        return nox.command.run(
             args=args,
             env=self.env if in_venv else None,
             silent=True,
             path=self.bin if in_venv else None,
-            **kwargs).run()
+            **kwargs)
 
 
 def locate_via_py(version):

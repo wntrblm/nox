@@ -105,7 +105,7 @@ class TestSession:
         def raise_value_error():
             raise ValueError('meep')
 
-        with pytest.raises(nox.sessions.CommandFailed):
+        with pytest.raises(nox.command.CommandFailed):
             assert session.run(raise_value_error)
 
     def test_run_success(self):
@@ -116,8 +116,19 @@ class TestSession:
     def test_run_error(self):
         session, _ = self.make_session_and_runner()
 
-        with pytest.raises(nox.sessions.CommandFailed):
+        with pytest.raises(nox.command.CommandFailed):
             session.run(sys.executable, '-c', 'import sys; sys.exit(1)')
+
+    def test_run_overly_env(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv.env['A'] = '1'
+        runner.venv.env['B'] = '2'
+        result = session.run(
+            sys.executable,
+            '-c', 'import os; print(os.environ["A"], os.environ["B"])',
+            env={'B': '3'},
+            silent=True)
+        assert result == '1 3\n'
 
     def test_install_bad_args(self):
         session, _ = self.make_session_and_runner()
@@ -281,7 +292,7 @@ class TestSessionRunner:
         runner = self.make_runner_with_mock_venv()
 
         def func(session):
-            raise nox.sessions.CommandFailed()
+            raise nox.command.CommandFailed()
 
         runner.func = func
 

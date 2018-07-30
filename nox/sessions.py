@@ -21,9 +21,7 @@ import unicodedata
 import py
 import six
 
-from nox import utils
-from nox.command import Command
-from nox.command import CommandFailed
+import nox.command
 from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
 
@@ -117,9 +115,9 @@ class Session(object):
         except Exception as e:
             logger.exception('Function {!r} raised {!r}.'.format(
                 func, e))
-            raise CommandFailed()
+            raise nox.command.CommandFailed()
 
-    def run(self, *args, **kwargs):
+    def run(self, *args, env=None, **kwargs):
         """Run a command.
 
         Commands must be specified as a list of strings, for example::
@@ -162,10 +160,20 @@ class Session(object):
         if callable(args[0]):
             return self._run_func(args[0], args[1:], kwargs)
 
+        # Combine the env argument with our virtualenv's env vars.
+        if env is not None:
+            overlay_env = env
+            env = self.env.copy()
+            env.update(overlay_env)
+        else:
+            env = self.env
+
         # Run a shell command.
-        return Command(args=args, **kwargs)(
-            env_fallback=self.env,
-            path_override=self.bin,
+        return nox.command.run(
+            args,
+            env=env,
+            path=self.bin,
+            **kwargs
         )
 
     def install(self, *args):
@@ -238,7 +246,7 @@ class SessionRunner(object):
         self.venv = None
 
     def __str__(self):
-        return utils.coerce_str(self.signature or self.name)
+        return self.signature or self.name
 
     def _create_venv(self):
         if self.func.python is False:
@@ -281,7 +289,7 @@ class SessionRunner(object):
         except _SessionSkip:
             return Result(self, Status.SKIPPED)
 
-        except CommandFailed:
+        except nox.command.CommandFailed:
             return Result(self, Status.FAILED)
 
         except KeyboardInterrupt:

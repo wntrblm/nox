@@ -22,7 +22,6 @@ import six
 
 from nox.logger import logger
 from nox.popen import popen
-from nox.utils import coerce_str
 
 
 class CommandFailed(Exception):
@@ -51,68 +50,60 @@ def which(program, path):
     raise CommandFailed('Program {} not found'.format(program))
 
 
-class Command(object):
-    def __init__(self, args, env=None, silent=False, path=None,
-                 success_codes=None, log=True):
-        self.args = args
-        self.silent = silent
-        self.env = env
-        self.path = path
-        self.success_codes = success_codes or [0]
-        self.log = log
+def _clean_env(env):
+    # Environment variables must be unicode strings on Python 2.
+    if env is None:
+        return None
 
-    def run(self, path_override=None, env_fallback=None, **kwargs):
-        path = self.path if path_override is None else path_override
+    clean_env = {}
 
-        env = env_fallback.copy() if env_fallback is not None else None
-        if self.env is not None:
-            if env is None:
-                env = self.env
-            else:
-                env.update(self.env)
+    # Ensure systemroot is passed down, otherwise Windows will explode.
+    clean_env['SYSTEMROOT'] = os.environ.get('SYSTEMROOT', '')
 
-        cmd, args = self.args[0], self.args[1:]
-        full_cmd = ' '.join(self.args)
+    for key, value in six.iteritems(env):
+        key = key.decode('utf-8') if isinstance(key, bytes) else key
+        value = (
+            value.decode('utf-8') if isinstance(value, bytes) else value)
+        clean_env[key] = value
 
-        if self.log:
-            logger.info(full_cmd)
+    return clean_env
 
-        cmd_path = which(cmd, path)
 
-        # Environment variables must be the "str" type.
-        # In other words, they must be bytestrings in Python 2, and Unicode
-        # text strings in Python 3.
-        clean_env = {} if env is not None else None
-        if clean_env is not None:
-            # Ensure systemroot is passed down, otherwise Windows will explode.
-            clean_env[str('SYSTEMROOT')] = os.environ.get(
-                'SYSTEMROOT', str(''))
+def run(args, *, env=None, silent=False, path=None,
+        success_codes=None, log=True):
+    """Run a command-line program."""
 
-            for key, value in six.iteritems(env):
-                key = coerce_str(key)
-                value = coerce_str(value)
-                clean_env[key] = value
+    if success_codes is None:
+        success_codes = [0]
 
-        try:
-            return_code, output = popen(
-                [cmd_path] + list(args),
-                silent=self.silent,
-                env=clean_env)
+    cmd, args = args[0], args[1:]
+    full_cmd = '{} {}'.format(
+        cmd, ' '.join(args))
 
-            if return_code not in self.success_codes:
-                logger.error('Command {} failed with exit code {}{}'.format(
-                    full_cmd, return_code, ':' if self.silent else ''))
+    cmd_path = which(cmd, path)
 
-                if self.silent:
-                    sys.stderr.write(output)
+    if log:
+        logger.info(full_cmd)
 
-                raise CommandFailed('Returned code {}'.format(return_code))
+    env = _clean_env(env)
 
-            return output if self.silent else True
+    try:
+        return_code, output = popen(
+            [cmd_path] + list(args),
+            silent=silent,
+            env=env)
 
-        except KeyboardInterrupt:
-            logger.error('Interrupted...')
-            raise
+        if return_code not in success_codes:
+            logger.error('Command {} failed with exit code {}{}'.format(
+                full_cmd, return_code, ':' if silent else ''))
 
-    def __call__(self, *args, **kwargs):
-        return self.run(*args, **kwargs)
+            if silent:
+                sys.stderr.write(output)
+
+            raise CommandFailed('Returned code {}'.format(return_code))
+
+        return output if silent else True
+
+    except KeyboardInterrupt:
+        logger.error('Interrupted...')
+        raise

@@ -158,29 +158,33 @@ def test_create_interpreter(make_one):
     assert dir.join('bin', 'python3').check()
 
 
-def test_run(monkeypatch, make_one):
+def test_run(make_one):
     venv, _ = make_one(interpreter='python3')
     venv.env['SIGIL'] = '123'
 
-    def mock_run(self):
-        assert self.args == ['test', 'command']
-        assert self.silent is True
-        assert self.path == venv.bin
-        assert self.env['SIGIL'] == '123'
-        return 'okay :)'
+    with mock.patch('nox.command.run', autospec=True) as run:
+        run.return_value = 'okay :)'
+        assert venv.run(['test', 'command']) == 'okay :)'
 
-    monkeypatch.setattr(nox.virtualenv.Command, 'run', mock_run)
-    assert venv.run(['test', 'command']) == 'okay :)'
+    run.assert_called_once_with(
+        ['test', 'command'],
+        silent=True,
+        path=venv.bin,
+        env=venv.env)
 
-    def mock_run_outside_venv(self):
-        assert self.args == ['test', 'command']
-        assert self.silent is True
-        assert self.path != venv.bin
-        assert self.env is None
-        return 'okay :)'
 
-    monkeypatch.setattr(nox.virtualenv.Command, 'run', mock_run_outside_venv)
-    assert venv.run(['test', 'command'], in_venv=False) == 'okay :)'
+def test_run_outside_venv(make_one):
+    venv, _ = make_one(interpreter='python3')
+
+    with mock.patch('nox.command.run', autospec=True) as run:
+        run.return_value = 'okay :)'
+        assert venv.run(['test', 'command'], in_venv=False) == 'okay :)'
+
+    run.assert_called_once_with(
+        ['test', 'command'],
+        silent=True,
+        path=None,
+        env=None)
 
 
 def test_install(make_one):
