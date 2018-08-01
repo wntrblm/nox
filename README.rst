@@ -8,3 +8,8 @@ file for configuration.
 The latest documentation is available on `Read the Docs`_.
 
 The source code is available on `GitHub`_.
+
+
+.. _tox: https://tox.readthedocs.io
+.. _Read the Docs: https://nox.readthedocs.io
+.. _GitHub: https://github.com/theacodes/nox
