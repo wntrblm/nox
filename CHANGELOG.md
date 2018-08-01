@@ -1,3 +1,24 @@
+## Pre-releases
+
+### 2018.7.31dev1
+
+Important notes and breaking changes:
+
+* Nox no longer supports Python 2.7. You can still create and run Python 2.7 sessions, but Nox itself must be installed using Python 3.5+.
+* Nox's behavior has been changed from *declarative*  to *imperative*. Session actions now run immediately. Existing code to setup session virtualenv, such as `session.interpreter` **will break**! Please consult the documention on how to use `@nox.session(python=[...])` to configure virtualenvs for sessions.
+* Nox now uses calver for releases.
+* Support for the legacy naming convention (for example, `session_tests`) has been removed.
+
+Other notes:
+
+* Add note about pre-releases.
+* Fix missing links in Readme.
+* Remove usage of future imports.
+* Remove usage of six.
+* Make session.install a simple alias for session.run.
+* Refactor nox.command.Command as nox.command.run, reducing complexity.
+* Add list of projects that use Nox
+
 ## v0.19.1
 
 * Updates copyright information and contact addresses. No code changes.
