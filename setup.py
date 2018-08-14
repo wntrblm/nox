@@ -64,7 +64,7 @@ setup(
     include_package_data=True,
 
     install_requires=[
-        'colorlog>=2.6.1,<3.0.0',
+        'colorlog>=2.6.1,<4.0.0',
         'py>=1.4.0,<2.0.0',
         'virtualenv>=14.0.0'],
 
