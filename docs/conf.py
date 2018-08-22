@@ -23,6 +23,7 @@ import sys
 # possibility it's installed as a bytecode-compiled binary (.egg). So,
 # include the source anyway.
 sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration ------------------------------------------------
 
@@ -98,7 +99,7 @@ add_module_names = False
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'witchhazel.WitchHazelStyle'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -132,6 +133,7 @@ html_theme_options = {
     'font_family': "'Roboto', Georgia, sans",
     'head_font_family': "'Roboto', Georgia, serif",
     'code_font_family': "'Roboto Mono', 'Consolas', monospace",
+    'pre_bg': '#433e56'
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

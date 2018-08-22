@@ -63,7 +63,7 @@ Will produce these sessions::
 
 Note that this expansion happens *before* parameterization occurs, so you can still parametrize sessions with multiple interpreters.
 
-If you want to disable virtualenv creation altogether, you can set ``python`` to ``False``:
+If you want to disable virtualenv creation altogether, you can set ``python`` to ``False``::
 
     @nox.session(python=False)
     def tests(session):
