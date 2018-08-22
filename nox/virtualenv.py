@@ -52,7 +52,7 @@ class ProcessEnv:
 
 
 def locate_via_py(version):
-    """Find the Python executable using the Windows launcher.
+    """Find the Python executable using the Windows Launcher.
 
     This is based on :pep:397 which details that executing
     ``py.exe -{version}`` should execute python with the requested
@@ -61,7 +61,9 @@ def locate_via_py(version):
     specific Python interpreter.
 
     Args:
-        version (str): The desired Python version.
+        version (str): The desired Python version to pass to ``py.exe``. Of the form
+            ``X.Y`` or ``X.Y-32``. For example, a usage of the Windows Launcher might
+            be ``py -3.6-32``.
 
     Returns:
         Optional[str]: The full executable path for the Python ``version``,
@@ -77,7 +79,24 @@ def locate_via_py(version):
 
 
 class VirtualEnv(ProcessEnv):
-    """Virtualenv management class."""
+    """Virtualenv management class.
+
+    Args:
+        location (str): The location on the filesystem where the virtual environment
+            should be created.
+        interpreter (Optional[str]): The desired Python version. Of the form
+
+            * ``X.Y``, e.g. ``3.5``
+            * ``X.Y-32``. For example, a usage of the Windows Launcher might
+              be ``py -3.6-32``
+            * ``X.Y.Z``, e.g. ``3.4.9``
+            * ``pythonX.Y``, e.g. ``python2.7``
+            * A path in the filesystem to a Python executable
+
+            If not specified, this will use the currently running Python.
+        reuse_existing (Optional[bool]): Flag indicating if the virtual environment
+            should be reused if it already exists at ``location``.
+    """
 
     def __init__(self, location, interpreter=None, reuse_existing=False):
         self.location = os.path.abspath(location)
@@ -109,26 +128,41 @@ class VirtualEnv(ProcessEnv):
         # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
         # part and add Python to the front of it.
         match = re.match(r"^(?P<xy_ver>\d(\.\d)?)(\.\d+)?$", self.interpreter)
+        xy_version = ""
         if match:
-            self.interpreter = "python{}".format(match.group("xy_ver"))
+            xy_version = match.group("xy_ver")
+            self.interpreter = "python{}".format(xy_version)
 
-        # Sanity check: We only need the rest of this behavior on Windows.
-        if platform.system() != "Windows":
-            return self.interpreter
-
-        # We may have gotten a fully-qualified interpreter path (for someone
-        # _only_ testing on Windows); accept this.
+        # We may have gotten a fully-qualified interpreter path; accept this.
         if py.path.local.sysfind(self.interpreter):
             return self.interpreter
 
-        # If this is a standard Unix "pythonX.Y" name, it should be found
-        # in a standard location in Windows, and if not, the py.exe launcher
-        # should be able to find it from the information in the registry.
-        match = re.match(r"^python(?P<ver>\d\.?\d?)$", self.interpreter)
-        if match:
-            version = match.group("ver")
-            # Ask the Python launcher to find the interpreter.
-            path_from_launcher = locate_via_py(version)
+        # Allow versions of the form ``X.Y-32`` for Windows.
+        if not xy_version:
+            match = re.match(r"^\d\.\d-32?$", self.interpreter)
+            if match:
+                xy_version = self.interpreter
+
+        # Sanity check: We only need the rest of this behavior on Windows.
+        if platform.system() != "Windows":
+            if xy_version.endswith("-32"):
+                raise RuntimeError(
+                    "Locating 32-bit Python ({!r}) is "
+                    "only supported on Windows.".format(self.interpreter)
+                )
+            return self.interpreter
+
+        # From here on out, we are on Windows. If ``self.interpreter`` has
+        # not produced a valid ``xy_version``, then we do one last check for
+        # a standard "pythonX" or "pythonX.Y".
+        if not xy_version:
+            match = re.match(r"^python(?P<ver>\d(\.\d)?)$", self.interpreter)
+            if match:
+                xy_version = match.group("ver")
+
+        # Ask the Python launcher to find the interpreter.
+        if xy_version:
+            path_from_launcher = locate_via_py(xy_version)
             if path_from_launcher:
                 return path_from_launcher
 

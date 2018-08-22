@@ -168,66 +168,111 @@ def test__resolved_interpreter_none(make_one):
         ("3", "python3"),
         ("3.6", "python3.6"),
         ("3.6.2", "python3.6"),
-        ("2.", "2."),
-        ("2.7.", "2.7."),
         ("2.7.15", "python2.7"),
     ],
 )
-def test__resolved_interpreter_numerical_non_windows(make_one, input_, expected):
+@mock.patch.object(platform, "system", return_value="Linux")
+@mock.patch.object(py.path.local, "sysfind", return_value=None)
+def test__resolved_interpreter_numerical_non_windows(
+    sysfind, system, make_one, input_, expected
+):
     venv, _ = make_one(interpreter=input_)
-    with mock.patch.object(platform, "system") as system:
-        system.return_value = "Linux"
-        assert venv._resolved_interpreter == expected
-        system.assert_called_once_with()
+    assert system.call_count == 2
+
+    assert venv._resolved_interpreter == expected
+    sysfind.assert_called_once_with(expected)
+    assert system.call_count == 3
+    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
 
 
-def test__resolved_interpreter_non_windows(make_one):
+@pytest.mark.parametrize("input_", ["2.", "2.7."])
+@mock.patch.object(platform, "system", return_value="Linux")
+@mock.patch.object(py.path.local, "sysfind", return_value=None)
+def test__resolved_interpreter_invalid_numerical_id(sysfind, system, make_one, input_):
+    venv, _ = make_one(interpreter=input_)
+    assert system.call_count == 2
+
+    assert venv._resolved_interpreter == input_
+    sysfind.assert_called_once_with(input_)
+    assert system.call_count == 3
+    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
+
+
+@mock.patch.object(platform, "system", return_value="Linux")
+@mock.patch.object(py.path.local, "sysfind", return_value=None)
+def test__resolved_interpreter_32_bit_non_windows(sysfind, system, make_one):
+    venv, _ = make_one(interpreter="3.6-32")
+    assert system.call_count == 2
+
+    with pytest.raises(RuntimeError):
+        venv._resolved_interpreter
+    sysfind.assert_called_once_with("3.6-32")
+    assert system.call_count == 3
+    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
+
+
+@mock.patch.object(platform, "system", return_value="Linux")
+@mock.patch.object(py.path.local, "sysfind", return_value=None)
+def test__resolved_interpreter_non_windows(sysfind, system, make_one):
     # Establish that the interpreter is simply passed through resolution
     # on non-Windows.
     venv, _ = make_one(interpreter="python3.6")
-    with mock.patch.object(platform, "system") as system:
-        system.return_value = "Linux"
-        assert venv._resolved_interpreter == "python3.6"
-        system.assert_called_once_with()
+    assert system.call_count == 2
+
+    assert venv._resolved_interpreter == "python3.6"
+    sysfind.assert_called_once_with("python3.6")
+    assert system.call_count == 3
+    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
 
 
-def test__resolved_interpreter_windows_full_path(make_one):
-    # Establish that if we get a fully-qualified system path on Windows
-    # and the path exists, that we accept it.
-    venv, _ = make_one(interpreter=r"c:\Python36\python.exe")
-    with mock.patch.object(platform, "system") as system:
-        system.return_value = "Windows"
-        with mock.patch.object(py.path.local, "sysfind") as sysfind:
-            sysfind.return_value = py.path.local(venv.interpreter)
-            assert venv._resolved_interpreter == r"c:\Python36\python.exe"
-            system.assert_called_once_with()
-            sysfind.assert_called_once_with(r"c:\Python36\python.exe")
-
-
-@mock.patch.object(platform, "system")
+@mock.patch.object(platform, "system", return_value="Windows")
 @mock.patch.object(py.path.local, "sysfind")
-def test__resolved_interpreter_windows_pyexe(sysfind, system, make_one):
+def test__resolved_interpreter_windows_full_path(sysfind, system, make_one):
+    # Establish that if we get a fully-qualified system path (on Windows
+    # or otherwise) and the path exists, that we accept it.
+    venv, _ = make_one(interpreter=r"c:\Python36\python.exe")
+    assert system.call_count == 2
+
+    sysfind.return_value = py.path.local(venv.interpreter)
+    assert venv._resolved_interpreter == r"c:\Python36\python.exe"
+    sysfind.assert_called_once_with(r"c:\Python36\python.exe")
+    assert system.call_count == 2
+
+
+@pytest.mark.parametrize(
+    ["input_", "expected"],
+    [
+        ("3.7", r"c:\python37-x64\python.exe"),
+        ("python3.6", r"c:\python36-x64\python.exe"),
+        ("2.7-32", r"c:\python27\python.exe"),
+    ],
+)
+@mock.patch.object(platform, "system", return_value="Windows")
+@mock.patch.object(py.path.local, "sysfind")
+def test__resolved_interpreter_windows_pyexe(sysfind, system, make_one, input_, expected):
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the py launcher on Windows.
-    venv, _ = make_one(interpreter="python3.6")
-
-    # Trick the system into thinking we are on Windows.
-    system.return_value = "Windows"
+    venv, _ = make_one(interpreter=input_)
+    assert system.call_count == 2
 
     # Trick the system into thinking that it cannot find python3.6
     # (it likely will on Unix). Also, when the system looks for the
     # py launcher, give it a dummy that returns our test value when
     # run.
-    attrs = {"sysexec.return_value": r"c:\python36\python.exe"}
+    attrs = {"sysexec.return_value": expected}
     mock_py = mock.Mock()
     mock_py.configure_mock(**attrs)
     sysfind.side_effect = lambda arg: mock_py if arg == "py" else False
 
     # Okay now run the test.
-    assert venv._resolved_interpreter == r"c:\python36\python.exe"
-    sysfind.assert_any_call("python3.6")
-    sysfind.assert_any_call("py")
-    system.assert_called_with()
+    assert venv._resolved_interpreter == expected
+    assert sysfind.call_count == 2
+    if input_ == "3.7":
+        sysfind.assert_has_calls([mock.call("python3.7"), mock.call("py")])
+    else:
+        sysfind.assert_has_calls([mock.call(input_), mock.call("py")])
+    assert system.call_count == 3
+    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
 
 
 @mock.patch.object(platform, "system")
