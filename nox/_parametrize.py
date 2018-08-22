@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
 
 def parametrize_decorator(arg_names, arg_values_list):
     """Parametrize a session.
@@ -88,6 +90,7 @@ def generate_calls(func, call_specs):
     for call_spec in call_specs:
 
         def make_call_wrapper(call_spec):
+            @functools.wraps(func)
             def call_wrapper(*args, **kwargs):
                 kwargs.update(call_spec)
                 return func(*args, **kwargs)
