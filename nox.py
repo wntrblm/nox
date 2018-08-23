@@ -61,8 +61,7 @@ def lint(session):
 def docs(session):
     session.run('rm', '-rf', 'docs/_build')
     session.install('-r', 'requirements-test.txt')
-    # Readthedocs uses setuptools to install the package, so we do as well.
-    session.run('python', 'setup.py', 'install')
+    session.install('.')
     session.cd('docs')
     session.run(
         'sphinx-build',
