@@ -57,9 +57,8 @@ def lint(session):
         'nox', 'tests')
 
 
-@nox.session
+@nox.session(python='3.6')
 def docs(session):
-    session.interpreter = 'python3.6'
     session.run('rm', '-rf', 'docs/_build')
     session.install('-r', 'requirements-test.txt')
     session.install('.')
@@ -67,5 +66,6 @@ def docs(session):
     session.run(
         'sphinx-build',
         '-b', 'html',
+        '-W',
         '-d', '_build/doctrees',
         '.', '_build/html')
