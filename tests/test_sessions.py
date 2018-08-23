@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import logging
 import os
 import sys
@@ -19,7 +20,6 @@ from unittest import mock
 
 import pytest
 
-from nox._testing import Namespace
 import nox.command
 from nox.logger import logger
 import nox.manifest
@@ -63,7 +63,7 @@ class TestSession:
             name='test',
             signature='test',
             func=mock.sentinel.func,
-            global_config=Namespace(posargs=mock.sentinel.posargs),
+            global_config=argparse.Namespace(posargs=mock.sentinel.posargs),
             manifest=mock.create_autospec(nox.manifest.Manifest))
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         runner.venv.env = {}
@@ -199,7 +199,7 @@ class TestSessionRunner:
             name='test',
             signature='test(1, 2)',
             func=func,
-            global_config=Namespace(
+            global_config=argparse.Namespace(
                 noxfile=os.path.join(os.getcwd(), 'nox.py'),
                 envdir='envdir',
                 posargs=mock.sentinel.posargs,
@@ -377,7 +377,7 @@ class TestResult:
 
     def test__serialize(self):
         result = nox.sessions.Result(
-            session=Namespace(
+            session=argparse.Namespace(
                 signature='siggy', name='namey', func=mock.Mock()),
             status=nox.sessions.Status.SUCCESS,
         )

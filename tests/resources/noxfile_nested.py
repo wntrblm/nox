@@ -1,4 +1,4 @@
-# Copyright 2017 Alethea Katherine Flowers
+# Copyright 2018 Alethea Katherine Flowers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import nox
 
-class Namespace:
-    """A class that makes the provided kwargs available as attributes."""
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+
+@nox.session
+@nox.parametrize("cheese", ["cheddar", "jack", "brie"])
+def snack(unused_session, cheese):
+    print("Noms, {} so good!".format(cheese))

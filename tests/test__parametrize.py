@@ -105,6 +105,7 @@ def test_generate_calls_simple():
 
     f = mock.Mock()
     f.__name__ = 'f'
+    f.some_prop = 42
 
     call_specs = [
         {'abc': 1},
@@ -125,6 +126,11 @@ def test_generate_calls_simple():
     f.assert_called_with(abc=2)
     calls[2]()
     f.assert_called_with(abc=3)
+
+    # Make sure wrapping was done correctly.
+    for call in calls:
+        assert call.some_prop == 42
+        assert call.__name__ == 'f'
 
 
 def test_generate_calls_multiple_args():
