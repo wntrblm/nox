@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import sys
 from unittest import mock
@@ -20,7 +21,6 @@ import contexter
 import pkg_resources
 
 import nox
-from nox._testing import Namespace
 import nox.main
 import nox.registry
 import nox.sessions
@@ -30,7 +30,7 @@ VERSION = pkg_resources.get_distribution('nox-automation').version
 
 
 def test_global_config_constructor():
-    args = Namespace(
+    args = argparse.Namespace(
         noxfile='noxfile',
         envdir='dir',
         sessions=['1', '2'],

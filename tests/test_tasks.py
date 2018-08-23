@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import copy
 import io
 import json
@@ -21,7 +22,6 @@ from unittest import mock
 import nox
 from nox import sessions
 from nox import tasks
-from nox._testing import Namespace
 from nox.manifest import Manifest
 
 
@@ -36,13 +36,13 @@ session_func.python = None
 
 
 def test_load_nox_module():
-    config = Namespace(noxfile=os.path.join(RESOURCES, 'noxfile.py'))
+    config = argparse.Namespace(noxfile=os.path.join(RESOURCES, 'noxfile.py'))
     noxfile_module = tasks.load_nox_module(config)
     assert noxfile_module.SIGIL == '123'
 
 
 def test_load_nox_module_not_found():
-    config = Namespace(noxfile='bogus.py')
+    config = argparse.Namespace(noxfile='bogus.py')
     assert tasks.load_nox_module(config) == 2
 
 
@@ -60,13 +60,13 @@ def test_discover_session_functions_decorator():
         pass
 
     # Mock up a nox.py module and configuration.
-    mock_module = Namespace(
+    mock_module = argparse.Namespace(
         __name__=foo.__module__,
         foo=foo,
         bar=bar,
         notasession=notasession,
     )
-    config = Namespace(sessions=(), keywords=())
+    config = argparse.Namespace(sessions=(), keywords=())
 
     # Get the manifest and establish that it looks like what we expect.
     manifest = tasks.discover_manifest(mock_module, config)
@@ -76,7 +76,7 @@ def test_discover_session_functions_decorator():
 
 
 def test_filter_manifest():
-    config = Namespace(sessions=(), keywords=())
+    config = argparse.Namespace(sessions=(), keywords=())
     manifest = Manifest({
         'foo': session_func,
         'bar': session_func,
@@ -87,7 +87,7 @@ def test_filter_manifest():
 
 
 def test_filter_manifest_not_found():
-    config = Namespace(sessions=('baz',), keywords=())
+    config = argparse.Namespace(sessions=('baz',), keywords=())
     manifest = Manifest({
         'foo': session_func,
         'bar': session_func,
@@ -97,7 +97,7 @@ def test_filter_manifest_not_found():
 
 
 def test_filter_manifest_keywords():
-    config = Namespace(sessions=(), keywords='foo or bar')
+    config = argparse.Namespace(sessions=(), keywords='foo or bar')
     manifest = Manifest({
         'foo': session_func,
         'bar': session_func,
@@ -109,21 +109,21 @@ def test_filter_manifest_keywords():
 
 
 def test_honor_list_request_noop():
-    config = Namespace(list_sessions=False)
+    config = argparse.Namespace(list_sessions=False)
     manifest = {'thing': mock.sentinel.THING}
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value is manifest
 
 
 def test_honor_list_request():
-    config = Namespace(list_sessions=True)
-    manifest = [Namespace(signature='foo')]
+    config = argparse.Namespace(list_sessions=True)
+    manifest = [argparse.Namespace(signature='foo')]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
 
 
 def test_verify_manifest_empty():
-    config = Namespace(sessions=(), keywords=())
+    config = argparse.Namespace(sessions=(), keywords=())
     manifest = Manifest({}, config)
     return_value = tasks.verify_manifest_nonempty(
         manifest,
@@ -133,7 +133,7 @@ def test_verify_manifest_empty():
 
 
 def test_verify_manifest_nonempty():
-    config = Namespace(sessions=(), keywords=())
+    config = argparse.Namespace(sessions=(), keywords=())
     manifest = Manifest({'session': session_func}, config)
     return_value = tasks.verify_manifest_nonempty(
         manifest,
@@ -144,7 +144,7 @@ def test_verify_manifest_nonempty():
 
 def test_run_manifest():
     # Set up a valid manifest.
-    config = Namespace(stop_on_first_error=False)
+    config = argparse.Namespace(stop_on_first_error=False)
     sessions_ = [
         mock.Mock(spec=sessions.SessionRunner),
         mock.Mock(spec=sessions.SessionRunner),
@@ -173,7 +173,7 @@ def test_run_manifest():
 
 def test_run_manifest_abort_on_first_failure():
     # Set up a valid manifest.
-    config = Namespace(stop_on_first_error=True)
+    config = argparse.Namespace(stop_on_first_error=True)
     sessions_ = [
         mock.Mock(spec=sessions.SessionRunner),
         mock.Mock(spec=sessions.SessionRunner),
@@ -224,7 +224,7 @@ def test_print_summary():
 
 
 def test_create_report_noop():
-    config = Namespace(report=None)
+    config = argparse.Namespace(report=None)
     with mock.patch.object(io, 'open', autospec=True) as open_:
         results = tasks.create_report(mock.sentinel.RESULTS, config)
         assert not open_.called
@@ -232,9 +232,11 @@ def test_create_report_noop():
 
 
 def test_create_report():
-    config = Namespace(report='/path/to/report')
+    config = argparse.Namespace(report='/path/to/report')
     results = [sessions.Result(
-        session=Namespace(signature='foosig', name='foo', func=object()),
+        session=argparse.Namespace(
+            signature='foosig', name='foo', func=object()
+        ),
         status=sessions.Status.SUCCESS,
     )]
     with mock.patch.object(io, 'open', autospec=True) as open_:
