@@ -79,4 +79,10 @@ setup(
             'tox-to-nox=nox.tox_to_nox:main [tox_to_nox]'
         ],
     },
+
+    project_urls={
+        'Documentation': 'https://nox.readthedocs.io/',
+        'Source Code': 'https://github.com/theacodes/nox',
+        'Bug Tracker': 'https://github.com/theacodes/nox/issues',
+    },
 )
