@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-class Namespace(object):
+class Namespace:
     """A class that makes the provided kwargs available as attributes."""
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
