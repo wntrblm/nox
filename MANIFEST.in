@@ -1,2 +1,2 @@
-include README.rst LICENSE
+include LICENSE
 recursive-include nox *.jinja2
