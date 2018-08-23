@@ -50,7 +50,7 @@ When you provide a version number, Nox automatically prepends python to determin
 
 When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sesions when running ``nox --list-sessions``. For example this Noxfile::
 
-    @nox.session(python=['2.7', '3.5', 3.6', '3.7'])
+    @nox.session(python=['2.7', '3.5', '3.6', '3.7'])
     def tests(session):
         pass
 
