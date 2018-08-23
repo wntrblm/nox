@@ -46,7 +46,8 @@ class ProcessEnv:
             self.env.pop(key, None)
 
         if self.bin:
-            self.env['PATH'] = ':'.join([self.bin, self.env.get('PATH')])
+            self.env['PATH'] = os.pathsep.join(
+                [self.bin, self.env.get('PATH', '')])
 
     @property
     def bin(self):
