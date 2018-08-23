@@ -1,4 +1,4 @@
-formats: ['htmlzip']
+formats: []
 
 build:
   image: latest
