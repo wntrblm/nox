@@ -34,7 +34,7 @@ def _copy_func(src, name=None):
     return dst
 
 
-class Manifest(object):
+class Manifest:
     """Session manifest.
 
     The session manifest provides the source of truth for the sequence of
@@ -234,7 +234,7 @@ class Manifest(object):
         raise ValueError('Session %s not found.' % session)
 
 
-class KeywordLocals(object):
+class KeywordLocals:
     """Eval locals using keywords.
 
     When looking up a local variable the variable name is compared against

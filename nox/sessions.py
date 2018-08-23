@@ -67,7 +67,7 @@ class Status(enum.Enum):
     SKIPPED = 2
 
 
-class Session(object):
+class Session:
     """The Session object is passed into each user-defined session function.
 
     This is your primary means for installing package and running commands in
@@ -240,7 +240,7 @@ class Session(object):
         raise _SessionSkip()
 
 
-class SessionRunner(object):
+class SessionRunner:
     def __init__(self, name, signature, func, global_config, manifest=None):
         self.name = name
         self.signature = signature
@@ -306,7 +306,7 @@ class SessionRunner(object):
             return Result(self, Status.FAILED)
 
 
-class Result(object):
+class Result:
     """An object representing the result of a session."""
 
     def __init__(self, session, status):

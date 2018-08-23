@@ -32,7 +32,7 @@ _BLACKLISTED_ENV_VARS = frozenset([
 ])
 
 
-class ProcessEnv(object):
+class ProcessEnv:
     """A environment with a 'bin' directory and a set of 'env' vars."""
 
     def __init__(self, bin=None, env=None):
