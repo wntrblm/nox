@@ -30,7 +30,7 @@ from nox import workflow
 from nox.logger import setup_logging
 
 
-class GlobalConfig(object):
+class GlobalConfig:
     def __init__(self, args):
         self.noxfile = args.noxfile
         self.envdir = os.path.abspath(args.envdir)
