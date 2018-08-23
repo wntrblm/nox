@@ -26,6 +26,7 @@ import nox.registry
 import nox.sessions
 
 
+RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
 VERSION = pkg_resources.get_distribution('nox-automation').version
 
 
@@ -225,3 +226,20 @@ def test_main_failure():
         with mock.patch.object(sys, 'exit') as exit:
             nox.main.main()
             exit.assert_called_once_with(1)
+
+
+def test_main_nested_config(capsys):
+    sys.argv = [
+        'nox',
+        '--noxfile',
+        os.path.join(RESOURCES, 'noxfile_nested.py'),
+        '-s',
+        "snack(cheese='cheddar')",
+    ]
+
+    with mock.patch('sys.exit') as sys_exit:
+        nox.main.main()
+        stdout, stderr = capsys.readouterr()
+        assert stdout == "Noms, cheddar so good!\n"
+        assert "Session snack(cheese='cheddar') was successful." in stderr
+        sys_exit.assert_called_once_with(0)
