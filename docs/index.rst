@@ -61,3 +61,17 @@ Nox is lucky to have several wonderful projects that use it and provide feedback
 .. _pip: https://pip.readthedocs.org
 .. _py.test: http://pytest.org
 .. _virtualenv: https://virtualenv.readthedocs.org
+
+
+Contributors
+------------
+
+Nox is free & open-source software and is made possible by community contributors.
+
+* `Thea Flowers <https://github.com/theacodes>`__
+* `Luke Sneeringer <https://github.com/lukesneeringer>`__
+* `Danny Hermes <https://github.com/dhermes>`__
+* `Santos Gallegos <https://github.com/stsewd>`__
+* & `more! <https://github.com/theacodes/nox/graphs/contributors>`__
+
+If you'd like to get involved, see :doc:`contrib`.
