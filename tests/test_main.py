@@ -37,6 +37,7 @@ def test_global_config_constructor():
         sessions=["1", "2"],
         keywords="red and blue",
         list_sessions=False,
+        verbose=False,
         reuse_existing_virtualenvs=True,
         stop_on_first_error=False,
         posargs=["a", "b", "c"],
@@ -50,6 +51,7 @@ def test_global_config_constructor():
     assert config.sessions == ["1", "2"]
     assert config.keywords == "red and blue"
     assert config.list_sessions is False
+    assert config.verbose is False
     assert config.reuse_existing_virtualenvs is True
     assert config.stop_on_first_error is False
     assert config.posargs == ["a", "b", "c"]
@@ -113,7 +115,7 @@ def test_main_long_form_args():
 
 
 def test_main_short_form_args():
-    sys.argv = [sys.executable, "-f", "noxfile.py", "-s", "1", "2", "-r"]
+    sys.argv = [sys.executable, "-f", "noxfile.py", "-s", "1", "2", "-r", "-v"]
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
 
@@ -127,6 +129,7 @@ def test_main_short_form_args():
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
         assert config.sessions == ["1", "2"]
+        assert config.verbose is True
         assert config.reuse_existing_virtualenvs is True
 
 
