@@ -127,8 +127,9 @@ html_theme_options = {
     'github_user': 'theacodes',
     'github_repo': 'nox',
     'github_banner': True,
-    'travis_button': True,
-    'codecov_button': True,
+    'github_button': False,
+    'travis_button': False,
+    'codecov_button': False,
     'analytics_id': False,  # TODO
     'font_family': "'Roboto', Georgia, sans",
     'head_font_family': "'Roboto', Georgia, serif",

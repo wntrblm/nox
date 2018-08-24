@@ -64,3 +64,7 @@ def docs(session):
     session.run(
         "sphinx-build", "-b", "html", "-W", "-d", "_build/doctrees", ".", "_build/html"
     )
+
+    if "serve" in session.posargs:
+        session.cd("_build/html")
+        session.run("python", "-m", "http.server")
