@@ -37,38 +37,39 @@ def test_session_decorator(cleanup_registry):
         pass
 
     answer = registry.get()
-    assert 'unit_tests' in answer
-    assert answer['unit_tests'] is unit_tests
+    assert "unit_tests" in answer
+    assert answer["unit_tests"] is unit_tests
     assert unit_tests.python is None
 
 
 def test_session_decorator_single_python(cleanup_registry):
-    @registry.session_decorator(python='3.6')
+    @registry.session_decorator(python="3.6")
     def unit_tests(session):
         pass
 
-    assert unit_tests.python == '3.6'
+    assert unit_tests.python == "3.6"
 
 
 def test_session_decorator_list_of_pythons(cleanup_registry):
-    @registry.session_decorator(python=['3.5', '3.6'])
+    @registry.session_decorator(python=["3.5", "3.6"])
     def unit_tests(session):
         pass
 
-    assert unit_tests.python == ['3.5', '3.6']
+    assert unit_tests.python == ["3.5", "3.6"]
 
 
 def test_session_decorator_py_alias(cleanup_registry):
-    @registry.session_decorator(py=['3.5', '3.6'])
+    @registry.session_decorator(py=["3.5", "3.6"])
     def unit_tests(session):
         pass
 
-    assert unit_tests.python == ['3.5', '3.6']
+    assert unit_tests.python == ["3.5", "3.6"]
 
 
 def test_session_decorator_py_alias_error(cleanup_registry):
-    with pytest.raises(ValueError, match='argument'):
-        @registry.session_decorator(python=['3.5', '3.6'], py='2.7')
+    with pytest.raises(ValueError, match="argument"):
+
+        @registry.session_decorator(python=["3.5", "3.6"], py="2.7")
         def unit_tests(session):
             pass
 
@@ -102,5 +103,5 @@ def test_get(cleanup_registry):
     assert len(full) == 2
     assert full == registry._REGISTRY
     assert full is not registry._REGISTRY
-    assert full['unit_tests'] is unit_tests
-    assert full['system_tests'] is system_tests
+    assert full["unit_tests"] is unit_tests
+    assert full["system_tests"] is system_tests

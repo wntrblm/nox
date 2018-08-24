@@ -25,11 +25,9 @@ from nox.logger import logger
 
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
-_BLACKLISTED_ENV_VARS = frozenset([
-    'PIP_RESPECT_VIRTUALENV',
-    'PIP_REQUIRE_VIRTUALENV',
-    '__PYVENV_LAUNCHER__',
-])
+_BLACKLISTED_ENV_VARS = frozenset(
+    ["PIP_RESPECT_VIRTUALENV", "PIP_REQUIRE_VIRTUALENV", "__PYVENV_LAUNCHER__"]
+)
 
 
 class ProcessEnv:
@@ -46,8 +44,7 @@ class ProcessEnv:
             self.env.pop(key, None)
 
         if self.bin:
-            self.env['PATH'] = os.pathsep.join(
-                [self.bin, self.env.get('PATH', '')])
+            self.env["PATH"] = os.pathsep.join([self.bin, self.env.get("PATH", "")])
 
     @property
     def bin(self):
@@ -70,11 +67,11 @@ def locate_via_py(version):
         Optional[str]: The full executable path for the Python ``version``,
         if it is found.
     """
-    script = 'import sys; print(sys.executable)'
-    py_exe = py.path.local.sysfind('py')
+    script = "import sys; print(sys.executable)"
+    py_exe = py.path.local.sysfind("py")
     if py_exe is not None:
         try:
-            return py_exe.sysexec('-' + version, '-c', script).strip()
+            return py_exe.sysexec("-" + version, "-c", script).strip()
         except py.process.cmdexec.Error:
             return None
 
@@ -111,16 +108,16 @@ class VirtualEnv(ProcessEnv):
 
         # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
         # part and add Python to the front of it.
-        match = re.match(r'^([\d\.]+?)$', self.interpreter)
+        match = re.match(r"^([\d\.]+?)$", self.interpreter)
         if match:
-            parts = match.group(1).split('.')
+            parts = match.group(1).split(".")
             if len(parts) > 2:
                 parts = parts[:2]
 
-            self.interpreter = 'python{}'.format('.'.join(parts))
+            self.interpreter = "python{}".format(".".join(parts))
 
         # Sanity check: We only need the rest of this behavior on Windows.
-        if platform.system() != 'Windows':
+        if platform.system() != "Windows":
             return self.interpreter
 
         # We may have gotten a fully-qualified interpreter path (for someone
@@ -131,9 +128,9 @@ class VirtualEnv(ProcessEnv):
         # If this is a standard Unix "pythonX.Y" name, it should be found
         # in a standard location in Windows, and if not, the py.exe launcher
         # should be able to find it from the information in the registry.
-        match = re.match(r'^python(?P<ver>\d\.?\d?)$', self.interpreter)
+        match = re.match(r"^python(?P<ver>\d\.?\d?)$", self.interpreter)
         if match:
-            version = match.group('ver')
+            version = match.group("ver")
             # Ask the Python launcher to find the interpreter.
             path_from_launcher = locate_via_py(version)
             if path_from_launcher:
@@ -141,33 +138,34 @@ class VirtualEnv(ProcessEnv):
 
         # If we got this far, then we were unable to resolve the interpreter
         # to an actual executable; raise an exception.
-        raise RuntimeError('Unable to locate Python interpreter "{}".'.format(
-            self.interpreter,
-        ))
+        raise RuntimeError(
+            'Unable to locate Python interpreter "{}".'.format(self.interpreter)
+        )
 
     @property
     def bin(self):
         """Returns the location of the virtualenv's bin folder."""
-        if platform.system() == 'Windows':
-            return os.path.join(self.location, 'Scripts')
+        if platform.system() == "Windows":
+            return os.path.join(self.location, "Scripts")
         else:
-            return os.path.join(self.location, 'bin')
+            return os.path.join(self.location, "bin")
 
     def create(self):
         """Create the virtualenv."""
         if not self._clean_location():
-            logger.debug(
-                'Re-using existing virtualenv at {}.'.format(self.location))
+            logger.debug("Re-using existing virtualenv at {}.".format(self.location))
             return False
 
-        cmd = [sys.executable, '-m', 'virtualenv', self.location]
+        cmd = [sys.executable, "-m", "virtualenv", self.location]
 
         if self.interpreter:
-            cmd.extend(['-p', self._resolved_interpreter])
+            cmd.extend(["-p", self._resolved_interpreter])
 
         logger.info(
-            'Creating virtualenv using {} in {}'.format(
-                os.path.basename(self._resolved_interpreter), self.location))
+            "Creating virtualenv using {} in {}".format(
+                os.path.basename(self._resolved_interpreter), self.location
+            )
+        )
         nox.command.run(cmd, silent=True, log=False)
 
         return True

@@ -23,6 +23,7 @@ from nox.popen import popen
 
 class CommandFailed(Exception):
     """Raised when an executed command returns a non-success status code."""
+
     def __init__(self, reason=None):
         super(CommandFailed, self).__init__(reason)
         self.reason = reason
@@ -43,8 +44,8 @@ def which(program, path):
     if full_path:
         return full_path.strpath
 
-    logger.error('Program {} not found.'.format(program))
-    raise CommandFailed('Program {} not found'.format(program))
+    logger.error("Program {} not found.".format(program))
+    raise CommandFailed("Program {} not found".format(program))
 
 
 def _clean_env(env):
@@ -55,27 +56,24 @@ def _clean_env(env):
     clean_env = {}
 
     # Ensure systemroot is passed down, otherwise Windows will explode.
-    clean_env['SYSTEMROOT'] = os.environ.get('SYSTEMROOT', '')
+    clean_env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
 
     for key, value in env.items():
-        key = key.decode('utf-8') if isinstance(key, bytes) else key
-        value = (
-            value.decode('utf-8') if isinstance(value, bytes) else value)
+        key = key.decode("utf-8") if isinstance(key, bytes) else key
+        value = value.decode("utf-8") if isinstance(value, bytes) else value
         clean_env[key] = value
 
     return clean_env
 
 
-def run(args, *, env=None, silent=False, path=None,
-        success_codes=None, log=True):
+def run(args, *, env=None, silent=False, path=None, success_codes=None, log=True):
     """Run a command-line program."""
 
     if success_codes is None:
         success_codes = [0]
 
     cmd, args = args[0], args[1:]
-    full_cmd = '{} {}'.format(
-        cmd, ' '.join(args))
+    full_cmd = "{} {}".format(cmd, " ".join(args))
 
     cmd_path = which(cmd, path)
 
@@ -85,22 +83,22 @@ def run(args, *, env=None, silent=False, path=None,
     env = _clean_env(env)
 
     try:
-        return_code, output = popen(
-            [cmd_path] + list(args),
-            silent=silent,
-            env=env)
+        return_code, output = popen([cmd_path] + list(args), silent=silent, env=env)
 
         if return_code not in success_codes:
-            logger.error('Command {} failed with exit code {}{}'.format(
-                full_cmd, return_code, ':' if silent else ''))
+            logger.error(
+                "Command {} failed with exit code {}{}".format(
+                    full_cmd, return_code, ":" if silent else ""
+                )
+            )
 
             if silent:
                 sys.stderr.write(output)
 
-            raise CommandFailed('Returned code {}'.format(return_code))
+            raise CommandFailed("Returned code {}".format(return_code))
 
         return output if silent else True
 
     except KeyboardInterrupt:
-        logger.error('Interrupted...')
+        logger.error("Interrupted...")
         raise

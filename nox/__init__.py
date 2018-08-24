@@ -15,4 +15,4 @@
 from nox._parametrize import parametrize_decorator as parametrize
 from nox.registry import session_decorator as session
 
-__all__ = ['parametrize', 'session']
+__all__ = ["parametrize", "session"]

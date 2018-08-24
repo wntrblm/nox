@@ -36,12 +36,10 @@ def test_simple_workflow():
     # return value.
     function_a.assert_called_once_with(global_config=mock.sentinel.CONFIG)
     function_b.assert_called_once_with(
-        function_a.return_value,
-        global_config=mock.sentinel.CONFIG,
+        function_a.return_value, global_config=mock.sentinel.CONFIG
     )
     function_c.assert_called_once_with(
-        function_b.return_value,
-        global_config=mock.sentinel.CONFIG,
+        function_b.return_value, global_config=mock.sentinel.CONFIG
     )
 
 
@@ -68,8 +66,7 @@ def test_workflow_int_cutoff():
     # return value.
     function_a.assert_called_once_with(global_config=mock.sentinel.CONFIG)
     function_b.assert_called_once_with(
-        function_a.return_value,
-        global_config=mock.sentinel.CONFIG,
+        function_a.return_value, global_config=mock.sentinel.CONFIG
     )
     assert not function_c.called
 
@@ -97,7 +94,6 @@ def test_workflow_interrupted():
     # return value.
     function_a.assert_called_once_with(global_config=mock.sentinel.CONFIG)
     function_b.assert_called_once_with(
-        function_a.return_value,
-        global_config=mock.sentinel.CONFIG,
+        function_a.return_value, global_config=mock.sentinel.CONFIG
     )
     assert not function_c.called

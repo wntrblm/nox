@@ -25,5 +25,6 @@ import six
 
 if six.PY2:
     import mock  # pylint: disable=import-error
+
     unittest.mock = mock
-    sys.modules['unittest.mock'] = unittest.mock
+    sys.modules["unittest.mock"] = unittest.mock

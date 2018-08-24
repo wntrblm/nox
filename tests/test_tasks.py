@@ -25,7 +25,7 @@ from nox import tasks
 from nox.manifest import Manifest
 
 
-RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
+RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 
 
 def session_func():
@@ -36,13 +36,13 @@ session_func.python = None
 
 
 def test_load_nox_module():
-    config = argparse.Namespace(noxfile=os.path.join(RESOURCES, 'noxfile.py'))
+    config = argparse.Namespace(noxfile=os.path.join(RESOURCES, "noxfile.py"))
     noxfile_module = tasks.load_nox_module(config)
-    assert noxfile_module.SIGIL == '123'
+    assert noxfile_module.SIGIL == "123"
 
 
 def test_load_nox_module_not_found():
-    config = argparse.Namespace(noxfile='bogus.py')
+    config = argparse.Namespace(noxfile="bogus.py")
     assert tasks.load_nox_module(config) == 2
 
 
@@ -61,10 +61,7 @@ def test_discover_session_functions_decorator():
 
     # Mock up a nox.py module and configuration.
     mock_module = argparse.Namespace(
-        __name__=foo.__module__,
-        foo=foo,
-        bar=bar,
-        notasession=notasession,
+        __name__=foo.__module__, foo=foo, bar=bar, notasession=notasession
     )
     config = argparse.Namespace(sessions=(), keywords=())
 
@@ -72,37 +69,29 @@ def test_discover_session_functions_decorator():
     manifest = tasks.discover_manifest(mock_module, config)
     sessions = list(manifest)
     assert [s.func for s in sessions] == [foo, bar]
-    assert [str(i) for i in sessions] == ['foo', 'bar']
+    assert [str(i) for i in sessions] == ["foo", "bar"]
 
 
 def test_filter_manifest():
     config = argparse.Namespace(sessions=(), keywords=())
-    manifest = Manifest({
-        'foo': session_func,
-        'bar': session_func,
-    }, config)
+    manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
     assert len(manifest) == 2
 
 
 def test_filter_manifest_not_found():
-    config = argparse.Namespace(sessions=('baz',), keywords=())
-    manifest = Manifest({
-        'foo': session_func,
-        'bar': session_func,
-    }, config)
+    config = argparse.Namespace(sessions=("baz",), keywords=())
+    manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value == 3
 
 
 def test_filter_manifest_keywords():
-    config = argparse.Namespace(sessions=(), keywords='foo or bar')
-    manifest = Manifest({
-        'foo': session_func,
-        'bar': session_func,
-        'baz': session_func,
-    }, config)
+    config = argparse.Namespace(sessions=(), keywords="foo or bar")
+    manifest = Manifest(
+        {"foo": session_func, "bar": session_func, "baz": session_func}, config
+    )
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
     assert len(manifest) == 2
@@ -110,14 +99,14 @@ def test_filter_manifest_keywords():
 
 def test_honor_list_request_noop():
     config = argparse.Namespace(list_sessions=False)
-    manifest = {'thing': mock.sentinel.THING}
+    manifest = {"thing": mock.sentinel.THING}
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value is manifest
 
 
 def test_honor_list_request():
     config = argparse.Namespace(list_sessions=True)
-    manifest = [argparse.Namespace(signature='foo')]
+    manifest = [argparse.Namespace(signature="foo")]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
 
@@ -125,20 +114,14 @@ def test_honor_list_request():
 def test_verify_manifest_empty():
     config = argparse.Namespace(sessions=(), keywords=())
     manifest = Manifest({}, config)
-    return_value = tasks.verify_manifest_nonempty(
-        manifest,
-        global_config=config,
-    )
+    return_value = tasks.verify_manifest_nonempty(manifest, global_config=config)
     assert return_value == 3
 
 
 def test_verify_manifest_nonempty():
     config = argparse.Namespace(sessions=(), keywords=())
-    manifest = Manifest({'session': session_func}, config)
-    return_value = tasks.verify_manifest_nonempty(
-        manifest,
-        global_config=config,
-    )
+    manifest = Manifest({"session": session_func}, config)
+    return_value = tasks.verify_manifest_nonempty(manifest, global_config=config)
     assert return_value == manifest
 
 
@@ -155,8 +138,7 @@ def test_run_manifest():
     # Ensure each of the mocks returns a successful result
     for mock_session in sessions_:
         mock_session.execute.return_value = sessions.Result(
-            session=mock_session,
-            status=sessions.Status.SUCCESS,
+            session=mock_session, status=sessions.Status.SUCCESS
         )
 
     # Run the manifest.
@@ -184,8 +166,7 @@ def test_run_manifest_abort_on_first_failure():
     # Ensure each of the mocks returns a successful result.
     for mock_session in sessions_:
         mock_session.execute.return_value = sessions.Result(
-            session=mock_session,
-            status=sessions.Status.FAILED,
+            session=mock_session, status=sessions.Status.FAILED
         )
 
     # Run the manifest.
@@ -204,7 +185,7 @@ def test_run_manifest_abort_on_first_failure():
 
 def test_print_summary_one_result():
     results = [mock.sentinel.RESULT]
-    with mock.patch('nox.tasks.logger', autospec=True) as logger:
+    with mock.patch("nox.tasks.logger", autospec=True) as logger:
         answer = tasks.print_summary(results, object())
         assert not logger.warning.called
         assert not logger.success.called
@@ -214,10 +195,10 @@ def test_print_summary_one_result():
 
 def test_print_summary():
     results = [
-        sessions.Result(session='foo', status=sessions.Status.SUCCESS),
-        sessions.Result(session='bar', status=sessions.Status.FAILED),
+        sessions.Result(session="foo", status=sessions.Status.SUCCESS),
+        sessions.Result(session="bar", status=sessions.Status.FAILED),
     ]
-    with mock.patch.object(sessions.Result, 'log', autospec=True) as log:
+    with mock.patch.object(sessions.Result, "log", autospec=True) as log:
         answer = tasks.print_summary(results, object())
         assert log.call_count == 2
     assert answer is results
@@ -225,35 +206,41 @@ def test_print_summary():
 
 def test_create_report_noop():
     config = argparse.Namespace(report=None)
-    with mock.patch.object(io, 'open', autospec=True) as open_:
+    with mock.patch.object(io, "open", autospec=True) as open_:
         results = tasks.create_report(mock.sentinel.RESULTS, config)
         assert not open_.called
     assert results is mock.sentinel.RESULTS
 
 
 def test_create_report():
-    config = argparse.Namespace(report='/path/to/report')
-    results = [sessions.Result(
-        session=argparse.Namespace(
-            signature='foosig', name='foo', func=object()
-        ),
-        status=sessions.Status.SUCCESS,
-    )]
-    with mock.patch.object(io, 'open', autospec=True) as open_:
-        with mock.patch.object(json, 'dump', autospec=True) as dump:
+    config = argparse.Namespace(report="/path/to/report")
+    results = [
+        sessions.Result(
+            session=argparse.Namespace(signature="foosig", name="foo", func=object()),
+            status=sessions.Status.SUCCESS,
+        )
+    ]
+    with mock.patch.object(io, "open", autospec=True) as open_:
+        with mock.patch.object(json, "dump", autospec=True) as dump:
             answer = tasks.create_report(results, config)
             assert answer is results
-            dump.assert_called_once_with({
-                'result': 1,
-                'sessions': [{
-                    'name': 'foo',
-                    'signature': 'foosig',
-                    'result': 'success',
-                    'result_code': 1,
-                    'args': {},
-                }],
-            }, mock.ANY, indent=2)
-        open_.assert_called_once_with('/path/to/report', 'w')
+            dump.assert_called_once_with(
+                {
+                    "result": 1,
+                    "sessions": [
+                        {
+                            "name": "foo",
+                            "signature": "foosig",
+                            "result": "success",
+                            "result_code": 1,
+                            "args": {},
+                        }
+                    ],
+                },
+                mock.ANY,
+                indent=2,
+            )
+        open_.assert_called_once_with("/path/to/report", "w")
 
 
 def test_final_reduce():

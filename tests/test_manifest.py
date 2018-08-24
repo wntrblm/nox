@@ -24,10 +24,8 @@ from nox.manifest import Manifest
 
 def create_mock_sessions():
     sessions = collections.OrderedDict()
-    sessions['foo'] = mock.Mock(
-        spec=(), python=None)
-    sessions['bar'] = mock.Mock(
-        spec=(), python=None)
+    sessions["foo"] = mock.Mock(spec=(), python=None)
+    sessions["bar"] = mock.Mock(spec=(), python=None)
     return sessions
 
 
@@ -37,8 +35,8 @@ def test_init():
 
     # Assert that basic properties look correctly.
     assert len(manifest) == 2
-    assert manifest['foo'].func is sessions['foo']
-    assert manifest['bar'].func is sessions['bar']
+    assert manifest["foo"].func is sessions["foo"]
+    assert manifest["bar"].func is sessions["bar"]
 
 
 def test_contains():
@@ -46,19 +44,19 @@ def test_contains():
     manifest = Manifest(sessions, mock.sentinel.CONFIG)
 
     # Establish that contains works pre-iteration.
-    assert 'foo' in manifest
-    assert 'bar' in manifest
-    assert 'baz' not in manifest
+    assert "foo" in manifest
+    assert "bar" in manifest
+    assert "baz" not in manifest
 
     # Establish that __contains__ works post-iteration.
     for session in manifest:
         pass
-    assert 'foo' in manifest
-    assert 'bar' in manifest
-    assert 'baz' not in manifest
+    assert "foo" in manifest
+    assert "bar" in manifest
+    assert "baz" not in manifest
 
     # Establish that sessions themselves work.
-    assert manifest['foo'] in manifest
+    assert manifest["foo"] in manifest
 
 
 def test_getitem():
@@ -67,17 +65,17 @@ def test_getitem():
 
     # Establish that each session is present, and a made-up session
     # is not.
-    assert manifest['foo'].func is sessions['foo']
-    assert manifest['bar'].func is sessions['bar']
+    assert manifest["foo"].func is sessions["foo"]
+    assert manifest["bar"].func is sessions["bar"]
     with pytest.raises(KeyError):
-        manifest['baz']
+        manifest["baz"]
 
     # Establish that the sessions are still present even after being
     # consumed by iteration.
     for session in manifest:
         pass
-    assert manifest['foo'].func is sessions['foo']
-    assert manifest['bar'].func is sessions['bar']
+    assert manifest["foo"].func is sessions["foo"]
+    assert manifest["bar"].func is sessions["bar"]
 
 
 def test_iteration():
@@ -90,7 +88,7 @@ def test_iteration():
 
     # The first item should be our "foo" session.
     foo = next(manifest)
-    assert foo.func == sessions['foo']
+    assert foo.func == sessions["foo"]
     assert foo in manifest._consumed
     assert foo not in manifest._queue
     assert len(manifest._consumed) == 1
@@ -99,7 +97,7 @@ def test_iteration():
     # The .next() or .__next__() methods can be called directly according
     # to Python's data model.
     bar = manifest.next()
-    assert bar.func == sessions['bar']
+    assert bar.func == sessions["bar"]
     assert bar in manifest._consumed
     assert bar not in manifest._queue
     assert len(manifest._consumed) == 2
@@ -121,33 +119,32 @@ def test_len():
 def test_filter_by_name():
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, mock.sentinel.CONFIG)
-    manifest.filter_by_name(('foo',))
-    assert 'foo' in manifest
-    assert 'bar' not in manifest
+    manifest.filter_by_name(("foo",))
+    assert "foo" in manifest
+    assert "bar" not in manifest
 
 
 def test_filter_by_name_not_found():
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, mock.sentinel.CONFIG)
     with pytest.raises(KeyError):
-        manifest.filter_by_name(('baz',))
+        manifest.filter_by_name(("baz",))
 
 
 def test_filter_by_keyword():
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, mock.sentinel.CONFIG)
     assert len(manifest) == 2
-    manifest.filter_by_keywords('foo or bar')
+    manifest.filter_by_keywords("foo or bar")
     assert len(manifest) == 2
-    manifest.filter_by_keywords('foo')
+    manifest.filter_by_keywords("foo")
     assert len(manifest) == 1
 
 
 def test_add_session_plain():
     manifest = Manifest({}, mock.sentinel.CONFIG)
-    session_func = mock.Mock(
-        spec=(), python=None)
-    for session in manifest.make_session('my_session', session_func):
+    session_func = mock.Mock(spec=(), python=None)
+    for session in manifest.make_session("my_session", session_func):
         manifest.add_session(session)
     assert len(manifest) == 1
 
@@ -158,9 +155,9 @@ def test_add_session_multiple_pythons():
     def session_func():
         pass
 
-    session_func.python = ['3.5', '3.6']
+    session_func.python = ["3.5", "3.6"]
 
-    for session in manifest.make_session('my_session', session_func):
+    for session in manifest.make_session("my_session", session_func):
         manifest.add_session(session)
 
     assert len(manifest) == 2
@@ -170,14 +167,14 @@ def test_add_session_parametrized():
     manifest = Manifest({}, mock.sentinel.CONFIG)
 
     # Define a session with parameters.
-    @nox.parametrize('param', ('a', 'b', 'c'))
+    @nox.parametrize("param", ("a", "b", "c"))
     def my_session(session, param):
         pass
 
     my_session.python = None
 
     # Add the session to the manifest.
-    for session in manifest.make_session('my_session', my_session):
+    for session in manifest.make_session("my_session", my_session):
         manifest.add_session(session)
     assert len(manifest) == 3
 
@@ -186,14 +183,14 @@ def test_add_session_parametrized_multiple_pythons():
     manifest = Manifest({}, mock.sentinel.CONFIG)
 
     # Define a session with parameters.
-    @nox.parametrize('param', ('a', 'b'))
+    @nox.parametrize("param", ("a", "b"))
     def my_session(session, param):
         pass
 
-    my_session.python = ['2.7', '3.6']
+    my_session.python = ["2.7", "3.6"]
 
     # Add the session to the manifest.
-    for session in manifest.make_session('my_session', my_session):
+    for session in manifest.make_session("my_session", my_session):
         manifest.add_session(session)
     assert len(manifest) == 4
 
@@ -202,14 +199,14 @@ def test_add_session_parametrized_noop():
     manifest = Manifest({}, mock.sentinel.CONFIG)
 
     # Define a session without any parameters.
-    @nox.parametrize('param', ())
+    @nox.parametrize("param", ())
     def my_session(session, param):
         pass
 
     my_session.python = None
 
     # Add the session to the manifest.
-    for session in manifest.make_session('my_session', my_session):
+    for session in manifest.make_session("my_session", my_session):
         manifest.add_session(session)
     assert len(manifest) == 1
 
@@ -229,18 +226,18 @@ def test_notify():
     notified.python = None
 
     # Add the sessions to the manifest.
-    for session in manifest.make_session('my_session', my_session):
+    for session in manifest.make_session("my_session", my_session):
         manifest.add_session(session)
-    for session in manifest.make_session('notified', notified):
+    for session in manifest.make_session("notified", notified):
         manifest.add_session(session)
     assert len(manifest) == 2
 
     # Filter so only the first session is included in the queue.
-    manifest.filter_by_name(('my_session',))
+    manifest.filter_by_name(("my_session",))
     assert len(manifest) == 1
 
     # Notify the notified session.
-    manifest.notify('notified')
+    manifest.notify("notified")
     assert len(manifest) == 2
 
 
@@ -253,33 +250,32 @@ def test_notify_noop():
 
     my_session.python = None
 
-    for session in manifest.make_session('my_session', my_session):
+    for session in manifest.make_session("my_session", my_session):
         manifest.add_session(session)
 
     assert len(manifest) == 1
 
     # Establish idempotency; notifying a session already in the queue no-ops.
-    manifest.notify('my_session')
+    manifest.notify("my_session")
     assert len(manifest) == 1
 
 
 def test_notify_error():
     manifest = Manifest({}, mock.sentinel.CONFIG)
     with pytest.raises(ValueError):
-        manifest.notify('does_not_exist')
+        manifest.notify("does_not_exist")
 
 
 def test_add_session_idempotent():
     manifest = Manifest({}, mock.sentinel.CONFIG)
-    session_func = mock.Mock(
-        spec=(), python=None)
-    for session in manifest.make_session('my_session', session_func):
+    session_func = mock.Mock(spec=(), python=None)
+    for session in manifest.make_session("my_session", session_func):
         manifest.add_session(session)
         manifest.add_session(session)
     assert len(manifest) == 1
 
 
 def test_null_session_function():
-    session = mock.Mock(spec=('skip',))
+    session = mock.Mock(spec=("skip",))
     _null_session_func(session)
     assert session.skip.called

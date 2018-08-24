@@ -42,55 +42,74 @@ class GlobalConfig:
         self.posargs = args.posargs
         self.report = args.report
 
-        if self.posargs and self.posargs[0] == '--':
+        if self.posargs and self.posargs[0] == "--":
             self.posargs.pop(0)
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='nox is a Python automation toolkit.')
+    parser = argparse.ArgumentParser(description="nox is a Python automation toolkit.")
     parser.add_argument(
-        '-f', '--noxfile', default='nox.py',
-        help='Location of the Python file containing nox sessions.')
+        "-f",
+        "--noxfile",
+        default="nox.py",
+        help="Location of the Python file containing nox sessions.",
+    )
     parser.add_argument(
-        '-l', '--list-sessions', action='store_true',
-        help='List all available sessions and exit.')
+        "-l",
+        "--list-sessions",
+        action="store_true",
+        help="List all available sessions and exit.",
+    )
     parser.add_argument(
-        '--envdir', default='.nox',
-        help='Directory where nox will store virtualenvs.')
+        "--envdir", default=".nox", help="Directory where nox will store virtualenvs."
+    )
     parser.add_argument(
-        '-s', '-e', '--sessions', nargs='*',
-        help='Which sessions to run, by default, all sessions will run.')
+        "-s",
+        "-e",
+        "--sessions",
+        nargs="*",
+        help="Which sessions to run, by default, all sessions will run.",
+    )
     parser.add_argument(
-        '-k', '--keywords',
-        help='Only run sessions that match the given expression.')
+        "-k", "--keywords", help="Only run sessions that match the given expression."
+    )
     parser.add_argument(
-        '-r', '--reuse-existing-virtualenvs', action='store_true',
-        help='Re-use existing virtualenvs instead of recreating them.')
+        "-r",
+        "--reuse-existing-virtualenvs",
+        action="store_true",
+        help="Re-use existing virtualenvs instead of recreating them.",
+    )
     parser.add_argument(
-        '--stop-on-first-error', action='store_true',
-        help='Stop after the first error.')
+        "--stop-on-first-error", action="store_true", help="Stop after the first error."
+    )
     parser.add_argument(
-        '--report', default=None,
-        help='Output a report of all sessions.')
+        "--report", default=None, help="Output a report of all sessions."
+    )
     parser.add_argument(
-        '--nocolor', default=not sys.stderr.isatty(), action='store_true',
-        help='Disable all color output.')
+        "--nocolor",
+        default=not sys.stderr.isatty(),
+        action="store_true",
+        help="Disable all color output.",
+    )
     parser.add_argument(
-        '--forcecolor', default=False, action='store_true',
-        help=('Force color output, even if stdout is not an interactive '
-              'terminal.'))
+        "--forcecolor",
+        default=False,
+        action="store_true",
+        help=("Force color output, even if stdout is not an interactive " "terminal."),
+    )
     parser.add_argument(
-        'posargs', nargs=argparse.REMAINDER,
-        help='Arguments that are passed through to the sessions.')
+        "posargs",
+        nargs=argparse.REMAINDER,
+        help="Arguments that are passed through to the sessions.",
+    )
     parser.add_argument(
-        '--version', action='store_true',
-        help='Output the nox version and exit.')
+        "--version", action="store_true", help="Output the nox version and exit."
+    )
 
     args = parser.parse_args()
 
     if args.version:
-        dist = pkg_resources.get_distribution('nox')
+        dist = pkg_resources.get_distribution("nox")
         print(dist.version, file=sys.stderr)
         return
 

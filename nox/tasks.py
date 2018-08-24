@@ -47,9 +47,9 @@ def load_nox_module(global_config):
         # import-time path resolutions work the way the Noxfile author would
         # guess.
         os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
-        return imp.load_source('user_nox_module', global_config.noxfile)
+        return imp.load_source("user_nox_module", global_config.noxfile)
     except (IOError, OSError):
-        logger.error('Noxfile {} not found.'.format(global_config.noxfile))
+        logger.error("Noxfile {} not found.".format(global_config.noxfile))
         return 2
 
 
@@ -118,9 +118,9 @@ def honor_list_request(manifest, global_config):
     # If the user just asked for a list of sessions, print that
     # and be done.
     if global_config.list_sessions:
-        print('Available sessions:')
+        print("Available sessions:")
         for session in manifest:
-            print('*', session.signature or session.name)
+            print("*", session.signature or session.name)
         return 0
     return manifest
 
@@ -160,10 +160,11 @@ def run_manifest(manifest, global_config):
     # iteration.
     for session in manifest:
         result = session.execute()
-        result.log('Session {name} {status}.'.format(
-            name=str(session),
-            status=result.imperfect,
-        ))
+        result.log(
+            "Session {name} {status}.".format(
+                name=str(session), status=result.imperfect
+            )
+        )
         results.append(result)
 
         # Sanity check: If we are supposed to stop on the first error case,
@@ -192,12 +193,13 @@ def print_summary(results, global_config):
 
     # Iterate over the results and print the result for each in a
     # human-readable way.
-    logger.warning('Ran multiple sessions:')
+    logger.warning("Ran multiple sessions:")
     for result in results:
-        result.log('* {name}: {status}'.format(
-            name=str(result.session),
-            status=result.status.name.lower(),
-        ))
+        result.log(
+            "* {name}: {status}".format(
+                name=str(result.session), status=result.status.name.lower()
+            )
+        )
 
     # Return the results that were sent to this function.
     return results
@@ -219,11 +221,15 @@ def create_report(results, global_config):
         return results
 
     # Write the JSON report.
-    with io.open(global_config.report, 'w') as report_file:
-        json.dump({
-            'result': int(all(results)),
-            'sessions': [result.serialize() for result in results],
-        }, report_file, indent=2)
+    with io.open(global_config.report, "w") as report_file:
+        json.dump(
+            {
+                "result": int(all(results)),
+                "sessions": [result.serialize() for result in results],
+            },
+            report_file,
+            indent=2,
+        )
 
     # Return back the results passed to this task.
     return results

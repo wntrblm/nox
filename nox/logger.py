@@ -32,7 +32,7 @@ class LoggerWithSuccess(logging.getLoggerClass()):
 
 
 logging.setLoggerClass(LoggerWithSuccess)
-logger = logging.getLogger('nox')
+logger = logging.getLogger("nox")
 logger.setLevel(logging.DEBUG)
 
 
@@ -52,13 +52,13 @@ def setup_logging(color):  # pragma: no cover
             "%(cyan)s%(name)s > %(log_color)s%(message)s",
             reset=True,
             log_colors={
-                'DEBUG': 'cyan',
-                'INFO': 'blue',
-                'WARNING': 'yellow',
-                'ERROR': 'red',
-                'CRITICAL': 'red,bg_white',
-                'SUCCESS': 'green'
-            }
+                "DEBUG": "cyan",
+                "INFO": "blue",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red,bg_white",
+                "SUCCESS": "green",
+            },
         )
 
         handler.setFormatter(formatter)
@@ -66,4 +66,4 @@ def setup_logging(color):  # pragma: no cover
     root_logger.addHandler(handler)
 
     # Silence noisy loggers
-    logging.getLogger('sh').setLevel(logging.WARNING)
+    logging.getLogger("sh").setLevel(logging.WARNING)

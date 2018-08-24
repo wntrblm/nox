@@ -24,104 +24,107 @@ PYTHON = sys.executable
 
 
 def test_run_defaults(capsys):
-    result = nox.command.run([PYTHON, '-c', 'print(123)'])
+    result = nox.command.run([PYTHON, "-c", "print(123)"])
 
     assert result is True
 
 
 def test_run_silent(capsys):
-    result = nox.command.run([PYTHON, '-c', 'print(123)'], silent=True)
+    result = nox.command.run([PYTHON, "-c", "print(123)"], silent=True)
 
     out, _ = capsys.readouterr()
 
-    assert '123' in result
-    assert out == ''
+    assert "123" in result
+    assert out == ""
 
 
 def test_run_env_binary():
     result = nox.command.run(
-        [PYTHON, '-c', 'import os; print(os.environ.get("SIGIL"))'],
-        silent=True, env={
-            b'SIGIL': b'123'})
+        [PYTHON, "-c", 'import os; print(os.environ.get("SIGIL"))'],
+        silent=True,
+        env={b"SIGIL": b"123"},
+    )
 
-    assert '123' in result
+    assert "123" in result
 
 
 def test_run_env_unicode():
     result = nox.command.run(
-        [PYTHON, '-c', 'import os; print(os.environ["SIGIL"])'],
-        silent=True, env={
-            u'SIGIL': u'123'})
+        [PYTHON, "-c", 'import os; print(os.environ["SIGIL"])'],
+        silent=True,
+        env={u"SIGIL": u"123"},
+    )
 
-    assert '123' in result
+    assert "123" in result
 
 
 def test_run_env_systemroot():
-    systemroot = os.environ.setdefault('SYSTEMROOT', str('sigil'))
+    systemroot = os.environ.setdefault("SYSTEMROOT", str("sigil"))
 
     result = nox.command.run(
-        [PYTHON, '-c', 'import os; print(os.environ["SYSTEMROOT"])'],
-        silent=True)
+        [PYTHON, "-c", 'import os; print(os.environ["SYSTEMROOT"])'], silent=True
+    )
 
     assert systemroot in result
 
 
 def test_run_not_found():
     with pytest.raises(nox.command.CommandFailed):
-        nox.command.run(['nonexistentcmd'])
+        nox.command.run(["nonexistentcmd"])
 
 
 def test_run_path_nonexistent():
     result = nox.command.run(
-        [PYTHON, '-c', 'import sys; print(sys.executable)'],
+        [PYTHON, "-c", "import sys; print(sys.executable)"],
         silent=True,
-        path='/non/existent')
+        path="/non/existent",
+    )
 
-    assert '/non/existent' not in result
+    assert "/non/existent" not in result
 
 
 def test_run_path_existent(tmpdir, monkeypatch):
-    executable = tmpdir.join('testexc')
-    executable.ensure('')
+    executable = tmpdir.join("testexc")
+    executable.ensure("")
     executable.chmod(0o700)
 
-    with mock.patch('nox.command.popen') as mock_command:
-        mock_command.return_value = (0, '')
-        nox.command.run(
-            ['testexc'],
-            silent=True,
-            path=tmpdir.strpath)
-        mock_command.assert_called_with(
-            [executable.strpath], env=None, silent=True)
+    with mock.patch("nox.command.popen") as mock_command:
+        mock_command.return_value = (0, "")
+        nox.command.run(["testexc"], silent=True, path=tmpdir.strpath)
+        mock_command.assert_called_with([executable.strpath], env=None, silent=True)
 
 
 def test_exit_codes():
-    assert nox.command.run([PYTHON, '-c', 'import sys; sys.exit(0)'])
+    assert nox.command.run([PYTHON, "-c", "import sys; sys.exit(0)"])
 
     with pytest.raises(nox.command.CommandFailed):
-        nox.command.run([PYTHON, '-c', 'import sys; sys.exit(1)'])
+        nox.command.run([PYTHON, "-c", "import sys; sys.exit(1)"])
 
     assert nox.command.run(
-        [PYTHON, '-c', 'import sys; sys.exit(1)'],
-        success_codes=[1, 2])
+        [PYTHON, "-c", "import sys; sys.exit(1)"], success_codes=[1, 2]
+    )
 
 
 def test_fail_with_silent(capsys):
     with pytest.raises(nox.command.CommandFailed):
         nox.command.run(
-            [PYTHON, '-c',
-             'import sys; sys.stdout.write("out");'
-             'sys.stderr.write("err"); sys.exit(1)'],
-            silent=True)
+            [
+                PYTHON,
+                "-c",
+                'import sys; sys.stdout.write("out");'
+                'sys.stderr.write("err"); sys.exit(1)',
+            ],
+            silent=True,
+        )
         out, err = capsys.readouterr()
-        assert 'out' in err
-        assert 'err' in err
+        assert "out" in err
+        assert "err" in err
 
 
 def test_interrupt():
     mock_proc = mock.Mock()
     mock_proc.communicate.side_effect = KeyboardInterrupt()
 
-    with mock.patch('subprocess.Popen', return_value=mock_proc):
+    with mock.patch("subprocess.Popen", return_value=mock_proc):
         with pytest.raises(KeyboardInterrupt):
-            nox.command.run([PYTHON, '-c' '123'])
+            nox.command.run([PYTHON, "-c" "123"])

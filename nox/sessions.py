@@ -28,26 +28,26 @@ from nox.virtualenv import ProcessEnv, VirtualEnv
 def _normalize_path(envdir, path):
     """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
     if isinstance(path, bytes):
-        path = path.decode('utf-8')
+        path = path.decode("utf-8")
 
-    path = unicodedata.normalize('NFKD', path).encode('ascii', 'ignore')
-    path = path.decode('ascii')
-    path = re.sub('[^\w\s-]', '-', path).strip().lower()
-    path = re.sub('[-\s]+', '-', path)
-    path = path.strip('-')
+    path = unicodedata.normalize("NFKD", path).encode("ascii", "ignore")
+    path = path.decode("ascii")
+    path = re.sub("[^\w\s-]", "-", path).strip().lower()
+    path = re.sub("[-\s]+", "-", path)
+    path = path.strip("-")
 
     full_path = os.path.join(envdir, path)
-    if len(full_path) > 100 - len('bin/pythonX.Y'):
+    if len(full_path) > 100 - len("bin/pythonX.Y"):
         if len(envdir) < 100 - 9:
-            path = hashlib.sha1(path.encode('ascii')).hexdigest()[:8]
+            path = hashlib.sha1(path.encode("ascii")).hexdigest()[:8]
             full_path = os.path.join(envdir, path)
-            logger.warning(
-                'The virtualenv name was hashed to avoid being too long.')
+            logger.warning("The virtualenv name was hashed to avoid being too long.")
         else:
             logger.error(
-                'The virtualenv path {} is too long and will cause issues on '
-                'some environments. Use the --envdir path to modify where '
-                'nox stores virtualenvs.'.format(full_path))
+                "The virtualenv path {} is too long and will cause issues on "
+                "some environments. Use the --envdir path to modify where "
+                "nox stores virtualenvs.".format(full_path)
+            )
 
     return full_path
 
@@ -73,6 +73,7 @@ class Session:
     This is your primary means for installing package and running commands in
     your Nox session.
     """
+
     def __init__(self, runner):
         self._runner = runner
 
@@ -99,7 +100,7 @@ class Session:
 
     def chdir(self, dir):
         """Change the current working directory."""
-        self.log('cd {}'.format(dir))
+        self.log("cd {}".format(dir))
         os.chdir(dir)
 
     cd = chdir
@@ -107,13 +108,11 @@ class Session:
 
     def _run_func(self, func, args, kwargs):
         """Legacy support for running a function through :func`run`."""
-        self.log('{}(args={!r}, kwargs={!r})'.format(
-            func, args, kwargs))
+        self.log("{}(args={!r}, kwargs={!r})".format(func, args, kwargs))
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logger.exception('Function {!r} raised {!r}.'.format(
-                func, e))
+            logger.exception("Function {!r} raised {!r}.".format(func, e))
             raise nox.command.CommandFailed()
 
     def run(self, *args, env=None, **kwargs):
@@ -153,7 +152,7 @@ class Session:
         :type success_codes: list, tuple, or None
         """
         if not args:
-            raise ValueError('At least one argument required to run().')
+            raise ValueError("At least one argument required to run().")
 
         # Legacy support - run a function given.
         if callable(args[0]):
@@ -168,12 +167,7 @@ class Session:
             env = self.env
 
         # Run a shell command.
-        return nox.command.run(
-            args,
-            env=env,
-            path=self.bin,
-            **kwargs
-        )
+        return nox.command.run(args, env=env, path=self.bin, **kwargs)
 
     def install(self, *args, **kwargs):
         """Install invokes `pip`_ to install packages inside of the session's
@@ -202,13 +196,12 @@ class Session:
         """
         if not isinstance(self.virtualenv, VirtualEnv):
             raise ValueError(
-                'A session without a virtualenv can not install dependencies.')
+                "A session without a virtualenv can not install dependencies."
+            )
         if not args:
-            raise ValueError('At least one argument required to install().')
+            raise ValueError("At least one argument required to install().")
 
-        self.run(
-            'pip', 'install', '--upgrade', *args,
-            silent=True, **kwargs)
+        self.run("pip", "install", "--upgrade", *args, silent=True, **kwargs)
 
     def notify(self, target):
         """Place the given session at the end of the queue.
@@ -260,24 +253,23 @@ class SessionRunner:
         name = self.signature or self.name
         path = _normalize_path(self.global_config.envdir, name)
         reuse_existing = (
-            self.func.reuse_venv or
-            self.global_config.reuse_existing_virtualenvs)
+            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
+        )
         self.venv = VirtualEnv(
-            path,
-            interpreter=self.func.python,
-            reuse_existing=reuse_existing)
+            path, interpreter=self.func.python, reuse_existing=reuse_existing
+        )
         self.venv.create()
 
     def execute(self):
         session_friendly_name = self.signature or self.name
-        logger.warning('Running session {}'.format(session_friendly_name))
+        logger.warning("Running session {}".format(session_friendly_name))
 
         try:
             # By default, nox should quietly change to the directory where
             # the nox.py file is located.
             cwd = py.path.local(
-                os.path.realpath(
-                    os.path.dirname(self.global_config.noxfile))).as_cwd()
+                os.path.realpath(os.path.dirname(self.global_config.noxfile))
+            ).as_cwd()
 
             with cwd:
                 self._create_venv()
@@ -297,12 +289,11 @@ class SessionRunner:
             return Result(self, Status.FAILED)
 
         except KeyboardInterrupt:
-            logger.error('Session {} interrupted.'.format(self))
+            logger.error("Session {} interrupted.".format(self))
             raise
 
         except Exception as exc:
-            logger.exception(
-                'Session {} raised exception {!r}'.format(self, exc))
+            logger.exception("Session {} raised exception {!r}".format(self, exc))
             return Result(self, Status.FAILED)
 
 
@@ -334,7 +325,7 @@ class Result:
             str: A word or phrase representing the status.
         """
         if self.status == Status.SUCCESS:
-            return 'was successful'
+            return "was successful"
         return self.status.name.lower()
 
     def log(self, message):
@@ -359,9 +350,9 @@ class Result:
             dict: The serialized result.
         """
         return {
-            'args': getattr(self.session.func, 'call_spec', {}),
-            'name': self.session.name,
-            'result': self.status.name.lower(),
-            'result_code': self.status.value,
-            'signature': self.session.signature,
+            "args": getattr(self.session.func, "call_spec", {}),
+            "name": self.session.name,
+            "result": self.status.name.lower(),
+            "result_code": self.status.value,
+            "signature": self.session.signature,
         }

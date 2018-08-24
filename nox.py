@@ -17,55 +17,50 @@ import os
 import nox
 
 
-ON_APPVEYOR = os.environ.get('APPVEYOR') == 'True'
+ON_APPVEYOR = os.environ.get("APPVEYOR") == "True"
 
 
-@nox.session(python=['3.5', '3.6', '3.7'])
+@nox.session(python=["3.5", "3.6", "3.7"])
 def tests(session):
-    session.install('-r', 'requirements-test.txt')
-    session.install('-e', '.[tox_to_nox]')
-    tests = session.posargs or ['tests/']
+    session.install("-r", "requirements-test.txt")
+    session.install("-e", ".[tox_to_nox]")
+    tests = session.posargs or ["tests/"]
     session.run(
-        'py.test', '--cov=nox', '--cov-config', '.coveragerc',
-        '--cov-report=', *tests)
-    session.notify('cover')
+        "py.test", "--cov=nox", "--cov-config", ".coveragerc", "--cov-report=", *tests
+    )
+    session.notify("cover")
 
 
 @nox.session
 def cover(session):
-    session.install('coverage')
+    session.install("coverage")
     if ON_APPVEYOR:
-        fail_under = '--fail-under=99'
+        fail_under = "--fail-under=99"
     else:
-        fail_under = '--fail-under=100'
-    session.run(
-        'coverage',
-        'report',
-        fail_under,
-        '--show-missing',
-    )
-    session.run('coverage', 'erase')
+        fail_under = "--fail-under=100"
+    session.run("coverage", "report", fail_under, "--show-missing")
+    session.run("coverage", "erase")
 
 
-@nox.session
+@nox.session(python="3.6")
+def blacken(session):
+    session.install("black")
+    session.run("black", "nox", "tests", "nox.py", "setup.py")
+
+
+@nox.session(python="3.6")
 def lint(session):
-    session.install('flake8', 'flake8-import-order')
-    session.run(
-        'flake8',
-        '--import-order-style=google',
-        '--application-import-names=nox,tests',
-        'nox', 'tests')
+    session.install("flake8", "flake8-import-order", "black")
+    session.run("black", "--check", "nox", "tests", "nox.py", "setup.py")
+    session.run("flake8", "nox", "tests")
 
 
-@nox.session(python='3.6')
+@nox.session(python="3.6")
 def docs(session):
-    session.run('rm', '-rf', 'docs/_build')
-    session.install('-r', 'requirements-test.txt')
-    session.install('.')
-    session.cd('docs')
+    session.run("rm", "-rf", "docs/_build")
+    session.install("-r", "requirements-test.txt")
+    session.install(".")
+    session.cd("docs")
     session.run(
-        'sphinx-build',
-        '-b', 'html',
-        '-W',
-        '-d', '_build/doctrees',
-        '.', '_build/html')
+        "sphinx-build", "-b", "html", "-W", "-d", "_build/doctrees", ".", "_build/html"
+    )

@@ -23,24 +23,32 @@ from nox import tox_to_nox
 @pytest.fixture
 def makeconfig(tmpdir):
     def makeconfig(toxini_content):
-        tmpdir.join('tox.ini').write(toxini_content)
+        tmpdir.join("tox.ini").write(toxini_content)
         old = tmpdir.chdir()
         try:
             sys.argv = [sys.executable]
             tox_to_nox.main()
-            return tmpdir.join('nox.py').read()
+            return tmpdir.join("nox.py").read()
         finally:
             old.chdir()
+
     return makeconfig
 
 
 def test_trivial(makeconfig):
-    result = makeconfig(textwrap.dedent("""
+    result = makeconfig(
+        textwrap.dedent(
+            """
     [tox]
     envlist = py27
-    """))
+    """
+        )
+    )
 
-    assert result == textwrap.dedent("""
+    assert (
+        result
+        == textwrap.dedent(
+            """
     import nox
 
 
@@ -48,38 +56,56 @@ def test_trivial(makeconfig):
     def py27(session):
         session.interpreter = 'python2.7'
         session.install('.')
-    """).lstrip()
+    """
+        ).lstrip()
+    )
 
 
 def test_skipinstall(makeconfig):
-    result = makeconfig(textwrap.dedent("""
+    result = makeconfig(
+        textwrap.dedent(
+            """
     [tox]
     envlist = py27
 
     [testenv]
     skip_install = True
-    """))
+    """
+        )
+    )
 
-    assert result == textwrap.dedent("""
+    assert (
+        result
+        == textwrap.dedent(
+            """
     import nox
 
 
     @nox.session
     def py27(session):
         session.interpreter = 'python2.7'
-    """).lstrip()
+    """
+        ).lstrip()
+    )
 
 
 def test_usedevelop(makeconfig):
-    result = makeconfig(textwrap.dedent("""
+    result = makeconfig(
+        textwrap.dedent(
+            """
     [tox]
     envlist = py27
 
     [testenv]
     usedevelop = True
-    """))
+    """
+        )
+    )
 
-    assert result == textwrap.dedent("""
+    assert (
+        result
+        == textwrap.dedent(
+            """
     import nox
 
 
@@ -87,11 +113,15 @@ def test_usedevelop(makeconfig):
     def py27(session):
         session.interpreter = 'python2.7'
         session.install('-e', '.')
-    """).lstrip()
+    """
+        ).lstrip()
+    )
 
 
 def test_commands(makeconfig):
-    result = makeconfig(textwrap.dedent("""
+    result = makeconfig(
+        textwrap.dedent(
+            """
     [tox]
     envlist = lint
 
@@ -102,9 +132,14 @@ def test_commands(makeconfig):
         flake8 \\
             --import-order-style=google \\
             google tests
-    """))
+    """
+        )
+    )
 
-    assert result == textwrap.dedent("""
+    assert (
+        result
+        == textwrap.dedent(
+            """
     import nox
 
 
@@ -115,11 +150,15 @@ def test_commands(makeconfig):
         session.run('python', 'setup.py', 'check', '--metadata', \
 '--restructuredtext', '--strict')
         session.run('flake8', '--import-order-style=google', 'google', 'tests')
-    """).lstrip()
+    """
+        ).lstrip()
+    )
 
 
 def test_deps(makeconfig):
-    result = makeconfig(textwrap.dedent("""
+    result = makeconfig(
+        textwrap.dedent(
+            """
     [tox]
     envlist = lint
 
@@ -128,9 +167,14 @@ def test_deps(makeconfig):
     deps =
       flake8
       gcp-devrel-py-tools>=0.0.3
-    """))
+    """
+        )
+    )
 
-    assert result == textwrap.dedent("""
+    assert (
+        result
+        == textwrap.dedent(
+            """
     import nox
 
 
@@ -139,11 +183,15 @@ def test_deps(makeconfig):
         session.interpreter = 'python2.7'
         session.install('flake8', 'gcp-devrel-py-tools>=0.0.3')
         session.install('.')
-    """).lstrip()
+    """
+        ).lstrip()
+    )
 
 
 def test_env(makeconfig):
-    result = makeconfig(textwrap.dedent("""
+    result = makeconfig(
+        textwrap.dedent(
+            """
     [tox]
     envlist = lint
 
@@ -152,9 +200,14 @@ def test_env(makeconfig):
     setenv =
         SPHINX_APIDOC_OPTIONS=members,inherited-members,show-inheritance
         TEST=meep
-    """))
+    """
+        )
+    )
 
-    assert result == textwrap.dedent("""
+    assert (
+        result
+        == textwrap.dedent(
+            """
     import nox
 
 
@@ -165,20 +218,29 @@ def test_env(makeconfig):
 'members,inherited-members,show-inheritance'
         session.env['TEST'] = 'meep'
         session.install('.')
-    """).lstrip()
+    """
+        ).lstrip()
+    )
 
 
 def test_chdir(makeconfig):
-    result = makeconfig(textwrap.dedent("""
+    result = makeconfig(
+        textwrap.dedent(
+            """
     [tox]
     envlist = lint
 
     [testenv:lint]
     basepython = python2.7
     changedir = docs
-    """))
+    """
+        )
+    )
 
-    assert result == textwrap.dedent("""
+    assert (
+        result
+        == textwrap.dedent(
+            """
     import nox
 
 
@@ -187,4 +249,6 @@ def test_chdir(makeconfig):
         session.interpreter = 'python2.7'
         session.install('.')
         session.chdir('docs')
-    """).lstrip()
+    """
+        ).lstrip()
+    )

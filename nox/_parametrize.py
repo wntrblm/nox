@@ -36,8 +36,7 @@ def parametrize_decorator(arg_names, arg_values_list):
 
     # Allow args to be specified as any of 'arg', 'arg,arg2' or ('arg', 'arg2')
     if not isinstance(arg_names, (list, tuple)):
-        arg_names = list(
-            filter(None, [arg.strip() for arg in arg_names.split(',')]))
+        arg_names = list(filter(None, [arg.strip() for arg in arg_names.split(",")]))
 
     # If there's only one arg_name, arg_values_list should be a single item
     # or list. Transform it so it'll work with the combine step.
@@ -56,10 +55,9 @@ def parametrize_decorator(arg_names, arg_values_list):
         call_specs.append(call_spec)
 
     def inner(f):
-        previous_call_specs = getattr(f, 'parametrize', None)
-        new_call_specs = update_call_specs(
-            previous_call_specs, call_specs)
-        setattr(f, 'parametrize', new_call_specs)
+        previous_call_specs = getattr(f, "parametrize", None)
+        new_call_specs = update_call_specs(previous_call_specs, call_specs)
+        setattr(f, "parametrize", new_call_specs)
         return f
 
     return inner
@@ -79,10 +77,8 @@ def update_call_specs(call_specs, new_specs):
 
 
 def generate_session_signature(func, call_spec):
-    args = [
-        '{}={}'.format(k, repr(call_spec[k]))
-        for k in sorted(call_spec.keys())]
-    return '({})'.format(', '.join(args))
+    args = ["{}={}".format(k, repr(call_spec[k])) for k in sorted(call_spec.keys())]
+    return "({})".format(", ".join(args))
 
 
 def generate_calls(func, call_specs):
@@ -94,6 +90,7 @@ def generate_calls(func, call_specs):
             def call_wrapper(*args, **kwargs):
                 kwargs.update(call_spec)
                 return func(*args, **kwargs)
+
             return call_wrapper
 
         call = make_call_wrapper(call_spec)

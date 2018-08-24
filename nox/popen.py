@@ -22,8 +22,7 @@ def popen(args, env=None, silent=False):
     if silent:
         stdout = subprocess.PIPE
 
-    proc = subprocess.Popen(
-        args, env=env, stdout=stdout, stderr=subprocess.STDOUT)
+    proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=subprocess.STDOUT)
 
     try:
         out, err = proc.communicate()
@@ -36,4 +35,4 @@ def popen(args, env=None, silent=False):
 
     return_code = proc.wait()
 
-    return return_code, out.decode('utf-8') if out else ''
+    return return_code, out.decode("utf-8") if out else ""

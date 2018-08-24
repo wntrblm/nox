@@ -22,23 +22,23 @@ import jinja2
 import tox.config
 
 _TEMPLATE = jinja2.Template(
-    pkgutil.get_data(__name__, 'tox_to_nox.jinja2').decode('utf-8'),
-    extensions=['jinja2.ext.do'])
+    pkgutil.get_data(__name__, "tox_to_nox.jinja2").decode("utf-8"),
+    extensions=["jinja2.ext.do"],
+)
 
 
 def wrapjoin(seq):
-    return ', '.join(["'{}'".format(item) for item in seq])
+    return ", ".join(["'{}'".format(item) for item in seq])
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Converts toxfiles to noxfiles.')
-    parser.add_argument('--output', default='nox.py')
+    parser = argparse.ArgumentParser(description="Converts toxfiles to noxfiles.")
+    parser.add_argument("--output", default="nox.py")
 
     args = parser.parse_args()
 
     config = tox.config.parseconfig([])
     output = _TEMPLATE.render(config=config, wrapjoin=wrapjoin)
 
-    with io.open(args.output, 'w') as outfile:
+    with io.open(args.output, "w") as outfile:
         outfile.write(output)

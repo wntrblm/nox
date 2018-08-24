@@ -27,7 +27,8 @@ def _copy_func(src, name=None):
         src.__globals__,
         name=name or src.__name__,
         argdefs=src.__defaults__,
-        closure=src.__closure__)
+        closure=src.__closure__,
+    )
     dst.__dict__.update(copy.deepcopy(src.__dict__))
     dst = functools.update_wrapper(dst, src)
     dst.__kwdefaults__ = src.__kwdefaults__
@@ -49,6 +50,7 @@ class Manifest:
             session functions.
         global_config (.nox.main.GlobalConfig): The global configuration.
     """
+
     def __init__(self, session_functions, global_config):
         self._all_sessions = []
         self._queue = []
@@ -116,19 +118,21 @@ class Manifest:
         """
         # Filter the sessions remaining in the queue based on
         # whether they are individually specified.
-        self._queue = [x for x in self._queue if (
-            x.name in specified_sessions or
-            x.signature in specified_sessions)]
+        self._queue = [
+            x
+            for x in self._queue
+            if (x.name in specified_sessions or x.signature in specified_sessions)
+        ]
 
         # If a session was requested and was not found, complain loudly.
         missing_sessions = set(specified_sessions) - set(
             itertools.chain(
                 [x.name for x in self._all_sessions if x.name],
-                [x.signature for x in self._all_sessions if x.signature]))
-        if missing_sessions:
-            raise KeyError(
-                'Sessions not found: {}'.format(', '.join(missing_sessions)),
+                [x.signature for x in self._all_sessions if x.signature],
             )
+        )
+        if missing_sessions:
+            raise KeyError("Sessions not found: {}".format(", ".join(missing_sessions)))
 
     def filter_by_keywords(self, keywords):
         """Filter sessions using pytest-like keyword expressions.
@@ -138,8 +142,8 @@ class Manifest:
                 session names are checked against.
         """
         self._queue = [
-            x for x in self._queue
-            if keyword_match(keywords, [x.signature or x.name])]
+            x for x in self._queue if keyword_match(keywords, [x.signature or x.name])
+        ]
 
     def make_session(self, name, func):
         """Create a session object from the session function.
@@ -166,9 +170,9 @@ class Manifest:
 
         # Simple case: If this function is not parametrized, then make
         # a simple session
-        if not hasattr(func, 'parametrize'):
+        if not hasattr(func, "parametrize"):
             if func.python:
-                long_name = '{}-{}'.format(name, func.python)
+                long_name = "{}-{}".format(name, func.python)
             else:
                 long_name = name
             session = SessionRunner(name, long_name, func, self._config, self)
@@ -179,21 +183,17 @@ class Manifest:
         calls = generate_calls(func, func.parametrize)
         for call in calls:
             if func.python:
-                long_name = '{}-{}{}'.format(
-                    name, func.python, call.session_signature)
+                long_name = "{}-{}{}".format(name, func.python, call.session_signature)
             else:
-                long_name = '{}{}'.format(
-                    name, call.session_signature)
+                long_name = "{}{}".format(name, call.session_signature)
 
-            sessions.append(
-                SessionRunner(name, long_name, call, self._config, self))
+            sessions.append(SessionRunner(name, long_name, call, self._config, self))
 
         # Edge case: If the parameters made it such that there were no valid
         # calls, add an empty, do-nothing session.
         if not calls:
             sessions.append(
-                SessionRunner(
-                    name, None, _null_session_func, self._config, self),
+                SessionRunner(name, None, _null_session_func, self._config, self)
             )
 
         # Return the list of sessions.
@@ -231,7 +231,7 @@ class Manifest:
                 return True
 
         # The session was not found in the list of sessions.
-        raise ValueError('Session %s not found.' % session)
+        raise ValueError("Session %s not found." % session)
 
 
 class KeywordLocals:
@@ -242,6 +242,7 @@ class KeywordLocals:
     any keyword, then the name lookup returns True. Otherwise, the name lookup
     returns False.
     """
+
     def __init__(self, keywords):
         self._keywords = keywords
 
@@ -260,4 +261,4 @@ def keyword_match(expression, keywords):
 
 def _null_session_func(session):
     """A no-op session for patemetrized sessions with no available params."""
-    session.skip('This session had no parameters available.')
+    session.skip("This session had no parameters available.")
