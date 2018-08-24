@@ -58,6 +58,21 @@ def test_session_decorator_list_of_pythons(cleanup_registry):
     assert unit_tests.python == ['3.5', '3.6']
 
 
+def test_session_decorator_py_alias(cleanup_registry):
+    @registry.session_decorator(py=['3.5', '3.6'])
+    def unit_tests(session):
+        pass
+
+    assert unit_tests.python == ['3.5', '3.6']
+
+
+def test_session_decorator_py_alias_error(cleanup_registry):
+    with pytest.raises(ValueError, match='argument'):
+        @registry.session_decorator(python=['3.5', '3.6'], py='2.7')
+        def unit_tests(session):
+            pass
+
+
 def test_session_decorator_reuse(cleanup_registry):
     @registry.session_decorator(reuse_venv=True)
     def unit_tests(session):

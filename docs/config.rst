@@ -30,7 +30,7 @@ Configuring a session's virtualenv
 
 By default, Nox will create a new virtualenv for each session using the same interpreter that Nox uses. If you installed Nox using Python 3.6, Nox will use Python 3.6 by default for all of your sessions.
 
-You can tell Nox to use a different Python interpreter/version by specifying the ``python`` argument to ``@nox.session``::
+You can tell Nox to use a different Python interpreter/version by specifying the ``python``  argument (or its alias ``py``) to ``@nox.session``::
 
     @nox.session(python='2.7')
     def tests(session):
