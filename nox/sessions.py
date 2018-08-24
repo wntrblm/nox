@@ -246,8 +246,8 @@ class SessionRunner:
     def description(self):
         doc = self.func.__doc__
         if doc:
-            # Get only the first line
-            return doc.strip().split("\n")[0]
+            first_line = doc.strip().split("\n")[0]
+            return first_line
         return ""
 
     def __str__(self):
