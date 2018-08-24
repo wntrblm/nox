@@ -62,7 +62,7 @@ author = u'Alethea Katherine Flowers'
 # built documents.
 #
 # The short X.Y version.
-version = pkg_resources.get_distribution('nox-automation').version
+version = pkg_resources.get_distribution('nox').version
 # The full version, including alpha/beta/rc tags.
 release = version
 

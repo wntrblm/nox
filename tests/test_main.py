@@ -27,7 +27,7 @@ import nox.sessions
 
 
 RESOURCES = os.path.join(os.path.dirname(__file__), 'resources')
-VERSION = pkg_resources.get_distribution('nox-automation').version
+VERSION = pkg_resources.get_distribution('nox').version
 
 
 def test_global_config_constructor():

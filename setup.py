@@ -21,7 +21,7 @@ long_description = open('README.rst', 'r', encoding='utf-8').read()
 
 
 setup(
-    name='nox-automation',
+    name='nox',
 
     version='2018.7.31dev1',
 
@@ -69,7 +69,6 @@ setup(
         'virtualenv>=14.0.0'],
 
     extras_require={
-        ':python_version<"3.4"': ['enum34'],
         'tox_to_nox': ['jinja2', 'tox']
     },
 

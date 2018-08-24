@@ -90,7 +90,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        dist = pkg_resources.get_distribution('nox-automation')
+        dist = pkg_resources.get_distribution('nox')
         print(dist.version, file=sys.stderr)
         return
 

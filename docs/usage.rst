@@ -127,7 +127,7 @@ Nox has experimental support for converting ``tox.ini`` files into ``nox.py`` fi
 
 To use the converter, install ``nox`` with the ``tox_to_nox`` extra::
 
-    pip install --upgrade nox-automation[tox_to_nox]
+    pip install --upgrade nox[tox_to_nox]
 
 Then, just run ``tox-to-nox`` in the directory where your ``tox.ini`` resides::
 
