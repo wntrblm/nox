@@ -91,7 +91,8 @@ def filter_manifest(manifest, global_config):
         try:
             manifest.filter_by_name(global_config.sessions)
         except KeyError as exc:
-            logger.error(str(exc))
+            logger.error("Error while collecting sessions.")
+            logger.error(exc.args[0])
             return 3
 
     # Filter by keywords.
