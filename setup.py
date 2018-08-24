@@ -22,10 +22,10 @@ long_description = open("README.rst", "r", encoding="utf-8").read()
 
 setup(
     name="nox",
-    version="2018.7.31dev1",
+    version="2018.8.23",
     description="Flexible test automation.",
     long_description=long_description,
-    url="https://nox.readthedocs.org",
+    url="https://nox.thea.codes",
     author="Alethea Katherine Flowers",
     author_email="me@thea.codes",
     license="Apache Software License",
@@ -61,7 +61,7 @@ setup(
         ]
     },
     project_urls={
-        "Documentation": "https://nox.readthedocs.io/",
+        "Documentation": "https://nox.thea.codes",
         "Source Code": "https://github.com/theacodes/nox",
         "Bug Tracker": "https://github.com/theacodes/nox/issues",
     },
