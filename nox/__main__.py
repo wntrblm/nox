@@ -37,6 +37,7 @@ class GlobalConfig:
         self.sessions = args.sessions
         self.keywords = args.keywords
         self.list_sessions = args.list_sessions
+        self.verbose = args.verbose
         self.reuse_existing_virtualenvs = args.reuse_existing_virtualenvs
         self.stop_on_first_error = args.stop_on_first_error
         self.posargs = args.posargs
@@ -59,6 +60,12 @@ def main():
         "--list-sessions",
         action="store_true",
         help="List all available sessions and exit.",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Output extra information.",
     )
     parser.add_argument(
         "--envdir", default=".nox", help="Directory where nox will store virtualenvs."
