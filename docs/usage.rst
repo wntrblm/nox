@@ -5,6 +5,12 @@ Nox is normally invoked on the command line::
 
     nox
 
+
+You can also invoke nox via the Python interpreter::
+
+    python3 -m nox
+
+
 Specifying a different configuration file
 -----------------------------------------
 
