@@ -21,7 +21,7 @@ import contexter
 import pkg_resources
 
 import nox
-import nox.main
+import nox.__main__
 import nox.registry
 import nox.sessions
 
@@ -43,7 +43,7 @@ def test_global_config_constructor():
         report=None,
     )
 
-    config = nox.main.GlobalConfig(args)
+    config = nox.__main__.GlobalConfig(args)
 
     assert config.noxfile == "noxfile"
     assert config.envdir == os.path.abspath("dir")
@@ -55,7 +55,7 @@ def test_global_config_constructor():
     assert config.posargs == ["a", "b", "c"]
 
     args.posargs = ["--", "a", "b", "c"]
-    config = nox.main.GlobalConfig(args)
+    config = nox.__main__.GlobalConfig(args)
     assert config.posargs == ["a", "b", "c"]
 
 
@@ -66,7 +66,7 @@ def test_main_no_args():
 
         # Call the function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.main.main()
+            nox.__main__.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -98,7 +98,7 @@ def test_main_long_form_args():
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.main.main()
+            nox.__main__.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -119,7 +119,7 @@ def test_main_short_form_args():
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.main.main()
+            nox.__main__.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -137,7 +137,7 @@ def test_main_explicit_sessions():
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.main.main()
+            nox.__main__.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -153,7 +153,7 @@ def test_main_positional_args():
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.main.main()
+            nox.__main__.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -169,7 +169,7 @@ def test_main_positional_with_double_hyphen():
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.main.main()
+            nox.__main__.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -185,7 +185,7 @@ def test_main_positional_flag_like_with_double_hyphen():
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.main.main()
+            nox.__main__.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -200,7 +200,7 @@ def test_main_version(capsys):
     with contexter.ExitStack() as stack:
         execute = stack.enter_context(mock.patch("nox.workflow.execute"))
         exit_mock = stack.enter_context(mock.patch("sys.exit"))
-        nox.main.main()
+        nox.__main__.main()
         _, err = capsys.readouterr()
         assert VERSION in err
         exit_mock.assert_not_called()
@@ -212,7 +212,7 @@ def test_main_failure():
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 1
         with mock.patch.object(sys, "exit") as exit:
-            nox.main.main()
+            nox.__main__.main()
             exit.assert_called_once_with(1)
 
 
@@ -226,7 +226,7 @@ def test_main_nested_config(capsys):
     ]
 
     with mock.patch("sys.exit") as sys_exit:
-        nox.main.main()
+        nox.__main__.main()
         stdout, stderr = capsys.readouterr()
         assert stdout == "Noms, cheddar so good!\n"
         assert "Session snack(cheese='cheddar') was successful." in stderr

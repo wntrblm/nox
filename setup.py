@@ -56,7 +56,7 @@ setup(
     extras_require={"tox_to_nox": ["jinja2", "tox"]},
     entry_points={
         "console_scripts": [
-            "nox=nox.main:main",
+            "nox=nox.__main__:main",
             "tox-to-nox=nox.tox_to_nox:main [tox_to_nox]",
         ]
     },
