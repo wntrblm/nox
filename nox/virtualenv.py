@@ -109,15 +109,21 @@ class VirtualEnv(ProcessEnv):
         if self.interpreter is None:
             return sys.executable
 
-        # If this is just a X.Y or X.Y.Z string, stick `python` in front of it.
-        if re.match(r'^\d\.\d\.?\d?$', self.interpreter):
-            self.interpreter = 'python{}'.format(self.interpreter)
+        # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
+        # part and add Python to the front of it.
+        match = re.match(r'^([\d\.]+?)$', self.interpreter)
+        if match:
+            parts = match.group(1).split('.')
+            if len(parts) > 2:
+                parts = parts[:2]
+
+            self.interpreter = 'python{}'.format('.'.join(parts))
 
         # Sanity check: We only need the rest of this behavior on Windows.
         if platform.system() != 'Windows':
             return self.interpreter
 
-        # We may have gotten a fully-qualified intepreter path (for someone
+        # We may have gotten a fully-qualified interpreter path (for someone
         # _only_ testing on Windows); accept this.
         if py.path.local.sysfind(self.interpreter):
             return self.interpreter
@@ -125,7 +131,7 @@ class VirtualEnv(ProcessEnv):
         # If this is a standard Unix "pythonX.Y" name, it should be found
         # in a standard location in Windows, and if not, the py.exe launcher
         # should be able to find it from the information in the registry.
-        match = re.match(r'^python(?P<ver>\d\.\d)$', self.interpreter)
+        match = re.match(r'^python(?P<ver>\d\.?\d?)$', self.interpreter)
         if match:
             version = match.group('ver')
             # Ask the Python launcher to find the interpreter.
