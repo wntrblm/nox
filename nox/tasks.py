@@ -125,7 +125,11 @@ def honor_list_request(manifest, global_config):
             description = session.description if global_config.verbose else ""
             if description:
                 output += " -> {description}"
-            print(output.format(session=session.signature or session.name, description=description))
+            print(
+                output.format(
+                    session=session.signature or session.name, description=description
+                )
+            )
         return 0
     return manifest
 

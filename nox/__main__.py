@@ -62,10 +62,7 @@ def main():
         help="List all available sessions and exit.",
     )
     parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Output extra information.",
+        "-v", "--verbose", action="store_true", help="Output extra information."
     )
     parser.add_argument(
         "--envdir", default=".nox", help="Directory where nox will store virtualenvs."

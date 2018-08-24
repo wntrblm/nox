@@ -224,6 +224,7 @@ class TestSessionRunner:
     def test_verbose_property_one_line(self):
         def foo():
             """Just one line"""
+
         runner = self.make_runner()
         runner.func = foo
         assert runner.description == "Just one line"
@@ -235,6 +236,7 @@ class TestSessionRunner:
 
             Extra description
             """
+
         runner = self.make_runner()
         runner.func = foo
         assert runner.description == "Multiline"
@@ -242,6 +244,7 @@ class TestSessionRunner:
     def test_verbose_property_no_doc(self):
         def foo():
             pass
+
         runner = self.make_runner()
         runner.func = foo
         assert runner.description == ""
