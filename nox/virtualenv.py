@@ -108,13 +108,9 @@ class VirtualEnv(ProcessEnv):
 
         # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
         # part and add Python to the front of it.
-        match = re.match(r"^([\d\.]+?)$", self.interpreter)
+        match = re.match(r"^(?P<xy_ver>\d(\.\d)?)(\.\d+)?$", self.interpreter)
         if match:
-            parts = match.group(1).split(".")
-            if len(parts) > 2:
-                parts = parts[:2]
-
-            self.interpreter = "python{}".format(".".join(parts))
+            self.interpreter = "python{}".format(match.group("xy_ver"))
 
         # Sanity check: We only need the rest of this behavior on Windows.
         if platform.system() != "Windows":
