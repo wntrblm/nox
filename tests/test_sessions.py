@@ -201,7 +201,7 @@ class TestSessionRunner:
             signature="test(1, 2)",
             func=func,
             global_config=argparse.Namespace(
-                noxfile=os.path.join(os.getcwd(), "nox.py"),
+                noxfile=os.path.join(os.getcwd(), "noxfile.py"),
                 envdir="envdir",
                 posargs=mock.sentinel.posargs,
                 reuse_existing_virtualenvs=False,

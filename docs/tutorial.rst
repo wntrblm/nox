@@ -17,7 +17,7 @@ Usually you install this globally, similar to ``tox``, ``pip``, and other simila
 Running Nox
 -----------
 
-The simplest way of running Nox will run all sessions defined in `nox.py`::
+The simplest way of running Nox will run all sessions defined in `noxfile.py`::
 
     nox
 
@@ -32,7 +32,7 @@ You can read more about invoking Nox in :doc:`usage`.
 Creating a noxfile
 ------------------
 
-When you run ``nox``, it looks for a file named `nox.py` in the current directory. This file contains all of the session definitions. A *session* is an environment and a set of commands to run in that environment. Sessions are analogous to *environments* in tox.
+When you run ``nox``, it looks for a file named `noxfile.py` in the current directory. This file contains all of the session definitions. A *session* is an environment and a set of commands to run in that environment. Sessions are analogous to *environments* in tox.
 
 Sessions are declared using the ``@nox.session`` decorator::
 

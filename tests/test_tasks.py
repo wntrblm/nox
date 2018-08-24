@@ -59,7 +59,7 @@ def test_discover_session_functions_decorator():
     def notasession():
         pass
 
-    # Mock up a nox.py module and configuration.
+    # Mock up a noxfile.py module and configuration.
     mock_module = argparse.Namespace(
         __name__=foo.__module__, foo=foo, bar=bar, notasession=notasession
     )

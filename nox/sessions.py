@@ -266,7 +266,7 @@ class SessionRunner:
 
         try:
             # By default, nox should quietly change to the directory where
-            # the nox.py file is located.
+            # the noxfile.py file is located.
             cwd = py.path.local(
                 os.path.realpath(os.path.dirname(self.global_config.noxfile))
             ).as_cwd()

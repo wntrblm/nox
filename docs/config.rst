@@ -4,7 +4,7 @@ Configuration & API
 Noxfile
 -------
 
-Nox looks for configuration in a file named `nox.py` by default. You can specify
+Nox looks for configuration in a file named `noxfile.py` by default. You can specify
 a different file using the ``--noxfile`` argument when running ``nox``.
 
 Defining sessions

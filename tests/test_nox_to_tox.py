@@ -28,7 +28,7 @@ def makeconfig(tmpdir):
         try:
             sys.argv = [sys.executable]
             tox_to_nox.main()
-            return tmpdir.join("nox.py").read()
+            return tmpdir.join("noxfile.py").read()
         finally:
             old.chdir()
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Naively converts tox.ini files into nox.py files."""
+"""Naively converts tox.ini files into noxfile.py files."""
 
 import argparse
 import io
@@ -33,7 +33,7 @@ def wrapjoin(seq):
 
 def main():
     parser = argparse.ArgumentParser(description="Converts toxfiles to noxfiles.")
-    parser.add_argument("--output", default="nox.py")
+    parser.add_argument("--output", default="noxfile.py")
 
     args = parser.parse_args()
 

@@ -45,13 +45,13 @@ def cover(session):
 @nox.session(python="3.6")
 def blacken(session):
     session.install("black")
-    session.run("black", "nox", "tests", "nox.py", "setup.py")
+    session.run("black", "nox", "tests", "noxfile.py", "setup.py")
 
 
 @nox.session(python="3.6")
 def lint(session):
     session.install("flake8", "flake8-import-order", "black")
-    session.run("black", "--check", "nox", "tests", "nox.py", "setup.py")
+    session.run("black", "--check", "nox", "tests", "noxfile.py", "setup.py")
     session.run("flake8", "nox", "tests")
 
 

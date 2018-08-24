@@ -51,7 +51,7 @@ def main():
     parser.add_argument(
         "-f",
         "--noxfile",
-        default="nox.py",
+        default="noxfile.py",
         help="Location of the Python file containing nox sessions.",
     )
     parser.add_argument(

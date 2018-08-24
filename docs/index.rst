@@ -20,7 +20,7 @@ Install nox via `pip`_::
 .. Note:: These docs are for a pre-release version of Nox, so you'll need to use ``pip install --pre nox`` for now.
 
 
-Nox is configured via a ``nox.py`` file in your project's directory. Here's a simple noxfile that runs lint and some tests::
+Nox is configured via a ``noxfile.py`` file in your project's directory. Here's a simple noxfile that runs lint and some tests::
 
     import nox
 

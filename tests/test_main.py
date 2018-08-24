@@ -72,7 +72,7 @@ def test_main_no_args():
 
         # Verify that the config looks correct.
         config = execute.call_args[1]["global_config"]
-        assert config.noxfile == "nox.py"
+        assert config.noxfile == "noxfile.py"
         assert config.envdir.endswith(".nox")
         assert config.sessions is None
         assert config.reuse_existing_virtualenvs is False
