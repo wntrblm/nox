@@ -98,15 +98,22 @@ def test_filter_manifest_keywords():
 
 
 def test_honor_list_request_noop():
-    config = argparse.Namespace(list_sessions=False)
+    config = argparse.Namespace(list_sessions=False, verbose=False)
     manifest = {"thing": mock.sentinel.THING}
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value is manifest
 
 
 def test_honor_list_request():
-    config = argparse.Namespace(list_sessions=True)
+    config = argparse.Namespace(list_sessions=True, verbose=False)
     manifest = [argparse.Namespace(signature="foo")]
+    return_value = tasks.honor_list_request(manifest, global_config=config)
+    assert return_value == 0
+
+
+def test_honor_list_request_verbose():
+    config = argparse.Namespace(list_sessions=True, verbose=True)
+    manifest = [argparse.Namespace(signature="foo", description="bar")]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
 
