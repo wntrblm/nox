@@ -19,6 +19,8 @@ import json
 import os
 from unittest import mock
 
+import pytest
+
 import nox
 from nox import sessions
 from nox import tasks
@@ -98,22 +100,16 @@ def test_filter_manifest_keywords():
 
 
 def test_honor_list_request_noop():
-    config = argparse.Namespace(list_sessions=False, verbose=False)
+    config = argparse.Namespace(list_sessions=False)
     manifest = {"thing": mock.sentinel.THING}
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value is manifest
 
 
-def test_honor_list_request():
-    config = argparse.Namespace(list_sessions=True, verbose=False)
-    manifest = [argparse.Namespace(signature="foo")]
-    return_value = tasks.honor_list_request(manifest, global_config=config)
-    assert return_value == 0
-
-
-def test_honor_list_request_verbose():
-    config = argparse.Namespace(list_sessions=True, verbose=True)
-    manifest = [argparse.Namespace(signature="foo", description="bar")]
+@pytest.mark.parametrize("description", [None, "bar"])
+def test_honor_list_request(description):
+    config = argparse.Namespace(list_sessions=True)
+    manifest = [argparse.Namespace(signature="foo", description=description)]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
 

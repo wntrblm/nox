@@ -221,7 +221,7 @@ class TestSessionRunner:
         assert runner.global_config.posargs == mock.sentinel.posargs
         assert isinstance(runner.manifest, nox.manifest.Manifest)
 
-    def test_verbose_property_one_line(self):
+    def test_description_property_one_line(self):
         def foo():
             """Just one line"""
 
@@ -229,7 +229,7 @@ class TestSessionRunner:
         runner.func = foo
         assert runner.description == "Just one line"
 
-    def test_verbose_property_multi_line(self):
+    def test_description_property_multi_line(self):
         def foo():
             """
             Multiline
@@ -241,13 +241,13 @@ class TestSessionRunner:
         runner.func = foo
         assert runner.description == "Multiline"
 
-    def test_verbose_property_no_doc(self):
+    def test_description_property_no_doc(self):
         def foo():
             pass
 
         runner = self.make_runner()
         runner.func = foo
-        assert runner.description == ""
+        assert runner.description is None
 
     def test__create_venv_process_env(self):
         runner = self.make_runner()

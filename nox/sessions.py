@@ -248,7 +248,7 @@ class SessionRunner:
         if doc:
             first_line = doc.strip().split("\n")[0]
             return first_line
-        return ""
+        return None
 
     def __str__(self):
         return self.signature or self.name
