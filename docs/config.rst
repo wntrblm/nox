@@ -34,7 +34,7 @@ The first line will be shown when listing the sessions. For example::
 
     @nox.session
     def tests(session):
-        """Run the test suit."""
+        """Run the test suite."""
         session.run('pytest')
 
 The ``nox -l`` command will show:
@@ -43,7 +43,7 @@ The ``nox -l`` command will show:
 
     $ nox -l
     Available sessions:
-    * tests -> Run the test suit.
+    * tests -> Run the test suite.
 
 .. _virtualenv config:
 
