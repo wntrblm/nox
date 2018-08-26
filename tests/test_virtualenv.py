@@ -163,11 +163,18 @@ def test__resolved_interpreter_none(make_one):
 
 
 @pytest.mark.parametrize(
-    ["input", "expected"],
-    [("3", "python3"), ("3.6", "python3.6"), ("3.6.2", "python3.6")],
+    ["input_", "expected"],
+    [
+        ("3", "python3"),
+        ("3.6", "python3.6"),
+        ("3.6.2", "python3.6"),
+        ("2.", "2."),
+        ("2.7.", "2.7."),
+        ("2.7.15", "python2.7"),
+    ],
 )
-def test__resolved_interpreter_numerical_non_windows(make_one, input, expected):
-    venv, _ = make_one(interpreter=input)
+def test__resolved_interpreter_numerical_non_windows(make_one, input_, expected):
+    venv, _ = make_one(interpreter=input_)
     with mock.patch.object(platform, "system") as system:
         system.return_value = "Linux"
         assert venv._resolved_interpreter == expected
