@@ -242,6 +242,14 @@ class SessionRunner:
         self.manifest = manifest
         self.venv = None
 
+    @property
+    def description(self):
+        doc = self.func.__doc__
+        if doc:
+            first_line = doc.strip().split("\n")[0]
+            return first_line
+        return None
+
     def __str__(self):
         return self.signature or self.name
 

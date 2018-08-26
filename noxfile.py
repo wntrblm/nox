@@ -22,6 +22,7 @@ ON_APPVEYOR = os.environ.get("APPVEYOR") == "True"
 
 @nox.session(python=["3.5", "3.6", "3.7"])
 def tests(session):
+    """Run test suite with pytest."""
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
     tests = session.posargs or ["tests/"]
@@ -33,6 +34,7 @@ def tests(session):
 
 @nox.session
 def cover(session):
+    """Coverage analysis."""
     session.install("coverage")
     if ON_APPVEYOR:
         fail_under = "--fail-under=99"
@@ -44,12 +46,14 @@ def cover(session):
 
 @nox.session(python="3.6")
 def blacken(session):
+    """Run black code formater."""
     session.install("black")
     session.run("black", "nox", "tests", "noxfile.py", "setup.py")
 
 
 @nox.session(python="3.6")
 def lint(session):
+    """Lint using flake8."""
     session.install("flake8", "flake8-import-order", "black")
     session.run("black", "--check", "nox", "tests", "noxfile.py", "setup.py")
     session.run("flake8", "nox", "tests")
@@ -57,6 +61,7 @@ def lint(session):
 
 @nox.session(python="3.6")
 def docs(session):
+    """Build the documentation."""
     session.run("rm", "-rf", "docs/_build")
     session.install("-r", "requirements-test.txt")
     session.install(".")

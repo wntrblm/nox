@@ -19,6 +19,8 @@ import json
 import os
 from unittest import mock
 
+import pytest
+
 import nox
 from nox import sessions
 from nox import tasks
@@ -104,9 +106,10 @@ def test_honor_list_request_noop():
     assert return_value is manifest
 
 
-def test_honor_list_request():
+@pytest.mark.parametrize("description", [None, "bar"])
+def test_honor_list_request(description):
     config = argparse.Namespace(list_sessions=True)
-    manifest = [argparse.Namespace(signature="foo")]
+    manifest = [argparse.Namespace(signature="foo", description=description)]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
 

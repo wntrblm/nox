@@ -23,6 +23,28 @@ with ``@nox.session``. For example::
 
 You can also configure sessions to run against multiple Python versions as described in :ref:`virtualenv config` and  parametrize sessions as described in :ref:`parametrized sessions <parametrized>`.
 
+
+Session description
+-------------------
+
+You can add a description to your session using a `docstring <https://www.python.org/dev/peps/pep-0257>`__.
+The first line will be shown when listing the sessions. For example::
+
+    import nox
+
+    @nox.session
+    def tests(session):
+        """Run the test suite."""
+        session.run('pytest')
+
+The ``nox -l`` command will show:
+
+.. code-block:: console
+
+    $ nox -l
+    Available sessions:
+    * tests -> Run the test suite.
+
 .. _virtualenv config:
 
 Configuring a session's virtualenv
