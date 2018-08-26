@@ -72,6 +72,6 @@ def docs(session):
         sphinx_cmd = "sphinx-build"
     else:
         sphinx_cmd = "sphinx-autobuild"
-        sphinx_args.insert(0, '--open-browser')
+        sphinx_args.insert(0, "--open-browser")
 
     session.run(sphinx_cmd, *sphinx_args)
