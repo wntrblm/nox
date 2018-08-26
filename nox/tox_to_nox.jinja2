@@ -1,12 +1,8 @@
 import nox
 
 {% for envname, envconfig in config.envconfigs.items()|sort: %}
-@nox.session
+@nox.session({%- if envconfig.basepython %}python='{{envconfig.basepython}}'{%- endif %})
 def {{envname}}(session):
-    {%- if envconfig.basepython %}
-    session.interpreter = '{{envconfig.basepython}}'
-    {%- endif %}
-
     {%- set envs = dict(envconfig.setenv) -%}
     {%- do envs.pop('PYTHONHASHSEED') -%}
     {%- for key, value in envs.items()|sort: %}

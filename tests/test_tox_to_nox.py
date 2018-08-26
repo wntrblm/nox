@@ -52,9 +52,8 @@ def test_trivial(makeconfig):
     import nox
 
 
-    @nox.session
+    @nox.session(python='python2.7')
     def py27(session):
-        session.interpreter = 'python2.7'
         session.install('.')
     """
         ).lstrip()
@@ -81,9 +80,8 @@ def test_skipinstall(makeconfig):
     import nox
 
 
-    @nox.session
+    @nox.session(python='python2.7')
     def py27(session):
-        session.interpreter = 'python2.7'
     """
         ).lstrip()
     )
@@ -109,9 +107,8 @@ def test_usedevelop(makeconfig):
     import nox
 
 
-    @nox.session
+    @nox.session(python='python2.7')
     def py27(session):
-        session.interpreter = 'python2.7'
         session.install('-e', '.')
     """
         ).lstrip()
@@ -143,9 +140,8 @@ def test_commands(makeconfig):
     import nox
 
 
-    @nox.session
+    @nox.session(python='python2.7')
     def lint(session):
-        session.interpreter = 'python2.7'
         session.install('.')
         session.run('python', 'setup.py', 'check', '--metadata', \
 '--restructuredtext', '--strict')
@@ -178,9 +174,8 @@ def test_deps(makeconfig):
     import nox
 
 
-    @nox.session
+    @nox.session(python='python2.7')
     def lint(session):
-        session.interpreter = 'python2.7'
         session.install('flake8', 'gcp-devrel-py-tools>=0.0.3')
         session.install('.')
     """
@@ -211,9 +206,8 @@ def test_env(makeconfig):
     import nox
 
 
-    @nox.session
+    @nox.session(python='python2.7')
     def lint(session):
-        session.interpreter = 'python2.7'
         session.env['SPHINX_APIDOC_OPTIONS'] = \
 'members,inherited-members,show-inheritance'
         session.env['TEST'] = 'meep'
@@ -244,9 +238,8 @@ def test_chdir(makeconfig):
     import nox
 
 
-    @nox.session
+    @nox.session(python='python2.7')
     def lint(session):
-        session.interpreter = 'python2.7'
         session.install('.')
         session.chdir('docs')
     """
