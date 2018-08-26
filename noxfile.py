@@ -66,10 +66,12 @@ def docs(session):
     session.install("-r", "requirements-test.txt")
     session.install(".")
     session.cd("docs")
-    session.run(
-        "sphinx-build", "-b", "html", "-W", "-d", "_build/doctrees", ".", "_build/html"
-    )
+    sphinx_args = ["-b", "html", "-W", "-d", "_build/doctrees", ".", "_build/html"]
 
-    if "serve" in session.posargs:
-        session.cd("_build/html")
-        session.run("python", "-m", "http.server")
+    if "serve" not in session.posargs:
+        sphinx_cmd = "sphinx-build"
+    else:
+        sphinx_cmd = "sphinx-autobuild"
+        sphinx_args.insert(0, '--open-browser')
+
+    session.run(sphinx_cmd, *sphinx_args)

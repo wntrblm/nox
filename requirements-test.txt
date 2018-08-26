@@ -2,4 +2,6 @@ flask
 pytest
 pytest-cov
 contexter
-sphinx==1.6.2
+sphinx
+sphinx-autobuild
+witchhazel

@@ -41,7 +41,7 @@ To list all available sessions, including parametrized sessions::
 Running all sessions
 --------------------
 
-You can run every session by just executing `nox` without any arguments:
+You can run every session by just executing `nox` without any arguments::
 
     nox
 

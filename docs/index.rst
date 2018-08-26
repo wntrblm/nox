@@ -14,7 +14,7 @@ Welcome to Nox
 
 Install nox via `pip`_::
 
-    pip install --upgrade nox
+    pip install --user --upgrade nox
 
 
 Nox is configured via a ``noxfile.py`` file in your project's directory. Here's a simple noxfile that runs lint and some tests::
