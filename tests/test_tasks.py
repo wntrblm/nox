@@ -99,6 +99,22 @@ def test_filter_manifest_keywords():
     assert len(manifest) == 2
 
 
+@pytest.mark.parametrize(
+    "env,sessions", [("foo", ["foo"]), ("foo,bar", ["foo", "bar"])]
+)
+def test_filter_manifest_nox_env(env, sessions):
+    config = argparse.Namespace(sessions=(), keywords=())
+    os.environ["NOXSESSION"] = env
+    manifest = Manifest(
+        {"foo": session_func, "bar": session_func, "foobar": session_func}, config
+    )
+    return_value = tasks.filter_manifest(manifest, config)
+    assert return_value is manifest
+    assert len(manifest) == len(sessions)
+    for session in sessions:
+        assert session in manifest
+
+
 def test_honor_list_request_noop():
     config = argparse.Namespace(list_sessions=False)
     manifest = {"thing": mock.sentinel.THING}
