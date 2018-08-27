@@ -249,7 +249,9 @@ def test__resolved_interpreter_windows_full_path(sysfind, system, make_one):
 )
 @mock.patch.object(platform, "system", return_value="Windows")
 @mock.patch.object(py.path.local, "sysfind")
-def test__resolved_interpreter_windows_pyexe(sysfind, system, make_one, input_, expected):
+def test__resolved_interpreter_windows_pyexe(
+    sysfind, system, make_one, input_, expected
+):
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the py launcher on Windows.
     venv, _ = make_one(interpreter=input_)
