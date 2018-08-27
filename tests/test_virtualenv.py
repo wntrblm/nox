@@ -23,8 +23,7 @@ import pytest
 import nox.virtualenv
 
 
-SYSTEM = platform.system()
-IS_WINDOWS = platform.system() == "Windows"
+IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 
 
 @pytest.fixture
@@ -75,28 +74,28 @@ def test_blacklisted_env(monkeypatch, make_one):
 
 
 def test__clean_location(monkeypatch, make_one):
-    venv, dir = make_one()
+    venv, dir_ = make_one()
 
     # Don't re-use existing, but doesn't currently exist.
     # Should return True indicating that the venv needs to be created.
     monkeypatch.delattr(nox.virtualenv.shutil, "rmtree")
-    assert not dir.check()
+    assert not dir_.check()
     assert venv._clean_location()
 
     # Re-use existing, and currently exists.
     # Should return False indicating that the venv doesn't need to be created.
-    dir.mkdir()
-    assert dir.check()
+    dir_.mkdir()
+    assert dir_.check()
     venv.reuse_existing = True
     assert not venv._clean_location()
 
     # Don't re-use existing, and currently exists.
     # Should return True indicating the venv needs to be created.
     monkeypatch.undo()
-    assert dir.check()
+    assert dir_.check()
     venv.reuse_existing = False
     assert venv._clean_location()
-    assert not dir.check()
+    assert not dir_.check()
 
     # Re-use existing, but doesn't exist.
     # Should return True indicating the venv needs to be created.
@@ -105,54 +104,53 @@ def test__clean_location(monkeypatch, make_one):
 
 
 def test_bin(make_one):
-    venv, dir = make_one()
+    venv, dir_ = make_one()
 
     if IS_WINDOWS:
-        assert dir.join("Scripts").strpath == venv.bin
+        assert dir_.join("Scripts").strpath == venv.bin
     else:
-        assert dir.join("bin").strpath == venv.bin
+        assert dir_.join("bin").strpath == venv.bin
 
 
+@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 def test_bin_windows(make_one):
-    venv, dir = make_one()
-
-    with mock.patch("platform.system", return_value="Windows"):
-        assert dir.join("Scripts").strpath == venv.bin
+    venv, dir_ = make_one()
+    assert dir_.join("Scripts").strpath == venv.bin
 
 
 def test_create(make_one):
-    venv, dir = make_one()
+    venv, dir_ = make_one()
     venv.create()
 
     if IS_WINDOWS:
-        assert dir.join("Scripts", "python.exe").check()
-        assert dir.join("Scripts", "pip.exe").check()
-        assert dir.join("Lib").check()
+        assert dir_.join("Scripts", "python.exe").check()
+        assert dir_.join("Scripts", "pip.exe").check()
+        assert dir_.join("Lib").check()
     else:
-        assert dir.join("bin", "python").check()
-        assert dir.join("bin", "pip").check()
-        assert dir.join("lib").check()
+        assert dir_.join("bin", "python").check()
+        assert dir_.join("bin", "pip").check()
+        assert dir_.join("lib").check()
 
     # Test running create on an existing environment. It should be deleted.
-    dir.ensure("test.txt")
+    dir_.ensure("test.txt")
     venv.create()
-    assert not dir.join("test.txt").check()
+    assert not dir_.join("test.txt").check()
 
     # Test running create on an existing environment with reuse_exising
     # enabled, it should not be deleted.
-    dir.ensure("test.txt")
-    assert dir.join("test.txt").check()
+    dir_.ensure("test.txt")
+    assert dir_.join("test.txt").check()
     venv.reuse_existing = True
     venv.create()
-    assert dir.join("test.txt").check()
+    assert dir_.join("test.txt").check()
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
 def test_create_interpreter(make_one):
-    venv, dir = make_one(interpreter="python3")
+    venv, dir_ = make_one(interpreter="python3")
     venv.create()
-    assert dir.join("bin", "python").check()
-    assert dir.join("bin", "python3").check()
+    assert dir_.join("bin", "python").check()
+    assert dir_.join("bin", "python3").check()
 
 
 def test__resolved_interpreter_none(make_one):
@@ -171,72 +169,58 @@ def test__resolved_interpreter_none(make_one):
         ("2.7.15", "python2.7"),
     ],
 )
-@mock.patch.object(platform, "system", return_value="Linux")
+@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(py.path.local, "sysfind", return_value=None)
 def test__resolved_interpreter_numerical_non_windows(
-    sysfind, system, make_one, input_, expected
+    sysfind, make_one, input_, expected
 ):
     venv, _ = make_one(interpreter=input_)
-    assert system.call_count == 2
 
     assert venv._resolved_interpreter == expected
     sysfind.assert_called_once_with(expected)
-    assert system.call_count == 3
-    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
 
 
 @pytest.mark.parametrize("input_", ["2.", "2.7."])
-@mock.patch.object(platform, "system", return_value="Linux")
+@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(py.path.local, "sysfind", return_value=None)
-def test__resolved_interpreter_invalid_numerical_id(sysfind, system, make_one, input_):
+def test__resolved_interpreter_invalid_numerical_id(sysfind, make_one, input_):
     venv, _ = make_one(interpreter=input_)
-    assert system.call_count == 2
 
     assert venv._resolved_interpreter == input_
     sysfind.assert_called_once_with(input_)
-    assert system.call_count == 3
-    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
 
 
-@mock.patch.object(platform, "system", return_value="Linux")
+@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(py.path.local, "sysfind", return_value=None)
-def test__resolved_interpreter_32_bit_non_windows(sysfind, system, make_one):
+def test__resolved_interpreter_32_bit_non_windows(sysfind, make_one):
     venv, _ = make_one(interpreter="3.6-32")
-    assert system.call_count == 2
 
     with pytest.raises(RuntimeError):
         venv._resolved_interpreter
     sysfind.assert_called_once_with("3.6-32")
-    assert system.call_count == 3
-    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
 
 
-@mock.patch.object(platform, "system", return_value="Linux")
+@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(py.path.local, "sysfind", return_value=None)
-def test__resolved_interpreter_non_windows(sysfind, system, make_one):
+def test__resolved_interpreter_non_windows(sysfind, make_one):
     # Establish that the interpreter is simply passed through resolution
     # on non-Windows.
     venv, _ = make_one(interpreter="python3.6")
-    assert system.call_count == 2
 
     assert venv._resolved_interpreter == "python3.6"
     sysfind.assert_called_once_with("python3.6")
-    assert system.call_count == 3
-    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
 
 
-@mock.patch.object(platform, "system", return_value="Windows")
+@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch.object(py.path.local, "sysfind")
-def test__resolved_interpreter_windows_full_path(sysfind, system, make_one):
+def test__resolved_interpreter_windows_full_path(sysfind, make_one):
     # Establish that if we get a fully-qualified system path (on Windows
     # or otherwise) and the path exists, that we accept it.
     venv, _ = make_one(interpreter=r"c:\Python36\python.exe")
-    assert system.call_count == 2
 
     sysfind.return_value = py.path.local(venv.interpreter)
     assert venv._resolved_interpreter == r"c:\Python36\python.exe"
     sysfind.assert_called_once_with(r"c:\Python36\python.exe")
-    assert system.call_count == 2
 
 
 @pytest.mark.parametrize(
@@ -247,15 +231,12 @@ def test__resolved_interpreter_windows_full_path(sysfind, system, make_one):
         ("2.7-32", r"c:\python27\python.exe"),
     ],
 )
-@mock.patch.object(platform, "system", return_value="Windows")
+@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch.object(py.path.local, "sysfind")
-def test__resolved_interpreter_windows_pyexe(
-    sysfind, system, make_one, input_, expected
-):
+def test__resolved_interpreter_windows_pyexe(sysfind, make_one, input_, expected):
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the py launcher on Windows.
     venv, _ = make_one(interpreter=input_)
-    assert system.call_count == 2
 
     # Trick the system into thinking that it cannot find python3.6
     # (it likely will on Unix). Also, when the system looks for the
@@ -273,21 +254,16 @@ def test__resolved_interpreter_windows_pyexe(
         sysfind.assert_has_calls([mock.call("python3.7"), mock.call("py")])
     else:
         sysfind.assert_has_calls([mock.call(input_), mock.call("py")])
-    assert system.call_count == 3
-    system.assert_has_calls([mock.call(), mock.call(), mock.call()])
 
 
-@mock.patch.object(platform, "system")
+@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch.object(py.path.local, "sysfind")
-def test__resolved_interpreter_windows_pyexe_fails(sysfind, system, make_one):
+def test__resolved_interpreter_windows_pyexe_fails(sysfind, make_one):
     # Establish that if the py launcher fails, we give the right error.
     venv, _ = make_one(interpreter="python3.6")
 
-    # Trick the system into thinking we are on Windows.
-    system.return_value = "Windows"
-
-    # Trick the system into thinking that it cannot find python3.6
-    # (it likely will on Unix). Also, when the system looks for the
+    # Trick the nox.virtualenv._SYSTEM into thinking that it cannot find python3.6
+    # (it likely will on Unix). Also, when the nox.virtualenv._SYSTEM looks for the
     # py launcher, give it a dummy that fails.
     attrs = {"sysexec.side_effect": py.process.cmdexec.Error(1, 1, "", "", "")}
     mock_py = mock.Mock()
@@ -299,19 +275,17 @@ def test__resolved_interpreter_windows_pyexe_fails(sysfind, system, make_one):
         venv._resolved_interpreter
     sysfind.assert_any_call("python3.6")
     sysfind.assert_any_call("py")
-    system.assert_called_with()
 
 
-@mock.patch.object(platform, "system")
+@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch.object(py._path.local.LocalPath, "check")
 @mock.patch.object(py.path.local, "sysfind")
-def test__resolved_interpreter_not_found(sysfind, check, system, make_one):
+def test__resolved_interpreter_not_found(sysfind, check, make_one):
     # Establish that if an interpreter cannot be found at a standard
     # location on Windows, we raise a useful error.
     venv, _ = make_one(interpreter="python3.6")
 
     # We are on Windows, and nothing can be found.
-    system.return_value = "Windows"
     sysfind.return_value = None
     check.return_value = False
 
@@ -320,13 +294,11 @@ def test__resolved_interpreter_not_found(sysfind, check, system, make_one):
         venv._resolved_interpreter
 
 
+@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 def test__resolved_interpreter_nonstandard(make_one):
     # Establish that we do not try to resolve non-standard locations
     # on Windows.
     venv, _ = make_one(interpreter="goofy")
 
-    with mock.patch.object(platform, "system") as system:
-        system.return_value = "Windows"
-        with pytest.raises(RuntimeError):
-            venv._resolved_interpreter
-        system.assert_called_once_with()
+    with pytest.raises(RuntimeError):
+        venv._resolved_interpreter
