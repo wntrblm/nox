@@ -146,7 +146,20 @@ class TestSession:
             session.install()
 
     def test_install(self):
-        session, runner = self.make_session_and_runner()
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signature="test",
+            func=mock.sentinel.func,
+            global_config=argparse.Namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
 
         with mock.patch.object(session, "run", autospec=True) as run:
             session.install("requests", "urllib3")
@@ -189,6 +202,18 @@ class TestSession:
 
         with pytest.raises(nox.sessions._SessionSkip):
             session.skip()
+
+    def test___slots__(self):
+        session, _ = self.make_session_and_runner()
+        with pytest.raises(AttributeError):
+            session.foo = "bar"
+        with pytest.raises(AttributeError):
+            session.quux
+
+    def test___dict__(self):
+        session, _ = self.make_session_and_runner()
+        expected = {name: getattr(session, name) for name in session.__slots__}
+        assert session.__dict__ == expected
 
 
 class TestSessionRunner:
