@@ -2,21 +2,21 @@ language: python
 matrix:
   include:
   - python: '3.6'
-    env: NOX_SESSION=lint
+    env: NOXSESSION=lint
   - python: '3.5'
-    env: NOX_SESSION="tests-3.5"
+    env: NOXSESSION="tests-3.5"
   - python: '3.6'
-    env: NOX_SESSION="tests-3.6"
+    env: NOXSESSION="tests-3.6"
   # Travis does not support 3.7 yet.
   # https://github.com/travis-ci/travis-ci/issues/9815
   # - python: '3.7'
   #   env: NOX_SESSION="tests-3.7"
   - python: '3.6'
-    env: NOX_SESSION="docs"
+    env: NOXSESSION="docs"
 install:
   - pip install --upgrade pip setuptools
   - pip install .
-script: nox --session "$NOX_SESSION"
+script: nox --session "$NOXSESSION"
 deploy:
   provider: pypi
   user: theacodes
@@ -26,4 +26,4 @@ deploy:
     tags: true
     distributions: sdist bdist_wheel
     repo: theacodes/nox
-    condition: "$NOX_SESSION = \"interpreters(version='3.6')\""
+    condition: "$NOXSESSION = \"tests-3.6\""
