@@ -1,3 +1,24 @@
+## 2018.8.28
+
+Bugfixes:
+
+* Adding `Session.__slots__`. (#128)
+* Don't modify `Virtualenv.interpreter` in `_resolved_interpreter`. (#127)
+* Fix tox-to-nox template.
+* Add the ability to add descriptions to sessions. (#117)
+* Using more specific regex in `_resolved_interpreter()`. (#119)
+
+New features:
+
+* Adding support for 32-bit binaries on Windows. (#100)
+
+Internal/testing changes:
+
+* Storing `platform.system()` as global in `nox.virtualenv`. (#124)
+* Fix deploy script for Travis.
+* Run docs on travis. (#122)
+* Documentation style updates.
+
 ## 2018.8.23
 
 **Heads up!** This is a very big release for Nox. Please read these release notes thoroughly and reach out to us on GitHub if you run into issues.
