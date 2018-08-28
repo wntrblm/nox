@@ -301,3 +301,35 @@ def test__resolved_interpreter_nonstandard(make_one):
 
     with pytest.raises(RuntimeError):
         venv._resolved_interpreter
+
+
+@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch.object(py.path.local, "sysfind", return_value=None)
+def test__resolved_interpreter_cache_result(sysfind, make_one):
+    venv, _ = make_one(interpreter="3.6")
+
+    assert venv._resolved is None
+    assert venv._resolved_interpreter == "python3.6"
+    sysfind.assert_called_once_with("python3.6")
+    # Check the cache and call again to make sure it is used.
+    assert venv._resolved == "python3.6"
+    assert venv._resolved_interpreter == "python3.6"
+    assert sysfind.call_count == 1
+
+
+@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch.object(py.path.local, "sysfind", return_value=None)
+def test__resolved_interpreter_cache_failure(sysfind, make_one):
+    venv, _ = make_one(interpreter="3.7-32")
+
+    assert venv._resolved is None
+    with pytest.raises(RuntimeError) as exc_info:
+        venv._resolved_interpreter
+    caught = exc_info.value
+
+    sysfind.assert_called_once_with("3.7-32")
+    # Check the cache and call again to make sure it is used.
+    assert venv._resolved is caught
+    with pytest.raises(RuntimeError):
+        venv._resolved_interpreter
+    assert sysfind.call_count == 1

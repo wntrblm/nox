@@ -102,6 +102,7 @@ class VirtualEnv(ProcessEnv):
     def __init__(self, location, interpreter=None, reuse_existing=False):
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
+        self._resolved = None
         self.reuse_existing = reuse_existing
         super(VirtualEnv, self).__init__()
 
@@ -123,41 +124,54 @@ class VirtualEnv(ProcessEnv):
         """
         # If there is no assigned interpreter, then use the same one used by
         # Nox.
+        if isinstance(self._resolved, RuntimeError):
+            raise self._resolved
+
+        if self._resolved is not None:
+            return self._resolved
+
         if self.interpreter is None:
-            return sys.executable
+            self._resolved = sys.executable
+            return self._resolved
 
         # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
         # part and add Python to the front of it.
         match = re.match(r"^(?P<xy_ver>\d(\.\d)?)(\.\d+)?$", self.interpreter)
         xy_version = ""
+        cleaned_interpreter = self.interpreter
         if match:
             xy_version = match.group("xy_ver")
-            self.interpreter = "python{}".format(xy_version)
+            cleaned_interpreter = "python{}".format(xy_version)
 
-        # We may have gotten a fully-qualified interpreter path; accept this.
-        if py.path.local.sysfind(self.interpreter):
-            return self.interpreter
+        # The value of ``cleaned_interpreter`` may be a valid script on the ``PATH``
+        # or may be a full path to an interpreter in the filesystem; accept this.
+        if py.path.local.sysfind(cleaned_interpreter):
+            self._resolved = cleaned_interpreter
+            return self._resolved
 
         # Allow versions of the form ``X.Y-32`` for Windows.
         if not xy_version:
-            match = re.match(r"^\d\.\d-32?$", self.interpreter)
+            match = re.match(r"^\d\.\d-32?$", cleaned_interpreter)
             if match:
-                xy_version = self.interpreter
+                xy_version = cleaned_interpreter
 
         # Sanity check: We only need the rest of this behavior on Windows.
         if _SYSTEM != "Windows":
             if xy_version.endswith("-32"):
-                raise RuntimeError(
+                self._resolved = RuntimeError(
                     "Locating 32-bit Python ({!r}) is "
-                    "only supported on Windows.".format(self.interpreter)
+                    "only supported on Windows.".format(cleaned_interpreter)
                 )
-            return self.interpreter
+                raise self._resolved
+
+            self._resolved = cleaned_interpreter
+            return self._resolved
 
         # From here on out, we are on Windows. If ``self.interpreter`` has
         # not produced a valid ``xy_version``, then we do one last check for
         # a standard "pythonX" or "pythonX.Y".
         if not xy_version:
-            match = re.match(r"^python(?P<ver>\d(\.\d)?)$", self.interpreter)
+            match = re.match(r"^python(?P<ver>\d(\.\d)?)$", cleaned_interpreter)
             if match:
                 xy_version = match.group("ver")
 
@@ -165,13 +179,15 @@ class VirtualEnv(ProcessEnv):
         if xy_version:
             path_from_launcher = locate_via_py(xy_version)
             if path_from_launcher:
-                return path_from_launcher
+                self._resolved = path_from_launcher
+                return self._resolved
 
         # If we got this far, then we were unable to resolve the interpreter
         # to an actual executable; raise an exception.
-        raise RuntimeError(
+        self._resolved = RuntimeError(
             'Unable to locate Python interpreter "{}".'.format(self.interpreter)
         )
+        raise self._resolved
 
     @property
     def bin(self):
