@@ -28,6 +28,7 @@ from nox.logger import logger
 _BLACKLISTED_ENV_VARS = frozenset(
     ["PIP_RESPECT_VIRTUALENV", "PIP_REQUIRE_VIRTUALENV", "__PYVENV_LAUNCHER__"]
 )
+_SYSTEM = platform.system()
 
 
 class ProcessEnv:
@@ -144,7 +145,7 @@ class VirtualEnv(ProcessEnv):
                 xy_version = self.interpreter
 
         # Sanity check: We only need the rest of this behavior on Windows.
-        if platform.system() != "Windows":
+        if _SYSTEM != "Windows":
             if xy_version.endswith("-32"):
                 raise RuntimeError(
                     "Locating 32-bit Python ({!r}) is "
@@ -175,7 +176,7 @@ class VirtualEnv(ProcessEnv):
     @property
     def bin(self):
         """Returns the location of the virtualenv's bin folder."""
-        if platform.system() == "Windows":
+        if _SYSTEM == "Windows":
             return os.path.join(self.location, "Scripts")
         else:
             return os.path.join(self.location, "bin")
