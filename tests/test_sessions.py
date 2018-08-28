@@ -190,6 +190,18 @@ class TestSession:
         with pytest.raises(nox.sessions._SessionSkip):
             session.skip()
 
+    def test___slots__(self):
+        session, _ = self.make_session_and_runner()
+        with pytest.raises(AttributeError):
+            session.foo = "bar"
+        with pytest.raises(AttributeError):
+            session.quux
+
+    def test___dict__(self):
+        session, _ = self.make_session_and_runner()
+        expected = {name: getattr(session, name) for name in session.__slots__}
+        assert session.__dict__ == expected
+
 
 class TestSessionRunner:
     def make_runner(self):

@@ -74,8 +74,20 @@ class Session:
     your Nox session.
     """
 
+    __slots__ = ("_runner",)
+
     def __init__(self, runner):
         self._runner = runner
+
+    @property
+    def __dict__(self):
+        """Attribute dictionary for object inspection.
+
+        This is needed because ``__slots__`` turns of ``__dict__`` by
+        default. Unlike a typical object, modifying the result of this
+        dictionary won't allow modification of the instance.
+        """
+        return {"_runner": self._runner}
 
     @property
     def env(self):
