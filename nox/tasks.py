@@ -75,8 +75,6 @@ def discover_manifest(module, global_config):
 def filter_manifest(manifest, global_config):
     """Filter the manifest according to the provided configuration.
 
-    The global configuration takes precedence over the ``NOXSESSION`` env var.
-
     Args:
         manifest (~.Manifest): The manifest of sessions to be run.
         global_config (~nox.main.GlobalConfig): The global configuration.
@@ -87,16 +85,12 @@ def filter_manifest(manifest, global_config):
 
     """
 
-    nox_env = os.environ.get("NOXSESSION")
-    env_sessions = nox_env.split(",") if nox_env else []
-    sessions = global_config.sessions or env_sessions
-
     # Filter by the name of any explicit sessions.
     # This can raise KeyError if a specified session does not exist;
     # log this if it happens.
-    if sessions:
+    if global_config.sessions:
         try:
-            manifest.filter_by_name(sessions)
+            manifest.filter_by_name(global_config.sessions)
         except KeyError as exc:
             logger.error("Error while collecting sessions.")
             logger.error(exc.args[0])
