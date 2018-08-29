@@ -84,7 +84,6 @@ def filter_manifest(manifest, global_config):
             the manifest otherwise (to be sent to the next task).
 
     """
-
     # Filter by the name of any explicit sessions.
     # This can raise KeyError if a specified session does not exist;
     # log this if it happens.
