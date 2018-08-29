@@ -61,6 +61,8 @@ def test_global_config_constructor():
 
 
 def test_main_no_args():
+    # Prevents any interference from outside
+    os.environ.pop("NOXSESSION", None)
     sys.argv = [sys.executable]
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
