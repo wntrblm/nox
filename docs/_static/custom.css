@@ -9,7 +9,7 @@ a:hover {
 }
 
 div.body h1 {
-    color: #750076;
+    color: #003d45;
     font-family: 'Annie Use Your Telescope', cursive;
     font-weight: bold;
     font-size: 300%;
@@ -28,7 +28,7 @@ div.sphinxsidebar p.blurb {
 
 div.sphinxsidebar h1 a {
     font-size: 160%;
-    color: #750076;
+    color: #003d45;
     text-decoration: none;
     border: none;
     font-family: 'Annie Use Your Telescope', cursive;
@@ -43,7 +43,7 @@ div.sphinxsidebar h3 {
 }
 
 div.sphinxsidebar a {
-    color: #720073;
+    color: #003d45;
 }
 
 code.descname {
