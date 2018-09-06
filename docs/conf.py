@@ -182,7 +182,6 @@ html_sidebars = {
         'relations.html',
         'searchbox.html',
         'donate.html',
-        'fonts.html'
     ]
 }
 
