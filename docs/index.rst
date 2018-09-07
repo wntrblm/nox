@@ -51,7 +51,7 @@ Nox is lucky to have several wonderful projects that use it and provide feedback
 - `gapic-generator-python <https://github.com/googleapis/gapic-generator-python>`__
 - `google-resumable-media-python <https://github.com/GoogleCloudPlatform/google-resumable-media-python>`__
 - `Google Assistant SDK <https://github.com/googlesamples/assistant-sdk-python>`__
-- `OpenCensus Pyhon <https://github.com/census-instrumentation/opencensus-python>`__
+- `OpenCensus Python <https://github.com/census-instrumentation/opencensus-python>`__
 - `Subpar <https://github.com/google/subpar>`__
 
 .. _tox: https://tox.readthedocs.org
