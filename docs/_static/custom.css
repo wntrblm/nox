@@ -63,10 +63,35 @@ tt, code {
 }
 
 a.reference.internal code.xref span.pre {
-    color: #027bab;
-    background: none;
+    color: #F8F8F2;
+    background: #015259;
+    border-bottom: none;
     border-radius: 0;
     padding: 0;
+}
+
+a.reference.internal, a.reference.internal:hover {
+    border-bottom: none;
+}
+
+a.reference.internal:hover code {
+    background: #027bab
+}
+
+a.reference.internal:hover code.xref span.pre {
+    color: #F8F8F2;
+    background: #027bab;
+    border-bottom: none;
+}
+
+tt.xref, code.xref, a tt {
+    background: none;
+    border-bottom: none;
+}
+
+code.literal {
+    color: #F8F8F2;
+    background: #015259;
 }
 
 pre {
