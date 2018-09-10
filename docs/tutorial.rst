@@ -92,7 +92,7 @@ Running a command in a session is easy - just pass the command name and argument
         session.install('pytest')
         session.run('pytest', '-k', 'not slow')
 
-There are some other helpful methods on :class:`nox.sessions.Session`. For example, to chage the current working director you can use :func:`session.chdir`::
+There are some other helpful methods on :class:`nox.sessions.Session`. For example, to change the current working directory you can use :func:`session.chdir`::
 
     session.chdir('docs')
     session.run('sphinx-build', 'html')
