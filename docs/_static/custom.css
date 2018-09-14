@@ -1,4 +1,50 @@
-@import url('https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono');
+@import url('https://fonts.googleapis.com/css?family=Roboto|Roboto+Mono|Annie Use Your Telescope');
+
+a {
+    color: #027bab;
+}
+
+a:hover {
+    color: #750076;
+}
+
+div.body h1 {
+    color: #003d45;
+    font-family: 'Annie Use Your Telescope', cursive;
+    font-weight: bold;
+    font-size: 300%;
+}
+
+div.sphinxsidebarwrapper h1.logo {
+    text-align: center;
+    margin: 0 0 -20px 0;
+}
+
+div.sphinxsidebar p.blurb {
+    font-size: 130%;
+    text-align: center;
+    font-family: 'Annie Use Your Telescope', cursive;
+}
+
+div.sphinxsidebar h1 a {
+    font-size: 160%;
+    color: #003d45;
+    text-decoration: none;
+    border: none;
+    font-family: 'Annie Use Your Telescope', cursive;
+}
+
+div.sphinxsidebar h1 a:hover {
+    border: none;
+}
+
+div.sphinxsidebar h3 {
+    display: none;
+}
+
+div.sphinxsidebar a {
+    color: #003d45;
+}
 
 code.descname {
     color: #6840ab;
@@ -11,11 +57,91 @@ th.field-name {
 
 tt, code {
     color: #F8F8F2;
-    background: #433e56;
+    background: #015259;
     border-radius: 0.3em;
     padding: 0.0em 0.3em;
 }
 
+a.reference.internal code.xref span.pre {
+    color: #F8F8F2;
+    background: #015259;
+    border-bottom: none;
+    border-radius: 0;
+    padding: 0;
+}
+
+a.reference.internal, a.reference.internal:hover {
+    border-bottom: none;
+}
+
+a.reference.internal:hover code {
+    background: #027bab
+}
+
+a.reference.internal:hover code.xref span.pre {
+    color: #F8F8F2;
+    background: #027bab;
+    border-bottom: none;
+}
+
+tt.xref, code.xref, a tt {
+    background: none;
+    border-bottom: none;
+}
+
+code.literal {
+    color: #F8F8F2;
+    background: #015259;
+}
+
 pre {
     padding: 20px 30px;
+    background: #003038;
+}
+
+div > dl {
+    border-left: 2px solid #00384021;
+    padding-left: 5px;
+}
+
+dt {
+    color: #027bab;
+}
+
+
+
+div.footer::before {
+    display: block;
+    content: '';
+    border-top: 1px solid #f8a5a9;
+    width: 50%;
+    margin: 2em auto 2em auto;
+}
+
+div.footer {
+    text-align: center;
+    color: #029be2; 
+}
+
+div.footer a {
+    color: #027bab;
+    text-decoration: none;
+}
+
+@media screen and (max-width: 875px) {
+    div.sphinxsidebar {
+        background: #003039;
+    }
+    div.sphinxsidebar h1.logo, div.sphinxsidebar p.blurb{
+        text-align: left;
+    }
+    div.sphinxsidebar h1 a {
+        color: #1bc5e0;
+    }
+    div.sphinxsidebar a {
+        color: #ceb1ff;
+    }
+    div.sphinxsidebar ul {
+        color: #ceb1ff;
+    }
 }
