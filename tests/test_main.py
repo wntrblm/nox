@@ -60,9 +60,9 @@ def test_global_config_constructor():
     assert config.posargs == ["a", "b", "c"]
 
 
-def test_main_no_args():
+def test_main_no_args(monkeypatch):
     # Prevents any interference from outside
-    os.environ.pop("NOXSESSION", None)
+    monkeypatch.delenv("NOXSESSION", raising=False)
     sys.argv = [sys.executable]
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
@@ -152,8 +152,8 @@ def test_main_explicit_sessions():
 @pytest.mark.parametrize(
     "env,sessions", [("foo", ["foo"]), ("foo,bar", ["foo", "bar"])]
 )
-def test_main_session_from_nox_env_var(env, sessions):
-    os.environ["NOXSESSION"] = env
+def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
+    monkeypatch.setenv("NOXSESSION", env)
     sys.argv = [sys.executable]
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
