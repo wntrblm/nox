@@ -68,6 +68,7 @@ def main():
         "-e",
         "--sessions",
         nargs="*",
+        default=_get_default_sessions(),
         help="Which sessions to run, by default, all sessions will run.",
     )
     parser.add_argument(
@@ -134,6 +135,12 @@ def main():
 
     # Done; exit.
     sys.exit(exit_code)
+
+
+def _get_default_sessions():
+    nox_env = os.environ.get("NOXSESSION")
+    env_sessions = nox_env.split(",") if nox_env else None
+    return env_sessions
 
 
 if __name__ == "__main__":  # pragma: no cover

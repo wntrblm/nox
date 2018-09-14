@@ -56,6 +56,11 @@ By default nox will run all sessions defined in the noxfile. However, you can ch
     nox -s lint tests
     nox -e lint
 
+You can also use the ``NOXSESSION`` environment variable::
+
+    NOXSESSION=lint nox
+    NOXSESSION=lint,tests nox
+
 Nox will run these sessions in the same order they are specified.
 
 You can also use `pytest-style keywords`_ to filter test sessions::

@@ -19,6 +19,7 @@ from unittest import mock
 
 import contexter
 import pkg_resources
+import pytest
 
 import nox
 import nox.__main__
@@ -59,7 +60,9 @@ def test_global_config_constructor():
     assert config.posargs == ["a", "b", "c"]
 
 
-def test_main_no_args():
+def test_main_no_args(monkeypatch):
+    # Prevents any interference from outside
+    monkeypatch.delenv("NOXSESSION", raising=False)
     sys.argv = [sys.executable]
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
@@ -144,6 +147,28 @@ def test_main_explicit_sessions():
         # Verify that the explicit sessions are listed in the config.
         config = execute.call_args[1]["global_config"]
         assert config.sessions == ["1", "2"]
+
+
+@pytest.mark.parametrize(
+    "env,sessions", [("foo", ["foo"]), ("foo,bar", ["foo", "bar"])]
+)
+def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
+    monkeypatch.setenv("NOXSESSION", env)
+    sys.argv = [sys.executable]
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit") as exit:
+            nox.__main__.main()
+            exit.assert_called_once_with(0)
+        assert execute.called
+
+        # Verify that the sessions from the env var are listed in the config.
+        config = execute.call_args[1]["global_config"]
+        assert len(config.sessions) == len(sessions)
+        for session in sessions:
+            assert session in config.sessions
 
 
 def test_main_positional_args():
