@@ -1,3 +1,10 @@
+## 2018.9.14
+
+- Check for ``NOXSESSION`` environment variable (#121)
+- Fix typo in OpenCensus Python (#132)
+- Add new documentation art created by Andrea Caprotti
+- Add Python 3.7 to Travis CI (#129)
+
 ## 2018.8.28
 
 Bugfixes:
