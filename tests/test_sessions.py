@@ -57,10 +57,11 @@ def test__normalize_path_give_up():
 
 class TestSession:
     def make_session_and_runner(self):
+        func = mock.Mock(spec=["python"], python="3.7")
         runner = nox.sessions.SessionRunner(
             name="test",
             signature="test",
-            func=mock.sentinel.func,
+            func=func,
             global_config=argparse.Namespace(posargs=mock.sentinel.posargs),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -75,6 +76,7 @@ class TestSession:
         assert session.posargs is runner.global_config.posargs
         assert session.virtualenv is runner.venv
         assert session.bin is runner.venv.bin
+        assert session.python is runner.func.python
 
     def test_chdir(self, tmpdir):
         cdto = str(tmpdir.join("cdbby").ensure(dir=True))

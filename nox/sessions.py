@@ -106,6 +106,11 @@ class Session:
         return self._runner.venv
 
     @property
+    def python(self):
+        """The python version passed into ``@nox.session``."""
+        return self._runner.func.python
+
+    @property
     def bin(self):
         """The bin directory for the virtualenv."""
         return self._runner.venv.bin
