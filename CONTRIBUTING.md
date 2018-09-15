@@ -43,3 +43,7 @@ To run against a particular Python version:
 
 When you send a pull request Travis will handle running everything, but it is
 recommended to test as much as possible locally before pushing.
+
+## Getting a sticker
+
+If you've contributed to Nox, you can get a cute little Nox sticker. Reach out to Thea at me@thea.codes to request one.
