@@ -160,7 +160,7 @@ class Session:
                 success_codes=[0, 5])
 
         :param env: A dictionary of environment variables to expose to the
-            command. By default, all evironment variables are passed.
+            command. By default, all environment variables are passed.
         :type env: dict or None
         :param bool silent: Silence command output, unless the command fails.
             ``False`` by default.

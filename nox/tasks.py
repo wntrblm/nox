@@ -38,7 +38,7 @@ def load_nox_module(global_config):
     """
     try:
         # Save the absolute path to the Noxfile.
-        # This will innoculate it if nox changes paths because of an implicit
+        # This will inoculate it if nox changes paths because of an implicit
         # or explicit chdir (like the one below).
         global_config.noxfile = os.path.realpath(global_config.noxfile)
 

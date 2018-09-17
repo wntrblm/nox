@@ -154,7 +154,7 @@ def test_create_interpreter(make_one):
 
 def test__resolved_interpreter_none(make_one):
     # Establish that the _resolved_interpreter method is a no-op if the
-    # interpeter is not set.
+    # interpreter is not set.
     venv, _ = make_one(interpreter=None)
     assert venv._resolved_interpreter == sys.executable
 
