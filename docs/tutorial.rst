@@ -144,7 +144,7 @@ Session arguments can be parametrized with the :func:`nox.parametrize` decorator
         session.install(f'django=={django}')
         session.run('py.test')
 
-When you run ``nox``, it will create a three distinct sessions::
+When you run ``nox``, it will create a two distinct sessions::
 
     $ nox
     nox > Running session tests(django='1.9')

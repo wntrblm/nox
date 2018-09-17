@@ -35,7 +35,7 @@ Breaking changes and other important notes:
 * Nox is now published as "nox" on PyPI. This means that Nox is installed via `pip install nox` instead of `nox-automation`. Since the new release makes so many breaking changes, we won't be updating the old `nox-automation` package.
 * Nox's configuration file is now called `noxfile.py` instead of `nox.py`.
 * Nox no longer supports Python 2.7. You can still create and run Python 2.7 sessions, but Nox itself must be installed using Python 3.5+.
-* Nox's behavior has been changed from *declarative*  to *imperative*. Session actions now run immediately. Existing code to setup session virtualenv, such as `session.interpreter` **will break**! Please consult the documention on how to use `@nox.session(python=[...])` to configure virtualenvs for sessions.
+* Nox's behavior has been changed from *declarative*  to *imperative*. Session actions now run immediately. Existing code to setup session virtualenv, such as `session.interpreter` **will break**! Please consult the documentation on how to use `@nox.session(python=[...])` to configure virtualenvs for sessions.
 * Nox now uses calver for releases.
 * Support for the legacy naming convention (for example, `session_tests`) has been removed.
 
