@@ -84,6 +84,19 @@ def filter_manifest(manifest, global_config):
             the manifest otherwise (to be sent to the next task).
 
     """
+
+    # If there are no session explicitly given then we need to discover
+    # all the default sessions to execute. If any of the sessions have
+    # run_by_default=True then run those. If none have that flag set
+    # then run all sessions.
+    if not global_config.sessions:
+        try:
+            manifest.filter_by_default()
+        except ValueError as exc:
+            logger.error("Error while collecting sessions.")
+            logger.error(exc.args[0])
+            return 3
+
     # Filter by the name of any explicit sessions.
     # This can raise KeyError if a specified session does not exist;
     # log this if it happens.

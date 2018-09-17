@@ -145,6 +145,35 @@ class Manifest:
             x for x in self._queue if keyword_match(keywords, [x.signature or x.name])
         ]
 
+    def filter_by_default(self):
+        """Filters all gathered sessions by whether they are marked with
+        nox.session(..., run_by_default=True) or one of the parameters is
+        nox.param(..., run_by_default=True).
+
+        If a session is marked with run_by_default=False and no sessions are
+        marked with run_by_default=True then all unmarked sessions will be run.
+
+        If no session is marked with run_by_default then all sessions will be run.
+        """
+        default_false_session_found = False
+        default_none_sessions = []
+        default_true_sessions = []
+
+        for x in self._queue:
+            if x.run_by_default is None:
+                default_none_sessions.append(x)
+            elif x.run_by_default is False:
+                default_false_session_found = True
+            elif x.run_by_default is True:
+                default_true_sessions.append(x)
+            else:
+                raise ValueError()
+
+        if len(default_true_sessions):
+            self._queue = default_true_sessions
+        elif default_false_session_found:
+            self._queue = default_none_sessions
+
     def make_session(self, name, func):
         """Create a session object from the session function.
 

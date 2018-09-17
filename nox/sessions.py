@@ -267,6 +267,10 @@ class SessionRunner:
             return first_line
         return None
 
+    @property
+    def run_by_default(self):
+        return self.func.run_by_default
+
     def __str__(self):
         return self.signature or self.name
 

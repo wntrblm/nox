@@ -35,6 +35,7 @@ def session_func():
 
 
 session_func.python = None
+session_func.run_by_default = None
 
 
 def test_load_nox_module():

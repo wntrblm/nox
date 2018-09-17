@@ -19,7 +19,9 @@ import functools
 _REGISTRY = collections.OrderedDict()
 
 
-def session_decorator(func=None, python=None, py=None, reuse_venv=None):
+def session_decorator(
+    func=None, python=None, py=None, reuse_venv=None, run_by_default=None
+):
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
     # being sent as part of the Python syntax (`@nox.session`).
@@ -30,7 +32,11 @@ def session_decorator(func=None, python=None, py=None, reuse_venv=None):
     # This is what makes the syntax with and without parentheses both work.
     if func is None:
         return functools.partial(
-            session_decorator, python=python, py=py, reuse_venv=reuse_venv
+            session_decorator,
+            python=python,
+            py=py,
+            reuse_venv=reuse_venv,
+            run_by_default=run_by_default,
         )
 
     if py is not None and python is not None:
@@ -44,6 +50,7 @@ def session_decorator(func=None, python=None, py=None, reuse_venv=None):
 
     func.python = python
     func.reuse_venv = reuse_venv
+    func.run_by_default = run_by_default
     _REGISTRY[func.__name__] = func
 
     return func
