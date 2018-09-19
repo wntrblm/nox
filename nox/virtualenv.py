@@ -122,9 +122,11 @@ class VirtualEnv(ProcessEnv):
 
         Based heavily on tox's implementation (tox/interpreters.py).
         """
+        from nox.sessions import _SessionSkip
+
         # If there is no assigned interpreter, then use the same one used by
         # Nox.
-        if isinstance(self._resolved, RuntimeError):
+        if isinstance(self._resolved, Exception):
             raise self._resolved
 
         if self._resolved is not None:
@@ -158,10 +160,12 @@ class VirtualEnv(ProcessEnv):
         # Sanity check: We only need the rest of this behavior on Windows.
         if _SYSTEM != "Windows":
             if xy_version.endswith("-32"):
-                self._resolved = RuntimeError(
+                msg = (
                     "Locating 32-bit Python ({!r}) is "
                     "only supported on Windows.".format(cleaned_interpreter)
                 )
+                logger.warning(msg)
+                self._resolved = _SessionSkip()
                 raise self._resolved
 
             self._resolved = cleaned_interpreter
@@ -184,9 +188,9 @@ class VirtualEnv(ProcessEnv):
 
         # If we got this far, then we were unable to resolve the interpreter
         # to an actual executable; raise an exception.
-        self._resolved = RuntimeError(
-            'Unable to locate Python interpreter "{}".'.format(self.interpreter)
-        )
+        msg = 'Unable to locate Python interpreter "{}".'.format(self.interpreter)
+        logger.warning(msg)
+        self._resolved = _SessionSkip()
         raise self._resolved
 
     @property
