@@ -19,6 +19,7 @@ from unittest import mock
 import py
 import pytest
 
+import nox.sessions
 import nox.virtualenv
 
 
@@ -194,7 +195,7 @@ def test__resolved_interpreter_invalid_numerical_id(sysfind, make_one, input_):
 def test__resolved_interpreter_32_bit_non_windows(sysfind, make_one):
     venv, _ = make_one(interpreter="3.6-32")
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.sessions._SessionSkip):
         venv._resolved_interpreter
     sysfind.assert_called_once_with("3.6-32")
 
@@ -270,7 +271,7 @@ def test__resolved_interpreter_windows_pyexe_fails(sysfind, make_one):
     sysfind.side_effect = lambda arg: mock_py if arg == "py" else False
 
     # Okay now run the test.
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.sessions._SessionSkip):
         venv._resolved_interpreter
     sysfind.assert_any_call("python3.6")
     sysfind.assert_any_call("py")
@@ -289,7 +290,7 @@ def test__resolved_interpreter_not_found(sysfind, check, make_one):
     check.return_value = False
 
     # Run the test.
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.sessions._SessionSkip):
         venv._resolved_interpreter
 
 
@@ -299,7 +300,7 @@ def test__resolved_interpreter_nonstandard(make_one):
     # on Windows.
     venv, _ = make_one(interpreter="goofy")
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.sessions._SessionSkip):
         venv._resolved_interpreter
 
 
@@ -323,13 +324,13 @@ def test__resolved_interpreter_cache_failure(sysfind, make_one):
     venv, _ = make_one(interpreter="3.7-32")
 
     assert venv._resolved is None
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(nox.sessions._SessionSkip) as exc_info:
         venv._resolved_interpreter
     caught = exc_info.value
 
     sysfind.assert_called_once_with("3.7-32")
     # Check the cache and call again to make sure it is used.
     assert venv._resolved is caught
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.sessions._SessionSkip):
         venv._resolved_interpreter
     assert sysfind.call_count == 1
