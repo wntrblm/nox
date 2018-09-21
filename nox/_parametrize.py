@@ -15,6 +15,12 @@
 import functools
 
 
+class param:
+    def __init__(self, *values, run_by_default=None):
+        self.values = values
+        self.run_by_default = run_by_default
+
+
 def parametrize_decorator(arg_names, arg_values_list):
     """Parametrize a session.
 
@@ -42,17 +48,19 @@ def parametrize_decorator(arg_names, arg_values_list):
     # or list. Transform it so it'll work with the combine step.
     if len(arg_names) == 1:
         # In this case, the arg_values_list can also just be a single item.
-        if not isinstance(arg_values_list, (list, tuple)):
+        if not isinstance(arg_values_list, (list, tuple, param)):
             arg_values_list = [arg_values_list]
-        arg_values_list = [[value] for value in arg_values_list]
+        arg_values_list = [
+            [value] if not isinstance(value, param) else value
+            for value in arg_values_list
+        ]
 
     # Combine arg names and values into a list of dictionaries. These are
     # 'call specs' that will be used to generate calls.
     # [{arg: value1}, {arg: value2}, ...]
     call_specs = []
     for arg_values in arg_values_list:
-        call_spec = dict(zip(arg_names, arg_values))
-        call_specs.append(call_spec)
+        call_specs.append(CallSpec.make_call_spec(arg_names, arg_values))
 
     def inner(f):
         previous_call_specs = getattr(f, "parametrize", None)
@@ -65,19 +73,20 @@ def parametrize_decorator(arg_names, arg_values_list):
 
 def update_call_specs(call_specs, new_specs):
     if not call_specs:
-        call_specs = [{}]
+        call_specs = [CallSpec({})]
 
     combined_specs = []
     for new_spec in new_specs:
         for spec in call_specs:
-            spec = spec.copy()
-            spec.update(new_spec)
-            combined_specs.append(spec)
+            combined_specs.append(spec.combine(new_spec))
     return combined_specs
 
 
 def generate_session_signature(func, call_spec):
-    args = ["{}={}".format(k, repr(call_spec[k])) for k in sorted(call_spec.keys())]
+    args = [
+        "{}={}".format(k, repr(call_spec.kwargs[k]))
+        for k in sorted(call_spec.kwargs.keys())
+    ]
     return "({})".format(", ".join(args))
 
 
@@ -88,7 +97,7 @@ def generate_calls(func, call_specs):
         def make_call_wrapper(call_spec):
             @functools.wraps(func)
             def call_wrapper(*args, **kwargs):
-                kwargs.update(call_spec)
+                kwargs.update(call_spec.kwargs)
                 return func(*args, **kwargs)
 
             return call_wrapper
@@ -96,6 +105,48 @@ def generate_calls(func, call_specs):
         call = make_call_wrapper(call_spec)
         call.session_signature = generate_session_signature(func, call_spec)
         call.call_spec = call_spec
+        call.run_by_default = call_spec.run_by_default
         calls.append(call)
 
     return calls
+
+
+class CallSpec:
+    def __init__(self, kwargs, run_by_default=None):
+        self.kwargs = kwargs
+        self.run_by_default = run_by_default
+
+    def combine(self, call_spec):
+        """Combines two CallSpec objects into one.
+        Returns a new CallSpec object.
+
+        Args:
+            call_spec (CallSpec):
+                The call spec to combine arguments
+                and other parameters with the current
+                CallSpec instance.
+
+        Returns:
+            CallSpec: A newly-combined CallSpec instance.
+        """
+        kwargs = self.kwargs.copy()
+        kwargs.update(call_spec.kwargs)
+
+        if call_spec.run_by_default is not None:
+            run_by_default = call_spec.run_by_default
+        elif self.run_by_default is not None:
+            run_by_default = self.run_by_default
+        else:
+            run_by_default = None
+
+        return CallSpec(kwargs, run_by_default=run_by_default)
+
+    @classmethod
+    def make_call_spec(cls, arg_names, arg_values):
+        """Creates a CallSpec instance"""
+        if isinstance(arg_values, param):
+            return cls(
+                dict(zip(arg_names, arg_values.values)),
+                run_by_default=arg_values.run_by_default,
+            )
+        return cls(dict(zip(arg_names, arg_values)))

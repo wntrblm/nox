@@ -68,7 +68,7 @@ def main():
         "-e",
         "--sessions",
         nargs="*",
-        default=_get_default_sessions(),
+        default=_get_session_from_env(),
         help="Which sessions to run, by default, all sessions will run.",
     )
     parser.add_argument(
@@ -96,7 +96,7 @@ def main():
         "--forcecolor",
         default=False,
         action="store_true",
-        help=("Force color output, even if stdout is not an interactive " "terminal."),
+        help="Force color output, even if stdout is not an interactive terminal.",
     )
     parser.add_argument(
         "posargs",
@@ -137,7 +137,7 @@ def main():
     sys.exit(exit_code)
 
 
-def _get_default_sessions():
+def _get_session_from_env():
     nox_env = os.environ.get("NOXSESSION")
     env_sessions = nox_env.split(",") if nox_env else None
     return env_sessions
