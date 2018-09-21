@@ -39,6 +39,7 @@ class GlobalConfig:
         self.list_sessions = args.list_sessions
         self.reuse_existing_virtualenvs = args.reuse_existing_virtualenvs
         self.stop_on_first_error = args.stop_on_first_error
+        self.error_on_missing_interpreters = args.error_on_missing_interpreters
         self.posargs = args.posargs
         self.report = args.report
 
@@ -81,7 +82,15 @@ def main():
         help="Re-use existing virtualenvs instead of recreating them.",
     )
     parser.add_argument(
-        "--stop-on-first-error", action="store_true", help="Stop after the first error."
+        "-x",
+        "--stop-on-first-error",
+        action="store_true",
+        help="Stop after the first error.",
+    )
+    parser.add_argument(
+        "--error-on-missing-interpreters",
+        action="store_true",
+        help="Error instead of skip if an interpreter can not be located.",
     )
     parser.add_argument(
         "--report", default=None, help="Output a report of all sessions."

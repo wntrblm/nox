@@ -104,6 +104,14 @@ By default nox will continue to run all sessions even if one fails. You can use 
     nox --stop-on-first-error
 
 
+Failing sessions when the interpreter is missing
+------------------------------------------------
+
+By default, Nox will skip sessions where the Python interpreter can't be found. If you want Nox to mark these sessions as failed, you can use ``--error-on-missing-interpreters``::
+
+    nox --error-on-missing-interpreters
+
+
 Controlling color output
 ------------------------
 

@@ -188,10 +188,8 @@ class TestSession:
         caplog.set_level(logging.ERROR)
         session, _ = self.make_session_and_runner()
 
-        with pytest.raises(nox.sessions._SessionQuit):
+        with pytest.raises(nox.sessions._SessionQuit, match="meep"):
             session.error("meep")
-
-        assert "meep" in caplog.text
 
     def test_error_no_log(self):
         session, _ = self.make_session_and_runner()
@@ -232,6 +230,7 @@ class TestSessionRunner:
                 envdir="envdir",
                 posargs=mock.sentinel.posargs,
                 reuse_existing_virtualenvs=False,
+                error_on_missing_interpreters=False,
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -349,6 +348,25 @@ class TestSessionRunner:
 
         assert result.status == nox.sessions.Status.SKIPPED
 
+    def test_execute_skip_missing_interpreter(self):
+        runner = self.make_runner_with_mock_venv()
+        runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
+
+        result = runner.execute()
+
+        assert result.status == nox.sessions.Status.SKIPPED
+        assert "meep" in result.reason
+
+    def test_execute_error_missing_interpreter(self):
+        runner = self.make_runner_with_mock_venv()
+        runner.global_config.error_on_missing_interpreters = True
+        runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
+
+        result = runner.execute()
+
+        assert result.status == nox.sessions.Status.FAILED
+        assert "meep" in result.reason
+
     def test_execute_failed(self):
         runner = self.make_runner_with_mock_venv()
 
@@ -412,6 +430,10 @@ class TestResult:
         assert result.imperfect == "was successful"
         result = nox.sessions.Result(object(), nox.sessions.Status.FAILED)
         assert result.imperfect == "failed"
+        result = nox.sessions.Result(
+            object(), nox.sessions.Status.FAILED, reason="meep"
+        )
+        assert result.imperfect == "failed: meep"
 
     def test__log_success(self):
         result = nox.sessions.Result(object(), nox.sessions.Status.SUCCESS)

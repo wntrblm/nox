@@ -40,6 +40,7 @@ def test_global_config_constructor():
         list_sessions=False,
         reuse_existing_virtualenvs=True,
         stop_on_first_error=False,
+        error_on_missing_interpreters=True,
         posargs=["a", "b", "c"],
         report=None,
     )
@@ -53,6 +54,7 @@ def test_global_config_constructor():
     assert config.list_sessions is False
     assert config.reuse_existing_virtualenvs is True
     assert config.stop_on_first_error is False
+    assert config.error_on_missing_interpreters is True
     assert config.posargs == ["a", "b", "c"]
 
     args.posargs = ["--", "a", "b", "c"]

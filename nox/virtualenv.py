@@ -31,6 +31,12 @@ _BLACKLISTED_ENV_VARS = frozenset(
 _SYSTEM = platform.system()
 
 
+class InterpreterNotFound(EnvironmentError):
+    def __init__(self, interpreter):
+        super().__init__(f"Python interpreter {interpreter} not found")
+        self.interpreter = interpreter
+
+
 class ProcessEnv:
     """A environment with a 'bin' directory and a set of 'env' vars."""
 
@@ -124,7 +130,7 @@ class VirtualEnv(ProcessEnv):
         """
         # If there is no assigned interpreter, then use the same one used by
         # Nox.
-        if isinstance(self._resolved, RuntimeError):
+        if isinstance(self._resolved, Exception):
             raise self._resolved
 
         if self._resolved is not None:
@@ -134,59 +140,46 @@ class VirtualEnv(ProcessEnv):
             self._resolved = sys.executable
             return self._resolved
 
+        # Otherwise we need to divine the path to the interpreter. This is
+        # designed to accept strings in the form of "2", "2.7", "2.7.13",
+        # "2.7.13-32", "python2", "python2.4", etc.
+        xy_version = ""
+        cleaned_interpreter = self.interpreter
+
         # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
         # part and add Python to the front of it.
         match = re.match(r"^(?P<xy_ver>\d(\.\d)?)(\.\d+)?$", self.interpreter)
-        xy_version = ""
-        cleaned_interpreter = self.interpreter
         if match:
             xy_version = match.group("xy_ver")
             cleaned_interpreter = "python{}".format(xy_version)
 
-        # The value of ``cleaned_interpreter`` may be a valid script on the ``PATH``
-        # or may be a full path to an interpreter in the filesystem; accept this.
+        # If the cleaned interpreter is on the PATH, go ahead and return it.
         if py.path.local.sysfind(cleaned_interpreter):
             self._resolved = cleaned_interpreter
             return self._resolved
 
-        # Allow versions of the form ``X.Y-32`` for Windows.
-        if not xy_version:
-            match = re.match(r"^\d\.\d-32?$", cleaned_interpreter)
-            if match:
-                xy_version = cleaned_interpreter
-
-        # Sanity check: We only need the rest of this behavior on Windows.
+        # The rest of this is only applicable to Windows, so if we don't have
+        # an interpreter by now, raise.
         if _SYSTEM != "Windows":
-            if xy_version.endswith("-32"):
-                self._resolved = RuntimeError(
-                    "Locating 32-bit Python ({!r}) is "
-                    "only supported on Windows.".format(cleaned_interpreter)
-                )
-                raise self._resolved
+            self._resolved = InterpreterNotFound(self.interpreter)
+            raise self._resolved
 
-            self._resolved = cleaned_interpreter
+        # Allow versions of the form ``X.Y-32`` for Windows.
+        match = re.match(r"^\d\.\d-32?$", cleaned_interpreter)
+        if match:
+            # preserve the "-32" suffix, as the Python launcher expects
+            # it.
+            xy_version = cleaned_interpreter
+
+        path_from_launcher = locate_via_py(xy_version)
+
+        if path_from_launcher:
+            self._resolved = path_from_launcher
             return self._resolved
-
-        # From here on out, we are on Windows. If ``self.interpreter`` has
-        # not produced a valid ``xy_version``, then we do one last check for
-        # a standard "pythonX" or "pythonX.Y".
-        if not xy_version:
-            match = re.match(r"^python(?P<ver>\d(\.\d)?)$", cleaned_interpreter)
-            if match:
-                xy_version = match.group("ver")
-
-        # Ask the Python launcher to find the interpreter.
-        if xy_version:
-            path_from_launcher = locate_via_py(xy_version)
-            if path_from_launcher:
-                self._resolved = path_from_launcher
-                return self._resolved
 
         # If we got this far, then we were unable to resolve the interpreter
         # to an actual executable; raise an exception.
-        self._resolved = RuntimeError(
-            'Unable to locate Python interpreter "{}".'.format(self.interpreter)
-        )
+        self._resolved = InterpreterNotFound(self.interpreter)
         raise self._resolved
 
     @property
