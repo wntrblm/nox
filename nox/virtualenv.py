@@ -33,7 +33,7 @@ _SYSTEM = platform.system()
 
 class InterpreterNotFound(EnvironmentError):
     def __init__(self, interpreter):
-        super().__init__(f"Python interpreter {interpreter} not found")
+        super().__init__("Python interpreter {} not found".format(interpreter))
         self.interpreter = interpreter
 
 

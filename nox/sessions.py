@@ -357,7 +357,7 @@ class Result:
             return "was successful"
         status = self.status.name.lower()
         if self.reason:
-            return f"{status}: {self.reason}"
+            return "{}: {}".format(status, self.reason)
         else:
             return status
 
