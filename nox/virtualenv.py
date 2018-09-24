@@ -31,7 +31,7 @@ _BLACKLISTED_ENV_VARS = frozenset(
 _SYSTEM = platform.system()
 
 
-class InterpreterNotFound(EnvironmentError):
+class InterpreterNotFound(OSError):
     def __init__(self, interpreter):
         super().__init__("Python interpreter {} not found".format(interpreter))
         self.interpreter = interpreter
