@@ -239,15 +239,11 @@ class Session:
 
     def error(self, *args, **kwargs):
         """Immediately aborts the session and optionally logs an error."""
-        if args or kwargs:
-            logger.error(*args, **kwargs)
-        raise _SessionQuit()
+        raise _SessionQuit(*args, **kwargs)
 
     def skip(self, *args, **kwargs):
         """Immediately skips the session and optionally logs a warning."""
-        if args or kwargs:
-            logger.warning(*args, **kwargs)
-        raise _SessionSkip()
+        raise _SessionSkip(*args, **kwargs)
 
 
 class SessionRunner:
@@ -304,11 +300,17 @@ class SessionRunner:
             # Nothing went wrong; return a success.
             return Result(self, Status.SUCCESS)
 
-        except _SessionQuit:
-            return Result(self, Status.ABORTED)
+        except nox.virtualenv.InterpreterNotFound as exc:
+            if self.global_config.error_on_missing_interpreters:
+                return Result(self, Status.FAILED, reason=str(exc))
+            else:
+                return Result(self, Status.SKIPPED, reason=str(exc))
 
-        except _SessionSkip:
-            return Result(self, Status.SKIPPED)
+        except _SessionQuit as exc:
+            return Result(self, Status.ABORTED, reason=str(exc))
+
+        except _SessionSkip as exc:
+            return Result(self, Status.SKIPPED, reason=str(exc))
 
         except nox.command.CommandFailed:
             return Result(self, Status.FAILED)
@@ -325,16 +327,18 @@ class SessionRunner:
 class Result:
     """An object representing the result of a session."""
 
-    def __init__(self, session, status):
+    def __init__(self, session, status, reason=None):
         """Initialize the Result object.
 
         Args:
             session (~nox.sessions.SessionRunner):
                 The session runner which ran.
             status (~nox.sessions.Status): The final result status.
+            reason (str): Additional info.
         """
         self.session = session
         self.status = status
+        self.reason = reason
 
     def __bool__(self):
         return self.status.value > 0
@@ -351,7 +355,11 @@ class Result:
         """
         if self.status == Status.SUCCESS:
             return "was successful"
-        return self.status.name.lower()
+        status = self.status.name.lower()
+        if self.reason:
+            return "{}: {}".format(status, self.reason)
+        else:
+            return status
 
     def log(self, message):
         """Log a message using the appropriate log function.

@@ -169,7 +169,7 @@ def test__resolved_interpreter_none(make_one):
     ],
 )
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
-@mock.patch.object(py.path.local, "sysfind", return_value=None)
+@mock.patch.object(py.path.local, "sysfind", return_value=True)
 def test__resolved_interpreter_numerical_non_windows(
     sysfind, make_one, input_, expected
 ):
@@ -181,26 +181,28 @@ def test__resolved_interpreter_numerical_non_windows(
 
 @pytest.mark.parametrize("input_", ["2.", "2.7."])
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
-@mock.patch.object(py.path.local, "sysfind", return_value=None)
+@mock.patch.object(py.path.local, "sysfind", return_value=False)
 def test__resolved_interpreter_invalid_numerical_id(sysfind, make_one, input_):
     venv, _ = make_one(interpreter=input_)
 
-    assert venv._resolved_interpreter == input_
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+        venv._resolved_interpreter
+
     sysfind.assert_called_once_with(input_)
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
-@mock.patch.object(py.path.local, "sysfind", return_value=None)
+@mock.patch.object(py.path.local, "sysfind", return_value=False)
 def test__resolved_interpreter_32_bit_non_windows(sysfind, make_one):
     venv, _ = make_one(interpreter="3.6-32")
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
         venv._resolved_interpreter
     sysfind.assert_called_once_with("3.6-32")
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
-@mock.patch.object(py.path.local, "sysfind", return_value=None)
+@mock.patch.object(py.path.local, "sysfind", return_value=True)
 def test__resolved_interpreter_non_windows(sysfind, make_one):
     # Establish that the interpreter is simply passed through resolution
     # on non-Windows.
@@ -270,8 +272,9 @@ def test__resolved_interpreter_windows_pyexe_fails(sysfind, make_one):
     sysfind.side_effect = lambda arg: mock_py if arg == "py" else False
 
     # Okay now run the test.
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
         venv._resolved_interpreter
+
     sysfind.assert_any_call("python3.6")
     sysfind.assert_any_call("py")
 
@@ -289,7 +292,7 @@ def test__resolved_interpreter_not_found(sysfind, check, make_one):
     check.return_value = False
 
     # Run the test.
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
         venv._resolved_interpreter
 
 
@@ -299,12 +302,12 @@ def test__resolved_interpreter_nonstandard(make_one):
     # on Windows.
     venv, _ = make_one(interpreter="goofy")
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
         venv._resolved_interpreter
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
-@mock.patch.object(py.path.local, "sysfind", return_value=None)
+@mock.patch.object(py.path.local, "sysfind", return_value=True)
 def test__resolved_interpreter_cache_result(sysfind, make_one):
     venv, _ = make_one(interpreter="3.6")
 
@@ -323,13 +326,13 @@ def test__resolved_interpreter_cache_failure(sysfind, make_one):
     venv, _ = make_one(interpreter="3.7-32")
 
     assert venv._resolved is None
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(nox.virtualenv.InterpreterNotFound) as exc_info:
         venv._resolved_interpreter
     caught = exc_info.value
 
     sysfind.assert_called_once_with("3.7-32")
     # Check the cache and call again to make sure it is used.
     assert venv._resolved is caught
-    with pytest.raises(RuntimeError):
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
         venv._resolved_interpreter
     assert sysfind.call_count == 1
