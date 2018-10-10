@@ -1,31 +1,17 @@
 Command-line usage
 ==================
 
+Invocation
+----------
+
 Nox is normally invoked on the command line::
 
     nox
 
 
-You can also invoke nox via the Python interpreter::
+You can also invoke Nox via the Python interpreter::
 
     python3 -m nox
-
-
-Specifying a different configuration file
------------------------------------------
-
-If for some reason your noxfile is not named *noxfile.py*, you can use ``--noxfile`` or ``-f``::
-
-    nox --noxfile something.py
-    nox -f something.py
-
-
-Storing virtualenvs in a different directory
---------------------------------------------
-
-By default nox stores virtualenvs in ``./.nox``, however, you can change this using ``--envdir``::
-
-    nox --envdir /tmp/.
 
 
 Listing available sessions
@@ -35,6 +21,7 @@ To list all available sessions, including parametrized sessions::
 
     nox -l
     nox --list-sessions
+
 
 .. _session_execution_order:
 
@@ -47,10 +34,11 @@ You can run every session by just executing `nox` without any arguments::
 
 The order that sessions are executed is the order that they appear in the Noxfile.
 
+
 Specifying one or more sessions
 -------------------------------
 
-By default nox will run all sessions defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``::
+By default Nox will run all sessions defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``::
 
     nox --session tests
     nox -s lint tests
@@ -69,6 +57,7 @@ You can also use `pytest-style keywords`_ to filter test sessions::
     nox -k "tests and not lint"
 
 .. _pytest-style keywords: https://docs.pytest.org/en/latest/usage.html#specifying-tests-selecting-tests
+
 
 .. _running_paramed_sessions:
 
@@ -112,6 +101,23 @@ By default, Nox will skip sessions where the Python interpreter can't be found. 
     nox --error-on-missing-interpreters
 
 
+Specifying a different configuration file
+-----------------------------------------
+
+If for some reason your noxfile is not named *noxfile.py*, you can use ``--noxfile`` or ``-f``::
+
+    nox --noxfile something.py
+    nox -f something.py
+
+
+Storing virtualenvs in a different directory
+--------------------------------------------
+
+By default nox stores virtualenvs in ``./.nox``, however, you can change this using ``--envdir``::
+
+    nox --envdir /tmp/.
+
+
 Controlling color output
 ------------------------
 
@@ -129,6 +135,7 @@ However, this will never output colorful logs::
 
     nox --nocolor
 
+
 Windows
 -------
 
@@ -144,6 +151,7 @@ executable is invoked by ``py -3.5``. If a given test needs to use the 32-bit
 version of a given Python, then ``X.Y-32`` should be used as the version.
 
 .. _Launcher: https://docs.python.org/3/using/windows.html#python-launcher-for-windows
+
 
 Converting from tox
 -------------------

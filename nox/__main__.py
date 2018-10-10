@@ -48,23 +48,25 @@ class GlobalConfig:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="nox is a Python automation toolkit.")
-    parser.add_argument(
-        "-f",
-        "--noxfile",
-        default="noxfile.py",
-        help="Location of the Python file containing nox sessions.",
+    parser = argparse.ArgumentParser(description="Nox is a Python automation toolkit.", add_help=False)
+    primary = parser.add_argument_group('Primary arguments', "These are the most common arguments used when invoking Nox.")
+
+    primary.add_argument(
+        "-h", "--help", action="store_true", help="Show this help message and exit."
     )
-    parser.add_argument(
+
+    primary.add_argument(
+        "--version", action="store_true", help="Show the Nox version and exit."
+    )
+
+    primary.add_argument(
         "-l",
         "--list-sessions",
         action="store_true",
         help="List all available sessions and exit.",
     )
-    parser.add_argument(
-        "--envdir", default=".nox", help="Directory where nox will store virtualenvs."
-    )
-    parser.add_argument(
+
+    primary.add_argument(
         "-s",
         "-e",
         "--sessions",
@@ -72,51 +74,73 @@ def main():
         default=_get_default_sessions(),
         help="Which sessions to run, by default, all sessions will run.",
     )
-    parser.add_argument(
+
+    primary.add_argument(
         "-k", "--keywords", help="Only run sessions that match the given expression."
     )
-    parser.add_argument(
+
+    primary.add_argument(
+        "posargs",
+        nargs=argparse.REMAINDER,
+        help="Arguments following -- that are passed through to the session(s).",
+    )
+
+    secondary = parser.add_argument_group('Additional arguments & flags', "These arguments are used to control Nox's behavior or control advanced features.")
+
+    secondary.add_argument(
         "-r",
         "--reuse-existing-virtualenvs",
         action="store_true",
         help="Re-use existing virtualenvs instead of recreating them.",
     )
-    parser.add_argument(
+
+    secondary.add_argument(
+        "-f",
+        "--noxfile",
+        default="noxfile.py",
+        help="Location of the Python file containing nox sessions.",
+    )
+
+    secondary.add_argument(
+        "--envdir", default=".nox", help="Directory where nox will store virtualenvs."
+    )
+
+    secondary.add_argument(
         "-x",
         "--stop-on-first-error",
         action="store_true",
         help="Stop after the first error.",
     )
-    parser.add_argument(
+
+    secondary.add_argument(
         "--error-on-missing-interpreters",
         action="store_true",
         help="Error instead of skip if an interpreter can not be located.",
     )
-    parser.add_argument(
+
+    secondary.add_argument(
         "--report", default=None, help="Output a report of all sessions."
     )
-    parser.add_argument(
+
+    secondary.add_argument(
         "--nocolor",
         default=not sys.stderr.isatty(),
         action="store_true",
         help="Disable all color output.",
     )
-    parser.add_argument(
+
+    secondary.add_argument(
         "--forcecolor",
         default=False,
         action="store_true",
         help=("Force color output, even if stdout is not an interactive " "terminal."),
     )
-    parser.add_argument(
-        "posargs",
-        nargs=argparse.REMAINDER,
-        help="Arguments that are passed through to the sessions.",
-    )
-    parser.add_argument(
-        "--version", action="store_true", help="Output the nox version and exit."
-    )
 
     args = parser.parse_args()
+
+    if args.help:
+        parser.print_help()
+        return
 
     if args.version:
         dist = pkg_resources.get_distribution("nox")
