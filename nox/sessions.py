@@ -32,8 +32,8 @@ def _normalize_path(envdir, path):
 
     path = unicodedata.normalize("NFKD", path).encode("ascii", "ignore")
     path = path.decode("ascii")
-    path = re.sub("[^\w\s-]", "-", path).strip().lower()
-    path = re.sub("[-\s]+", "-", path)
+    path = re.sub(r"[^\w\s-]", "-", path).strip().lower()
+    path = re.sub(r"[-\s]+", "-", path)
     path = path.strip("-")
 
     full_path = os.path.join(envdir, path)

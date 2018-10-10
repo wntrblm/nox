@@ -15,7 +15,7 @@
 import nox
 
 
-@nox.session
+@nox.session(py=False)
 @nox.parametrize("cheese", ["cheddar", "jack", "brie"])
 def snack(unused_session, cheese):
     print("Noms, {} so good!".format(cheese))
