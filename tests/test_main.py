@@ -234,6 +234,19 @@ def test_main_version(capsys):
         execute.assert_not_called()
 
 
+def test_main_help(capsys):
+    sys.argv = [sys.executable, "--help"]
+
+    with contexter.ExitStack() as stack:
+        execute = stack.enter_context(mock.patch("nox.workflow.execute"))
+        exit_mock = stack.enter_context(mock.patch("sys.exit"))
+        nox.__main__.main()
+        out, _ = capsys.readouterr()
+        assert "help" in out
+        exit_mock.assert_not_called()
+        execute.assert_not_called()
+
+
 def test_main_failure():
     sys.argv = [sys.executable]
     with mock.patch("nox.workflow.execute") as execute:

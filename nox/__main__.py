@@ -48,8 +48,13 @@ class GlobalConfig:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Nox is a Python automation toolkit.", add_help=False)
-    primary = parser.add_argument_group('Primary arguments', "These are the most common arguments used when invoking Nox.")
+    parser = argparse.ArgumentParser(
+        description="Nox is a Python automation toolkit.", add_help=False
+    )
+    primary = parser.add_argument_group(
+        "Primary arguments",
+        "These are the most common arguments used when invoking Nox.",
+    )
 
     primary.add_argument(
         "-h", "--help", action="store_true", help="Show this help message and exit."
@@ -85,7 +90,10 @@ def main():
         help="Arguments following -- that are passed through to the session(s).",
     )
 
-    secondary = parser.add_argument_group('Additional arguments & flags', "These arguments are used to control Nox's behavior or control advanced features.")
+    secondary = parser.add_argument_group(
+        "Additional arguments & flags",
+        "These arguments are used to control Nox's behavior or control advanced features.",
+    )
 
     secondary.add_argument(
         "-r",
