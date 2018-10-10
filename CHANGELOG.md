@@ -1,3 +1,23 @@
+## 2018.10.9
+
+Breaking changes:
+
+- Skip sessions with missing interpreters. Previously, missing interpreters would cause a failed session. Now they just cause a warning. The previous behavior can be used via `--error-on-missing-interpreters`. (#140)
+
+New features:
+
+- Add session.python property.
+
+Other changes:
+
+- Fix some warnings about escape sequences.
+- Group command line args by usage for readability.
+- Blacklist more Tox env vars in nox-to-tox.
+- Documentation fixes, spelling, etc. (#134)
+- Mention stickers in the contributors guide.
+- Mention Invoke as a Nox alternative.
+
+
 ## 2018.9.14
 
 - Check for ``NOXSESSION`` environment variable (#121)
