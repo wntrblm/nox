@@ -89,7 +89,7 @@ By default nox deletes and recreates virtualenvs every time it is run. This is u
     nox --reuse-existing-virtualenvs
 
 
-If the Noxfile sets ``nox.options.reuse_existing_virtualenvs``, you can disable this using ``--no-reuse-existing-virtualenvs``.
+If the Noxfile sets ``nox.options.reuse_existing_virtualenvs``, you can override the Noxfile setting from the command line by using ``--no-reuse-existing-virtualenvs``.
 
 .. _opt-stop-on-first-error:
 
@@ -100,7 +100,7 @@ By default nox will continue to run all sessions even if one fails. You can use 
 
     nox --stop-on-first-error
 
-If the Noxfile sets ``nox.options.stop_on_first_error``, you can disable this using ``--no-stop-on-first-error``.
+If the Noxfile sets ``nox.options.stop_on_first_error``, you can override the Noxfile setting from the command line by using ``--no-stop-on-first-error``.
 
 .. _opt-error-on-missing-interpreters:
 
@@ -111,7 +111,7 @@ By default, Nox will skip sessions where the Python interpreter can't be found. 
 
     nox --error-on-missing-interpreters
 
-If the Noxfile sets ``nox.options.error_on_missing_interpreters``, you can disable this using ``--no-error-on-missing-interpreters``.
+If the Noxfile sets ``nox.options.error_on_missing_interpreters``, you can override the Noxfile setting from the command line by using ``--no-error-on-missing-interpreters``.
 
 Specifying a different configuration file
 -----------------------------------------

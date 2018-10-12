@@ -30,6 +30,15 @@ from nox import workflow
 from nox.logger import setup_logging
 
 
+def _default_with_off_flag(current, default, off_flag):
+    """Helper method for merging command line args and noxfile config.
+
+    Returns False if off_flag is set, otherwise, returns the default value if
+    set, otherwise, returns the current value.
+    """
+    return (default or current) and not off_flag
+
+
 class GlobalConfig:
     def __init__(self, args):
         self.noxfile = args.noxfile
@@ -50,22 +59,36 @@ class GlobalConfig:
             self.posargs.pop(0)
 
     def merge_from_options(self, options):
-        # If *either* sessions of keywords are specified on the command line,
+        """Update the config from the Noxfile-specified options.
+
+        The options function as "defaults" for the most part, with some small
+        caveats documented in the body of the function.
+
+        Args:
+            options (nox._options.options): The options set in the Noxfile.
+        """
+        # If *either* sessions or keywords are specified on the command line,
         # ignore *both* sessions and keywords in Noxfile.
         if not self.sessions and not self.keywords:
             self.sessions = options.sessions
             self.keywords = options.keywords
 
         self.envdir = self.envdir or options.envdir or ".nox"
-        self.reuse_existing_virtualenvs = (
-            self.reuse_existing_virtualenvs or options.reuse_existing_virtualenvs
-        ) and not self.no_reuse_existing_virtualenvs
-        self.stop_on_first_error = (
-            self.stop_on_first_error or options.stop_on_first_error
-        ) and not self.no_stop_on_first_error
-        self.error_on_missing_interpreters = (
-            self.error_on_missing_interpreters or options.error_on_missing_interpreters
-        ) and not self.no_error_on_missing_interpreters
+        self.reuse_existing_virtualenvs = _default_with_off_flag(
+            self.reuse_existing_virtualenvs,
+            options.reuse_existing_virtualenvs,
+            self.no_reuse_existing_virtualenvs,
+        )
+        self.stop_on_first_error = _default_with_off_flag(
+            self.stop_on_first_error,
+            options.stop_on_first_error,
+            self.no_stop_on_first_error,
+        )
+        self.error_on_missing_interpreters = _default_with_off_flag(
+            self.error_on_missing_interpreters,
+            options.error_on_missing_interpreters,
+            self.no_error_on_missing_interpreters,
+        )
         self.report = self.report or options.report
 
 
@@ -165,9 +188,7 @@ def main():
     )
 
     secondary.add_argument(
-        "--report",
-        default=None,
-        help="Output a report of all sessions to the given filename.",
+        "--report", help="Output a report of all sessions to the given filename."
     )
 
     secondary.add_argument(

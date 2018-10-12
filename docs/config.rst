@@ -125,7 +125,7 @@ Nox has various :doc:`command line arguments <usage>` that can be used to modify
 
     @nox.session
     def tests(session):
-        pass
+        ...
 
 Or, if you wanted to provide a set of sessions that are run by default:
 
