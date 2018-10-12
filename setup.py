@@ -65,4 +65,5 @@ setup(
         "Source Code": "https://github.com/theacodes/nox",
         "Bug Tracker": "https://github.com/theacodes/nox/issues",
     },
+    python_requires=">=3.5",
 )
