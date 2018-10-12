@@ -62,7 +62,7 @@ def lint(session):
 @nox.session(python="3.6")
 def docs(session):
     """Build the documentation."""
-    session.run("rm", "-rf", "docs/_build")
+    session.run("rm", "-rf", "docs/_build", external=True)
     session.install("-r", "requirements-test.txt")
     session.install(".")
     session.cd("docs")

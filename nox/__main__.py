@@ -52,6 +52,8 @@ class GlobalConfig:
         self.no_stop_on_first_error = args.no_stop_on_first_error
         self.error_on_missing_interpreters = args.error_on_missing_interpreters
         self.no_error_on_missing_interpreters = args.no_error_on_missing_interpreters
+        self.error_on_external_run = args.error_on_external_run
+        self.no_error_on_external_run = args.no_error_on_external_run
         self.posargs = args.posargs
         self.report = args.report
 
@@ -88,6 +90,11 @@ class GlobalConfig:
             self.error_on_missing_interpreters,
             options.error_on_missing_interpreters,
             self.no_error_on_missing_interpreters,
+        )
+        self.error_on_external_run = _default_with_off_flag(
+            self.error_on_external_run,
+            options.error_on_external_run,
+            self.no_error_on_external_run,
         )
         self.report = self.report or options.report
 
@@ -185,6 +192,17 @@ def main():
         "--no-error-on-missing-interpreters",
         action="store_true",
         help="Disables --error-on-missing-interpreters if it is enabled in the Noxfile.",
+    )
+
+    secondary.add_argument(
+        "--error-on-external-run",
+        action="store_true",
+        help="Error if run() is used to execute a program that isn't installed in a session's virtualenv.",
+    )
+    secondary.add_argument(
+        "--no-error-on-external-run",
+        action="store_true",
+        help="Disables --error-on-external-run if it is enabled in the Noxfile.",
     )
 
     secondary.add_argument(

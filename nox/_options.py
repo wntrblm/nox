@@ -29,4 +29,5 @@ class options:
     reuse_existing_virtualenvs = False
     stop_on_first_error = False
     error_on_missing_interpreters = False
+    error_on_external_run = False
     report = None
