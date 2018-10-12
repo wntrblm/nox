@@ -23,6 +23,7 @@ import pytest
 
 import nox
 import nox.__main__
+import nox._options
 import nox.registry
 import nox.sessions
 
@@ -31,35 +32,99 @@ RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 VERSION = pkg_resources.get_distribution("nox").version
 
 
-def test_global_config_constructor():
-    args = argparse.Namespace(
-        noxfile="noxfile",
-        envdir="dir",
-        sessions=["1", "2"],
-        keywords="red and blue",
-        list_sessions=False,
-        reuse_existing_virtualenvs=True,
-        stop_on_first_error=False,
-        error_on_missing_interpreters=True,
-        posargs=["a", "b", "c"],
-        report=None,
-    )
+class TestGlobalConfig:
+    def make_args(self):
+        return argparse.Namespace(
+            noxfile="noxfile",
+            envdir="dir",
+            sessions=["1", "2"],
+            keywords="red and blue",
+            list_sessions=False,
+            reuse_existing_virtualenvs=False,
+            no_reuse_existing_virtualenvs=False,
+            stop_on_first_error=False,
+            no_stop_on_first_error=False,
+            error_on_missing_interpreters=False,
+            no_error_on_missing_interpreters=False,
+            posargs=["a", "b", "c"],
+            report=None,
+        )
 
-    config = nox.__main__.GlobalConfig(args)
+    def test_constructor(self):
+        args = self.make_args()
+        config = nox.__main__.GlobalConfig(args)
 
-    assert config.noxfile == "noxfile"
-    assert config.envdir == os.path.abspath("dir")
-    assert config.sessions == ["1", "2"]
-    assert config.keywords == "red and blue"
-    assert config.list_sessions is False
-    assert config.reuse_existing_virtualenvs is True
-    assert config.stop_on_first_error is False
-    assert config.error_on_missing_interpreters is True
-    assert config.posargs == ["a", "b", "c"]
+        assert config.noxfile == "noxfile"
+        assert config.envdir == "dir"
+        assert config.sessions == ["1", "2"]
+        assert config.keywords == "red and blue"
+        assert config.list_sessions is False
+        assert config.reuse_existing_virtualenvs is False
+        assert config.no_reuse_existing_virtualenvs is False
+        assert config.stop_on_first_error is False
+        assert config.no_stop_on_first_error is False
+        assert config.error_on_missing_interpreters is False
+        assert config.no_error_on_missing_interpreters is False
+        assert config.posargs == ["a", "b", "c"]
 
-    args.posargs = ["--", "a", "b", "c"]
-    config = nox.__main__.GlobalConfig(args)
-    assert config.posargs == ["a", "b", "c"]
+        args.posargs = ["--", "a", "b", "c"]
+        config = nox.__main__.GlobalConfig(args)
+        assert config.posargs == ["a", "b", "c"]
+
+    def test_merge_from_options_no_changes(self):
+        args = self.make_args()
+        config = nox.__main__.GlobalConfig(args)
+        original_values = vars(config).copy()
+        options = nox._options.options()
+
+        config.merge_from_options(options)
+
+        assert vars(config) == original_values
+
+    def test_merge_from_options_options_by_default(self):
+        args = self.make_args()
+        args.sessions = None
+        args.keywords = None
+        config = nox.__main__.GlobalConfig(args)
+        original_values = vars(config).copy()
+
+        options = nox._options.options()
+        options.sessions = ["1", "2"]
+        options.keywords = "one"
+        options.reuse_existing_virtualenvs = True
+        options.stop_on_first_error = True
+        options.error_on_missing_interpreters = True
+        options.report = "output.json"
+
+        config.merge_from_options(options)
+
+        assert vars(config) != original_values
+        assert config.sessions == ["1", "2"]
+        assert config.keywords == "one"
+        assert config.reuse_existing_virtualenvs is True
+        assert config.stop_on_first_error is True
+        assert config.error_on_missing_interpreters is True
+        assert config.report == "output.json"
+
+    def test_merge_from_options_args_precendence(self):
+        args = self.make_args()
+        args.sessions = ["1", "2"]
+        args.no_reuse_existing_virtualenvs = True
+        args.no_stop_on_first_error = True
+        args.no_error_on_missing_interpreters = True
+        args.report = "output.json"
+        config = nox.__main__.GlobalConfig(args)
+        original_values = vars(config).copy()
+
+        options = nox._options.options()
+        options.keywords = "one"
+        options.reuse_existing_virtualenvs = True
+        options.stop_on_first_error = True
+        options.error_on_missing_interpreters = True
+
+        config.merge_from_options(options)
+
+        assert vars(config) == original_values
 
 
 def test_main_no_args(monkeypatch):
@@ -78,7 +143,6 @@ def test_main_no_args(monkeypatch):
         # Verify that the config looks correct.
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
-        assert config.envdir.endswith(".nox")
         assert config.sessions is None
         assert config.reuse_existing_virtualenvs is False
         assert config.stop_on_first_error is False

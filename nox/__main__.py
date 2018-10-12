@@ -33,18 +33,40 @@ from nox.logger import setup_logging
 class GlobalConfig:
     def __init__(self, args):
         self.noxfile = args.noxfile
-        self.envdir = os.path.abspath(args.envdir)
+        self.envdir = args.envdir
         self.sessions = args.sessions
         self.keywords = args.keywords
         self.list_sessions = args.list_sessions
         self.reuse_existing_virtualenvs = args.reuse_existing_virtualenvs
+        self.no_reuse_existing_virtualenvs = args.no_reuse_existing_virtualenvs
         self.stop_on_first_error = args.stop_on_first_error
+        self.no_stop_on_first_error = args.no_stop_on_first_error
         self.error_on_missing_interpreters = args.error_on_missing_interpreters
+        self.no_error_on_missing_interpreters = args.no_error_on_missing_interpreters
         self.posargs = args.posargs
         self.report = args.report
 
         if self.posargs and self.posargs[0] == "--":
             self.posargs.pop(0)
+
+    def merge_from_options(self, options):
+        # If *either* sessions of keywords are specified on the command line,
+        # ignore *both* sessions and keywords in Noxfile.
+        if not self.sessions and not self.keywords:
+            self.sessions = options.sessions
+            self.keywords = options.keywords
+
+        self.envdir = self.envdir or options.envdir or ".nox"
+        self.reuse_existing_virtualenvs = (
+            self.reuse_existing_virtualenvs or options.reuse_existing_virtualenvs
+        ) and not self.no_reuse_existing_virtualenvs
+        self.stop_on_first_error = (
+            self.stop_on_first_error or options.stop_on_first_error
+        ) and not self.no_stop_on_first_error
+        self.error_on_missing_interpreters = (
+            self.error_on_missing_interpreters or options.error_on_missing_interpreters
+        ) and not self.no_error_on_missing_interpreters
+        self.report = self.report or options.report
 
 
 def main():
@@ -101,6 +123,11 @@ def main():
         action="store_true",
         help="Re-use existing virtualenvs instead of recreating them.",
     )
+    secondary.add_argument(
+        "--no-reuse-existing-virtualenvs",
+        action="store_true",
+        help="Disables --reuse-existing-virtualenvs if it is enabled in the Noxfile.",
+    )
 
     secondary.add_argument(
         "-f",
@@ -110,7 +137,8 @@ def main():
     )
 
     secondary.add_argument(
-        "--envdir", default=".nox", help="Directory where nox will store virtualenvs."
+        "--envdir",
+        help="Directory where nox will store virtualenvs, this is .nox by default.",
     )
 
     secondary.add_argument(
@@ -119,15 +147,27 @@ def main():
         action="store_true",
         help="Stop after the first error.",
     )
+    secondary.add_argument(
+        "--no-stop-on-first-error",
+        action="store_true",
+        help="Disables --stop-on-first-error if it is enabled in the Noxfile.",
+    )
 
     secondary.add_argument(
         "--error-on-missing-interpreters",
         action="store_true",
         help="Error instead of skip if an interpreter can not be located.",
     )
+    secondary.add_argument(
+        "--no-error-on-missing-interpreters",
+        action="store_true",
+        help="Disables --error-on-missing-interpreters if it is enabled in the Noxfile.",
+    )
 
     secondary.add_argument(
-        "--report", default=None, help="Output a report of all sessions."
+        "--report",
+        default=None,
+        help="Output a report of all sessions to the given filename.",
     )
 
     secondary.add_argument(
@@ -141,7 +181,7 @@ def main():
         "--forcecolor",
         default=False,
         action="store_true",
-        help=("Force color output, even if stdout is not an interactive " "terminal."),
+        help="Force color output, even if stdout is not an interactive terminal.",
     )
 
     args = parser.parse_args()
@@ -163,6 +203,7 @@ def main():
         global_config=global_config,
         workflow=(
             tasks.load_nox_module,
+            tasks.merge_noxfile_options,
             tasks.discover_manifest,
             tasks.filter_manifest,
             tasks.honor_list_request,

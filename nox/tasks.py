@@ -17,6 +17,7 @@ import io
 import json
 import os
 
+from nox import _options
 from nox import registry
 from nox.logger import logger
 from nox.manifest import Manifest
@@ -51,6 +52,18 @@ def load_nox_module(global_config):
     except (IOError, OSError):
         logger.error("Noxfile {} not found.".format(global_config.noxfile))
         return 2
+
+
+def merge_noxfile_options(module, global_config):
+    """Merges any modifications made to ``nox.options`` by the Noxfile module
+    into global_config.
+
+    Args:
+        module (module): The Noxfile module.
+        global_config (~nox.main.GlobalConfig): The global configuration.
+    """
+    global_config.merge_from_options(_options.options)
+    return module
 
 
 def discover_manifest(module, global_config):
