@@ -35,6 +35,8 @@ You can run every session by just executing `nox` without any arguments::
 The order that sessions are executed is the order that they appear in the Noxfile.
 
 
+.. _opt-sessions-and-keywords:
+
 Specifying one or more sessions
 -------------------------------
 
@@ -76,6 +78,8 @@ Then running ``nox --session tests`` will actually run all parametrized versions
     nox --session "tests(django='2.0')"
 
 
+.. _opt-reuse-existing-virtualenvs:
+
 Re-using virtualenvs
 --------------------
 
@@ -85,6 +89,10 @@ By default nox deletes and recreates virtualenvs every time it is run. This is u
     nox --reuse-existing-virtualenvs
 
 
+If the Noxfile sets ``nox.options.reuse_existing_virtualenvs``, you can disable this using ``--no-reuse-existing-virtualenvs``.
+
+.. _opt-stop-on-first-error:
+
 Stopping if any session fails
 -----------------------------
 
@@ -92,6 +100,9 @@ By default nox will continue to run all sessions even if one fails. You can use 
 
     nox --stop-on-first-error
 
+If the Noxfile sets ``nox.options.stop_on_first_error``, you can disable this using ``--no-stop-on-first-error``.
+
+.. _opt-error-on-missing-interpreters:
 
 Failing sessions when the interpreter is missing
 ------------------------------------------------
@@ -100,6 +111,7 @@ By default, Nox will skip sessions where the Python interpreter can't be found. 
 
     nox --error-on-missing-interpreters
 
+If the Noxfile sets ``nox.options.error_on_missing_interpreters``, you can disable this using ``--no-error-on-missing-interpreters``.
 
 Specifying a different configuration file
 -----------------------------------------
@@ -109,6 +121,8 @@ If for some reason your noxfile is not named *noxfile.py*, you can use ``--noxfi
     nox --noxfile something.py
     nox -f something.py
 
+
+.. _opt-envdir:
 
 Storing virtualenvs in a different directory
 --------------------------------------------
@@ -134,6 +148,16 @@ For example, this will always output colorful logs::
 However, this will never output colorful logs::
 
     nox --nocolor
+
+
+.. _opt-report:
+
+Outputting a machine-readable report
+------------------------------------
+
+You can output a report in ``json`` format by specifying ``--report``::
+
+    nox --report status.json
 
 
 Windows
