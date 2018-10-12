@@ -110,3 +110,42 @@ Nox will call your session functions with a :class:`Session` object. You use thi
 .. autoclass:: Session
     :members:
     :undoc-members:
+
+
+Modifying Nox's behavior in the Noxfile
+---------------------------------------
+
+Nox has various :doc:`command line arguments <usage>` that can be used to modify its behavior. Some of these can also be specified in the Noxfile using ``nox.options``. For example, if you wanted to store Nox's virtualenvs in a different directory without needing to pass it into ``nox`` every time:
+
+.. code-block:: python
+
+    import nox
+
+    nox.options.envdir = ".cache"
+
+    @nox.session
+    def tests(session):
+        ...
+
+Or, if you wanted to provide a set of sessions that are run by default:
+
+.. code-block:: python
+
+    import nox
+
+    nox.options.sessions = ["lint", "tests-3.6"]
+
+    ...
+
+The following options can be specified in the Noxfile:
+
+* ``nox.options.envdir`` is equivalent to specifying :ref:`--envdir <opt-envdir>`.
+* ``nox.options.sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-and-keywords>`.
+* ``nox.options.keywords`` is equivalent to specifying :ref:`-k or --keywords <opt-sessions-and-keywords>`.
+* ``nox.options.reuse_existing_virtualenvs`` is equivalent to specifying :ref:`--reuse-existing-virtualenvs <opt-reuse-existing-virtualenvs>`. You can force this off by specifying ``--no-reuse-existing-virtualenvs`` during invocation.
+* ``nox.options.stop_on_first_error`` is equivalent to specifying :ref:`--stop-on-first-error <opt-stop-on-first-error>`. You can force this off by specifying ``--no-stop-on-first-error`` during invocation.
+* ``nox.options.error_on_missing_interpreters`` is equivalent to specifying :ref:`--error-on-missing-interpreters <opt-error-on-missing-interpreters>`. You can force this off by specifying ``--no-error-on-missing-interpreters`` during invocation.
+* ``nox.options.report`` is equivalent to specifying :ref:`--report <opt-report>`.
+
+
+When invoking ``nox``, any options specified on the command line take precedence over the options specified in the Noxfile. If either ``--sessions`` or ``--keywords`` is specified on the command line, *both* options specified in the Noxfile will be ignored.
