@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 import sys
 from unittest import mock
@@ -92,6 +93,35 @@ def test_run_path_existent(tmpdir, monkeypatch):
         mock_command.return_value = (0, "")
         nox.command.run(["testexc"], silent=True, path=tmpdir.strpath)
         mock_command.assert_called_with([executable.strpath], env=None, silent=True)
+
+
+def test_run_external_warns(tmpdir, caplog):
+    caplog.set_level(logging.WARNING)
+
+    nox.command.run([PYTHON, "--version"], silent=True, path=tmpdir.strpath)
+
+    assert "external=True" in caplog.text
+
+
+def test_run_external_silences(tmpdir, caplog):
+    caplog.set_level(logging.WARNING)
+
+    nox.command.run(
+        [PYTHON, "--version"], silent=True, path=tmpdir.strpath, external=True
+    )
+
+    assert "external=True" not in caplog.text
+
+
+def test_run_external_raises(tmpdir, caplog):
+    caplog.set_level(logging.ERROR)
+
+    with pytest.raises(nox.command.CommandFailed):
+        nox.command.run(
+            [PYTHON, "--version"], silent=True, path=tmpdir.strpath, external="error"
+        )
+
+    assert "external=True" in caplog.text
 
 
 def test_exit_codes():

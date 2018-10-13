@@ -66,7 +66,16 @@ def _clean_env(env):
     return clean_env
 
 
-def run(args, *, env=None, silent=False, path=None, success_codes=None, log=True):
+def run(
+    args,
+    *,
+    env=None,
+    silent=False,
+    path=None,
+    success_codes=None,
+    log=True,
+    external=False
+):
     """Run a command-line program."""
 
     if success_codes is None:
@@ -79,6 +88,24 @@ def run(args, *, env=None, silent=False, path=None, success_codes=None, log=True
 
     if log:
         logger.info(full_cmd)
+
+        is_external_tool = path is not None and not cmd_path.startswith(path)
+        if is_external_tool:
+            if external == "error":
+                logger.error(
+                    "Error: {} is not installed into the virtualenv, it located at {}. "
+                    "Pass external=True into run() to explicitly allow this.".format(
+                        cmd, cmd_path
+                    )
+                )
+                raise CommandFailed("External program disallowed.")
+            elif external is False:
+                logger.warning(
+                    "Warning: {} is not installed into the virtualenv, it located at {}. This might cause issues! "
+                    "Pass external=True into run() to silence this message.".format(
+                        cmd, cmd_path
+                    )
+                )
 
     env = _clean_env(env)
 

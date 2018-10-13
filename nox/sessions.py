@@ -167,6 +167,12 @@ class Session:
         :param success_codes: A list of return codes that are considered
             successful. By default, only ``0`` is considered success.
         :type success_codes: list, tuple, or None
+        :param external: If False (the default) then programs not in the
+            virtualenv path will cause a warning. If True, no warning will be
+            emitted. These warnings can be turned into errors using
+            ``--error-on-external-run``. This has no effect for sessions that
+            do not have a virtualenv.
+        :type external: bool
         """
         if not args:
             raise ValueError("At least one argument required to run().")
@@ -182,6 +188,14 @@ class Session:
             env.update(overlay_env)
         else:
             env = self.env
+
+        # If --error-on-external-run is specified, error on external programs.
+        if self._runner.global_config.error_on_external_run:
+            kwargs.setdefault("external", "error")
+
+        # If we aren't using a virtualenv allow all external programs.
+        if not isinstance(self.virtualenv, VirtualEnv):
+            kwargs["external"] = True
 
         # Run a shell command.
         return nox.command.run(args, env=env, path=self.bin, **kwargs)
@@ -218,7 +232,15 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to install().")
 
-        self.run("pip", "install", "--upgrade", *args, silent=True, **kwargs)
+        self.run(
+            "pip",
+            "install",
+            "--upgrade",
+            *args,
+            silent=True,
+            external="error",
+            **kwargs
+        )
 
     def notify(self, target):
         """Place the given session at the end of the queue.

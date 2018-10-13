@@ -62,11 +62,14 @@ class TestSession:
             name="test",
             signature="test",
             func=func,
-            global_config=argparse.Namespace(posargs=mock.sentinel.posargs),
+            global_config=argparse.Namespace(
+                posargs=mock.sentinel.posargs, error_on_external_run=False
+            ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         runner.venv.env = {}
+        runner.venv.bin = "/no/bin/for/you"
         return nox.sessions.Session(runner=runner), runner
 
     def test_properties(self):
@@ -133,6 +136,27 @@ class TestSession:
         )
         assert result.strip() == "1 3"
 
+    def test_run_external_not_a_virtualenv(self):
+        # Non-virtualenv sessions should always allow external programs.
+        session, runner = self.make_session_and_runner()
+
+        runner.venv = nox.virtualenv.ProcessEnv()
+
+        with mock.patch("nox.command.run", autospec=True) as run:
+            session.run(sys.executable, "--version")
+
+        run.assert_called_once_with(
+            (sys.executable, "--version"), external=True, env=mock.ANY, path=None
+        )
+
+    def test_run_external_with_error_on_external_run(self):
+        session, runner = self.make_session_and_runner()
+
+        runner.global_config.error_on_external_run = True
+
+        with pytest.raises(nox.command.CommandFailed, match="External"):
+            session.run(sys.executable, "--version")
+
     def test_install_bad_args(self):
         session, _ = self.make_session_and_runner()
 
@@ -166,7 +190,13 @@ class TestSession:
         with mock.patch.object(session, "run", autospec=True) as run:
             session.install("requests", "urllib3")
             run.assert_called_once_with(
-                "pip", "install", "--upgrade", "requests", "urllib3", silent=True
+                "pip",
+                "install",
+                "--upgrade",
+                "requests",
+                "urllib3",
+                silent=True,
+                external="error",
             )
 
     def test_notify(self):

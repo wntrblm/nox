@@ -46,6 +46,8 @@ class TestGlobalConfig:
             no_stop_on_first_error=False,
             error_on_missing_interpreters=False,
             no_error_on_missing_interpreters=False,
+            error_on_external_run=False,
+            no_error_on_external_run=True,
             posargs=["a", "b", "c"],
             report=None,
         )

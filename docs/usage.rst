@@ -113,6 +113,17 @@ By default, Nox will skip sessions where the Python interpreter can't be found. 
 
 If the Noxfile sets ``nox.options.error_on_missing_interpreters``, you can override the Noxfile setting from the command line by using ``--no-error-on-missing-interpreters``.
 
+.. _opt-error-on-external-run:
+
+Disallowing external programs
+-----------------------------
+
+By default Nox will warn but ultimately allow you to run programs not installed in the session's virtualenv. You can use ``--error-on-external-run`` to make Nox fail the session if it uses any external program without explicitly passing ``external=True`` into :func:`session.run <nox.session.Session.run>`::
+
+    nox --error-on-external-run
+
+If the Noxfile sets ``nox.options.error_on_external_run``, you can override the Noxfile setting from the command line by using ``--no-error-on-external-run``.
+
 Specifying a different configuration file
 -----------------------------------------
 

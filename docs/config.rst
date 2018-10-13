@@ -145,6 +145,7 @@ The following options can be specified in the Noxfile:
 * ``nox.options.reuse_existing_virtualenvs`` is equivalent to specifying :ref:`--reuse-existing-virtualenvs <opt-reuse-existing-virtualenvs>`. You can force this off by specifying ``--no-reuse-existing-virtualenvs`` during invocation.
 * ``nox.options.stop_on_first_error`` is equivalent to specifying :ref:`--stop-on-first-error <opt-stop-on-first-error>`. You can force this off by specifying ``--no-stop-on-first-error`` during invocation.
 * ``nox.options.error_on_missing_interpreters`` is equivalent to specifying :ref:`--error-on-missing-interpreters <opt-error-on-missing-interpreters>`. You can force this off by specifying ``--no-error-on-missing-interpreters`` during invocation.
+* ``nox.options.error_on_external_run`` is equivalent to specifying :ref:`--error-on-external-run <opt-error-on-external-run>`. You can force this off by specifying ``--no-error-on-external-run`` during invocation.
 * ``nox.options.report`` is equivalent to specifying :ref:`--report <opt-report>`.
 
 
