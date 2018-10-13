@@ -137,12 +137,7 @@ def honor_list_request(manifest, global_config):
             output = "* {session}"
             if session.description is not None:
                 output += " -> {description}"
-            print(
-                output.format(
-                    session=session.signature or session.name,
-                    description=session.description,
-                )
-            )
+            print(output.format(session=session, description=session.description))
         return 0
     return manifest
 

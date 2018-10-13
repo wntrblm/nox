@@ -60,7 +60,7 @@ class TestSession:
         func = mock.Mock(spec=["python"], python="3.7")
         runner = nox.sessions.SessionRunner(
             name="test",
-            signature="test",
+            signatures=["test"],
             func=func,
             global_config=argparse.Namespace(
                 posargs=mock.sentinel.posargs, error_on_external_run=False
@@ -174,7 +174,7 @@ class TestSession:
     def test_install(self):
         runner = nox.sessions.SessionRunner(
             name="test",
-            signature="test",
+            signatures=["test"],
             func=mock.sentinel.func,
             global_config=argparse.Namespace(posargs=mock.sentinel.posargs),
             manifest=mock.create_autospec(nox.manifest.Manifest),
@@ -253,7 +253,7 @@ class TestSessionRunner:
         func.reuse_venv = False
         runner = nox.sessions.SessionRunner(
             name="test",
-            signature="test(1, 2)",
+            signatures=["test(1, 2)"],
             func=func,
             global_config=argparse.Namespace(
                 noxfile=os.path.join(os.getcwd(), "noxfile.py"),
@@ -270,7 +270,7 @@ class TestSessionRunner:
         runner = self.make_runner()
 
         assert runner.name == "test"
-        assert runner.signature == "test(1, 2)"
+        assert runner.signatures == ["test(1, 2)"]
         assert runner.func is not None
         assert callable(runner.func)
         assert isinstance(runner.description, str)
@@ -486,7 +486,7 @@ class TestResult:
     def test__serialize(self):
         result = nox.sessions.Result(
             session=argparse.Namespace(
-                signature="siggy", name="namey", func=mock.Mock()
+                signatures=["siggy"], name="namey", func=mock.Mock()
             ),
             status=nox.sessions.Status.SUCCESS,
         )
@@ -494,4 +494,4 @@ class TestResult:
         assert answer["name"] == "namey"
         assert answer["result"] == "success"
         assert answer["result_code"] == 1
-        assert answer["signature"] == "siggy"
+        assert answer["signatures"] == ["siggy"]

@@ -219,7 +219,9 @@ def test_create_report():
     config = argparse.Namespace(report="/path/to/report")
     results = [
         sessions.Result(
-            session=argparse.Namespace(signature="foosig", name="foo", func=object()),
+            session=argparse.Namespace(
+                signatures=["foosig"], name="foo", func=object()
+            ),
             status=sessions.Status.SUCCESS,
         )
     ]
@@ -233,7 +235,7 @@ def test_create_report():
                     "sessions": [
                         {
                             "name": "foo",
-                            "signature": "foosig",
+                            "signatures": ["foosig"],
                             "result": "success",
                             "result_code": 1,
                             "args": {},

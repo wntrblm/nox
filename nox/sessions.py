@@ -269,9 +269,9 @@ class Session:
 
 
 class SessionRunner:
-    def __init__(self, name, signature, func, global_config, manifest=None):
+    def __init__(self, name, signatures, func, global_config, manifest=None):
         self.name = name
-        self.signature = signature
+        self.signatures = signatures
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
@@ -286,14 +286,14 @@ class SessionRunner:
         return None
 
     def __str__(self):
-        return self.signature or self.name
+        return self.signatures[0] if self.signatures else self.name
 
     def _create_venv(self):
         if self.func.python is False:
             self.venv = ProcessEnv()
             return
 
-        name = self.signature or self.name
+        name = str(self)
         path = _normalize_path(self.global_config.envdir, name)
         reuse_existing = (
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
@@ -304,8 +304,7 @@ class SessionRunner:
         self.venv.create()
 
     def execute(self):
-        session_friendly_name = self.signature or self.name
-        logger.warning("Running session {}".format(session_friendly_name))
+        logger.warning("Running session {}".format(self))
 
         try:
             # By default, nox should quietly change to the directory where
@@ -409,5 +408,5 @@ class Result:
             "name": self.session.name,
             "result": self.status.name.lower(),
             "result_code": self.status.value,
-            "signature": self.session.signature,
+            "signatures": self.session.signatures,
         }
