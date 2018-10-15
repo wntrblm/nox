@@ -269,9 +269,9 @@ class Session:
 
 
 class SessionRunner:
-    def __init__(self, name, signature, func, global_config, manifest=None):
+    def __init__(self, name, signatures, func, global_config, manifest=None):
         self.name = name
-        self.signature = signature
+        self.signatures = signatures
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
@@ -286,15 +286,19 @@ class SessionRunner:
         return None
 
     def __str__(self):
-        return self.signature or self.name
+        sigs = ", ".join(self.signatures)
+        return "Session(name={}, signatures={})".format(self.name, sigs)
+
+    @property
+    def friendly_name(self):
+        return self.signatures[0] if self.signatures else self.name
 
     def _create_venv(self):
         if self.func.python is False:
             self.venv = ProcessEnv()
             return
 
-        name = self.signature or self.name
-        path = _normalize_path(self.global_config.envdir, name)
+        path = _normalize_path(self.global_config.envdir, self.friendly_name)
         reuse_existing = (
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
@@ -304,8 +308,7 @@ class SessionRunner:
         self.venv.create()
 
     def execute(self):
-        session_friendly_name = self.signature or self.name
-        logger.warning("Running session {}".format(session_friendly_name))
+        logger.warning("Running session {}".format(self.friendly_name))
 
         try:
             # By default, nox should quietly change to the directory where
@@ -338,11 +341,13 @@ class SessionRunner:
             return Result(self, Status.FAILED)
 
         except KeyboardInterrupt:
-            logger.error("Session {} interrupted.".format(self))
+            logger.error("Session {} interrupted.".format(self.friendly_name))
             raise
 
         except Exception as exc:
-            logger.exception("Session {} raised exception {!r}".format(self, exc))
+            logger.exception(
+                "Session {} raised exception {!r}".format(self.friendly_name, exc)
+            )
             return Result(self, Status.FAILED)
 
 
@@ -409,5 +414,5 @@ class Result:
             "name": self.session.name,
             "result": self.status.name.lower(),
             "result_code": self.status.value,
-            "signature": self.session.signature,
+            "signatures": self.session.signatures,
         }

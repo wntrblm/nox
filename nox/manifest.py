@@ -66,7 +66,7 @@ class Manifest:
         if needle in self._queue or needle in self._consumed:
             return True
         for session in self._queue + self._consumed:
-            if session.name == needle or session.signature == needle:
+            if session.name == needle or needle in session.signatures:
                 return True
         return False
 
@@ -75,7 +75,7 @@ class Manifest:
 
     def __getitem__(self, key):
         for session in self._queue + self._consumed:
-            if session.name == key or session.signature == key:
+            if session.name == key or key in session.signatures:
                 return session
         raise KeyError(key)
 
@@ -118,19 +118,21 @@ class Manifest:
         """
         # Filter the sessions remaining in the queue based on
         # whether they are individually specified.
+        specified_sessions = set(specified_sessions)
         self._queue = [
             x
             for x in self._queue
-            if (x.name in specified_sessions or x.signature in specified_sessions)
+            if (x.name in specified_sessions or set(x.signatures) & specified_sessions)
         ]
 
         # If a session was requested and was not found, complain loudly.
-        missing_sessions = set(specified_sessions) - set(
+        all_sessions = set(
             itertools.chain(
                 [x.name for x in self._all_sessions if x.name],
-                [x.signature for x in self._all_sessions if x.signature],
+                *[x.signatures for x in self._all_sessions],
             )
         )
+        missing_sessions = specified_sessions - all_sessions
         if missing_sessions:
             raise KeyError("Sessions not found: {}".format(", ".join(missing_sessions)))
 
@@ -142,15 +144,17 @@ class Manifest:
                 session names are checked against.
         """
         self._queue = [
-            x for x in self._queue if keyword_match(keywords, [x.signature or x.name])
+            x for x in self._queue if keyword_match(keywords, x.signatures + [x.name])
         ]
 
-    def make_session(self, name, func):
+    def make_session(self, name, func, multi=False):
         """Create a session object from the session function.
 
         Args:
             name (str): The name of the session.
             func (function): The session function.
+            multi (bool): Whether the function is a member of a set of sessions
+                with different interpreters.
 
         Returns:
             Sequence[~nox.session.Session]: A sequence of Session objects
@@ -161,39 +165,48 @@ class Manifest:
         # If the func has the python attribute set to a list, we'll need
         # to expand them.
         if isinstance(func.python, (list, tuple, set)):
+
             for python in func.python:
                 single_func = _copy_func(func)
                 single_func.python = python
-                sessions.extend(self.make_session(name, single_func))
+                session = self.make_session(name, single_func, multi=True)
+                sessions.extend(session)
 
             return sessions
 
         # Simple case: If this function is not parametrized, then make
         # a simple session
         if not hasattr(func, "parametrize"):
+            long_names = []
+            if not multi:
+                long_names.append(name)
             if func.python:
-                long_name = "{}-{}".format(name, func.python)
-            else:
-                long_name = name
-            session = SessionRunner(name, long_name, func, self._config, self)
+                long_names.append("{}-{}".format(name, func.python))
+
+            session = SessionRunner(name, long_names, func, self._config, self)
             return [session]
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
         calls = generate_calls(func, func.parametrize)
         for call in calls:
+            long_names = []
+            if not multi:
+                long_names.append("{}{}".format(name, call.session_signature))
             if func.python:
-                long_name = "{}-{}{}".format(name, func.python, call.session_signature)
-            else:
-                long_name = "{}{}".format(name, call.session_signature)
+                long_names.append(
+                    "{}-{}{}".format(name, func.python, call.session_signature)
+                )
+                # Ensure that specifying session-python will run all parameterizations.
+                long_names.append("{}-{}".format(name, func.python))
 
-            sessions.append(SessionRunner(name, long_name, call, self._config, self))
+            sessions.append(SessionRunner(name, long_names, call, self._config, self))
 
         # Edge case: If the parameters made it such that there were no valid
         # calls, add an empty, do-nothing session.
         if not calls:
             sessions.append(
-                SessionRunner(name, None, _null_session_func, self._config, self)
+                SessionRunner(name, [], _null_session_func, self._config, self)
             )
 
         # Return the list of sessions.
@@ -226,7 +239,7 @@ class Manifest:
         # Locate the session in the list of all sessions, and place it at
         # the end of the queue.
         for s in self._all_sessions:
-            if s == session or s.name == session or s.signature == session:
+            if s == session or s.name == session or session in s.signatures:
                 self._queue.append(s)
                 return True
 

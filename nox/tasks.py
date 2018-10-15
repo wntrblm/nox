@@ -139,8 +139,7 @@ def honor_list_request(manifest, global_config):
                 output += " -> {description}"
             print(
                 output.format(
-                    session=session.signature or session.name,
-                    description=session.description,
+                    session=session.friendly_name, description=session.description
                 )
             )
         return 0
@@ -184,7 +183,7 @@ def run_manifest(manifest, global_config):
         result = session.execute()
         result.log(
             "Session {name} {status}.".format(
-                name=str(session), status=result.imperfect
+                name=session.friendly_name, status=result.imperfect
             )
         )
         results.append(result)
@@ -219,7 +218,7 @@ def print_summary(results, global_config):
     for result in results:
         result.log(
             "* {name}: {status}".format(
-                name=str(result.session), status=result.status.name.lower()
+                name=result.session.friendly_name, status=result.status.name.lower()
             )
         )
 
