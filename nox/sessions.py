@@ -286,6 +286,11 @@ class SessionRunner:
         return None
 
     def __str__(self):
+        sigs = ", ".join(self.signatures)
+        return "Session(name={}, signatures={})".format(self.name, sigs)
+
+    @property
+    def friendly_name(self):
         return self.signatures[0] if self.signatures else self.name
 
     def _create_venv(self):
@@ -293,8 +298,7 @@ class SessionRunner:
             self.venv = ProcessEnv()
             return
 
-        name = str(self)
-        path = _normalize_path(self.global_config.envdir, name)
+        path = _normalize_path(self.global_config.envdir, self.friendly_name)
         reuse_existing = (
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
@@ -304,7 +308,7 @@ class SessionRunner:
         self.venv.create()
 
     def execute(self):
-        logger.warning("Running session {}".format(self))
+        logger.warning("Running session {}".format(self.friendly_name))
 
         try:
             # By default, nox should quietly change to the directory where
@@ -337,11 +341,13 @@ class SessionRunner:
             return Result(self, Status.FAILED)
 
         except KeyboardInterrupt:
-            logger.error("Session {} interrupted.".format(self))
+            logger.error("Session {} interrupted.".format(self.friendly_name))
             raise
 
         except Exception as exc:
-            logger.exception("Session {} raised exception {!r}".format(self, exc))
+            logger.exception(
+                "Session {} raised exception {!r}".format(self.friendly_name, exc)
+            )
             return Result(self, Status.FAILED)
 
 

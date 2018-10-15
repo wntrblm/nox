@@ -71,7 +71,7 @@ def test_discover_session_functions_decorator():
     manifest = tasks.discover_manifest(mock_module, config)
     sessions = list(manifest)
     assert [s.func for s in sessions] == [foo, bar]
-    assert [str(i) for i in sessions] == ["foo", "bar"]
+    assert [i.friendly_name for i in sessions] == ["foo", "bar"]
 
 
 def test_filter_manifest():
@@ -109,7 +109,7 @@ def test_honor_list_request_noop():
 @pytest.mark.parametrize("description", [None, "bar"])
 def test_honor_list_request(description):
     config = argparse.Namespace(list_sessions=True)
-    manifest = [argparse.Namespace(signature="foo", description=description)]
+    manifest = [argparse.Namespace(friendly_name="foo", description=description)]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
 
@@ -198,8 +198,14 @@ def test_print_summary_one_result():
 
 def test_print_summary():
     results = [
-        sessions.Result(session="foo", status=sessions.Status.SUCCESS),
-        sessions.Result(session="bar", status=sessions.Status.FAILED),
+        sessions.Result(
+            session=argparse.Namespace(friendly_name="foo"),
+            status=sessions.Status.SUCCESS,
+        ),
+        sessions.Result(
+            session=argparse.Namespace(friendly_name="bar"),
+            status=sessions.Status.FAILED,
+        ),
     ]
     with mock.patch.object(sessions.Result, "log", autospec=True) as log:
         answer = tasks.print_summary(results, object())

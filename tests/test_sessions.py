@@ -277,6 +277,13 @@ class TestSessionRunner:
         assert runner.global_config.posargs == mock.sentinel.posargs
         assert isinstance(runner.manifest, nox.manifest.Manifest)
 
+    def test_str_and_friendly_name(self):
+        runner = self.make_runner()
+        runner.signatures = ["test(1, 2)", "test(3, 4)"]
+
+        assert str(runner) == "Session(name=test, signatures=test(1, 2), test(3, 4))"
+        assert runner.friendly_name == "test(1, 2)"
+
     def test_description_property_one_line(self):
         def foo():
             """Just one line"""
