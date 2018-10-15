@@ -1,3 +1,11 @@
+## 2018.10.15
+
+- Hide the python interpreter on sessions with only one. (#148)
+-  Warn when programs not in the virtualenv are used, allow erroring and silencing the warning. (#147)
+- Add --warn-on-external-run flag and the "external" keyword arg to session.run. (#147)
+- Add nox.options which allows specifying command-line configuration in the Noxfile (#145)
+- Add python_requires (>= 3.5) to setup.py.
+
 ## 2018.10.9
 
 Breaking changes:
