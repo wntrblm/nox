@@ -385,6 +385,15 @@ class TestSessionRunner:
 
         assert result.status == nox.sessions.Status.SKIPPED
 
+    def test_execute_with_manifest_null_session_func(self):
+        runner = self.make_runner()
+        runner.func = nox.manifest._null_session_func
+
+        result = runner.execute()
+
+        assert result.status == nox.sessions.Status.SKIPPED
+        assert "no parameters" in result.reason
+
     def test_execute_skip_missing_interpreter(self):
         runner = self.make_runner_with_mock_venv()
         runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")

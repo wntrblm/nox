@@ -275,3 +275,6 @@ def keyword_match(expression, keywords):
 def _null_session_func(session):
     """A no-op session for patemetrized sessions with no available params."""
     session.skip("This session had no parameters available.")
+
+
+_null_session_func.python = False
