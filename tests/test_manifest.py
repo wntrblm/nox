@@ -210,6 +210,10 @@ def test_add_session_parametrized_noop():
         manifest.add_session(session)
     assert len(manifest) == 1
 
+    session = manifest["my_session"]
+
+    assert session.func == _null_session_func
+
 
 def test_notify():
     manifest = Manifest({}, mock.sentinel.CONFIG)
