@@ -118,12 +118,15 @@ class Manifest:
         """
         # Filter the sessions remaining in the queue based on
         # whether they are individually specified.
-        specified_sessions = set(specified_sessions)
-        self._queue = [
-            x
-            for x in self._queue
-            if (x.name in specified_sessions or set(x.signatures) & specified_sessions)
-        ]
+        queue = []
+        for session_name in specified_sessions:
+            for session in self._queue:
+                if session_name == session.name or session_name in set(
+                    session.signatures
+                ):
+                    queue.append(session)
+
+        self._queue = queue
 
         # If a session was requested and was not found, complain loudly.
         all_sessions = set(
@@ -132,7 +135,7 @@ class Manifest:
                 *[x.signatures for x in self._all_sessions],
             )
         )
-        missing_sessions = specified_sessions - all_sessions
+        missing_sessions = set(specified_sessions) - all_sessions
         if missing_sessions:
             raise KeyError("Sessions not found: {}".format(", ".join(missing_sessions)))
 

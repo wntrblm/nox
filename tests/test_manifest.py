@@ -124,6 +124,13 @@ def test_filter_by_name():
     assert "bar" not in manifest
 
 
+def test_filter_by_name_maintains_order():
+    sessions = create_mock_sessions()
+    manifest = Manifest(sessions, mock.sentinel.CONFIG)
+    manifest.filter_by_name(("bar", "foo"))
+    assert [session.name for session in manifest] == ["bar", "foo"]
+
+
 def test_filter_by_name_not_found():
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, mock.sentinel.CONFIG)
