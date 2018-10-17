@@ -1,3 +1,7 @@
+## 2018.10.17
+
+- Fix bug where empty parametrized sessions would fail. (#151)
+
 ## 2018.10.15
 
 - Hide the python interpreter on sessions with only one. (#148)
