@@ -83,7 +83,7 @@ class Session:
     def __dict__(self):
         """Attribute dictionary for object inspection.
 
-        This is needed because ``__slots__`` turns of ``__dict__`` by
+        This is needed because ``__slots__`` turns off ``__dict__`` by
         default. Unlike a typical object, modifying the result of this
         dictionary won't allow modification of the instance.
         """

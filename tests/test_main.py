@@ -108,7 +108,7 @@ class TestGlobalConfig:
         assert config.error_on_missing_interpreters is True
         assert config.report == "output.json"
 
-    def test_merge_from_options_args_precendence(self):
+    def test_merge_from_options_args_precedence(self):
         args = self.make_args()
         args.sessions = ["1", "2"]
         args.no_reuse_existing_virtualenvs = True
