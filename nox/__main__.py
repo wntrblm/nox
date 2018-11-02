@@ -54,6 +54,8 @@ class GlobalConfig:
         self.no_error_on_missing_interpreters = args.no_error_on_missing_interpreters
         self.error_on_external_run = args.error_on_external_run
         self.no_error_on_external_run = args.no_error_on_external_run
+        self.skip_pytest = args.skip_pytest
+        self.no_skip_pytest = args.no_skip_pytest
         self.posargs = args.posargs
         self.report = args.report
 
@@ -95,6 +97,9 @@ class GlobalConfig:
             self.error_on_external_run,
             options.error_on_external_run,
             self.no_error_on_external_run,
+        )
+        self.skip_pytest = _default_with_off_flag(
+            self.skip_pytest, options.skip_pytest, self.no_skip_pytest
         )
         self.report = self.report or options.report
 
@@ -203,6 +208,17 @@ def main():
         "--no-error-on-external-run",
         action="store_true",
         help="Disables --error-on-external-run if it is enabled in the Noxfile.",
+    )
+
+    secondary.add_argument(
+        "--skip-pytest",
+        action="store_true",
+        help="Skip invocations of the form session.run('py.test', ...) in the noxfile.",
+    )
+    secondary.add_argument(
+        "--no-skip-pytest",
+        action="store_true",
+        help="Disables --skip-pytest if it is enabled in the Noxfile.",
     )
 
     secondary.add_argument(

@@ -48,6 +48,8 @@ class TestGlobalConfig:
             no_error_on_missing_interpreters=False,
             error_on_external_run=False,
             no_error_on_external_run=True,
+            skip_pytest=False,
+            no_skip_pytest=False,
             posargs=["a", "b", "c"],
             report=None,
         )
@@ -67,6 +69,8 @@ class TestGlobalConfig:
         assert config.no_stop_on_first_error is False
         assert config.error_on_missing_interpreters is False
         assert config.no_error_on_missing_interpreters is False
+        assert config.skip_pytest is False
+        assert config.no_skip_pytest is False
         assert config.posargs == ["a", "b", "c"]
 
         args.posargs = ["--", "a", "b", "c"]
@@ -96,6 +100,7 @@ class TestGlobalConfig:
         options.reuse_existing_virtualenvs = True
         options.stop_on_first_error = True
         options.error_on_missing_interpreters = True
+        options.skip_pytest = True
         options.report = "output.json"
 
         config.merge_from_options(options)
@@ -106,6 +111,7 @@ class TestGlobalConfig:
         assert config.reuse_existing_virtualenvs is True
         assert config.stop_on_first_error is True
         assert config.error_on_missing_interpreters is True
+        assert config.skip_pytest is True
         assert config.report == "output.json"
 
     def test_merge_from_options_args_precedence(self):
@@ -114,6 +120,7 @@ class TestGlobalConfig:
         args.no_reuse_existing_virtualenvs = True
         args.no_stop_on_first_error = True
         args.no_error_on_missing_interpreters = True
+        args.no_skip_pytest = True
         args.report = "output.json"
         config = nox.__main__.GlobalConfig(args)
         original_values = vars(config).copy()
@@ -123,6 +130,7 @@ class TestGlobalConfig:
         options.reuse_existing_virtualenvs = True
         options.stop_on_first_error = True
         options.error_on_missing_interpreters = True
+        options.skip_pytest = True
 
         config.merge_from_options(options)
 

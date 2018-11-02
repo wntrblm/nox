@@ -31,7 +31,7 @@ import nox.virtualenv
 def test__normalize_path():
     envdir = "envdir"
     normalize = nox.sessions._normalize_path
-    assert normalize(envdir, u"hello") == os.path.join("envdir", "hello")
+    assert normalize(envdir, "hello") == os.path.join("envdir", "hello")
     assert normalize(envdir, b"hello") == os.path.join("envdir", "hello")
     assert normalize(envdir, "hello(world)") == os.path.join("envdir", "hello-world")
     assert normalize(envdir, "hello(world, meep)") == os.path.join(
@@ -56,14 +56,14 @@ def test__normalize_path_give_up():
 
 
 class TestSession:
-    def make_session_and_runner(self):
+    def make_session_and_runner(self, **extra_args):
         func = mock.Mock(spec=["python"], python="3.7")
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
             func=func,
             global_config=argparse.Namespace(
-                posargs=mock.sentinel.posargs, error_on_external_run=False
+                posargs=mock.sentinel.posargs, error_on_external_run=False, **extra_args
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -111,6 +111,16 @@ class TestSession:
 
         with pytest.raises(nox.command.CommandFailed):
             assert session.run(raise_value_error)
+
+    @mock.patch.object(nox.command, "run")
+    @mock.patch.object(logger, "info")
+    def test_run_skip_pytest(self, log_info, run_mock):
+        session, _ = self.make_session_and_runner(skip_pytest=True)
+
+        session.run("py.test", "foo")
+
+        run_mock.assert_not_called()
+        log_info.assert_called_once_with(mock.ANY)
 
     def test_run_success(self):
         session, _ = self.make_session_and_runner()

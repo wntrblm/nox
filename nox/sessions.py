@@ -25,6 +25,9 @@ from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
 
 
+PYTEST_COMMAND = "py.test"
+
+
 def _normalize_path(envdir, path):
     """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
     if isinstance(path, bytes):
@@ -198,7 +201,16 @@ class Session:
             kwargs["external"] = True
 
         # Run a shell command.
-        return nox.command.run(args, env=env, path=self.bin, **kwargs)
+        if (
+            args
+            and args[0] == PYTEST_COMMAND
+            and self._runner.global_config.skip_pytest
+        ):
+            logger.info(
+                "Skipping {} run, as --skip-pytest is set.".format(PYTEST_COMMAND)
+            )
+        else:
+            return nox.command.run(args, env=env, path=self.bin, **kwargs)
 
     def install(self, *args, **kwargs):
         """Install invokes `pip`_ to install packages inside of the session's
