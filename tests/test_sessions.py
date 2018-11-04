@@ -199,6 +199,34 @@ class TestSession:
                 external="error",
             )
 
+    def test_install_non_default_kwargs(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=argparse.Namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "run", autospec=True) as run:
+            session.install("requests", "urllib3", silent=False)
+            run.assert_called_once_with(
+                "pip",
+                "install",
+                "--upgrade",
+                "requests",
+                "urllib3",
+                silent=False,
+                external="error",
+            )
+
     def test_notify(self):
         session, runner = self.make_session_and_runner()
 

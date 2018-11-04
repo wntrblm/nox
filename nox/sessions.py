@@ -232,15 +232,10 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to install().")
 
-        self.run(
-            "pip",
-            "install",
-            "--upgrade",
-            *args,
-            silent=True,
-            external="error",
-            **kwargs
-        )
+        if "silent" not in kwargs:
+            kwargs["silent"] = True
+
+        self.run("pip", "install", "--upgrade", *args, external="error", **kwargs)
 
     def notify(self, target):
         """Place the given session at the end of the queue.
