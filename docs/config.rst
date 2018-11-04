@@ -105,7 +105,8 @@ Using the session object
 
 .. module:: nox.sessions
 
-Nox will call your session functions with a :class:`Session` object. You use this object to to run various commands in your session.
+Nox will call your session functions with a :class:`Session` object.
+You can use this object to run various commands in your session.
 
 .. autoclass:: Session
     :members:
