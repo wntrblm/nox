@@ -69,7 +69,7 @@ Specifying parametrized sessions
 If you have a :ref:`parametrized <parametrized>` session such as::
 
     @nox.parametrize('django', ['1.9', '2.0'])
-    def session_tests(session, django):
+    def tests(session, django):
         ...
 
 Then running ``nox --session tests`` will actually run all parametrized versions of the session. If you want the run the session with a particular set of parametrized arguments, you can specify them with the session name::
