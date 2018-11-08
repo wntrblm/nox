@@ -114,8 +114,8 @@ class TestSession:
 
     @mock.patch.object(nox.command, "run")
     @mock.patch.object(logger, "info")
-    def test_run_skip_pytest(self, log_info, run_mock):
-        session, _ = self.make_session_and_runner(skip_pytest=True)
+    def test_run_install_only(self, log_info, run_mock):
+        session, _ = self.make_session_and_runner(install_only=True)
 
         session.run("py.test", "foo")
 

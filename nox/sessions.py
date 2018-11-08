@@ -180,6 +180,9 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to run().")
 
+        if self._runner.global_config.install_only:
+            return
+
         # Legacy support - run a function given.
         if callable(args[0]):
             return self._run_func(args[0], args[1:], kwargs)
@@ -201,16 +204,7 @@ class Session:
             kwargs["external"] = True
 
         # Run a shell command.
-        if (
-            args
-            and args[0] == PYTEST_COMMAND
-            and self._runner.global_config.skip_pytest
-        ):
-            logger.info(
-                "Skipping {} run, as --skip-pytest is set.".format(PYTEST_COMMAND)
-            )
-        else:
-            return nox.command.run(args, env=env, path=self.bin, **kwargs)
+        return nox.command.run(args, env=env, path=self.bin, **kwargs)
 
     def install(self, *args, **kwargs):
         """Install invokes `pip`_ to install packages inside of the session's
