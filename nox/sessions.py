@@ -25,9 +25,6 @@ from nox.logger import logger
 from nox.virtualenv import ProcessEnv, VirtualEnv
 
 
-PYTEST_COMMAND = "py.test"
-
-
 def _normalize_path(envdir, path):
     """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
     if isinstance(path, bytes):
@@ -181,6 +178,7 @@ class Session:
             raise ValueError("At least one argument required to run().")
 
         if self._runner.global_config.install_only:
+            logger.info("Skipping {} run, as --install-only is set.".format(args[0]))
             return
 
         # Legacy support - run a function given.

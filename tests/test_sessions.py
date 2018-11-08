@@ -56,14 +56,16 @@ def test__normalize_path_give_up():
 
 
 class TestSession:
-    def make_session_and_runner(self, **extra_args):
+    def make_session_and_runner(self):
         func = mock.Mock(spec=["python"], python="3.7")
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
             func=func,
             global_config=argparse.Namespace(
-                posargs=mock.sentinel.posargs, error_on_external_run=False, **extra_args
+                posargs=mock.sentinel.posargs,
+                error_on_external_run=False,
+                install_only=False,
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -115,9 +117,10 @@ class TestSession:
     @mock.patch.object(nox.command, "run")
     @mock.patch.object(logger, "info")
     def test_run_install_only(self, log_info, run_mock):
-        session, _ = self.make_session_and_runner(install_only=True)
+        session, runner = self.make_session_and_runner()
+        runner.global_config.install_only = True
 
-        session.run("py.test", "foo")
+        session.run("spam", "eggs")
 
         run_mock.assert_not_called()
         log_info.assert_called_once_with(mock.ANY)
