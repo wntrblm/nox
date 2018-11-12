@@ -125,6 +125,16 @@ class TestSession:
         run_mock.assert_not_called()
         log_info.assert_called_once_with(mock.ANY)
 
+    @mock.patch.object(nox.command, "run")
+    def test_run_install_only_should_install(self, run_mock):
+        session, runner = self.make_session_and_runner()
+        runner.global_config.install_only = True
+
+        session.install("spam")
+        session.run("spam", "eggs")
+
+        run_mock.assert_called_once_with("pip", "install", "--upgrade", "spam")
+
     def test_run_success(self):
         session, _ = self.make_session_and_runner()
         result = session.run(sys.executable, "-c", "print(123)")
