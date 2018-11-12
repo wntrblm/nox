@@ -213,7 +213,7 @@ def main():
     secondary.add_argument(
         "--install-only",
         action="store_true",
-        help="Skip session.run invocations in the noxfile.",
+        help="Skip session.run invocations in the Noxfile.",
     )
     secondary.add_argument(
         "--no-install-only",
