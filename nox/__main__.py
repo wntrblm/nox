@@ -55,7 +55,6 @@ class GlobalConfig:
         self.error_on_external_run = args.error_on_external_run
         self.no_error_on_external_run = args.no_error_on_external_run
         self.install_only = args.install_only
-        self.no_install_only = args.no_install_only
         self.posargs = args.posargs
         self.report = args.report
 
@@ -211,11 +210,6 @@ def main():
         "--install-only",
         action="store_true",
         help="Skip session.run invocations in the Noxfile.",
-    )
-    secondary.add_argument(
-        "--no-install-only",
-        action="store_true",
-        help="Disables --install-only if it is enabled in the Noxfile.",
     )
 
     secondary.add_argument(

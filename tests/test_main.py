@@ -49,7 +49,6 @@ class TestGlobalConfig:
             error_on_external_run=False,
             no_error_on_external_run=True,
             install_only=False,
-            no_install_only=False,
             posargs=["a", "b", "c"],
             report=None,
         )
@@ -70,7 +69,6 @@ class TestGlobalConfig:
         assert config.error_on_missing_interpreters is False
         assert config.no_error_on_missing_interpreters is False
         assert config.install_only is False
-        assert config.no_install_only is False
         assert config.posargs == ["a", "b", "c"]
 
         args.posargs = ["--", "a", "b", "c"]
@@ -119,7 +117,6 @@ class TestGlobalConfig:
         args.no_reuse_existing_virtualenvs = True
         args.no_stop_on_first_error = True
         args.no_error_on_missing_interpreters = True
-        args.no_install_only = True
         args.report = "output.json"
         config = nox.__main__.GlobalConfig(args)
         original_values = vars(config).copy()
