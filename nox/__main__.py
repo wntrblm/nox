@@ -98,9 +98,6 @@ class GlobalConfig:
             options.error_on_external_run,
             self.no_error_on_external_run,
         )
-        self.install_only = _default_with_off_flag(
-            self.install_only, options.install_only, self.no_install_only
-        )
         self.report = self.report or options.report
 
 

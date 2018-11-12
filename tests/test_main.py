@@ -111,7 +111,6 @@ class TestGlobalConfig:
         assert config.reuse_existing_virtualenvs is True
         assert config.stop_on_first_error is True
         assert config.error_on_missing_interpreters is True
-        assert config.install_only is True
         assert config.report == "output.json"
 
     def test_merge_from_options_args_precedence(self):
