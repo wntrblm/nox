@@ -143,6 +143,42 @@ By default nox stores virtualenvs in ``./.nox``, however, you can change this us
     nox --envdir /tmp/.
 
 
+Skipping everything but install commands
+----------------------------------------
+
+There are a couple of cases where it makes sense to have Nox only run ``install`` commands, such as preparing an environment for offline testing or re-creating the same virtulenvs used for testing. You can use ``--install-only`` to skip ``run`` commands.
+
+For example, given this Noxfile:
+
+.. code-block:: python
+
+    @nox.session
+    def tests(session):
+        session.install("pytest")
+        session.install(".")
+        session.run("pytest")
+
+
+Running:
+
+.. code-block:: bash
+
+    nox --install-only
+
+
+Would run both ``install`` commands, but skip the ``run`` command::
+
+.. code-block:: plaintext
+
+
+    nox > Running session tests
+    nox > Creating virtualenv using python3.7 in ./.nox/tests
+    nox > pip install --upgrade pytest
+    nox > pip install --upgrade .
+    nox > Skipping pytest run, as --install-only is set.
+    nox > Session tests was successful.
+
+
 Controlling color output
 ------------------------
 
