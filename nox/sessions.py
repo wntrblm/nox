@@ -83,7 +83,7 @@ class Session:
     def __dict__(self):
         """Attribute dictionary for object inspection.
 
-        This is needed because ``__slots__`` turns of ``__dict__`` by
+        This is needed because ``__slots__`` turns off ``__dict__`` by
         default. Unlike a typical object, modifying the result of this
         dictionary won't allow modification of the instance.
         """
@@ -177,6 +177,14 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to run().")
 
+        if self._runner.global_config.install_only:
+            logger.info("Skipping {} run, as --install-only is set.".format(args[0]))
+            return
+
+        return self._run(*args, env=env, **kwargs)
+
+    def _run(self, *args, env=None, **kwargs):
+        """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
         if callable(args[0]):
             return self._run_func(args[0], args[1:], kwargs)
@@ -235,7 +243,7 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        self.run("pip", "install", "--upgrade", *args, external="error", **kwargs)
+        self._run("pip", "install", "--upgrade", *args, external="error", **kwargs)
 
     def notify(self, target):
         """Place the given session at the end of the queue.

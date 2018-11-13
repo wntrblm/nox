@@ -31,7 +31,7 @@ import nox.virtualenv
 def test__normalize_path():
     envdir = "envdir"
     normalize = nox.sessions._normalize_path
-    assert normalize(envdir, u"hello") == os.path.join("envdir", "hello")
+    assert normalize(envdir, "hello") == os.path.join("envdir", "hello")
     assert normalize(envdir, b"hello") == os.path.join("envdir", "hello")
     assert normalize(envdir, "hello(world)") == os.path.join("envdir", "hello-world")
     assert normalize(envdir, "hello(world, meep)") == os.path.join(
@@ -63,7 +63,9 @@ class TestSession:
             signatures=["test"],
             func=func,
             global_config=argparse.Namespace(
-                posargs=mock.sentinel.posargs, error_on_external_run=False
+                posargs=mock.sentinel.posargs,
+                error_on_external_run=False,
+                install_only=False,
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -111,6 +113,34 @@ class TestSession:
 
         with pytest.raises(nox.command.CommandFailed):
             assert session.run(raise_value_error)
+
+    def test_run_install_only(self, caplog):
+        caplog.set_level(logging.INFO)
+        session, runner = self.make_session_and_runner()
+        runner.global_config.install_only = True
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.run("spam", "eggs")
+
+        run.assert_not_called()
+
+        assert "install-only" in caplog.text
+
+    def test_run_install_only_should_install(self):
+        session, runner = self.make_session_and_runner()
+        runner.global_config.install_only = True
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.install("spam")
+            session.run("spam", "eggs")
+
+        run.assert_called_once_with(
+            ("pip", "install", "--upgrade", "spam"),
+            env=mock.ANY,
+            external=mock.ANY,
+            path=mock.ANY,
+            silent=mock.ANY,
+        )
 
     def test_run_success(self):
         session, _ = self.make_session_and_runner()
@@ -187,7 +217,7 @@ class TestSession:
 
         session = SessionNoSlots(runner=runner)
 
-        with mock.patch.object(session, "run", autospec=True) as run:
+        with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3")
             run.assert_called_once_with(
                 "pip",
@@ -215,7 +245,7 @@ class TestSession:
 
         session = SessionNoSlots(runner=runner)
 
-        with mock.patch.object(session, "run", autospec=True) as run:
+        with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3", silent=False)
             run.assert_called_once_with(
                 "pip",

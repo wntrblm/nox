@@ -30,4 +30,5 @@ class options:
     stop_on_first_error = False
     error_on_missing_interpreters = False
     error_on_external_run = False
+    install_only = False
     report = None
