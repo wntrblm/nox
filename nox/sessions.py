@@ -181,6 +181,10 @@ class Session:
             logger.info("Skipping {} run, as --install-only is set.".format(args[0]))
             return
 
+        return self._run(*args, env=env, **kwargs)
+
+    def _run(self, *args, env=None, **kwargs):
+        """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
         if callable(args[0]):
             return self._run_func(args[0], args[1:], kwargs)
@@ -239,7 +243,7 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        self.run("pip", "install", "--upgrade", *args, external="error", **kwargs)
+        self._run("pip", "install", "--upgrade", *args, external="error", **kwargs)
 
     def notify(self, target):
         """Place the given session at the end of the queue.

@@ -133,7 +133,13 @@ class TestSession:
         session.install("spam")
         session.run("spam", "eggs")
 
-        run_mock.assert_called_once_with("pip", "install", "--upgrade", "spam")
+        run_mock.assert_called_once_with(
+            ("pip", "install", "--upgrade", "spam"),
+            env=mock.ANY,
+            external=mock.ANY,
+            path=mock.ANY,
+            silent=mock.ANY,
+        )
 
     def test_run_success(self):
         session, _ = self.make_session_and_runner()
@@ -210,7 +216,7 @@ class TestSession:
 
         session = SessionNoSlots(runner=runner)
 
-        with mock.patch.object(session, "run", autospec=True) as run:
+        with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3")
             run.assert_called_once_with(
                 "pip",
@@ -238,7 +244,7 @@ class TestSession:
 
         session = SessionNoSlots(runner=runner)
 
-        with mock.patch.object(session, "run", autospec=True) as run:
+        with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3", silent=False)
             run.assert_called_once_with(
                 "pip",
