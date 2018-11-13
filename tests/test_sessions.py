@@ -114,26 +114,27 @@ class TestSession:
         with pytest.raises(nox.command.CommandFailed):
             assert session.run(raise_value_error)
 
-    @mock.patch.object(nox.command, "run")
-    @mock.patch.object(logger, "info")
-    def test_run_install_only(self, log_info, run_mock):
+    def test_run_install_only(self, caplog):
+        caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
 
-        session.run("spam", "eggs")
+        with mock.patch.object(nox.command, "run") as run:
+            session.run("spam", "eggs")
 
-        run_mock.assert_not_called()
-        log_info.assert_called_once_with(mock.ANY)
+        run.assert_not_called()
 
-    @mock.patch.object(nox.command, "run")
-    def test_run_install_only_should_install(self, run_mock):
+        assert "install-only" in caplog.text
+
+    def test_run_install_only_should_install(self):
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
 
-        session.install("spam")
-        session.run("spam", "eggs")
+        with mock.patch.object(nox.command, "run") as run:
+            session.install("spam")
+            session.run("spam", "eggs")
 
-        run_mock.assert_called_once_with(
+        run.assert_called_once_with(
             ("pip", "install", "--upgrade", "spam"),
             env=mock.ANY,
             external=mock.ANY,
