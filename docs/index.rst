@@ -10,7 +10,7 @@ Welcome to Nox
    usage
    contrib
 
-``nox`` is a command-line tool that automates testing in multiple Python environments, similar to `Tox`_. Unlike Tox, Nox uses a standard Python file for configuration.
+``nox`` is a command-line tool that automates testing in multiple Python environments, similar to `tox`_. Unlike tox, Nox uses a standard Python file for configuration.
 
 Install nox via `pip`_::
 
@@ -23,8 +23,8 @@ Nox is configured via a ``noxfile.py`` file in your project's directory. Here's 
 
     @nox.session
     def tests(session):
-        session.install('py.test')
-        session.run('py.test')
+        session.install('pytest')
+        session.run('pytest')
 
     @nox.session
     def lint(session):
@@ -39,9 +39,9 @@ For each session, Nox will automatically create `virtualenv`_ with the appropria
 
 To learn how to install and use Nox, see the :doc:`tutorial`. For documentation on configuring sessions, see :doc:`config`. For documentation on running ``nox``, see :doc:`usage`.
 
-.. _Tox: https://tox.readthedocs.org
+.. _tox: https://tox.readthedocs.org
 .. _pip: https://pip.readthedocs.org
-.. _py.test: http://pytest.org
+.. _pytest: http://pytest.org
 .. _virtualenv: https://virtualenv.readthedocs.org
 
 Projects that use Nox
@@ -65,7 +65,7 @@ Other useful projects
 
 Nox is not the only tool of its kind. If Nox doesn't quite fit your needs or you want to do more research, we recommend looking at these tools:
 
-- `Tox <https://tox.readthedocs.org>`__ is the de-facto standard for managing multiple Python test environments, and is the direct spiritual ancestor to Nox.
+- `tox <https://tox.readthedocs.org>`__ is the de-facto standard for managing multiple Python test environments, and is the direct spiritual ancestor to Nox.
 - `Invoke <https://www.pyinvoke.org/>`__ is a general-purpose task execution library, similar to Make. Nox can be thought of as if Invoke were tailored specifically to Python testing, so Invoke is a great choice for scripts that need to encompass far more than Nox's specialization.
 
 

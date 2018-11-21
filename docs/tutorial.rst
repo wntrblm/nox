@@ -58,14 +58,14 @@ Nox automatically creates a separate `virtualenv`_ for every session. You can ch
 
     @nox.session(python='2.7')
     def tests(session):
-        # Install py.test
+        # Install pytest
         session.install('pytest')
         # Install everything in requirements-dev.txt
         session.install('-r', 'requirements-dev.txt')
         # Install the current package in editable mode.
         session.install('-e', '.')
-        # Run py.test. This uses the py.test executable in the virtualenv.
-        session.run('py.test')
+        # Run pytest. This uses the pytest executable in the virtualenv.
+        session.run('pytest')
 
 
 You can create as many session as you want and sessions can use multiple Python versions, for example::
@@ -105,7 +105,7 @@ Often it's useful to pass arguments into your test session. Here's a quick examp
 
     @nox.session
     def test(session):
-        session.install('py.test')
+        session.install('pytest')
 
         if session.posargs:
             test_files = session.posargs
@@ -142,7 +142,7 @@ Session arguments can be parametrized with the :func:`nox.parametrize` decorator
     @nox.parametrize('django', ['1.9', '2.0'])
     def tests(session, django):
         session.install(f'django=={django}')
-        session.run('py.test')
+        session.run('pytest')
 
 When you run ``nox``, it will create a two distinct sessions::
 
@@ -154,7 +154,7 @@ When you run ``nox``, it will create a two distinct sessions::
     nox > pip install --upgrade django==2.0
 
 
-:func:`nox.parametrize` has an interface and usage intentionally similar to `py.test's parametrize <https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize>`_.
+:func:`nox.parametrize` has an interface and usage intentionally similar to `pytest's parametrize <https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize>`_.
 
 .. autofunction:: nox.parametrize
 

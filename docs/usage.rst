@@ -212,7 +212,7 @@ Windows
 
 Nox has provisional support for running on Windows. However, depending on your Windows, Python, and virtualenv versions there may be issues. See the following threads for more info:
 
-* `Tox issue 260 <https://github.com/tox-dev/tox/issues/260>`_
+* `tox issue 260 <https://github.com/tox-dev/tox/issues/260>`_
 * `Python issue 24493 <http://bugs.python.org/issue24493>`_
 * `Virtualenv issue 774 <https://github.com/pypa/virtualenv/issues/774>`_
 
