@@ -218,7 +218,7 @@ def main():
 
     secondary.add_argument(
         "--nocolor",
-        default=not sys.stderr.isatty(),
+        default="NO_COLOR" in os.environ or not sys.stderr.isatty(),
         action="store_true",
         help="Disable all color output.",
     )
