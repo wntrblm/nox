@@ -13,6 +13,7 @@ Nox can be easily installed via `pip`_::
 
 Usually you install this globally, similar to ``tox``, ``pip``, and other similar tools.
 
+If you're interested in running ``nox`` within docker, you can use the `thekevjames/nox images`_ on DockerHub which contain builds for all ``nox`` versions and all supported ``python`` versions.
 
 Running Nox
 -----------
@@ -179,4 +180,5 @@ If you only want to run one of the parametrized sessions, see :ref:`running_para
 
 .. _pip: https://pip.readthedocs.org
 .. _flake8: https://flake8.readthedocs.org
+.. _thekevjames/nox images: https://cloud.docker.com/repository/docker/thekevjames/nox
 .. _virtualenv: https://virtualenv.readthedocs.org
