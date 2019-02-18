@@ -213,16 +213,34 @@ class VirtualEnv(ProcessEnv):
             self._runtime = sys.executable
             return self._runtime
 
+        def find_binary(major=None, minor=None):
+            if _SYSTEM != "Windows":
+                # Most common case first
+                interpreter = "python"
+                if major:
+                    interpreter += "{}".format(major)
+                if minor:
+                    interpreter += ".{}".format(minor)
+                resolved = py.path.local.sysfind(interpreter)
+                if resolved is not None and not isinstance(resolved, str):
+                    resolved = resolved.realpath().strpath
+                return resolved
+            else:
+                if not major and not minor:
+                    # py.exe needs major and minor both available
+                    return None
+                return locate_via_py("{}.{}".format(major, minor))
+
         # At this stage, we know Nox was frozen.
         # Let's first try a binary named python<major>.<minor>
-        interpreter = "python{}.{}".format(*sys.version_info)
-        if py.path.local.sysfind(interpreter):
+        interpreter = find_binary(sys.version_info.major, sys.version_info.minor)
+        if interpreter:
             self._runtime = interpreter
             return self._runtime
 
         # Let's now try a binary named python<major>
-        interpreter = "python{}".format(*sys.version_info)
-        if py.path.local.sysfind(interpreter):
+        interpreter = find_binary(sys.version_info.major)
+        if interpreter:
             self._runtime = interpreter
             return self._runtime
 
@@ -231,15 +249,16 @@ class VirtualEnv(ProcessEnv):
         # is apparently not the case.
         # Latest pip only works with Python 2.7+ so, no point to even try
         # to create a virtualenv under Python 2.6
-        interpreter = "python2.7"
-        if py.path.local.sysfind(interpreter):
+        interpreter = find_binary(major=2, minor=7)
+        if interpreter:
             self._runtime = interpreter
             return self._runtime
 
         # We're running out of options, let's see if we find a python2 or a
         # python binary, and if we do, let's check its version
-        for interpreter in ("python2", "python"):
-            if py.path.local.sysfind(interpreter):
+        for args in ((2,), ()):
+            interpreter = find_binary(*args)
+            if interpreter:
                 try:
                     output = nox.command.run(
                         [interpreter, "-V"], silent=True, log=False
