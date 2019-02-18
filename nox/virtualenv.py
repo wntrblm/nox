@@ -203,11 +203,11 @@ class VirtualEnv(ProcessEnv):
         unless Nox was frozen with PyInstaller. In the later case, returns
         system python interpreter matching the interpreter used when Nox was
         frozen with PyInstaller or as low as Python 2.7, if found."""
-        if self._runtime is not None:
-            return self._runtime
-
         if isinstance(self._runtime, Exception):
             raise self._runtime
+
+        if self._runtime is not None:
+            return self._runtime
 
         if not _FROZEN:
             self._runtime = sys.executable

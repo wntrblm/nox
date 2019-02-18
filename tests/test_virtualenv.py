@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import imp
 import os
 import sys
 from unittest import mock
@@ -19,6 +20,7 @@ from unittest import mock
 import py
 import pytest
 
+import nox.command
 import nox.virtualenv
 
 
@@ -150,6 +152,25 @@ def test_create_interpreter(make_one):
     venv.create()
     assert dir_.join("bin", "python").check()
     assert dir_.join("bin", "python3").check()
+
+
+@mock.patch(
+    "sys._MEIPASS",
+    new=r"c:\\Windows\TEMP\_MEIxxx" if IS_WINDOWS else "/tmp/_MEIxxx",
+    create=True,
+)
+@mock.patch.object(nox.command, "run")
+@mock.patch.object(py.path.local, "sysfind", side_effect=[False, False, True])
+@mock.patch("nox.virtualenv._FROZEN", new=True)
+def test_create_frozen(sysfind, run, make_one):
+    # Establish that the cmdline passed to nox.command.run, when nox is frozen
+    # is correctly built
+    venv, dir_ = make_one(interpreter=None)
+    venv.create()
+    virtualenv_mod_path = os.path.join(sys._MEIPASS, "site-packages", "virtualenv.py")
+    run.assert_called_once_with(
+        ["python2.7", virtualenv_mod_path, dir_.strpath], log=False, silent=True
+    )
 
 
 def test__resolved_interpreter_none(make_one):
@@ -336,3 +357,160 @@ def test__resolved_interpreter_cache_failure(sysfind, make_one):
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
         venv._resolved_interpreter
     assert sysfind.call_count == 1
+
+
+def test__runtime_interpreter(make_one):
+    # Establish that the _runtime_interpreter method, when nox is not frozen
+    # is set to the current sys.executable
+    venv, _ = make_one(interpreter=None)
+    assert venv._runtime_interpreter == sys.executable
+
+
+@mock.patch("nox.virtualenv._FROZEN", new=True)
+def test__runtime_interpreter_frozen(make_one):
+    # Establish that the _runtime_interpreter method, when nox is frozen
+    # is set to the current sys.executable(because it was found)
+    venv, _ = make_one(interpreter=None)
+    executable = os.path.basename(sys.executable)
+    if IS_WINDOWS:
+        executable += ".exe"
+    assert venv._runtime_interpreter == executable
+
+
+@mock.patch.object(py.path.local, "sysfind", side_effect=[False, True])
+@mock.patch("nox.virtualenv._FROZEN", new=True)
+def test__runtime_interpreter_frozen_python3(sysfind, make_one):
+    # Establish that the _runtime_interpreter method, when nox is frozen
+    # is set to python3 because it couldn't find python3.<minor>
+    venv, _ = make_one(interpreter=None)
+    assert venv._runtime_interpreter == "python3"
+    assert sysfind.call_count == 2
+
+
+@mock.patch.object(py.path.local, "sysfind", return_value=False)
+@mock.patch("nox.virtualenv._FROZEN", new=True)
+def test__runtime_interpreter_frozen_not_found(sysfind, make_one):
+    # Establish that if no python binary is found, when nox is frozen,
+    # nox will raise InterpreterNotFound
+    venv, _ = make_one(interpreter=None)
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+        venv._resolved_interpreter
+    # The call cound will be 5 because we'll search for:
+    # python<major>.<minor>
+    # python<major>
+    # python2.7
+    # python2
+    # python
+    #
+    # <major> and <minor>, when nox is frozen, are relative to the Python
+    # <major> and <minor> at the time nox was compiled
+    assert sysfind.call_count == 5
+
+
+@mock.patch.object(py.path.local, "sysfind", return_value=False)
+@mock.patch("nox.virtualenv._FROZEN", new=True)
+def test__runtime_interpreter_frozen_not_found_cached(sysfind, make_one):
+    # Establish that if no python binary is found, when nox is frozen,
+    # that the _runtime_interpreter propery is cached
+    venv, _ = make_one(interpreter=None)
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+        venv._resolved_interpreter
+    assert sysfind.call_count == 5
+
+    # _resolved should now be cached to an exception
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+        venv._resolved_interpreter
+
+    # The count hasn't changed
+    assert sysfind.call_count == 5
+
+
+@mock.patch("nox.command.run", new=mock.MagicMock(return_value="Python 2.6.6"))
+@mock.patch.object(
+    py.path.local, "sysfind", side_effect=[False, False, False, True, True]
+)
+@mock.patch("nox.virtualenv._FROZEN", new=True)
+def test__runtime_interpreter_frozen_reject_python26(sysfind, make_one):
+    # Establish that if a python 2.6 binary is found, when nox is frozen,
+    # nox will raise InterpreterNotFound because pip/virtualenv won't even
+    # play nice with pytohn 2.6
+    venv, _ = make_one(interpreter=None)
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+        venv._resolved_interpreter
+    # The call cound will be 5 because we'll search for:
+    # python<major>.<minor>
+    # python<major>
+    # python2.7
+    # python2
+    # python
+    #
+    # <major> and <minor>, when nox is frozen, are relative to the Python
+    # <major> and <minor> at the time nox was compiled
+    assert sysfind.call_count == 5
+
+
+@mock.patch("nox.command.run", new=mock.MagicMock(return_value="Python 2.a.6"))
+@mock.patch.object(
+    py.path.local, "sysfind", side_effect=[False, False, False, True, True]
+)
+@mock.patch("nox.virtualenv._FROZEN", new=True)
+def test__runtime_interpreter_frozen_fails_to_parse_version(sysfind, make_one):
+    # Establish that if no python binary is found, when nox is frozen,
+    # nox will raise InterpreterNotFound because it couldn't properly parse
+    # the python version
+    venv, _ = make_one(interpreter=None)
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+        venv._resolved_interpreter
+    assert sysfind.call_count == 5
+
+
+@mock.patch("nox.command.run", new=mock.MagicMock(return_value="Python 2.7.15"))
+@mock.patch.object(
+    py.path.local, "sysfind", side_effect=[False, False, False, False, True]
+)
+@mock.patch("nox.virtualenv._FROZEN", new=True)
+def test__runtime_interpreter_frozen_accept_python27(sysfind, make_one):
+    # Establish that nox is happy with a python binary, when nox is frozen,
+    # that reports as being 2.7
+    venv, _ = make_one(interpreter=None)
+    assert venv._resolved_interpreter == "python"
+    # The call cound will be 5 because we'll search for:
+    # python<major>.<minor>
+    # python<major>
+    # python2.7
+    # python2
+    # python
+    #
+    # <major> and <minor>, when nox is frozen, are relative to the Python
+    # <major> and <minor> at the time nox was compiled
+    assert sysfind.call_count == 5
+
+
+@mock.patch("nox.command.run", new=mock.MagicMock(return_value="Python 2.7.15"))
+@mock.patch.object(
+    py.path.local, "sysfind", side_effect=[False, False, False, False, True]
+)
+@mock.patch("nox.virtualenv._FROZEN", new=True)
+def test__runtime_interpreter_frozen_accept_python27_cached(sysfind, make_one):
+    # Establish that the _runtime_interpreter property is cached
+    venv, _ = make_one(interpreter=None)
+    assert venv._resolved_interpreter == "python"
+    assert sysfind.call_count == 5
+    # The propery should be cached now
+    assert venv._resolved_interpreter == "python"
+    # Call count should be the same
+    assert sysfind.call_count == 5
+
+
+def test__frozen_attribute_missing():
+    # Establish that _FROZEN is set to False when nox is not frozen
+    assert nox.virtualenv._FROZEN is False
+
+
+@mock.patch.object(sys, "frozen", new=True, create=True)
+def test__frozen_attribute_present():
+    # Establish that _FROZEN is set to True when nox is not frozen
+    # Since _FROZEN is set at the module level, we need to reload nox.virtualenv
+    # because the module is already imported
+    imp.reload(nox.virtualenv)
+    assert nox.virtualenv._FROZEN is True
