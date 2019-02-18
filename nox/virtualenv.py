@@ -29,6 +29,14 @@ _BLACKLISTED_ENV_VARS = frozenset(
     ["PIP_RESPECT_VIRTUALENV", "PIP_REQUIRE_VIRTUALENV", "__PYVENV_LAUNCHER__"]
 )
 _SYSTEM = platform.system()
+try:
+    # This attribute is set at runtime when running under a frozen
+    # pyinstaller binary
+    sys.frozen
+    _FROZEN = True
+except AttributeError:
+    # Catching an AttributeError is actually faster than (get|has)attr()
+    _FROZEN = False
 
 
 class InterpreterNotFound(OSError):
@@ -109,6 +117,7 @@ class VirtualEnv(ProcessEnv):
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
         self._resolved = None
+        self._runtime = None
         self.reuse_existing = reuse_existing
         super(VirtualEnv, self).__init__()
 
@@ -137,7 +146,12 @@ class VirtualEnv(ProcessEnv):
             return self._resolved
 
         if self.interpreter is None:
-            self._resolved = sys.executable
+            if not _FROZEN:
+                self._resolved = sys.executable
+                return self._resolved
+
+            # Nox was frozen with PyInstaller
+            self._resolved = self._runtime_interpreter
             return self._resolved
 
         # Otherwise we need to divine the path to the interpreter. This is
@@ -183,6 +197,73 @@ class VirtualEnv(ProcessEnv):
         raise self._resolved
 
     @property
+    def _runtime_interpreter(self):
+        """
+        Returns the interpreter to use when shelling out, ``sys.executable``,
+        unless Nox was frozen with PyInstaller. In the later case, returns
+        system python interpreter matching the interpreter used when Nox was
+        frozen with PyInstaller or as low as Python 2.7, if found."""
+        if self._runtime is not None:
+            return self._runtime
+
+        if isinstance(self._runtime, Exception):
+            raise self._runtime
+
+        if not _FROZEN:
+            self._runtime = sys.executable
+            return self._runtime
+
+        # At this stage, we know Nox was frozen.
+        # Let's first try a binary named python<major>.<minor>
+        interpreter = "python{}.{}".format(*sys.version_info)
+        if py.path.local.sysfind(interpreter):
+            self._runtime = interpreter
+            return self._runtime
+
+        # Let's now try a binary named python<major>
+        interpreter = "python{}".format(*sys.version_info)
+        if py.path.local.sysfind(interpreter):
+            self._runtime = interpreter
+            return self._runtime
+
+        # We know Nox only works on Py3.5+ and, the above search should
+        # at least give us a path to a python3 binary if installed, which,
+        # is apparently not the case.
+        # Latest pip only works with Python 2.7+ so, no point to even try
+        # to create a virtualenv under Python 2.6
+        interpreter = "python2.7"
+        if py.path.local.sysfind(interpreter):
+            self._runtime = interpreter
+            return self._runtime
+
+        # We're running out of options, let's see if we find a python2 or a
+        # python binary, and if we do, let's check its version
+        for interpreter in ("python2", "python"):
+            if py.path.local.sysfind(interpreter):
+                try:
+                    output = nox.command.run(
+                        [interpreter, "-V"], silent=True, log=False
+                    )
+                    _, version = output.strip().split()
+                    version_info = [int(part) for part in version.split(".") if part]
+                    if tuple(version_info) < (2, 7):
+                        self._runtime = InterpreterNotFound("python2.7")
+                        continue
+                    # This is at least Python 2.7, we're safe
+                    self._runtime = interpreter
+                    return self._runtime
+                except (nox.command.CommandFailed, ValueError):
+                    self._runtime = InterpreterNotFound("python2.7")
+                    continue
+
+        # This shouldn't happen, but
+        if self._runtime is None:
+            self._runtime = InterpreterNotFound("python2.7")
+
+        # The above "good faith" was not enough. Bail out.
+        raise self._runtime
+
+    @property
     def bin(self):
         """Returns the location of the virtualenv's bin folder."""
         if _SYSTEM == "Windows":
@@ -196,10 +277,21 @@ class VirtualEnv(ProcessEnv):
             logger.debug("Re-using existing virtualenv at {}.".format(self.location))
             return False
 
-        cmd = [sys.executable, "-m", "virtualenv", self.location]
+        cmd = [self._runtime_interpreter]
+        if not _FROZEN:
+            cmd.extend(["-m", "virtualenv"])
+        else:
+            # Nox was frozen with PyInstaller
+            # We have 2 options, import virtualenv and patch sys.argv to simlate
+            # a normal CLI call, or, find a python interpreter matching the one
+            # Nox was frozen with, or close enough, and feed it the path to the,
+            # also frozen, virtualenv.py module
+            cmd.append(os.path.join(sys._MEIPASS, "site-packages", "virtualenv.py"))
 
         if self.interpreter:
             cmd.extend(["-p", self._resolved_interpreter])
+
+        cmd.append(self.location)
 
         logger.info(
             "Creating virtualenv using {} in {}".format(
