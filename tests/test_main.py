@@ -221,6 +221,22 @@ def test_main_explicit_sessions():
         assert config.sessions == ["1", "2"]
 
 
+def test_main_explicit_sessions_with_spaces_in_names():
+    sys.argv = [sys.executable, "-e", "unit tests", "the unit tests"]
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit") as exit:
+            nox.__main__.main()
+            exit.assert_called_once_with(0)
+        assert execute.called
+
+        # Verify that the explicit sessions are listed in the config.
+        config = execute.call_args[1]["global_config"]
+        assert config.sessions == ["unit tests", "the unit tests"]
+
+
 @pytest.mark.parametrize(
     "env,sessions", [("foo", ["foo"]), ("foo,bar", ["foo", "bar"])]
 )
@@ -340,4 +356,21 @@ def test_main_nested_config(capsys):
         stdout, stderr = capsys.readouterr()
         assert stdout == "Noms, cheddar so good!\n"
         assert "Session snack(cheese='cheddar') was successful." in stderr
+        sys_exit.assert_called_once_with(0)
+
+
+def test_main_session_with_names(capsys):
+    sys.argv = [
+        "nox",
+        "--noxfile",
+        os.path.join(RESOURCES, "noxfile_spaces.py"),
+        "-s",
+        "cheese list(cheese='cheddar')",
+    ]
+
+    with mock.patch("sys.exit") as sys_exit:
+        nox.__main__.main()
+        stdout, stderr = capsys.readouterr()
+        assert stdout == "Noms, cheddar so good!\n"
+        assert "Session cheese list(cheese='cheddar') was successful." in stderr
         sys_exit.assert_called_once_with(0)
