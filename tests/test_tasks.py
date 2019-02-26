@@ -17,6 +17,7 @@ import copy
 import io
 import json
 import os
+import platform
 from unittest import mock
 
 import pytest
@@ -40,6 +41,20 @@ session_func.python = None
 def test_load_nox_module():
     config = argparse.Namespace(noxfile=os.path.join(RESOURCES, "noxfile.py"))
     noxfile_module = tasks.load_nox_module(config)
+    assert noxfile_module.SIGIL == "123"
+
+
+def test_load_nox_module_expandvars():
+    # Assert that variables are expanded when looking up the path to the noxfile
+    # This is particular importand in Windows when one needs to use variables like
+    # %TEMP% to point to the noxfile.py
+    with mock.patch.dict(os.environ, {"RESOURCES_PATH": RESOURCES}):
+        if platform.system().lower().startswith("win"):
+            config = argparse.Namespace(noxfile="%RESOURCES_PATH%/noxfile.py")
+        else:
+            config = argparse.Namespace(noxfile="${RESOURCES_PATH}/noxfile.py")
+        noxfile_module = tasks.load_nox_module(config)
+    assert noxfile_module.__file__ == os.path.join(RESOURCES, "noxfile.py")
     assert noxfile_module.SIGIL == "123"
 
 

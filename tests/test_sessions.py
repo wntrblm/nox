@@ -400,7 +400,7 @@ class TestSessionRunner:
 
         create.assert_called_once_with(runner.venv)
         assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
-        assert runner.venv.interpreter is "coolpython"
+        assert runner.venv.interpreter == "coolpython"
         assert runner.venv.reuse_existing is True
 
     def make_runner_with_mock_venv(self):

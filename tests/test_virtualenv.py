@@ -54,7 +54,7 @@ def test_constructor_defaults(make_one):
 def test_constructor_explicit(make_one):
     venv, _ = make_one(interpreter="python3.5", reuse_existing=True)
     assert venv.location
-    assert venv.interpreter is "python3.5"
+    assert venv.interpreter == "python3.5"
     assert venv.reuse_existing is True
 
 
