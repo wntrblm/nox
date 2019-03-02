@@ -24,7 +24,7 @@ import nox.command
 import nox.virtualenv
 
 
-IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
+IS_WINDOWS = nox.virtualenv._IS_WINDOWS
 
 
 @pytest.fixture
@@ -113,7 +113,7 @@ def test_bin(make_one):
         assert dir_.join("bin").strpath == venv.bin
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=True)
 def test_bin_windows(make_one):
     venv, dir_ = make_one()
     assert dir_.join("Scripts").strpath == venv.bin
@@ -160,8 +160,8 @@ def test_create_interpreter(make_one):
 @mock.patch.object(
     py.path.local, "sysfind", side_effect=[None, None, "/blah/python2.7"]
 )
-@mock.patch("nox.virtualenv._FROZEN", new=True)
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 def test_create_frozen_linux(sysfind, run, make_one):
     # Establish that the cmdline passed to nox.command.run, when nox is frozen
     # is correctly built
@@ -178,8 +178,8 @@ def test_create_frozen_linux(sysfind, run, make_one):
     "nox.virtualenv.locate_via_py",
     new=mock.MagicMock(return_value=r"C:\\blah\python2.7"),
 )
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
-@mock.patch("nox.virtualenv._FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=True)
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
 @mock.patch.object(nox.command, "run")
 def test_create_frozen_windows(run, make_one):
     # Establish that the cmdline passed to nox.command.run, when nox is frozen
@@ -210,7 +210,7 @@ def test__resolved_interpreter_none(make_one):
         ("2.7.15", "python2.7"),
     ],
 )
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 @mock.patch.object(py.path.local, "sysfind", return_value=True)
 def test__resolved_interpreter_numerical_non_windows(
     sysfind, make_one, input_, expected
@@ -222,7 +222,7 @@ def test__resolved_interpreter_numerical_non_windows(
 
 
 @pytest.mark.parametrize("input_", ["2.", "2.7."])
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 @mock.patch.object(py.path.local, "sysfind", return_value=False)
 def test__resolved_interpreter_invalid_numerical_id(sysfind, make_one, input_):
     venv, _ = make_one(interpreter=input_)
@@ -233,7 +233,7 @@ def test__resolved_interpreter_invalid_numerical_id(sysfind, make_one, input_):
     sysfind.assert_called_once_with(input_)
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 @mock.patch.object(py.path.local, "sysfind", return_value=False)
 def test__resolved_interpreter_32_bit_non_windows(sysfind, make_one):
     venv, _ = make_one(interpreter="3.6-32")
@@ -243,7 +243,7 @@ def test__resolved_interpreter_32_bit_non_windows(sysfind, make_one):
     sysfind.assert_called_once_with("3.6-32")
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 @mock.patch.object(py.path.local, "sysfind", return_value=True)
 def test__resolved_interpreter_non_windows(sysfind, make_one):
     # Establish that the interpreter is simply passed through resolution
@@ -254,7 +254,7 @@ def test__resolved_interpreter_non_windows(sysfind, make_one):
     sysfind.assert_called_once_with("python3.6")
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=True)
 @mock.patch.object(py.path.local, "sysfind")
 def test__resolved_interpreter_windows_full_path(sysfind, make_one):
     # Establish that if we get a fully-qualified system path (on Windows
@@ -274,7 +274,7 @@ def test__resolved_interpreter_windows_full_path(sysfind, make_one):
         ("2.7-32", r"c:\python27\python.exe"),
     ],
 )
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=True)
 @mock.patch.object(py.path.local, "sysfind")
 def test__resolved_interpreter_windows_pyexe(sysfind, make_one, input_, expected):
     # Establish that if we get a standard pythonX.Y path, we look it
@@ -299,7 +299,7 @@ def test__resolved_interpreter_windows_pyexe(sysfind, make_one, input_, expected
         sysfind.assert_has_calls([mock.call(input_), mock.call("py")])
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=True)
 @mock.patch.object(py.path.local, "sysfind")
 def test__resolved_interpreter_windows_pyexe_fails(sysfind, make_one):
     # Establish that if the py launcher fails, we give the right error.
@@ -321,7 +321,7 @@ def test__resolved_interpreter_windows_pyexe_fails(sysfind, make_one):
     sysfind.assert_any_call("py")
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=True)
 @mock.patch.object(py._path.local.LocalPath, "check")
 @mock.patch.object(py.path.local, "sysfind")
 def test__resolved_interpreter_not_found(sysfind, check, make_one):
@@ -338,7 +338,7 @@ def test__resolved_interpreter_not_found(sysfind, check, make_one):
         venv._resolved_interpreter
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=True)
 def test__resolved_interpreter_nonstandard(make_one):
     # Establish that we do not try to resolve non-standard locations
     # on Windows.
@@ -348,7 +348,7 @@ def test__resolved_interpreter_nonstandard(make_one):
         venv._resolved_interpreter
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 @mock.patch.object(py.path.local, "sysfind", return_value=True)
 def test__resolved_interpreter_cache_result(sysfind, make_one):
     venv, _ = make_one(interpreter="3.6")
@@ -362,7 +362,7 @@ def test__resolved_interpreter_cache_result(sysfind, make_one):
     assert sysfind.call_count == 1
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 @mock.patch.object(py.path.local, "sysfind", return_value=None)
 def test__resolved_interpreter_cache_failure(sysfind, make_one):
     venv, _ = make_one(interpreter="3.7-32")
@@ -387,8 +387,8 @@ def test__runtime_interpreter(make_one):
     assert venv._runtime_interpreter == sys.executable
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
-@mock.patch("nox.virtualenv._FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
 def test__runtime_interpreter_frozen(make_one):
     # Establish that the _runtime_interpreter method, when nox is frozen
     # is set to the current sys.executable(because it was found)
@@ -397,8 +397,8 @@ def test__runtime_interpreter_frozen(make_one):
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Mocked behaviour not testable on Windows.")
-@mock.patch("nox.virtualenv._FROZEN", new=True)
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=True)
 def test__runtime_interpreter_frozen_windows_missing_minor(make_one):
     # Establish that the _runtime_interpreter method, when nox is not frozen
     # is set to the current sys.executable
@@ -408,8 +408,8 @@ def test__runtime_interpreter_frozen_windows_missing_minor(make_one):
 
 
 @mock.patch.object(py.path.local, "sysfind", side_effect=[None, "python3"])
-@mock.patch("nox.virtualenv._FROZEN", new=True)
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 def test__runtime_interpreter_frozen_python3(sysfind, make_one):
     # Establish that the _runtime_interpreter method, when nox is frozen
     # is set to python3 because it couldn't find python3.<minor>
@@ -419,8 +419,8 @@ def test__runtime_interpreter_frozen_python3(sysfind, make_one):
 
 
 @mock.patch.object(py.path.local, "sysfind", return_value=None)
-@mock.patch("nox.virtualenv._FROZEN", new=True)
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 def test__runtime_interpreter_frozen_not_found(sysfind, make_one):
     # Establish that if no python binary is found, when nox is frozen,
     # nox will raise InterpreterNotFound
@@ -440,8 +440,8 @@ def test__runtime_interpreter_frozen_not_found(sysfind, make_one):
 
 
 @mock.patch.object(py.path.local, "sysfind", return_value=None)
-@mock.patch("nox.virtualenv._FROZEN", new=True)
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 def test__runtime_interpreter_frozen_not_found_cached(sysfind, make_one):
     # Establish that if no python binary is found, when nox is frozen,
     # that the _runtime_interpreter propery is cached
@@ -462,8 +462,8 @@ def test__runtime_interpreter_frozen_not_found_cached(sysfind, make_one):
 @mock.patch.object(
     py.path.local, "sysfind", side_effect=[None, None, None, "python2", "python"]
 )
-@mock.patch("nox.virtualenv._FROZEN", new=True)
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 def test__runtime_interpreter_frozen_reject_python26(sysfind, make_one):
     # Establish that if a python 2.6 binary is found, when nox is frozen,
     # nox will raise InterpreterNotFound because pip/virtualenv won't even
@@ -487,8 +487,8 @@ def test__runtime_interpreter_frozen_reject_python26(sysfind, make_one):
 @mock.patch.object(
     py.path.local, "sysfind", side_effect=[None, None, None, "python2", "python"]
 )
-@mock.patch("nox.virtualenv._FROZEN", new=True)
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 def test__runtime_interpreter_frozen_fails_to_parse_version(sysfind, make_one):
     # Establish that if no python binary is found, when nox is frozen,
     # nox will raise InterpreterNotFound because it couldn't properly parse
@@ -503,8 +503,8 @@ def test__runtime_interpreter_frozen_fails_to_parse_version(sysfind, make_one):
 @mock.patch.object(
     py.path.local, "sysfind", side_effect=[None, None, None, None, "python"]
 )
-@mock.patch("nox.virtualenv._FROZEN", new=True)
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 def test__runtime_interpreter_frozen_accept_python27(sysfind, make_one):
     # Establish that nox is happy with a python binary, when nox is frozen,
     # that reports as being 2.7
@@ -526,8 +526,8 @@ def test__runtime_interpreter_frozen_accept_python27(sysfind, make_one):
 @mock.patch.object(
     py.path.local, "sysfind", side_effect=[None, None, None, None, "python"]
 )
-@mock.patch("nox.virtualenv._FROZEN", new=True)
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._SYS_HAS_FROZEN", new=True)
+@mock.patch("nox.virtualenv._IS_WINDOWS", new=False)
 def test__runtime_interpreter_frozen_accept_python27_cached(sysfind, make_one):
     # Establish that the _runtime_interpreter property is cached
     venv, _ = make_one(interpreter=None)
@@ -540,14 +540,14 @@ def test__runtime_interpreter_frozen_accept_python27_cached(sysfind, make_one):
 
 
 def test__frozen_attribute_missing():
-    # Establish that _FROZEN is set to False when nox is not frozen
-    assert nox.virtualenv._FROZEN is False
+    # Establish that _SYS_HAS_FROZEN is set to False when nox is not frozen
+    assert nox.virtualenv._SYS_HAS_FROZEN is False
 
 
 @mock.patch.object(sys, "frozen", new=True, create=True)
 def test__frozen_attribute_present():
-    # Establish that _FROZEN is set to True when nox is not frozen
-    # Since _FROZEN is set at the module level, we need to reload nox.virtualenv
+    # Establish that _SYS_HAS_FROZEN is set to True when nox is not frozen
+    # Since _SYS_HAS_FROZEN is set at the module level, we need to reload nox.virtualenv
     # because the module is already imported
     imp.reload(nox.virtualenv)
-    assert nox.virtualenv._FROZEN is True
+    assert nox.virtualenv._SYS_HAS_FROZEN is True
