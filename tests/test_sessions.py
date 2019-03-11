@@ -135,7 +135,7 @@ class TestSession:
             session.run("spam", "eggs")
 
         run.assert_called_once_with(
-            ("pip", "install", "--upgrade", "spam"),
+            ("pip", "install", "spam"),
             env=mock.ANY,
             external=mock.ANY,
             path=mock.ANY,
@@ -220,13 +220,7 @@ class TestSession:
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3")
             run.assert_called_once_with(
-                "pip",
-                "install",
-                "--upgrade",
-                "requests",
-                "urllib3",
-                silent=True,
-                external="error",
+                "pip", "install", "requests", "urllib3", silent=True, external="error"
             )
 
     def test_install_non_default_kwargs(self):
@@ -248,13 +242,7 @@ class TestSession:
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3", silent=False)
             run.assert_called_once_with(
-                "pip",
-                "install",
-                "--upgrade",
-                "requests",
-                "urllib3",
-                silent=False,
-                external="error",
+                "pip", "install", "requests", "urllib3", silent=False, external="error"
             )
 
     def test_notify(self):
