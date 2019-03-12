@@ -18,6 +18,6 @@ from nox import logger
 
 
 def test_success():
-    with mock.patch.object(logger.LoggerWithSuccess, "_log") as _log:
-        logger.LoggerWithSuccess("foo").success("bar")
+    with mock.patch.object(logger.LoggerWithSuccessAndOutput, "_log") as _log:
+        logger.LoggerWithSuccessAndOutput("foo").success("bar")
         _log.assert_called_once_with(logger.SUCCESS, "bar", ())

@@ -158,6 +158,15 @@ options.add_options(
         help="Arguments following ``--`` that are passed through to the session(s).",
         finalizer_func=_posargs_finalizer,
     ),
+    _option_set.Option(
+        "verbose",
+        "-v",
+        "--verbose",
+        group="secondary",
+        action="store_true",
+        help="Logs the output of all commands run including commands marked silent.",
+        noxfile=True,
+    ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
         ("-r", "--reuse-existing-virtualenvs"),
