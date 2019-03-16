@@ -26,7 +26,7 @@ class NoxFormatter(ColoredFormatter):
         self._simple_fmt = logging.Formatter("%(message)s")
 
     def format(self, record):
-        if record.level == OUTPUT:
+        if record.levelname == "OUTPUT":
             return self._simple_fmt.format(record)
         return super(NoxFormatter, self).format(record)
 

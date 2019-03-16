@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from unittest import mock
 
 from nox import logger
@@ -21,3 +22,33 @@ def test_success():
     with mock.patch.object(logger.LoggerWithSuccessAndOutput, "_log") as _log:
         logger.LoggerWithSuccessAndOutput("foo").success("bar")
         _log.assert_called_once_with(logger.SUCCESS, "bar", ())
+
+
+def test_output():
+    with mock.patch.object(logger.LoggerWithSuccessAndOutput, "_log") as _log:
+        logger.LoggerWithSuccessAndOutput("foo").output("bar")
+        _log.assert_called_once_with(logger.OUTPUT, "bar", ())
+
+
+def test_formatter(caplog):
+    caplog.clear()
+    logger.setup_logging(True, verbose=True)
+    with caplog.at_level(logging.DEBUG):
+        logger.logger.info("bar")
+        logger.logger.output("foo")
+
+    logs = [rec for rec in caplog.records if rec.levelname in ("INFO", "OUTPUT")]
+    assert len(logs) == 1
+
+    caplog.clear()
+    with caplog.at_level(logger.OUTPUT):
+        logger.logger.info("bar")
+        logger.logger.output("foo")
+
+    logs = [rec for rec in caplog.records if rec.levelname in ("INFO", "OUTPUT")]
+    assert len(logs) == 2
+
+    logs = [rec for rec in caplog.records if rec.levelname == "OUTPUT"]
+    assert len(logs) == 1
+    # Make sure output level log records are not nox prefixed
+    assert "nox" not in logs[0].message
