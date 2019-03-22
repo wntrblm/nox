@@ -46,7 +46,7 @@ If you run this via ``nox`` you should see output similar to this::
 
     nox > Running session lint
     nox > virtualenv /tmp/example/.nox/lint
-    nox > pip install --upgrade flake8
+    nox > pip install flake8
     nox > flake8
     nox > Session lint successful. :)
 
@@ -149,10 +149,10 @@ When you run ``nox``, it will create a two distinct sessions::
 
     $ nox
     nox > Running session tests(django='1.9')
-    nox > pip install --upgrade django==1.9
+    nox > pip install django==1.9
     ...
     nox > Running session tests(djano='2.0')
-    nox > pip install --upgrade django==2.0
+    nox > pip install django==2.0
 
 
 :func:`nox.parametrize` has an interface and usage intentionally similar to `pytest's parametrize <https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize>`_.

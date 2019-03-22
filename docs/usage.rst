@@ -173,8 +173,8 @@ Would run both ``install`` commands, but skip the ``run`` command::
 
     nox > Running session tests
     nox > Creating virtualenv using python3.7 in ./.nox/tests
-    nox > pip install --upgrade pytest
-    nox > pip install --upgrade .
+    nox > pip install pytest
+    nox > pip install .
     nox > Skipping pytest run, as --install-only is set.
     nox > Session tests was successful.
 
