@@ -1,5 +1,21 @@
 # Changelog
 
+## 2019.4.11
+
+- Include changelog in documentation. (#177)
+- Use the relative path of the virtualenv in the "creating virtualenv" log message. (#176)
+- Allow not passing "--upgrade" to `session.install` and change its default behavior to not upgrade. (#172)
+- Expand environment variables when loading the noxfile from provided path. (#171)
+- Add documentation around using Docker to run Nox. (#164)
+- Don't colour output if `NO_COLOR` is set. (#163)
+- Fix tox casing to be consistent with their docs, remove `.`` from pytest. (#160)
+- Update issue templates.
+- Add CODE_OF_CONDUCT.md.
+- Add --install-only flag to install dependencies without running anything (#153)
+- Fix function name in docs. (#155)
+- Allow silent argument to be set in `session.install`. (#157)
+- Run sessions in the same order specified on the command line. (#152)
+
 ## 2018.10.17
 
 - Fix bug where empty parametrized sessions would fail. (#151)
