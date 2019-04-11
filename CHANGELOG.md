@@ -1,3 +1,5 @@
+# Changelog
+
 ## 2018.10.17
 
 - Fix bug where empty parametrized sessions would fail. (#151)

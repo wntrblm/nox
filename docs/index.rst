@@ -9,6 +9,7 @@ Welcome to Nox
    config
    usage
    contrib
+   CHANGELOG
 
 ``nox`` is a command-line tool that automates testing in multiple Python environments, similar to `tox`_. Unlike tox, Nox uses a standard Python file for configuration.
 
