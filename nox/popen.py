@@ -16,13 +16,11 @@ import subprocess
 import sys
 
 
-def popen(args, env=None, silent=False):
-    stdout = None
-
-    if silent:
+def popen(args, env=None, silent=False, stdout=None, stderr=subprocess.STDOUT):
+    if silent and stdout is None:
         stdout = subprocess.PIPE
 
-    proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=subprocess.STDOUT)
+    proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=stderr)
 
     try:
         out, err = proc.communicate()
