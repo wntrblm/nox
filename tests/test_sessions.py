@@ -126,6 +126,18 @@ class TestSession:
 
         assert "install-only" in caplog.text
 
+    def test_run_install_only_bypass(self, caplog):
+        caplog.set_level(logging.INFO)
+        session, runner = self.make_session_and_runner()
+        runner.global_config.install_only = True
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.run("spam", "eggs", bypass_install_only=True)
+
+        assert "install-only" not in caplog.text
+
+        run.assert_called_once_with(("spam", "eggs"), env=mock.ANY, path=mock.ANY)
+
     def test_run_install_only_should_install(self):
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True

@@ -177,7 +177,8 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to run().")
 
-        if self._runner.global_config.install_only:
+        bypass_install_only = kwargs.pop("bypass_install_only", False)
+        if self._runner.global_config.install_only and not bypass_install_only:
             logger.info("Skipping {} run, as --install-only is set.".format(args[0]))
             return
 
