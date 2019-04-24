@@ -50,6 +50,7 @@ Projects that use Nox
 
 Nox is lucky to have several wonderful projects that use it and provide feedback and contributions.
 
+- `Urllib3 <https://github.com/urllib3/urllib3>`__
 - `Bezier <https://github.com/dhermes/bezier>`__
 - `Zazo <https://github.com/pradyunsg/zazo>`__
 - `packaging.python.org <https://github.com/pypa/python-packaging-user-guide/>`__
