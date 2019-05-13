@@ -180,5 +180,5 @@ If you only want to run one of the parametrized sessions, see :ref:`running_para
 
 .. _pip: https://pip.readthedocs.org
 .. _flake8: https://flake8.readthedocs.org
-.. _thekevjames/nox images: https://cloud.docker.com/repository/docker/thekevjames/nox
+.. _thekevjames/nox images: https://hub.docker.com/r/thekevjames/nox
 .. _virtualenv: https://virtualenv.readthedocs.org

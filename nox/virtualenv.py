@@ -106,6 +106,7 @@ class VirtualEnv(ProcessEnv):
     """
 
     def __init__(self, location, interpreter=None, reuse_existing=False):
+        self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
         self._resolved = None
@@ -193,7 +194,9 @@ class VirtualEnv(ProcessEnv):
     def create(self):
         """Create the virtualenv."""
         if not self._clean_location():
-            logger.debug("Re-using existing virtualenv at {}.".format(self.location))
+            logger.debug(
+                "Re-using existing virtualenv at {}.".format(self.location_name)
+            )
             return False
 
         cmd = [sys.executable, "-m", "virtualenv", self.location]
