@@ -17,6 +17,8 @@ import io
 import json
 import os
 
+from colorlog.escape_codes import parse_colors
+
 from nox import _options
 from nox import registry
 from nox.logger import logger
@@ -132,21 +134,47 @@ def honor_list_request(manifest, global_config):
         Union[~.Manifest,int]: ``0`` if a listing is all that is requested,
             the manifest otherwise (to be sent to the next task).
     """
+    if not global_config.list_sessions:
+        return manifest
+
     # If the user just asked for a list of sessions, print that
     # and be done.
-    if global_config.list_sessions:
-        print("Available sessions:")
-        for session in manifest:
-            output = "* {session}"
-            if session.description is not None:
-                output += " -> {description}"
-            print(
-                output.format(
-                    session=session.friendly_name, description=session.description
-                )
+
+    print("Sessions defined in {noxfile}:\n".format(noxfile=global_config.noxfile))
+
+    reset = parse_colors("reset") if global_config.color else ""
+    selected_color = parse_colors("cyan") if global_config.color else ""
+    skipped_color = parse_colors("white") if global_config.color else ""
+
+    for session, selected in manifest.list_all_sessions():
+        output = "{marker} {color}{session}{reset}"
+
+        if selected:
+            marker = "*"
+            color = selected_color
+        else:
+            marker = "-"
+            color = skipped_color
+
+        if session.description is not None:
+            output += " -> {description}"
+
+        print(
+            output.format(
+                color=color,
+                reset=reset,
+                session=session.friendly_name,
+                description=session.description,
+                marker=marker,
             )
-        return 0
-    return manifest
+        )
+
+    print(
+        "\nsessions marked with {selected_color}*{reset} are selected, sessions marked with {skipped_color}-{reset} are skipped.".format(
+            selected_color=selected_color, skipped_color=skipped_color, reset=reset
+        )
+    )
+    return 0
 
 
 def verify_manifest_nonempty(manifest, global_config):

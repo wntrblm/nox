@@ -51,6 +51,8 @@ class TestGlobalConfig:
             install_only=False,
             posargs=["a", "b", "c"],
             report=None,
+            nocolor=False,
+            forcecolor=False,
         )
 
     def test_constructor(self):

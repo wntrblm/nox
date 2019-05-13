@@ -94,6 +94,11 @@ class Manifest:
     def __len__(self):
         return len(self._queue) + len(self._consumed)
 
+    def list_all_sessions(self):
+        """Yields all sessions and whether or not they're selected."""
+        for session in self._all_sessions:
+            yield session, session in self._queue
+
     def add_session(self, session):
         """Add the given session to the manifest.
 
