@@ -82,6 +82,19 @@ def test_session_decorator_reuse(cleanup_registry):
     assert unit_tests.reuse_venv is True
 
 
+@pytest.mark.parametrize("name", ["unit-tests", "unit tests", "the unit tests"])
+def test_session_decorator_name(cleanup_registry, name):
+    @registry.session_decorator(name=name)
+    def unit_tests(session):
+        pass
+
+    answer = registry.get()
+    assert "unit_tests" not in answer
+    assert name in answer
+    assert answer[name] is unit_tests
+    assert unit_tests.python is None
+
+
 def test_get(cleanup_registry):
     # Establish that the get method returns a copy of the registry.
     empty = registry.get()

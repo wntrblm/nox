@@ -37,13 +37,42 @@ The first line will be shown when listing the sessions. For example::
         """Run the test suite."""
         session.run('pytest')
 
-The ``nox -l`` command will show:
+The ``nox --list`` command will show:
 
 .. code-block:: console
 
-    $ nox -l
+    $ nox --list
     Available sessions:
     * tests -> Run the test suite.
+
+
+Session name
+------------
+
+By default Nox uses the decorated function's name as the session name. This works wonderfully for the vast majority of projects, however, if you need to you can customize the session's name by using the ``name`` argument to ``@nox.session``. For example::
+
+
+    import nox
+
+    @nox.session(name="custom-name")
+    def a_very_long_function_name(session):
+        print("Hello!")
+
+
+The ``nox --list`` command will show:
+
+.. code-block:: console
+
+    $ nox --list
+    Available sessions:
+    * custom-name
+
+And you can tell ``nox`` to run the session using the custom name:
+
+.. code-block:: console
+
+    $ nox --session "custom-name"
+    Hello!
 
 .. _virtualenv config:
 
@@ -70,13 +99,15 @@ When you provide a version number, Nox automatically prepends python to determin
     def tests(session):
         pass
 
-When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sesions when running ``nox --list-sessions``. For example this Noxfile::
+When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sesions when running ``nox --list``. For example this Noxfile::
 
     @nox.session(python=['2.7', '3.5', '3.6', '3.7'])
     def tests(session):
         pass
 
-Will produce these sessions::
+Will produce these sessions:
+
+.. code-block:: console
 
     * tests-2.7
     * tests-3.5

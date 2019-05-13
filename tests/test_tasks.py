@@ -73,6 +73,10 @@ def test_discover_session_functions_decorator():
     def bar():
         pass
 
+    @nox.session(name="not-a-bar")
+    def not_a_bar():
+        pass
+
     def notasession():
         pass
 
@@ -85,8 +89,8 @@ def test_discover_session_functions_decorator():
     # Get the manifest and establish that it looks like what we expect.
     manifest = tasks.discover_manifest(mock_module, config)
     sessions = list(manifest)
-    assert [s.func for s in sessions] == [foo, bar]
-    assert [i.friendly_name for i in sessions] == ["foo", "bar"]
+    assert [s.func for s in sessions] == [foo, bar, not_a_bar]
+    assert [i.friendly_name for i in sessions] == ["foo", "bar", "not-a-bar"]
 
 
 def test_filter_manifest():
