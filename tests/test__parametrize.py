@@ -14,7 +14,23 @@
 
 from unittest import mock
 
+import pytest
+
 from nox import _parametrize
+
+
+@pytest.mark.parametrize(
+    "param, other, expected",
+    [
+        (_parametrize.Param(1, 2), _parametrize.Param(1, 2), True),
+        (_parametrize.Param(1, 2, id="a"), _parametrize.Param(1, 2, id="a"), True),
+        (_parametrize.Param(1, 3), _parametrize.Param(1, 2), False),
+        (_parametrize.Param(1, 2, arg_names=("a", "b")), {"a": 1, "b": 2}, True),
+        (_parametrize.Param(), "a", False),
+    ],
+)
+def test_param_eq(param, other, expected):
+    assert (param == other) is expected
 
 
 def test_parametrize_decorator_one():
@@ -23,7 +39,16 @@ def test_parametrize_decorator_one():
 
     _parametrize.parametrize_decorator("abc", 1)(f)
 
-    assert f.parametrize == [{"abc": 1}]
+    assert f.parametrize == [_parametrize.Param(1, arg_names=("abc",))]
+
+
+def test_parametrize_decorator_one_param():
+    def f():
+        pass
+
+    _parametrize.parametrize_decorator("abc", _parametrize.Param(1))(f)
+
+    assert f.parametrize == [_parametrize.Param(1, arg_names=("abc",))]
 
 
 def test_parametrize_decorator_one_with_args():
@@ -33,6 +58,20 @@ def test_parametrize_decorator_one_with_args():
     _parametrize.parametrize_decorator("abc", [1, 2, 3])(f)
 
     assert f.parametrize == [{"abc": 1}, {"abc": 2}, {"abc": 3}]
+
+
+def test_parametrize_decorator_id_list():
+    def f():
+        pass
+
+    _parametrize.parametrize_decorator("abc", [1, 2, 3], ids=["a", "b", "c"])(f)
+
+    arg_names = ("abc",)
+    assert f.parametrize == [
+        _parametrize.Param(1, arg_names=arg_names, id="a"),
+        _parametrize.Param(2, arg_names=arg_names, id="b"),
+        _parametrize.Param(3, arg_names=arg_names, id="c"),
+    ]
 
 
 def test_parametrize_decorator_multiple_args_as_list():
@@ -60,6 +99,22 @@ def test_parametrize_decorator_multiple_args_as_string():
         {"abc": "a", "def": 1},
         {"abc": "b", "def": 2},
         {"abc": "c", "def": 3},
+    ]
+
+
+def test_parametrize_decorator_mixed_params():
+    def f():
+        pass
+
+    _parametrize.parametrize_decorator(
+        "abc, def", [(1, 2), _parametrize.Param(3, 4, id="b"), _parametrize.Param(5, 6)]
+    )(f)
+
+    arg_names = ("abc", "def")
+    assert f.parametrize == [
+        _parametrize.Param(1, 2, arg_names=arg_names),
+        _parametrize.Param(3, 4, arg_names=arg_names, id="b"),
+        _parametrize.Param(5, 6, arg_names=arg_names),
     ]
 
 
@@ -101,7 +156,12 @@ def test_generate_calls_simple():
     f.__name__ = "f"
     f.some_prop = 42
 
-    call_specs = [{"abc": 1}, {"abc": 2}, {"abc": 3}]
+    arg_names = ("abc",)
+    call_specs = [
+        _parametrize.Param(1, arg_names=arg_names),
+        _parametrize.Param(2, arg_names=arg_names),
+        _parametrize.Param(3, arg_names=arg_names),
+    ]
 
     calls = _parametrize.generate_calls(f, call_specs)
 
@@ -128,10 +188,11 @@ def test_generate_calls_multiple_args():
     f = mock.Mock()
     f.__name__ = "f"
 
+    arg_names = ("abc", "foo")
     call_specs = [
-        {"abc": 1, "foo": "a"},
-        {"abc": 2, "foo": "b"},
-        {"abc": 3, "foo": "c"},
+        _parametrize.Param(1, "a", arg_names=arg_names),
+        _parametrize.Param(2, "b", arg_names=arg_names),
+        _parametrize.Param(3, "c", arg_names=arg_names),
     ]
 
     calls = _parametrize.generate_calls(f, call_specs)
@@ -147,3 +208,25 @@ def test_generate_calls_multiple_args():
     f.assert_called_with(abc=2, foo="b")
     calls[2]()
     f.assert_called_with(abc=3, foo="c")
+
+
+def test_generate_calls_ids():
+    f = mock.Mock()
+    f.__name__ = "f"
+
+    arg_names = ("foo",)
+    call_specs = [
+        _parametrize.Param(1, arg_names=arg_names, id="a"),
+        _parametrize.Param(2, arg_names=arg_names, id="b"),
+    ]
+
+    calls = _parametrize.generate_calls(f, call_specs)
+
+    assert len(calls) == 2
+    assert calls[0].session_signature == "(a)"
+    assert calls[1].session_signature == "(b)"
+
+    calls[0]()
+    f.assert_called_with(foo=1)
+    calls[1]()
+    f.assert_called_with(foo=2)

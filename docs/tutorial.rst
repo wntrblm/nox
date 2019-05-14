@@ -7,7 +7,9 @@ This tutorial will walk you through installing, configuring, and running Nox.
 Installation
 ------------
 
-Nox can be easily installed via `pip`_::
+Nox can be easily installed via `pip`_:
+
+.. code-block:: console
 
     pip install --upgrade nox
 
@@ -18,11 +20,15 @@ If you're interested in running ``nox`` within docker, you can use the `thekevja
 Running Nox
 -----------
 
-The simplest way of running Nox will run all sessions defined in `noxfile.py`::
+The simplest way of running Nox will run all sessions defined in `noxfile.py`:
+
+.. code-block:: console
 
     nox
 
-However, if you wish to run a single session or subset of sessions you can use the ``-s`` argument::
+However, if you wish to run a single session or subset of sessions you can use the ``-s`` or ``--sessions`` argument:
+
+.. code-block:: console
 
     nox --sessions lint tests-2.7
     nox -s lint
@@ -42,10 +48,12 @@ Sessions are declared using the ``@nox.session`` decorator::
         session.install('flake8')
         session.run('flake8')
 
-If you run this via ``nox`` you should see output similar to this::
+If you run this via ``nox`` you should see output similar to this:
+
+.. code-block:: console
 
     nox > Running session lint
-    nox > virtualenv /tmp/example/.nox/lint
+    nox > virtualenv .nox/lint
     nox > pip install flake8
     nox > flake8
     nox > Session lint successful. :)
@@ -75,7 +83,9 @@ You can create as many session as you want and sessions can use multiple Python 
     def tests(session):
         ...
 
-If you specify multiple Python versions, Nox will create separate sessions for each Python version. If you run ``nox --list-sessions``, you'll see that this generates the following set of sessions::
+If you specify multiple Python versions, Nox will create separate sessions for each Python version. If you run ``nox --list``, you'll see that this generates the following set of sessions:
+
+.. code-block:: console
 
     * tests-2.7
     * tests-3.6
@@ -115,19 +125,31 @@ Often it's useful to pass arguments into your test session. Here's a quick examp
 
         session.run('pytest', *test_files)
 
-Now you if you run::
+Now you if you run:
+
+
+.. code-block:: console
 
     nox
 
-Then nox will run::
+
+Then nox will run:
+
+.. code-block:: console
 
     pytest test_a.py test_b.py
 
-But if you run::
+
+But if you run:
+
+.. code-block:: console
 
     nox -- test_c.py
 
-Then nox will run::
+
+Then nox will run:
+
+.. code-block:: console
 
     pytest test_c.py
 
@@ -145,7 +167,9 @@ Session arguments can be parametrized with the :func:`nox.parametrize` decorator
         session.install(f'django=={django}')
         session.run('pytest')
 
-When you run ``nox``, it will create a two distinct sessions::
+When you run ``nox``, it will create a two distinct sessions:
+
+.. code-block:: console
 
     $ nox
     nox > Running session tests(django='1.9')
@@ -168,7 +192,9 @@ You can also stack the decorator to produce sessions that are a combination of t
         ...
 
 
-If you run ``nox --list-sessions``, you'll see that this generates the following set of sessions::
+If you run ``nox --list``, you'll see that this generates the following set of sessions:
+
+.. code-block:: console
 
     * tests(django='1.9', database='postgres')
     * tests(django='2.0', database='mysql')
@@ -177,6 +203,39 @@ If you run ``nox --list-sessions``, you'll see that this generates the following
 
 
 If you only want to run one of the parametrized sessions, see :ref:`running_paramed_sessions`.
+
+Giving friendly names to parametrized sessions
+----------------------------------------------
+
+The automatically generated names for parametrized sessions, such as ``tests(django='1.9', database='postgres')``, can be long and unwieldy to work with even with using :ref:`keyword filtering <opt-sessions-and-keywords>`. You can give parametrized sessions custom IDs to help in this scenario. These two examples are equivalent:
+
+::
+
+    @nox.session
+    @nox.parametrize('django',
+        ['1.9', '2.0'],
+        ids=['old', 'new'])
+    def tests(session, django):
+        ...
+
+::
+
+    @nox.session
+    @nox.parametrize('django', [
+        nox.param('1.9', id='old'),
+        nox.param('2.0', id='new'),
+    ])
+    def tests(session, django):
+        ...
+
+When running ``nox --list`` you'll see their new IDs:
+
+.. code-block:: console
+
+    * tests(old)
+    * tests(new)
+
+And you can run them with ``nox --sessions "tests(old)"`` and so on.
 
 .. _pip: https://pip.readthedocs.org
 .. _flake8: https://flake8.readthedocs.org

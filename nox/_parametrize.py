@@ -13,9 +13,59 @@
 # limitations under the License.
 
 import functools
+import itertools
 
 
-def parametrize_decorator(arg_names, arg_values_list):
+class Param:
+    """A class that encapsulates a single set of parameters to a parametrized
+    session."""
+
+    def __init__(self, *args, arg_names=None, id=None):
+        self.args = tuple(args)
+        self.id = id
+
+        if arg_names is None:
+            arg_names = ()
+
+        self.arg_names = tuple(arg_names)
+
+    @property
+    def call_spec(self):
+        return dict(zip(self.arg_names, self.args))
+
+    def __str__(self):
+        if self.id:
+            return self.id
+        else:
+            call_spec = self.call_spec
+            keys = sorted(call_spec.keys(), key=str)
+            args = ["{}={}".format(k, repr(call_spec[k])) for k in keys]
+            return ", ".join(args)
+
+    __repr__ = __str__
+
+    def copy(self):
+        new = self.__class__(*self.args, arg_names=self.arg_names, id=self.id)
+        return new
+
+    def update(self, other):
+        self.args = self.args + other.args
+        self.arg_names = self.arg_names + other.arg_names
+        self.id = ", ".join([str(self), str(other)])
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return (
+                self.args == other.args
+                and self.arg_names == other.arg_names
+                and self.id == other.id
+            )
+        elif isinstance(other, dict):
+            return dict(zip(self.arg_names, self.args)) == other
+        return False
+
+
+def parametrize_decorator(arg_names, arg_values_list, ids=None):
     """Parametrize a session.
 
     Add new invocations to the underlying session function using the list of
@@ -32,9 +82,11 @@ def parametrize_decorator(arg_names, arg_values_list):
             argument names were specified, this must be a list of N-tuples,
             where each tuple-element specifies a value for its respective
             argument name, for example ``[(1, 'a'), (2, 'b')]``.
+        ids ([Sequence[str]): Optional sequence of test ids to use for the
+            parametrized arguments.
     """
 
-    # Allow args to be specified as any of 'arg', 'arg,arg2' or ('arg', 'arg2')
+    # Allow args names to be specified as any of 'arg', 'arg,arg2' or ('arg', 'arg2')
     if not isinstance(arg_names, (list, tuple)):
         arg_names = list(filter(None, [arg.strip() for arg in arg_names.split(",")]))
 
@@ -42,60 +94,71 @@ def parametrize_decorator(arg_names, arg_values_list):
     # or list. Transform it so it'll work with the combine step.
     if len(arg_names) == 1:
         # In this case, the arg_values_list can also just be a single item.
-        if not isinstance(arg_values_list, (list, tuple)):
+        if isinstance(arg_values_list, tuple):
+            # Must be mutable for the transformation steps
+            arg_values_list = list(arg_values_list)
+        if not isinstance(arg_values_list, list):
             arg_values_list = [arg_values_list]
-        arg_values_list = [[value] for value in arg_values_list]
 
-    # Combine arg names and values into a list of dictionaries. These are
-    # 'call specs' that will be used to generate calls.
-    # [{arg: value1}, {arg: value2}, ...]
-    call_specs = []
-    for arg_values in arg_values_list:
-        call_spec = dict(zip(arg_names, arg_values))
-        call_specs.append(call_spec)
+        for n, value in enumerate(arg_values_list):
+            if not isinstance(value, Param):
+                arg_values_list[n] = [value]
+
+    # if ids aren't specified at all, make them an empty list for zip.
+    if not ids:
+        ids = []
+
+    # Generate params for each item in the param_args_values list.
+    param_specs = []
+    for param_arg_values, param_id in itertools.zip_longest(arg_values_list, ids):
+        if isinstance(param_arg_values, Param):
+            param_spec = param_arg_values
+            param_spec.arg_names = tuple(arg_names)
+        else:
+            param_spec = Param(*param_arg_values, arg_names=arg_names, id=param_id)
+
+        param_specs.append(param_spec)
 
     def inner(f):
-        previous_call_specs = getattr(f, "parametrize", None)
-        new_call_specs = update_call_specs(previous_call_specs, call_specs)
-        setattr(f, "parametrize", new_call_specs)
+        previous_param_specs = getattr(f, "parametrize", None)
+        new_param_specs = update_param_specs(previous_param_specs, param_specs)
+        setattr(f, "parametrize", new_param_specs)
         return f
 
     return inner
 
 
-def update_call_specs(call_specs, new_specs):
-    if not call_specs:
-        call_specs = [{}]
+def update_param_specs(param_specs, new_specs):
+    """Combine existing specs by *multiplying* them against the existing
+    specs."""
+    if not param_specs:
+        return new_specs
 
+    # # New specs must be combined with old specs by *multiplying* them.
     combined_specs = []
     for new_spec in new_specs:
-        for spec in call_specs:
+        for spec in param_specs:
             spec = spec.copy()
             spec.update(new_spec)
             combined_specs.append(spec)
     return combined_specs
 
 
-def generate_session_signature(func, call_spec):
-    args = ["{}={}".format(k, repr(call_spec[k])) for k in sorted(call_spec.keys())]
-    return "({})".format(", ".join(args))
-
-
-def generate_calls(func, call_specs):
+def generate_calls(func, param_specs):
     calls = []
-    for call_spec in call_specs:
+    for param_spec in param_specs:
 
-        def make_call_wrapper(call_spec):
+        def make_call_wrapper(param_spec):
             @functools.wraps(func)
             def call_wrapper(*args, **kwargs):
-                kwargs.update(call_spec)
+                kwargs.update(param_spec.call_spec)
                 return func(*args, **kwargs)
 
             return call_wrapper
 
-        call = make_call_wrapper(call_spec)
-        call.session_signature = generate_session_signature(func, call_spec)
-        call.call_spec = call_spec
+        call = make_call_wrapper(param_spec)
+        call.session_signature = "({})".format(param_spec)
+        call.param_spec = param_spec
         calls.append(call)
 
     return calls
