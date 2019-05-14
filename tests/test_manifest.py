@@ -148,6 +148,19 @@ def test_filter_by_keyword():
     assert len(manifest) == 1
 
 
+def test_list_all_sessions_with_filter():
+    sessions = create_mock_sessions()
+    manifest = Manifest(sessions, mock.sentinel.CONFIG)
+    assert len(manifest) == 2
+    manifest.filter_by_keywords("foo")
+    assert len(manifest) == 1
+    all_sessions = list(manifest.list_all_sessions())
+    assert len(all_sessions) == 2
+    # Only one should be marked as selected.
+    assert all_sessions[0][1] is True
+    assert all_sessions[1][1] is False
+
+
 def test_add_session_plain():
     manifest = Manifest({}, mock.sentinel.CONFIG)
     session_func = mock.Mock(spec=(), python=None)

@@ -127,10 +127,29 @@ def test_honor_list_request_noop():
 
 @pytest.mark.parametrize("description", [None, "bar"])
 def test_honor_list_request(description):
-    config = argparse.Namespace(list_sessions=True)
-    manifest = [argparse.Namespace(friendly_name="foo", description=description)]
+    config = argparse.Namespace(list_sessions=True, noxfile="noxfile.py", color=False)
+    manifest = mock.create_autospec(Manifest)
+    manifest.list_all_sessions.return_value = [
+        (argparse.Namespace(friendly_name="foo", description=description), True)
+    ]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
+
+
+def test_honor_list_request_skip_and_selected(capsys):
+    config = argparse.Namespace(list_sessions=True, noxfile="noxfile.py", color=False)
+    manifest = mock.create_autospec(Manifest)
+    manifest.list_all_sessions.return_value = [
+        (argparse.Namespace(friendly_name="foo", description=None), True),
+        (argparse.Namespace(friendly_name="bar", description=None), False),
+    ]
+    return_value = tasks.honor_list_request(manifest, global_config=config)
+    assert return_value == 0
+
+    out = capsys.readouterr().out
+
+    assert "* foo" in out
+    assert "- bar" in out
 
 
 def test_verify_manifest_empty():

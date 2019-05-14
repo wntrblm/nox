@@ -57,6 +57,7 @@ class GlobalConfig:
         self.install_only = args.install_only
         self.posargs = args.posargs
         self.report = args.report
+        self.color = not args.nocolor or args.forcecolor
 
         if self.posargs and self.posargs[0] == "--":
             self.posargs.pop(0)
@@ -242,7 +243,7 @@ def main():
         return
 
     global_config = GlobalConfig(args)
-    setup_logging(color=not args.nocolor or args.forcecolor)
+    setup_logging(color=global_config.color)
 
     # Execute the appropriate tasks.
     exit_code = workflow.execute(
