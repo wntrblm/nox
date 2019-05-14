@@ -237,6 +237,32 @@ When running ``nox --list`` you'll see their new IDs:
 
 And you can run them with ``nox --sessions "tests(old)"`` and so on.
 
+This works with stacked parameterizations as well. The IDs are combined during the combination. For example:
+
+::
+
+    @nox.session
+    @nox.parametrize(
+        'django',
+        ['1.9', '2.0'],
+        ids=["old", "new"])
+    @nox.parametrize(
+        'database',
+        ['postgres', 'mysql'],
+        ids=["psql", "mysql"])
+    def tests(session, django, database):
+        ...
+
+Produces these sessions when running ``nox --list``:
+
+.. code-block:: console
+
+    * tests(psql, old)
+    * tests(mysql, old)
+    * tests(psql, new)
+    * tests(mysql, new)
+
+
 .. _pip: https://pip.readthedocs.org
 .. _flake8: https://flake8.readthedocs.org
 .. _thekevjames/nox images: https://hub.docker.com/r/thekevjames/nox

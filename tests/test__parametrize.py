@@ -26,11 +26,15 @@ from nox import _parametrize
         (_parametrize.Param(1, 2, id="a"), _parametrize.Param(1, 2, id="a"), True),
         (_parametrize.Param(1, 3), _parametrize.Param(1, 2), False),
         (_parametrize.Param(1, 2, arg_names=("a", "b")), {"a": 1, "b": 2}, True),
-        (_parametrize.Param(), "a", False),
     ],
 )
 def test_param_eq(param, other, expected):
     assert (param == other) is expected
+
+
+def test_param_eq_fail():
+    with pytest.raises(NotImplementedError):
+        _parametrize.Param() == "a"
 
 
 def test_parametrize_decorator_one():

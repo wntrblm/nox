@@ -18,7 +18,14 @@ import itertools
 
 class Param:
     """A class that encapsulates a single set of parameters to a parametrized
-    session."""
+    session.
+
+    Args:
+        args (List[Any]): The list of args to pass to the invoked function.
+        arg_names (Sequence[str]): The names of the args.
+        id (str): An optional ID for this set of parameters. If unspecified,
+            it will be generated from the parameters.
+    """
 
     def __init__(self, *args, arg_names=None, id=None):
         self.args = tuple(args)
@@ -49,9 +56,9 @@ class Param:
         return new
 
     def update(self, other):
+        self.id = ", ".join([str(self), str(other)])
         self.args = self.args + other.args
         self.arg_names = self.arg_names + other.arg_names
-        self.id = ", ".join([str(self), str(other)])
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -62,7 +69,15 @@ class Param:
             )
         elif isinstance(other, dict):
             return dict(zip(self.arg_names, self.args)) == other
-        return False
+
+        raise NotImplementedError
+
+
+def _apply_param_specs(param_specs, f):
+    previous_param_specs = getattr(f, "parametrize", None)
+    new_param_specs = update_param_specs(previous_param_specs, param_specs)
+    setattr(f, "parametrize", new_param_specs)
+    return f
 
 
 def parametrize_decorator(arg_names, arg_values_list, ids=None):
@@ -82,7 +97,7 @@ def parametrize_decorator(arg_names, arg_values_list, ids=None):
             argument names were specified, this must be a list of N-tuples,
             where each tuple-element specifies a value for its respective
             argument name, for example ``[(1, 'a'), (2, 'b')]``.
-        ids ([Sequence[str]): Optional sequence of test ids to use for the
+        ids (Sequence[str]): Optional sequence of test IDs to use for the
             parametrized arguments.
     """
 
@@ -119,22 +134,15 @@ def parametrize_decorator(arg_names, arg_values_list, ids=None):
 
         param_specs.append(param_spec)
 
-    def inner(f):
-        previous_param_specs = getattr(f, "parametrize", None)
-        new_param_specs = update_param_specs(previous_param_specs, param_specs)
-        setattr(f, "parametrize", new_param_specs)
-        return f
-
-    return inner
+    return functools.partial(_apply_param_specs, param_specs)
 
 
 def update_param_specs(param_specs, new_specs):
-    """Combine existing specs by *multiplying* them against the existing
-    specs."""
+    """Produces all combinations of the given sets of specs."""
     if not param_specs:
         return new_specs
 
-    # # New specs must be combined with old specs by *multiplying* them.
+    # New specs must be combined with old specs by *multiplying* them.
     combined_specs = []
     for new_spec in new_specs:
         for spec in param_specs:
