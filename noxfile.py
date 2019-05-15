@@ -20,6 +20,10 @@ import nox
 ON_APPVEYOR = os.environ.get("APPVEYOR") == "True"
 
 
+nox.options.sessions = ["cover"]
+# nox.options.stop_on_first_error = True
+
+
 @nox.session(python=["3.5", "3.6", "3.7"])
 def tests(session):
     """Run test suite with pytest."""
@@ -75,9 +79,3 @@ def docs(session):
         sphinx_args.insert(0, "--open-browser")
 
     session.run(sphinx_cmd, *sphinx_args)
-
-
-@nox.session
-@nox.parametrize("django", [nox.param("1.9", id="old"), nox.param("2.0", id="new")])
-def django(session, django):
-    pass

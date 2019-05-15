@@ -1,18 +1,17 @@
-# Copyright 2016 Alethea Katherine Flowers
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# # Copyright 2016 Alethea Katherine Flowers
+# #
+# # Licensed under the Apache License, Version 2.0 (the "License");
+# # you may not use this file except in compliance with the License.
+# # You may obtain a copy of the License at
+# #
+# #    http://www.apache.org/licenses/LICENSE-2.0
+# #
+# # Unless required by applicable law or agreed to in writing, software
+# # distributed under the License is distributed on an "AS IS" BASIS,
+# # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# # See the License for the specific language governing permissions and
+# # limitations under the License.
 
-import argparse
 import os
 import sys
 from unittest import mock
@@ -32,109 +31,6 @@ RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 VERSION = pkg_resources.get_distribution("nox").version
 
 
-class TestGlobalConfig:
-    def make_args(self):
-        return argparse.Namespace(
-            noxfile="noxfile",
-            envdir="dir",
-            sessions=["1", "2"],
-            keywords="red and blue",
-            list_sessions=False,
-            reuse_existing_virtualenvs=False,
-            no_reuse_existing_virtualenvs=False,
-            stop_on_first_error=False,
-            no_stop_on_first_error=False,
-            error_on_missing_interpreters=False,
-            no_error_on_missing_interpreters=False,
-            error_on_external_run=False,
-            no_error_on_external_run=True,
-            install_only=False,
-            posargs=["a", "b", "c"],
-            report=None,
-            nocolor=False,
-            forcecolor=False,
-        )
-
-    def test_constructor(self):
-        args = self.make_args()
-        config = nox.__main__.GlobalConfig(args)
-
-        assert config.noxfile == "noxfile"
-        assert config.envdir == "dir"
-        assert config.sessions == ["1", "2"]
-        assert config.keywords == "red and blue"
-        assert config.list_sessions is False
-        assert config.reuse_existing_virtualenvs is False
-        assert config.no_reuse_existing_virtualenvs is False
-        assert config.stop_on_first_error is False
-        assert config.no_stop_on_first_error is False
-        assert config.error_on_missing_interpreters is False
-        assert config.no_error_on_missing_interpreters is False
-        assert config.install_only is False
-        assert config.posargs == ["a", "b", "c"]
-
-        args.posargs = ["--", "a", "b", "c"]
-        config = nox.__main__.GlobalConfig(args)
-        assert config.posargs == ["a", "b", "c"]
-
-    def test_merge_from_options_no_changes(self):
-        args = self.make_args()
-        config = nox.__main__.GlobalConfig(args)
-        original_values = vars(config).copy()
-        options = nox._options.options()
-
-        config.merge_from_options(options)
-
-        assert vars(config) == original_values
-
-    def test_merge_from_options_options_by_default(self):
-        args = self.make_args()
-        args.sessions = None
-        args.keywords = None
-        config = nox.__main__.GlobalConfig(args)
-        original_values = vars(config).copy()
-
-        options = nox._options.options()
-        options.sessions = ["1", "2"]
-        options.keywords = "one"
-        options.reuse_existing_virtualenvs = True
-        options.stop_on_first_error = True
-        options.error_on_missing_interpreters = True
-        options.install_only = True
-        options.report = "output.json"
-
-        config.merge_from_options(options)
-
-        assert vars(config) != original_values
-        assert config.sessions == ["1", "2"]
-        assert config.keywords == "one"
-        assert config.reuse_existing_virtualenvs is True
-        assert config.stop_on_first_error is True
-        assert config.error_on_missing_interpreters is True
-        assert config.report == "output.json"
-
-    def test_merge_from_options_args_precedence(self):
-        args = self.make_args()
-        args.sessions = ["1", "2"]
-        args.no_reuse_existing_virtualenvs = True
-        args.no_stop_on_first_error = True
-        args.no_error_on_missing_interpreters = True
-        args.report = "output.json"
-        config = nox.__main__.GlobalConfig(args)
-        original_values = vars(config).copy()
-
-        options = nox._options.options()
-        options.keywords = "one"
-        options.reuse_existing_virtualenvs = True
-        options.stop_on_first_error = True
-        options.error_on_missing_interpreters = True
-        options.install_only = True
-
-        config.merge_from_options(options)
-
-        assert vars(config) == original_values
-
-
 def test_main_no_args(monkeypatch):
     # Prevents any interference from outside
     monkeypatch.delenv("NOXSESSION", raising=False)
@@ -152,8 +48,8 @@ def test_main_no_args(monkeypatch):
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
         assert config.sessions is None
-        assert config.reuse_existing_virtualenvs is False
-        assert config.stop_on_first_error is False
+        assert not config.reuse_existing_virtualenvs
+        assert not config.stop_on_first_error
         assert config.posargs == []
 
 
@@ -376,3 +272,41 @@ def test_main_session_with_names(capsys):
         assert stdout == "Noms, cheddar so good!\n"
         assert "Session cheese list(cheese='cheddar') was successful." in stderr
         sys_exit.assert_called_once_with(0)
+
+
+def test_main_noxfile_options():
+    sys.argv = ["nox", "-l", "--noxfile", os.path.join(RESOURCES, "noxfile_options.py")]
+
+    with mock.patch("nox.tasks.honor_list_request") as honor_list_request:
+        honor_list_request.return_value = 0
+
+        with mock.patch("sys.exit"):
+            nox.__main__.main()
+
+        assert honor_list_request.called
+
+        # Verify that the config looks correct.
+        config = honor_list_request.call_args[1]["global_config"]
+        assert config.reuse_existing_virtualenvs is True
+
+
+def test_main_noxfile_options_disabled_by_flag():
+    sys.argv = [
+        "nox",
+        "-l",
+        "--no-reuse-existing-virtualenvs",
+        "--noxfile",
+        os.path.join(RESOURCES, "noxfile_options.py"),
+    ]
+
+    with mock.patch("nox.tasks.honor_list_request") as honor_list_request:
+        honor_list_request.return_value = 0
+
+        with mock.patch("sys.exit"):
+            nox.__main__.main()
+
+        assert honor_list_request.called
+
+        # Verify that the config looks correct.
+        config = honor_list_request.call_args[1]["global_config"]
+        assert config.reuse_existing_virtualenvs is False

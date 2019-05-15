@@ -23,6 +23,7 @@ from unittest import mock
 import pytest
 
 import nox
+from nox import _options
 from nox import sessions
 from nox import tasks
 from nox.manifest import Manifest
@@ -39,7 +40,7 @@ session_func.python = None
 
 
 def test_load_nox_module():
-    config = argparse.Namespace(noxfile=os.path.join(RESOURCES, "noxfile.py"))
+    config = _options.options.namespace(noxfile=os.path.join(RESOURCES, "noxfile.py"))
     noxfile_module = tasks.load_nox_module(config)
     assert noxfile_module.SIGIL == "123"
 
@@ -50,16 +51,16 @@ def test_load_nox_module_expandvars():
     # %TEMP% to point to the noxfile.py
     with mock.patch.dict(os.environ, {"RESOURCES_PATH": RESOURCES}):
         if platform.system().lower().startswith("win"):
-            config = argparse.Namespace(noxfile="%RESOURCES_PATH%/noxfile.py")
+            config = _options.options.namespace(noxfile="%RESOURCES_PATH%/noxfile.py")
         else:
-            config = argparse.Namespace(noxfile="${RESOURCES_PATH}/noxfile.py")
+            config = _options.options.namespace(noxfile="${RESOURCES_PATH}/noxfile.py")
         noxfile_module = tasks.load_nox_module(config)
     assert noxfile_module.__file__ == os.path.join(RESOURCES, "noxfile.py")
     assert noxfile_module.SIGIL == "123"
 
 
 def test_load_nox_module_not_found():
-    config = argparse.Namespace(noxfile="bogus.py")
+    config = _options.options.namespace(noxfile="bogus.py")
     assert tasks.load_nox_module(config) == 2
 
 
@@ -84,7 +85,7 @@ def test_discover_session_functions_decorator():
     mock_module = argparse.Namespace(
         __name__=foo.__module__, foo=foo, bar=bar, notasession=notasession
     )
-    config = argparse.Namespace(sessions=(), keywords=())
+    config = _options.options.namespace(sessions=(), keywords=())
 
     # Get the manifest and establish that it looks like what we expect.
     manifest = tasks.discover_manifest(mock_module, config)
@@ -94,7 +95,7 @@ def test_discover_session_functions_decorator():
 
 
 def test_filter_manifest():
-    config = argparse.Namespace(sessions=(), keywords=())
+    config = _options.options.namespace(sessions=(), keywords=())
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
@@ -102,14 +103,14 @@ def test_filter_manifest():
 
 
 def test_filter_manifest_not_found():
-    config = argparse.Namespace(sessions=("baz",), keywords=())
+    config = _options.options.namespace(sessions=("baz",), keywords=())
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value == 3
 
 
 def test_filter_manifest_keywords():
-    config = argparse.Namespace(sessions=(), keywords="foo or bar")
+    config = _options.options.namespace(sessions=(), keywords="foo or bar")
     manifest = Manifest(
         {"foo": session_func, "bar": session_func, "baz": session_func}, config
     )
@@ -119,7 +120,7 @@ def test_filter_manifest_keywords():
 
 
 def test_honor_list_request_noop():
-    config = argparse.Namespace(list_sessions=False)
+    config = _options.options.namespace(list_sessions=False)
     manifest = {"thing": mock.sentinel.THING}
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value is manifest
@@ -127,7 +128,9 @@ def test_honor_list_request_noop():
 
 @pytest.mark.parametrize("description", [None, "bar"])
 def test_honor_list_request(description):
-    config = argparse.Namespace(list_sessions=True, noxfile="noxfile.py", color=False)
+    config = _options.options.namespace(
+        list_sessions=True, noxfile="noxfile.py", color=False
+    )
     manifest = mock.create_autospec(Manifest)
     manifest.list_all_sessions.return_value = [
         (argparse.Namespace(friendly_name="foo", description=description), True)
@@ -137,7 +140,9 @@ def test_honor_list_request(description):
 
 
 def test_honor_list_request_skip_and_selected(capsys):
-    config = argparse.Namespace(list_sessions=True, noxfile="noxfile.py", color=False)
+    config = _options.options.namespace(
+        list_sessions=True, noxfile="noxfile.py", color=False
+    )
     manifest = mock.create_autospec(Manifest)
     manifest.list_all_sessions.return_value = [
         (argparse.Namespace(friendly_name="foo", description=None), True),
@@ -153,14 +158,14 @@ def test_honor_list_request_skip_and_selected(capsys):
 
 
 def test_verify_manifest_empty():
-    config = argparse.Namespace(sessions=(), keywords=())
+    config = _options.options.namespace(sessions=(), keywords=())
     manifest = Manifest({}, config)
     return_value = tasks.verify_manifest_nonempty(manifest, global_config=config)
     assert return_value == 3
 
 
 def test_verify_manifest_nonempty():
-    config = argparse.Namespace(sessions=(), keywords=())
+    config = _options.options.namespace(sessions=(), keywords=())
     manifest = Manifest({"session": session_func}, config)
     return_value = tasks.verify_manifest_nonempty(manifest, global_config=config)
     assert return_value == manifest
@@ -168,7 +173,7 @@ def test_verify_manifest_nonempty():
 
 def test_run_manifest():
     # Set up a valid manifest.
-    config = argparse.Namespace(stop_on_first_error=False)
+    config = _options.options.namespace(stop_on_first_error=False)
     sessions_ = [
         mock.Mock(spec=sessions.SessionRunner),
         mock.Mock(spec=sessions.SessionRunner),
@@ -196,7 +201,7 @@ def test_run_manifest():
 
 def test_run_manifest_abort_on_first_failure():
     # Set up a valid manifest.
-    config = argparse.Namespace(stop_on_first_error=True)
+    config = _options.options.namespace(stop_on_first_error=True)
     sessions_ = [
         mock.Mock(spec=sessions.SessionRunner),
         mock.Mock(spec=sessions.SessionRunner),
@@ -252,7 +257,7 @@ def test_print_summary():
 
 
 def test_create_report_noop():
-    config = argparse.Namespace(report=None)
+    config = _options.options.namespace(report=None)
     with mock.patch.object(io, "open", autospec=True) as open_:
         results = tasks.create_report(mock.sentinel.RESULTS, config)
         assert not open_.called
@@ -260,7 +265,7 @@ def test_create_report_noop():
 
 
 def test_create_report():
-    config = argparse.Namespace(report="/path/to/report")
+    config = _options.options.namespace(report="/path/to/report")
     results = [
         sessions.Result(
             session=argparse.Namespace(

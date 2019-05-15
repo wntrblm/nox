@@ -1,4 +1,4 @@
-# Copyright 2016 Alethea Katherine Flowers
+# Copyright 2018 Alethea Katherine Flowers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nox._options import noxfile_options as options
-from nox._parametrize import Param as param
-from nox._parametrize import parametrize_decorator as parametrize
-from nox.registry import session_decorator as session
+import nox
 
-__all__ = ["parametrize", "param", "session", "options"]
+nox.options.reuse_existing_virtualenvs = True
+
+
+@nox.session(py=False)
+def test(unused_session):
+    print("okay")
