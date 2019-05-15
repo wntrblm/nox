@@ -31,6 +31,15 @@ RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 VERSION = pkg_resources.get_distribution("nox").version
 
 
+# This is needed because CI systems will mess up these tests due to the
+# way nox handles the --session parameter's default value. This avoids that
+# mess.
+@pytest.fixture(autouse=True)
+def remove_noxsession_envvar(monkeypatch):
+    monkeypatch.delenv("NOXSESSION", raising=False)
+    yield
+
+
 def test_main_no_args(monkeypatch):
     # Prevents any interference from outside
     monkeypatch.delenv("NOXSESSION", raising=False)
