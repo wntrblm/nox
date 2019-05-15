@@ -34,15 +34,10 @@ VERSION = pkg_resources.get_distribution("nox").version
 # This is needed because CI systems will mess up these tests due to the
 # way nox handles the --session parameter's default value. This avoids that
 # mess.
-@pytest.fixture(autouse=True)
-def remove_noxsession_envvar(monkeypatch):
-    monkeypatch.delenv("NOXSESSION", raising=False)
-    yield
+os.environ.pop("NOXSESSION", None)
 
 
 def test_main_no_args(monkeypatch):
-    # Prevents any interference from outside
-    monkeypatch.delenv("NOXSESSION", raising=False)
     sys.argv = [sys.executable]
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
@@ -284,7 +279,14 @@ def test_main_session_with_names(capsys):
 
 
 def test_main_noxfile_options():
-    sys.argv = ["nox", "-l", "--noxfile", os.path.join(RESOURCES, "noxfile_options.py")]
+    sys.argv = [
+        "nox",
+        "-l",
+        "-s",
+        "test",
+        "--noxfile",
+        os.path.join(RESOURCES, "noxfile_options.py"),
+    ]
 
     with mock.patch("nox.tasks.honor_list_request") as honor_list_request:
         honor_list_request.return_value = 0
@@ -303,6 +305,8 @@ def test_main_noxfile_options_disabled_by_flag():
     sys.argv = [
         "nox",
         "-l",
+        "-s",
+        "test",
         "--no-reuse-existing-virtualenvs",
         "--noxfile",
         os.path.join(RESOURCES, "noxfile_options.py"),
@@ -319,3 +323,19 @@ def test_main_noxfile_options_disabled_by_flag():
         # Verify that the config looks correct.
         config = honor_list_request.call_args[1]["global_config"]
         assert config.reuse_existing_virtualenvs is False
+
+
+def test_main_noxfile_options_sessions():
+    sys.argv = ["nox", "-l", "--noxfile", os.path.join(RESOURCES, "noxfile_options.py")]
+
+    with mock.patch("nox.tasks.honor_list_request") as honor_list_request:
+        honor_list_request.return_value = 0
+
+        with mock.patch("sys.exit"):
+            nox.__main__.main()
+
+        assert honor_list_request.called
+
+        # Verify that the config looks correct.
+        config = honor_list_request.call_args[1]["global_config"]
+        assert config.sessions == ["test"]

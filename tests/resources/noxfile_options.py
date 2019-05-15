@@ -15,6 +15,7 @@
 import nox
 
 nox.options.reuse_existing_virtualenvs = True
+nox.options.sessions = ["test"]
 
 
 @nox.session(py=False)
