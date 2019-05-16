@@ -129,11 +129,20 @@ div.footer a {
 }
 
 @media screen and (max-width: 875px) {
+    body {
+        margin: 0;
+    }
+    div.body {
+        min-width: 0;
+    }
+    div.highlight {
+        padding: 0px 5px;
+    }
     div.sphinxsidebar {
         background: #003039;
+        text-align: center;
     }
     div.sphinxsidebar h1.logo, div.sphinxsidebar p.blurb{
-        text-align: left;
     }
     div.sphinxsidebar h1 a {
         color: #1bc5e0;
@@ -143,5 +152,12 @@ div.footer a {
     }
     div.sphinxsidebar ul {
         color: #ceb1ff;
+    }
+    div.sphinxsidebar ul ul {
+        display: none;
+    }
+    div > dl {
+        border: none;
+        padding-left: none;
     }
 }
