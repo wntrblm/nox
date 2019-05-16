@@ -206,7 +206,7 @@ class VirtualEnv(ProcessEnv):
 
         logger.info(
             "Creating virtualenv using {} in {}".format(
-                os.path.basename(self._resolved_interpreter), self.location
+                os.path.basename(self._resolved_interpreter), self.location_name
             )
         )
         nox.command.run(cmd, silent=True, log=False)
