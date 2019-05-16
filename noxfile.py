@@ -20,10 +20,6 @@ import nox
 ON_APPVEYOR = os.environ.get("APPVEYOR") == "True"
 
 
-nox.options.sessions = ["cover"]
-# nox.options.stop_on_first_error = True
-
-
 @nox.session(python=["3.5", "3.6", "3.7"])
 def tests(session):
     """Run test suite with pytest."""
