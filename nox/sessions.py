@@ -137,13 +137,13 @@ class Session:
 
         Commands must be specified as a list of strings, for example::
 
-            session.run('py.test', '-k', 'fast', 'tests/')
+            session.run('pytest', '-k', 'fast', 'tests/')
             session.run('flake8', '--import-order-style=google')
 
         You **can not** just pass everything as one string. For example, this
         **will not work**::
 
-            session.run('py.test -k fast tests/')
+            session.run('pytest -k fast tests/')
 
         You can set environment variables for the command using ``env``::
 
@@ -152,11 +152,11 @@ class Session:
                 env={'SOME_ENV': 'Hello'})
 
         You can also tell nox to treat non-zero exit codes as success using
-        ``success_codes``. For example, if you wanted to treat the ``py.test``
+        ``success_codes``. For example, if you wanted to treat the ``pytest``
         "tests discovered, but none selected" error as success::
 
             session.run(
-                'py.test', '-k', 'not slow',
+                'pytest', '-k', 'not slow',
                 success_codes=[0, 5])
 
         :param env: A dictionary of environment variables to expose to the
@@ -214,7 +214,7 @@ class Session:
 
         To install packages directly::
 
-            session.install('py.test')
+            session.install('pytest')
             session.install('requests', 'mock')
             session.install('requests[security]==2.9.1')
 

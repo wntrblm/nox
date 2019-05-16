@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""py.test shared testing configuration.
+"""pytest shared testing configuration.
 
 This monkey-patches ``mock`` as ``unittest.mock`` for Python 2.7.
 """
