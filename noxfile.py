@@ -27,7 +27,7 @@ def tests(session):
     session.install("-e", ".[tox_to_nox]")
     tests = session.posargs or ["tests/"]
     session.run(
-        "py.test", "--cov=nox", "--cov-config", ".coveragerc", "--cov-report=", *tests
+        "pytest", "--cov=nox", "--cov-config", ".coveragerc", "--cov-report=", *tests
     )
     session.notify("cover")
 
