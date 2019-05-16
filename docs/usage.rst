@@ -4,12 +4,16 @@ Command-line usage
 Invocation
 ----------
 
-Nox is normally invoked on the command line::
+Nox is normally invoked on the command line:
+
+.. code-block:: console
 
     nox
 
 
-You can also invoke Nox via the Python interpreter::
+You can also invoke Nox via the Python interpreter:
+
+.. code-block:: console
 
     python3 -m nox
 
@@ -17,9 +21,13 @@ You can also invoke Nox via the Python interpreter::
 Listing available sessions
 --------------------------
 
-To list all available sessions, including parametrized sessions::
+To list all available sessions, including parametrized sessions:
+
+
+.. code-block:: console
 
     nox -l
+    nox --list
     nox --list-sessions
 
 
@@ -28,7 +36,9 @@ To list all available sessions, including parametrized sessions::
 Running all sessions
 --------------------
 
-You can run every session by just executing `nox` without any arguments::
+You can run every session by just executing `nox` without any arguments:
+
+.. code-block:: console
 
     nox
 
@@ -40,20 +50,26 @@ The order that sessions are executed is the order that they appear in the Noxfil
 Specifying one or more sessions
 -------------------------------
 
-By default Nox will run all sessions defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``::
+By default Nox will run all sessions defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``:
+
+.. code-block:: console
 
     nox --session tests
     nox -s lint tests
     nox -e lint
 
-You can also use the ``NOXSESSION`` environment variable::
+You can also use the ``NOXSESSION`` environment variable:
+
+.. code-block:: console
 
     NOXSESSION=lint nox
     NOXSESSION=lint,tests nox
 
 Nox will run these sessions in the same order they are specified.
 
-You can also use `pytest-style keywords`_ to filter test sessions::
+You can also use `pytest-style keywords`_ to filter test sessions:
+
+.. code-block:: console
 
     nox -k "not lint"
     nox -k "tests and not lint"
@@ -66,13 +82,17 @@ You can also use `pytest-style keywords`_ to filter test sessions::
 Specifying parametrized sessions
 --------------------------------
 
-If you have a :ref:`parametrized <parametrized>` session such as::
+If you have a :ref:`parametrized <parametrized>` session such as:
+
+.. code-block:: python
 
     @nox.parametrize('django', ['1.9', '2.0'])
     def tests(session, django):
         ...
 
-Then running ``nox --session tests`` will actually run all parametrized versions of the session. If you want the run the session with a particular set of parametrized arguments, you can specify them with the session name::
+Then running ``nox --session tests`` will actually run all parametrized versions of the session. If you want the run the session with a particular set of parametrized arguments, you can specify them with the session name:
+
+.. code-block:: console
 
     nox --session "tests(django='1.9')"
     nox --session "tests(django='2.0')"
@@ -83,7 +103,9 @@ Then running ``nox --session tests`` will actually run all parametrized versions
 Re-using virtualenvs
 --------------------
 
-By default nox deletes and recreates virtualenvs every time it is run. This is usually fine for most projects and continuous integration environments as `pip's caching <https://pip.pypa.io/en/stable/reference/pip_install/#caching>`_ makes re-install rather quick. However, there are some situations where it is advantageous to re-use the virtualenvs between runs. Use ``-r`` or ``--reuse-existing-virtualenvs``::
+By default nox deletes and recreates virtualenvs every time it is run. This is usually fine for most projects and continuous integration environments as `pip's caching <https://pip.pypa.io/en/stable/reference/pip_install/#caching>`_ makes re-install rather quick. However, there are some situations where it is advantageous to re-use the virtualenvs between runs. Use ``-r`` or ``--reuse-existing-virtualenvs``:
+
+.. code-block:: console
 
     nox -r
     nox --reuse-existing-virtualenvs
@@ -102,12 +124,15 @@ By default nox will continue to run all sessions even if one fails. You can use 
 
 If the Noxfile sets ``nox.options.stop_on_first_error``, you can override the Noxfile setting from the command line by using ``--no-stop-on-first-error``.
 
+
 .. _opt-error-on-missing-interpreters:
 
 Failing sessions when the interpreter is missing
 ------------------------------------------------
 
-By default, Nox will skip sessions where the Python interpreter can't be found. If you want Nox to mark these sessions as failed, you can use ``--error-on-missing-interpreters``::
+By default, Nox will skip sessions where the Python interpreter can't be found. If you want Nox to mark these sessions as failed, you can use ``--error-on-missing-interpreters``:
+
+.. code-block:: console
 
     nox --error-on-missing-interpreters
 
@@ -118,7 +143,9 @@ If the Noxfile sets ``nox.options.error_on_missing_interpreters``, you can overr
 Disallowing external programs
 -----------------------------
 
-By default Nox will warn but ultimately allow you to run programs not installed in the session's virtualenv. You can use ``--error-on-external-run`` to make Nox fail the session if it uses any external program without explicitly passing ``external=True`` into :func:`session.run <nox.session.Session.run>`::
+By default Nox will warn but ultimately allow you to run programs not installed in the session's virtualenv. You can use ``--error-on-external-run`` to make Nox fail the session if it uses any external program without explicitly passing ``external=True`` into :func:`session.run <nox.session.Session.run>`:
+
+.. code-block:: console
 
     nox --error-on-external-run
 
@@ -127,7 +154,9 @@ If the Noxfile sets ``nox.options.error_on_external_run``, you can override the 
 Specifying a different configuration file
 -----------------------------------------
 
-If for some reason your noxfile is not named *noxfile.py*, you can use ``--noxfile`` or ``-f``::
+If for some reason your noxfile is not named *noxfile.py*, you can use ``--noxfile`` or ``-f``:
+
+.. code-block:: console
 
     nox --noxfile something.py
     nox -f something.py
@@ -138,9 +167,11 @@ If for some reason your noxfile is not named *noxfile.py*, you can use ``--noxfi
 Storing virtualenvs in a different directory
 --------------------------------------------
 
-By default nox stores virtualenvs in ``./.nox``, however, you can change this using ``--envdir``::
+By default nox stores virtualenvs in ``./.nox``, however, you can change this using ``--envdir``:
 
-    nox --envdir /tmp/.
+.. code-block:: console
+
+    nox --envdir /tmp/envs
 
 
 Skipping everything but install commands
@@ -161,15 +192,14 @@ For example, given this Noxfile:
 
 Running:
 
-.. code-block:: bash
+.. code-block:: console
 
     nox --install-only
 
 
-Would run both ``install`` commands, but skip the ``run`` command::
+Would run both ``install`` commands, but skip the ``run`` command:
 
-.. code-block:: plaintext
-
+.. code-block:: console
 
     nox > Running session tests
     nox > Creating virtualenv using python3.7 in ./.nox/tests
@@ -189,21 +219,28 @@ set, nox will output in plaintext.
 
 You can manually control Nox's output using the ``--nocolor`` and ``--forcecolor`` flags.
 
-For example, this will always output colorful logs::
+For example, this will always output colorful logs:
+
+.. code-block:: console
 
     nox --forcecolor
 
-However, this will never output colorful logs::
+However, this will never output colorful logs:
+
+.. code-block:: console
 
     nox --nocolor
 
 
 .. _opt-report:
 
+
 Outputting a machine-readable report
 ------------------------------------
 
-You can output a report in ``json`` format by specifying ``--report``::
+You can output a report in ``json`` format by specifying ``--report``:
+
+.. code-block:: console
 
     nox --report status.json
 
@@ -230,11 +267,15 @@ Converting from tox
 
 Nox has experimental support for converting ``tox.ini`` files into ``noxfile.py`` files. This doesn't support every feature of tox and is intended to just do most of the mechanical work of converting over- you'll likely still need to make a few changes to the converted ``noxfile.py``.
 
-To use the converter, install ``nox`` with the ``tox_to_nox`` extra::
+To use the converter, install ``nox`` with the ``tox_to_nox`` extra:
+
+.. code-block:: console
 
     pip install --upgrade nox[tox_to_nox]
 
-Then, just run ``tox-to-nox`` in the directory where your ``tox.ini`` resides::
+Then, just run ``tox-to-nox`` in the directory where your ``tox.ini`` resides:
+
+.. code-block:: console
 
     tox-to-nox
 
