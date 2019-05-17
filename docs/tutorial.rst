@@ -25,7 +25,7 @@ Or you can be extra fancy and use `pipx`_:
 
     pipx install nox
 
-Either way, Nox is usually you installed *globally*, similar to ``tox``, ``pip``, and other similar tools.
+Either way, Nox is usually installed *globally*, similar to ``tox``, ``pip``, and other similar tools.
 
 If you're interested in running ``nox`` within `docker`_, you can use the `thekevjames/nox images`_ on DockerHub which contain builds for all ``nox`` versions and all supported ``python`` versions.
 
