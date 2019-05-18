@@ -83,6 +83,21 @@ class TestSession:
         assert session.bin is runner.venv.bin
         assert session.python is runner.func.python
 
+    def test_interactive(self):
+        with mock.patch("nox.sessions.sys") as mock_sys:
+            m_stdout = mock.Mock()
+            m_isatty = mock.Mock()
+            m_stdout.isatty = m_isatty
+            mock_sys.stdout = m_stdout
+
+            m_isatty.return_value = True
+            session, runner = self.make_session_and_runner()
+            assert session.interactive == True
+            
+            m_isatty.return_value = False
+            session, runner = self.make_session_and_runner()
+            assert session.interactive == False
+
     def test_chdir(self, tmpdir):
         cdto = str(tmpdir.join("cdbby").ensure(dir=True))
         current_cwd = os.getcwd()

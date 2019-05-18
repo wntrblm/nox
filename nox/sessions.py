@@ -16,6 +16,7 @@ import enum
 import hashlib
 import os
 import re
+import sys
 import unicodedata
 
 import py
@@ -114,6 +115,11 @@ class Session:
     def bin(self):
         """The bin directory for the virtualenv."""
         return self._runner.venv.bin
+
+    @property
+    def interactive(self):
+        """Boolean showing if the session was ran in an interactive sessions."""
+        return sys.stdout.isatty()
 
     def chdir(self, dir):
         """Change the current working directory."""
