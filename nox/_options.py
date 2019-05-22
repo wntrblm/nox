@@ -39,14 +39,30 @@ options.add_group(
 
 def _sessions_and_keywords_merge_func(key, command_args, noxfile_args):
     """Only return the Noxfile value for sessions/keywords if neither sessions
-    or keywords are specified on the command-line."""
+    or keywords are specified on the command-line.
+
+    Args:
+        key (str): This function is used for both the "sessions" and "keywords"
+            options, this allows using ``funtools.partial`` to pass the
+            same function for both options.
+        command_args (_option_set.Namespace): The options specified on the
+            command-line.
+        noxfile_Args (_option_set.Namespace): The options specified in the
+            Noxfile."""
     if not command_args.sessions and not command_args.keywords:
         return getattr(noxfile_args, key)
     return getattr(command_args, key)
 
 
 def _envdir_merge_func(command_args, noxfile_args):
-    """Ensure that there is always some envdir."""
+    """Ensure that there is always some envdir.
+
+    Args:
+        command_args (_option_set.Namespace): The options specified on the
+            command-line.
+        noxfile_Args (_option_set.Namespace): The options specified in the
+            Noxfile.
+    """
     return command_args.envdir or noxfile_args.envdir or ".nox"
 
 
@@ -58,11 +74,33 @@ def _sessions_default():
 
 
 def _color_finalizer(value, args):
-    """Figures out the correct value for "color" based on the two color flags."""
-    return not args.nocolor or args.forcecolor
+    """Figures out the correct value for "color" based on the two color flags.
+
+    Args:
+        value (bool): The current value of the "color" option.
+        args (_option_set.Namespace): The values for all options.
+
+    Returns:
+        The new value for the "color" option.
+    """
+    if args.forcecolor is True and args.nocolor is True:
+        raise _option_set.ArgumentError(
+            None, "Can not specify both --no-color and --force-color."
+        )
+
+    if args.forcecolor:
+        return True
+
+    if args.nocolor:
+        return False
+
+    if sys.stderr.isatty():
+        return True
+    else:
+        return False
 
 
-def _posargs_finalizer(value, args):
+def _posargs_finalizer(value, unused_args):
     """Removes any leading "--"s in the posargs array."""
     if value and value[0] == "--":
         value.pop(0)
@@ -99,12 +137,13 @@ options.add_options(
         "-s",
         "-e",
         "--sessions",
+        "--session",
         group="primary",
         noxfile=True,
         merge_func=functools.partial(_sessions_and_keywords_merge_func, "sessions"),
         nargs="*",
         default=_sessions_default,
-        help="Which sessions to run, by default, all sessions will run.",
+        help="Which sessions to run. By default, all sessions will run.",
     ),
     _option_set.Option(
         "keywords",
@@ -119,13 +158,13 @@ options.add_options(
         "posargs",
         group="primary",
         nargs=argparse.REMAINDER,
-        help="Arguments following -- that are passed through to the session(s).",
+        help="Arguments following ``--`` that are passed through to the session(s).",
         finalizer_func=_posargs_finalizer,
     ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
-        ["-r", "--reuse-existing-virtualenvs"],
-        ["--no-reuse-existing-virtualenvs"],
+        ("-r", "--reuse-existing-virtualenvs"),
+        ("--no-reuse-existing-virtualenvs",),
         group="secondary",
         help="Re-use existing virtualenvs instead of recreating them.",
     ),
@@ -143,26 +182,26 @@ options.add_options(
         noxfile=True,
         merge_func=_envdir_merge_func,
         group="secondary",
-        help="Directory where nox will store virtualenvs, this is .nox by default.",
+        help="Directory where nox will store virtualenvs, this is ``.nox`` by default.",
     ),
     *_option_set.make_flag_pair(
         "stop_on_first_error",
-        ["-x", "--stop-on-first-error"],
-        ["--no-stop-on-first-error"],
+        ("-x", "--stop-on-first-error"),
+        ("--no-stop-on-first-error",),
         group="secondary",
         help="Stop after the first error.",
     ),
     *_option_set.make_flag_pair(
         "error_on_missing_interpreters",
-        ["--error-on-missing-interpreters"],
-        ["--no-error-on-missing-interpreters"],
+        ("--error-on-missing-interpreters",),
+        ("--no-error-on-missing-interpreters",),
         group="secondary",
         help="Error instead of skipping sessions if an interpreter can not be located.",
     ),
     *_option_set.make_flag_pair(
         "error_on_external_run",
-        ["--error-on-external-run"],
-        ["--no-error-on-external-run"],
+        ("--error-on-external-run",),
+        ("--no-error-on-external-run",),
         group="secondary",
         help="Error if run() is used to execute a program that isn't installed in a session's virtualenv.",
     ),
@@ -183,14 +222,16 @@ options.add_options(
     _option_set.Option(
         "nocolor",
         "--nocolor",
+        "--no-color",
         group="secondary",
-        default=lambda: "NO_COLOR" in os.environ or not sys.stderr.isatty(),
+        default=lambda: "NO_COLOR" in os.environ,
         action="store_true",
         help="Disable all color output.",
     ),
     _option_set.Option(
         "forcecolor",
         "--forcecolor",
+        "--force-color",
         group="secondary",
         default=False,
         action="store_true",

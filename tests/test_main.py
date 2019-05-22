@@ -1,16 +1,16 @@
-# # Copyright 2016 Alethea Katherine Flowers
-# #
-# # Licensed under the Apache License, Version 2.0 (the "License");
-# # you may not use this file except in compliance with the License.
-# # You may obtain a copy of the License at
-# #
-# #    http://www.apache.org/licenses/LICENSE-2.0
-# #
-# # Unless required by applicable law or agreed to in writing, software
-# # distributed under the License is distributed on an "AS IS" BASIS,
-# # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# # See the License for the specific language governing permissions and
-# # limitations under the License.
+# Copyright 2016 Alethea Katherine Flowers
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import os
 import sys
@@ -339,3 +339,56 @@ def test_main_noxfile_options_sessions():
         # Verify that the config looks correct.
         config = honor_list_request.call_args[1]["global_config"]
         assert config.sessions == ["test"]
+
+
+@pytest.mark.parametrize(("isatty_value", "expected"), [(True, True), (False, False)])
+def test_main_color_from_istty(isatty_value, expected):
+    sys.argv = [sys.executable]
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+        with mock.patch("sys.stderr.isatty") as istty:
+            istty.return_value = isatty_value
+
+            # Call the main function.
+            with mock.patch.object(sys, "exit"):
+                nox.__main__.main()
+
+            config = execute.call_args[1]["global_config"]
+            assert config.color == expected
+
+
+@pytest.mark.parametrize(
+    ("color_opt", "expected"),
+    [
+        ("--forcecolor", True),
+        ("--nocolor", False),
+        ("--force-color", True),
+        ("--no-color", False),
+    ],
+)
+def test_main_color_options(color_opt, expected):
+    sys.argv = [sys.executable, color_opt]
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit"):
+            nox.__main__.main()
+
+        config = execute.call_args[1]["global_config"]
+        assert config.color == expected
+
+
+def test_main_color_conflict(capsys):
+    sys.argv = [sys.executable, "--forcecolor", "--nocolor"]
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 1
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit") as exit:
+            nox.__main__.main()
+            exit.assert_called_with(1)
+
+    _, err = capsys.readouterr()
+
+    assert "color" in err
