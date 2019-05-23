@@ -118,7 +118,7 @@ class Session:
 
     @property
     def interactive(self):
-        """Boolean showing if the session was ran in an interactive sessions."""
+        """Returns true if the Nox is being run in an interactive session or False otherwise."""
         return sys.stdout.isatty()
 
     def chdir(self, dir):
