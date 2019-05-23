@@ -84,11 +84,7 @@ class TestSession:
         assert session.python is runner.func.python
 
     def test_interactive(self):
-        with mock.patch("nox.sessions.sys") as mock_sys:
-            m_stdout = mock.Mock()
-            m_isatty = mock.Mock()
-            m_stdout.isatty = m_isatty
-            mock_sys.stdout = m_stdout
+        with mock.patch("nox.sessions.sys.stdout.isatty") as m_isatty:
 
             m_isatty.return_value = True
             session, runner = self.make_session_and_runner()
