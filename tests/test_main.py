@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 import os
 import sys
 from unittest import mock
@@ -32,113 +31,14 @@ RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 VERSION = pkg_resources.get_distribution("nox").version
 
 
-class TestGlobalConfig:
-    def make_args(self):
-        return argparse.Namespace(
-            noxfile="noxfile",
-            envdir="dir",
-            sessions=["1", "2"],
-            keywords="red and blue",
-            list_sessions=False,
-            reuse_existing_virtualenvs=False,
-            no_reuse_existing_virtualenvs=False,
-            stop_on_first_error=False,
-            no_stop_on_first_error=False,
-            error_on_missing_interpreters=False,
-            no_error_on_missing_interpreters=False,
-            error_on_external_run=False,
-            no_error_on_external_run=True,
-            install_only=False,
-            posargs=["a", "b", "c"],
-            report=None,
-            nocolor=False,
-            forcecolor=False,
-        )
-
-    def test_constructor(self):
-        args = self.make_args()
-        config = nox.__main__.GlobalConfig(args)
-
-        assert config.noxfile == "noxfile"
-        assert config.envdir == "dir"
-        assert config.sessions == ["1", "2"]
-        assert config.keywords == "red and blue"
-        assert config.list_sessions is False
-        assert config.reuse_existing_virtualenvs is False
-        assert config.no_reuse_existing_virtualenvs is False
-        assert config.stop_on_first_error is False
-        assert config.no_stop_on_first_error is False
-        assert config.error_on_missing_interpreters is False
-        assert config.no_error_on_missing_interpreters is False
-        assert config.install_only is False
-        assert config.posargs == ["a", "b", "c"]
-
-        args.posargs = ["--", "a", "b", "c"]
-        config = nox.__main__.GlobalConfig(args)
-        assert config.posargs == ["a", "b", "c"]
-
-    def test_merge_from_options_no_changes(self):
-        args = self.make_args()
-        config = nox.__main__.GlobalConfig(args)
-        original_values = vars(config).copy()
-        options = nox._options.options()
-
-        config.merge_from_options(options)
-
-        assert vars(config) == original_values
-
-    def test_merge_from_options_options_by_default(self):
-        args = self.make_args()
-        args.sessions = None
-        args.keywords = None
-        config = nox.__main__.GlobalConfig(args)
-        original_values = vars(config).copy()
-
-        options = nox._options.options()
-        options.sessions = ["1", "2"]
-        options.keywords = "one"
-        options.reuse_existing_virtualenvs = True
-        options.stop_on_first_error = True
-        options.error_on_missing_interpreters = True
-        options.install_only = True
-        options.report = "output.json"
-
-        config.merge_from_options(options)
-
-        assert vars(config) != original_values
-        assert config.sessions == ["1", "2"]
-        assert config.keywords == "one"
-        assert config.reuse_existing_virtualenvs is True
-        assert config.stop_on_first_error is True
-        assert config.error_on_missing_interpreters is True
-        assert config.report == "output.json"
-
-    def test_merge_from_options_args_precedence(self):
-        args = self.make_args()
-        args.sessions = ["1", "2"]
-        args.no_reuse_existing_virtualenvs = True
-        args.no_stop_on_first_error = True
-        args.no_error_on_missing_interpreters = True
-        args.report = "output.json"
-        config = nox.__main__.GlobalConfig(args)
-        original_values = vars(config).copy()
-
-        options = nox._options.options()
-        options.keywords = "one"
-        options.reuse_existing_virtualenvs = True
-        options.stop_on_first_error = True
-        options.error_on_missing_interpreters = True
-        options.install_only = True
-
-        config.merge_from_options(options)
-
-        assert vars(config) == original_values
+# This is needed because CI systems will mess up these tests due to the
+# way nox handles the --session parameter's default value. This avoids that
+# mess.
+os.environ.pop("NOXSESSION", None)
 
 
 def test_main_no_args(monkeypatch):
-    # Prevents any interference from outside
-    monkeypatch.delenv("NOXSESSION", raising=False)
-    sys.argv = [sys.executable]
+    monkeypatch.setattr(sys, "argv", [sys.executable])
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
 
@@ -152,8 +52,8 @@ def test_main_no_args(monkeypatch):
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
         assert config.sessions is None
-        assert config.reuse_existing_virtualenvs is False
-        assert config.stop_on_first_error is False
+        assert not config.reuse_existing_virtualenvs
+        assert not config.stop_on_first_error
         assert config.posargs == []
 
 
@@ -189,8 +89,10 @@ def test_main_long_form_args():
         assert config.posargs == []
 
 
-def test_main_short_form_args():
-    sys.argv = [sys.executable, "-f", "noxfile.py", "-s", "1", "2", "-r"]
+def test_main_short_form_args(monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", [sys.executable, "-f", "noxfile.py", "-s", "1", "2", "-r"]
+    )
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
 
@@ -207,8 +109,8 @@ def test_main_short_form_args():
         assert config.reuse_existing_virtualenvs is True
 
 
-def test_main_explicit_sessions():
-    sys.argv = [sys.executable, "-e", "1", "2"]
+def test_main_explicit_sessions(monkeypatch):
+    monkeypatch.setattr(sys, "argv", [sys.executable, "-e", "1", "2"])
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
 
@@ -223,8 +125,10 @@ def test_main_explicit_sessions():
         assert config.sessions == ["1", "2"]
 
 
-def test_main_explicit_sessions_with_spaces_in_names():
-    sys.argv = [sys.executable, "-e", "unit tests", "the unit tests"]
+def test_main_explicit_sessions_with_spaces_in_names(monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", [sys.executable, "-e", "unit tests", "the unit tests"]
+    )
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
 
@@ -244,7 +148,8 @@ def test_main_explicit_sessions_with_spaces_in_names():
 )
 def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
     monkeypatch.setenv("NOXSESSION", env)
-    sys.argv = [sys.executable]
+    monkeypatch.setattr(sys, "argv", [sys.executable])
+
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
 
@@ -261,8 +166,8 @@ def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
             assert session in config.sessions
 
 
-def test_main_positional_args():
-    sys.argv = [sys.executable, "1", "2", "3"]
+def test_main_positional_args(monkeypatch):
+    monkeypatch.setattr(sys, "argv", [sys.executable, "1", "2", "3"])
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
 
@@ -277,8 +182,8 @@ def test_main_positional_args():
         assert config.posargs == ["1", "2", "3"]
 
 
-def test_main_positional_with_double_hyphen():
-    sys.argv = [sys.executable, "--", "1", "2", "3"]
+def test_main_positional_with_double_hyphen(monkeypatch):
+    monkeypatch.setattr(sys, "argv", [sys.executable, "--", "1", "2", "3"])
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
 
@@ -293,8 +198,10 @@ def test_main_positional_with_double_hyphen():
         assert config.posargs == ["1", "2", "3"]
 
 
-def test_main_positional_flag_like_with_double_hyphen():
-    sys.argv = [sys.executable, "--", "1", "2", "3", "-f", "--baz"]
+def test_main_positional_flag_like_with_double_hyphen(monkeypatch):
+    monkeypatch.setattr(
+        sys, "argv", [sys.executable, "--", "1", "2", "3", "-f", "--baz"]
+    )
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
 
@@ -309,8 +216,8 @@ def test_main_positional_flag_like_with_double_hyphen():
         assert config.posargs == ["1", "2", "3", "-f", "--baz"]
 
 
-def test_main_version(capsys):
-    sys.argv = [sys.executable, "--version"]
+def test_main_version(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", [sys.executable, "--version"])
 
     with contexter.ExitStack() as stack:
         execute = stack.enter_context(mock.patch("nox.workflow.execute"))
@@ -322,8 +229,8 @@ def test_main_version(capsys):
         execute.assert_not_called()
 
 
-def test_main_help(capsys):
-    sys.argv = [sys.executable, "--help"]
+def test_main_help(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", [sys.executable, "--help"])
 
     with contexter.ExitStack() as stack:
         execute = stack.enter_context(mock.patch("nox.workflow.execute"))
@@ -335,8 +242,8 @@ def test_main_help(capsys):
         execute.assert_not_called()
 
 
-def test_main_failure():
-    sys.argv = [sys.executable]
+def test_main_failure(monkeypatch):
+    monkeypatch.setattr(sys, "argv", [sys.executable])
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 1
         with mock.patch.object(sys, "exit") as exit:
@@ -344,14 +251,18 @@ def test_main_failure():
             exit.assert_called_once_with(1)
 
 
-def test_main_nested_config(capsys):
-    sys.argv = [
-        "nox",
-        "--noxfile",
-        os.path.join(RESOURCES, "noxfile_nested.py"),
-        "-s",
-        "snack(cheese='cheddar')",
-    ]
+def test_main_nested_config(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "nox",
+            "--noxfile",
+            os.path.join(RESOURCES, "noxfile_nested.py"),
+            "-s",
+            "snack(cheese='cheddar')",
+        ],
+    )
 
     with mock.patch("sys.exit") as sys_exit:
         nox.__main__.main()
@@ -361,14 +272,18 @@ def test_main_nested_config(capsys):
         sys_exit.assert_called_once_with(0)
 
 
-def test_main_session_with_names(capsys):
-    sys.argv = [
-        "nox",
-        "--noxfile",
-        os.path.join(RESOURCES, "noxfile_spaces.py"),
-        "-s",
-        "cheese list(cheese='cheddar')",
-    ]
+def test_main_session_with_names(capsys, monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "nox",
+            "--noxfile",
+            os.path.join(RESOURCES, "noxfile_spaces.py"),
+            "-s",
+            "cheese list(cheese='cheddar')",
+        ],
+    )
 
     with mock.patch("sys.exit") as sys_exit:
         nox.__main__.main()
@@ -376,3 +291,131 @@ def test_main_session_with_names(capsys):
         assert stdout == "Noms, cheddar so good!\n"
         assert "Session cheese list(cheese='cheddar') was successful." in stderr
         sys_exit.assert_called_once_with(0)
+
+
+def test_main_noxfile_options(monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "nox",
+            "-l",
+            "-s",
+            "test",
+            "--noxfile",
+            os.path.join(RESOURCES, "noxfile_options.py"),
+        ],
+    )
+
+    with mock.patch("nox.tasks.honor_list_request") as honor_list_request:
+        honor_list_request.return_value = 0
+
+        with mock.patch("sys.exit"):
+            nox.__main__.main()
+
+        assert honor_list_request.called
+
+        # Verify that the config looks correct.
+        config = honor_list_request.call_args[1]["global_config"]
+        assert config.reuse_existing_virtualenvs is True
+
+
+def test_main_noxfile_options_disabled_by_flag(monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "nox",
+            "-l",
+            "-s",
+            "test",
+            "--no-reuse-existing-virtualenvs",
+            "--noxfile",
+            os.path.join(RESOURCES, "noxfile_options.py"),
+        ],
+    )
+
+    with mock.patch("nox.tasks.honor_list_request") as honor_list_request:
+        honor_list_request.return_value = 0
+
+        with mock.patch("sys.exit"):
+            nox.__main__.main()
+
+        assert honor_list_request.called
+
+        # Verify that the config looks correct.
+        config = honor_list_request.call_args[1]["global_config"]
+        assert config.reuse_existing_virtualenvs is False
+
+
+def test_main_noxfile_options_sessions(monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["nox", "-l", "--noxfile", os.path.join(RESOURCES, "noxfile_options.py")],
+    )
+
+    with mock.patch("nox.tasks.honor_list_request") as honor_list_request:
+        honor_list_request.return_value = 0
+
+        with mock.patch("sys.exit"):
+            nox.__main__.main()
+
+        assert honor_list_request.called
+
+        # Verify that the config looks correct.
+        config = honor_list_request.call_args[1]["global_config"]
+        assert config.sessions == ["test"]
+
+
+@pytest.mark.parametrize(("isatty_value", "expected"), [(True, True), (False, False)])
+def test_main_color_from_isatty(monkeypatch, isatty_value, expected):
+    monkeypatch.setattr(sys, "argv", [sys.executable])
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+        with mock.patch("sys.stderr.isatty") as isatty:
+            isatty.return_value = isatty_value
+
+            # Call the main function.
+            with mock.patch.object(sys, "exit"):
+                nox.__main__.main()
+
+            config = execute.call_args[1]["global_config"]
+            assert config.color == expected
+
+
+@pytest.mark.parametrize(
+    ("color_opt", "expected"),
+    [
+        ("--forcecolor", True),
+        ("--nocolor", False),
+        ("--force-color", True),
+        ("--no-color", False),
+    ],
+)
+def test_main_color_options(monkeypatch, color_opt, expected):
+    monkeypatch.setattr(sys, "argv", [sys.executable, color_opt])
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit"):
+            nox.__main__.main()
+
+        config = execute.call_args[1]["global_config"]
+        assert config.color == expected
+
+
+def test_main_color_conflict(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", [sys.executable, "--forcecolor", "--nocolor"])
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 1
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit") as exit:
+            nox.__main__.main()
+            exit.assert_called_with(1)
+
+    _, err = capsys.readouterr()
+
+    assert "color" in err
