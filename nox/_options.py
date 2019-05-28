@@ -88,16 +88,13 @@ def _color_finalizer(value, args):
             None, "Can not specify both --no-color and --force-color."
         )
 
-    if args.forcecolor:
+    if args.forcecolor is True:
         return True
 
-    if args.nocolor:
+    if args.nocolor is True:
         return False
 
-    if sys.stderr.isatty():
-        return True
-    else:
-        return False
+    return sys.stderr.isatty()
 
 
 def _posargs_finalizer(value, unused_args):

@@ -180,7 +180,7 @@ class OptionSet:
     def add_group(self, name, *args, **kwargs):
         """Adds a new argument group.
 
-        When :fun:`parser` is invoked, the OptionSet will turn all distinct
+        When :func:`parser` is invoked, the OptionSet will turn all distinct
         argument groups into separate sections in the ``--help`` output using
         ``ArgumentParser.add_argument_group``.
         """
