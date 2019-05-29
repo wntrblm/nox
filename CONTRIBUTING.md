@@ -1,15 +1,17 @@
-# Contributing to Nox
+# Contributing
 
 Thank you for your interest in improving Nox. Nox is open-source under the
-Apache License Version 2.0 and welcomes contributions.
+[Apache License Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) and welcomes contributions in the form of bug reports, feature requests, and pull requests.
+
+Nox is hosted on [GitHub](https://github.com/theacodes/nox).
 
 ## Support, questions, and feature requests
 
-Feel free to file a bug on github.
+Feel free to file a bug on [GitHub](https://github.com/theacodes/nox).
 
 ## Reporting issues
 
-File a bug on github. To help us figure out what's going on, please err on the
+File a bug on [GitHub](https://github.com/theacodes/nox). To help us figure out what's going on, please err on the
 side of including lots of information, such as:
 
 * Operating system.
@@ -47,3 +49,7 @@ recommended to test as much as possible locally before pushing.
 ## Getting a sticker
 
 If you've contributed to Nox, you can get a cute little Nox sticker. Reach out to Thea at me@thea.codes to request one.
+
+## Getting paid
+
+Contributions to Nox can be expensed through [our Open Collective](https://opencollective.com/python-nox). The maintainers will let you know when and for how much you can expense contributions, but always feel free to ask. 

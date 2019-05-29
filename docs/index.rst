@@ -8,7 +8,7 @@ Welcome to Nox
    tutorial
    config
    usage
-   contrib
+   CONTRIBUTING
    CHANGELOG
 
 ``nox`` is a command-line tool that automates testing in multiple Python environments, similar to `tox`_. Unlike tox, Nox uses a standard Python file for configuration.
@@ -71,15 +71,17 @@ Nox is not the only tool of its kind. If Nox doesn't quite fit your needs or you
 - `Invoke <https://www.pyinvoke.org/>`__ is a general-purpose task execution library, similar to Make. Nox can be thought of as if Invoke were tailored specifically to Python testing, so Invoke is a great choice for scripts that need to encompass far more than Nox's specialization.
 
 
-Contributors
-------------
+Maintainers & contributors
+--------------------------
 
-Nox is free & open-source software and is made possible by community contributors.
+Nox is free & open-source software and is made possible by community maintainers and contributors.
 
-* `Thea Flowers <https://github.com/theacodes>`__
-* `Luke Sneeringer <https://github.com/lukesneeringer>`__
+Our maintainers are (in alphabetical order):
+
+* `Chris Wilcox <https://github.com/crwilcox>`__
 * `Danny Hermes <https://github.com/dhermes>`__
+* `Luke Sneeringer <https://github.com/lukesneeringer>`__
 * `Santos Gallegos <https://github.com/stsewd>`__
-* & `more! <https://github.com/theacodes/nox/graphs/contributors>`__
+* `Thea Flowers <https://github.com/theacodes>`__
 
-If you'd like to get involved, see :doc:`contrib`.
+Nox also exists due to the various patches and work contributed by `the community <https://github.com/theacodes/nox/graphs/contributors>`__. If you'd like to get involved, see :doc:`CONTRIBUTING`. We pay our contributors using `Open Collective <https://opencollective.com/python-nox>`__.

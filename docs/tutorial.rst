@@ -327,6 +327,6 @@ Look at you! You're now basically an expert at Nox! ✨
 For this point you can:
 
 * Read more docs, such as :doc:`usage` and :doc:`config`.
-* Give us feedback or contribute, see :doc:`contrib`.
+* Give us feedback or contribute, see :doc:`CONTRIBUTING`.
 
 Have fun! 💜
