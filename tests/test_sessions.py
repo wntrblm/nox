@@ -88,11 +88,11 @@ class TestSession:
 
             m_isatty.return_value = True
             session, runner = self.make_session_and_runner()
-            assert session.interactive == m_isatty.return_value
+            assert session.interactive is m_isatty.return_value
 
             m_isatty.return_value = False
             session, runner = self.make_session_and_runner()
-            assert session.interactive == m_isatty.return_value
+            assert session.interactive is m_isatty.return_value
 
     def test_chdir(self, tmpdir):
         cdto = str(tmpdir.join("cdbby").ensure(dir=True))
