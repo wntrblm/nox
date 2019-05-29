@@ -16,6 +16,7 @@ import enum
 import hashlib
 import os
 import re
+import sys
 import unicodedata
 
 import py
@@ -114,6 +115,11 @@ class Session:
     def bin(self):
         """The bin directory for the virtualenv."""
         return self._runner.venv.bin
+
+    @property
+    def interactive(self):
+        """Returns True if Nox is being run in an interactive session or False otherwise."""
+        return not self._runner.global_config.non_interactive and sys.stdin.isatty()
 
     def chdir(self, dir):
         """Change the current working directory."""

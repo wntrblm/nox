@@ -68,7 +68,7 @@ def docs(session):
     session.cd("docs")
     sphinx_args = ["-b", "html", "-W", "-d", "_build/doctrees", ".", "_build/html"]
 
-    if "serve" not in session.posargs:
+    if not session.interactive:
         sphinx_cmd = "sphinx-build"
     else:
         sphinx_cmd = "sphinx-autobuild"

@@ -373,7 +373,7 @@ def test_main_color_from_isatty(monkeypatch, isatty_value, expected):
     monkeypatch.setattr(sys, "argv", [sys.executable])
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
-        with mock.patch("sys.stderr.isatty") as isatty:
+        with mock.patch("sys.stdin.isatty") as isatty:
             isatty.return_value = isatty_value
 
             # Call the main function.
