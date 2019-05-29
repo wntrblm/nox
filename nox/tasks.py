@@ -19,6 +19,7 @@ import os
 
 from colorlog.escape_codes import parse_colors
 
+import nox
 from nox import _options
 from nox import registry
 from nox.logger import logger
@@ -67,7 +68,7 @@ def merge_noxfile_options(module, global_config):
         module (module): The Noxfile module.
         global_config (~nox.main.GlobalConfig): The global configuration.
     """
-    global_config.merge_from_options(_options.options)
+    _options.options.merge_namespaces(global_config, nox.options)
     return module
 
 

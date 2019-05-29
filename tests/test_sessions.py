@@ -20,6 +20,7 @@ from unittest import mock
 
 import pytest
 
+from nox import _options
 import nox.command
 from nox.logger import logger
 import nox.manifest
@@ -62,7 +63,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=func,
-            global_config=argparse.Namespace(
+            global_config=_options.options.namespace(
                 posargs=mock.sentinel.posargs,
                 error_on_external_run=False,
                 install_only=False,
@@ -217,7 +218,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=argparse.Namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
@@ -239,7 +240,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=argparse.Namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
@@ -312,7 +313,7 @@ class TestSessionRunner:
             name="test",
             signatures=["test(1, 2)"],
             func=func,
-            global_config=argparse.Namespace(
+            global_config=_options.options.namespace(
                 noxfile=os.path.join(os.getcwd(), "noxfile.py"),
                 envdir="envdir",
                 posargs=mock.sentinel.posargs,
