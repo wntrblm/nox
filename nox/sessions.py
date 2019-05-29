@@ -119,7 +119,7 @@ class Session:
     @property
     def interactive(self):
         """Returns True if Nox is being run in an interactive session or False otherwise."""
-        return sys.stdout.isatty()
+        return not self._runner.global_config.non_interactive and sys.stdin.isatty()
 
     def chdir(self, dir):
         """Change the current working directory."""

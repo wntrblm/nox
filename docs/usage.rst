@@ -209,6 +209,32 @@ Would run both ``install`` commands, but skip the ``run`` command:
     nox > Session tests was successful.
 
 
+Forcing non-interactive behavior
+--------------------------------
+
+:attr:`session.interactive <nox.sessions.Session.interactive>` can be used to tell if Nox is being run from an interactive terminal (such as an actual human running it on their computer) vs run in a non-interactive terminal (such as a continuous integration system).
+
+.. code-block:: python
+
+    @nox.session
+    def docs(session):
+        ...
+
+        if session.interactive:
+            nox.run("sphinx-autobuild", ...)
+        else:
+            nox.run("sphinx-build", ...)
+
+Sometimes it's useful to force Nox to see the session as non-interactive. You can use the ``--non-interactive`` argument to do this:
+
+.. code-block:: bash
+
+    nox --non-interactive
+
+
+This will cause ``session.interactive`` to always return ``False``.
+
+
 Controlling color output
 ------------------------
 

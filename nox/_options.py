@@ -94,7 +94,7 @@ def _color_finalizer(value, args):
     if args.nocolor is True:
         return False
 
-    return sys.stderr.isatty()
+    return sys.stdin.isatty()
 
 
 def _posargs_finalizer(value, unused_args):
@@ -215,6 +215,13 @@ options.add_options(
         group="secondary",
         noxfile=True,
         help="Output a report of all sessions to the given filename.",
+    ),
+    _option_set.Option(
+        "non_interactive",
+        "--non-interactive",
+        group="secondary",
+        action="store_true",
+        help="Force session.interactive to always be False, even in interactive sessions.",
     ),
     _option_set.Option(
         "nocolor",
