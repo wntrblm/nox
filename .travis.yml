@@ -16,7 +16,7 @@ matrix:
 install:
   - pip install --upgrade pip setuptools
   - pip install .
-script: nox --session "$NOXSESSION"
+script: nox --non-interactive --session "$NOXSESSION"
 deploy:
   provider: pypi
   user: theacodes
