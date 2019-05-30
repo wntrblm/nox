@@ -1,5 +1,22 @@
 # Changelog
 
+## 2019.5.30
+
+- Add interactive property to session. (#196)
+- Promote contributors to maintainers, add Open Collective details. (#201)
+- Fix funding external link. (#200)
+- Refactor how Nox defines and process options. (#187)
+- Fix typo in tutorial. (#194)
+- Use 'pytest' instead of 'py.test' in examples and configuration. (#193)
+- Fix some CSS issues on mobile. (#192)
+- Use short form of virtualenv path when creating the virtualenv. (#191)
+- Refresh tutorial and fixup small docs things. (#190)
+- Add the ability to give parametrized sessions a custom ID. (#186)
+- Make --list list all available sessions, not just the selected ones. (#185)
+- Allow providing a friendlier CLI name to sessions. (#170)
+- Add urllib3 to the list of projects that use Nox (#182)
+- Fix documentation link for Docker Cloud vs Hub (#179)
+
 ## 2019.4.11
 
 - Include changelog in documentation. (#177)
