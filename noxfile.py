@@ -44,14 +44,14 @@ def cover(session):
     session.run("coverage", "erase")
 
 
-@nox.session(python="3.6")
+@nox.session(python="3.7")
 def blacken(session):
     """Run black code formater."""
     session.install("black")
     session.run("black", "nox", "tests", "noxfile.py", "setup.py")
 
 
-@nox.session(python="3.6")
+@nox.session(python="3.7")
 def lint(session):
     """Lint using flake8."""
     session.install("flake8", "flake8-import-order", "black")
@@ -59,7 +59,7 @@ def lint(session):
     session.run("flake8", "nox", "tests")
 
 
-@nox.session(python="3.6")
+@nox.session(python="3.7")
 def docs(session):
     """Build the documentation."""
     session.run("rm", "-rf", "docs/_build", external=True)
