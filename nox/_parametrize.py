@@ -92,7 +92,7 @@ def parametrize_decorator(arg_names, arg_values_list, ids=None):
         arg_names (Sequence[str]): A list of argument names.
         arg_values_list (Sequence[Union[Any, Tuple]]): The list of argument
             values determines how often a session is invoked with different
-            argument values. If only one argument names was specified then
+            argument values. If only one argument name was specified then
             this is a simple list of values, for example ``[1, 2, 3]``. If N
             argument names were specified, this must be a list of N-tuples,
             where each tuple-element specifies a value for its respective
