@@ -1,8 +1,6 @@
 language: python
 matrix:
   include:
-  - python: '3.6'
-    env: NOXSESSION=lint
   - python: '3.5'
     env: NOXSESSION="tests-3.5"
   - python: '3.6'
@@ -10,9 +8,12 @@ matrix:
   - python: '3.7'
     env: NOXSESSION="tests-3.7"
     dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
-    sudo: required  # required for Python 3.7 (travis-ci/travis-ci#9069)
-  - python: '3.6'
+  - python: '3.7'
+    env: NOXSESSION="lint"
+    dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
+  - python: '3.7'
     env: NOXSESSION="docs"
+    dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
 install:
   - pip install --upgrade pip setuptools
   - pip install .
