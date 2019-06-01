@@ -39,7 +39,7 @@ If you're interested in running ``nox`` within `docker`_, you can use the `theke
 Writing the configuration file
 ------------------------------
 
-Nox is configured via a file call ``noxfile.py`` in your project's directory.
+Nox is configured via a file called ``noxfile.py`` in your project's directory.
 This file is a Python file that defines a set of *sessions*. A *session* is
 an environment and a set of commands to run in that environment. If you're
 familiar with tox sessions are analogous to *environments*. If you're familiar
