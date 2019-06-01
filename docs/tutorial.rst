@@ -81,7 +81,7 @@ like this:
 **✨ You've now successfully used Nox for the first time! ✨**
 
 The rest of this tutorial will take you through other common things you'll
-likely want to do with Nox. You can also jump to into :doc:`usage` and
+likely want to do with Nox. You can also jump into :doc:`usage` and
 :doc:`config` docs if you want.
 
 
