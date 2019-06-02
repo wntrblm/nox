@@ -39,16 +39,6 @@ def test_run_silent(capsys):
     assert out == ""
 
 
-def test_run_env_binary():
-    result = nox.command.run(
-        [PYTHON, "-c", 'import os; print(os.environ.get("SIGIL"))'],
-        silent=True,
-        env={b"SIGIL": b"123"},
-    )
-
-    assert "123" in result
-
-
 def test_run_env_unicode():
     result = nox.command.run(
         [PYTHON, "-c", 'import os; print(os.environ["SIGIL"])'],

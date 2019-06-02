@@ -49,7 +49,6 @@ def which(program, path):
 
 
 def _clean_env(env):
-    # Environment variables must be unicode strings on Python 2.
     if env is None:
         return None
 
@@ -58,11 +57,7 @@ def _clean_env(env):
     # Ensure systemroot is passed down, otherwise Windows will explode.
     clean_env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
 
-    for key, value in env.items():
-        key = key.decode("utf-8") if isinstance(key, bytes) else key
-        value = value.decode("utf-8") if isinstance(value, bytes) else value
-        clean_env[key] = value
-
+    clean_env.update(env)
     return clean_env
 
 
@@ -101,7 +96,7 @@ def run(
                 raise CommandFailed("External program disallowed.")
             elif external is False:
                 logger.warning(
-                    "Warning: {} is not installed into the virtualenv, is it located at {}. This might cause issues! "
+                    "Warning: {} is not installed into the virtualenv, it is located at {}. This might cause issues! "
                     "Pass external=True into run() to silence this message.".format(
                         cmd, cmd_path
                     )
