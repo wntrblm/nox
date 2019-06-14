@@ -151,7 +151,7 @@ def test_interrupt():
 
 
 def test_custom_stdout(capsys, tmpdir):
-    with open((tmpdir / "out.txt"), "w+b") as stdout:
+    with open(str(tmpdir / "out.txt"), "w+b") as stdout:
         nox.command.run(
             [
                 PYTHON,
@@ -172,13 +172,13 @@ def test_custom_stdout(capsys, tmpdir):
 
 
 def test_custom_stdout_silent_flag(capsys, tmpdir):
-    with open((tmpdir / "out.txt"), "w+b") as stdout:
+    with open(str(tmpdir / "out.txt"), "w+b") as stdout:
         with pytest.raises(ValueError, match="silent"):
             nox.command.run([PYTHON, "-c", 'print("hi")'], stdout=stdout, silent=True)
 
 
 def test_custom_stdout_failed_command(capsys, tmpdir):
-    with open((tmpdir / "out.txt"), "w+b") as stdout:
+    with open(str(tmpdir / "out.txt"), "w+b") as stdout:
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run(
                 [
