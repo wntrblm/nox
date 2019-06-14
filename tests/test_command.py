@@ -15,7 +15,6 @@
 import logging
 import os
 import sys
-import tempfile
 from unittest import mock
 
 import pytest
@@ -151,8 +150,8 @@ def test_interrupt():
             nox.command.run([PYTHON, "-c" "123"])
 
 
-def test_custom_stdout(capsys):
-    with tempfile.TemporaryFile(mode="w+b") as stdout:
+def test_custom_stdout(capsys, tmpdir):
+    with open((tmpdir / "out.txt"), "w+b") as stdout:
         nox.command.run(
             [
                 PYTHON,
@@ -172,30 +171,14 @@ def test_custom_stdout(capsys):
         assert "err" in tempfile_contents
 
 
-def test_custom_stdout_silent_flag(capsys):
-    with tempfile.TemporaryFile(mode="w+b") as stdout:
-        nox.command.run(
-            [
-                PYTHON,
-                "-c",
-                'import sys; sys.stdout.write("out");'
-                'sys.stderr.write("err"); sys.exit(0)',
-            ],
-            stdout=stdout,
-            silent=True,
-        )
-        out, err = capsys.readouterr()
-        assert "out" not in err
-        assert "err" not in err
-        assert not out
-        stdout.seek(0)
-        tempfile_contents = stdout.read().decode("utf-8")
-        assert "out" in tempfile_contents
-        assert "err" in tempfile_contents
+def test_custom_stdout_silent_flag(capsys, tmpdir):
+    with open((tmpdir / "out.txt"), "w+b") as stdout:
+        with pytest.raises(ValueError, match="silent"):
+            nox.command.run([PYTHON, "-c", 'print("hi")'], stdout=stdout, silent=True)
 
 
-def test_custom_stdout_failed_command(capsys):
-    with tempfile.TemporaryFile(mode="w+b") as stdout:
+def test_custom_stdout_failed_command(capsys, tmpdir):
+    with open((tmpdir / "out.txt"), "w+b") as stdout:
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run(
                 [
