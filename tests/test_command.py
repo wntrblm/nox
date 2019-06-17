@@ -197,3 +197,46 @@ def test_custom_stdout_failed_command(capsys, tmpdir):
         tempfile_contents = stdout.read().decode("utf-8")
         assert "out" in tempfile_contents
         assert "err" in tempfile_contents
+
+
+def test_custom_stderr(capsys, tmpdir):
+    with open(str(tmpdir / "err.txt"), "w+b") as stderr:
+        nox.command.run(
+            [
+                PYTHON,
+                "-c",
+                'import sys; sys.stdout.write("out");'
+                'sys.stderr.write("err"); sys.exit(0)',
+            ],
+            stderr=stderr,
+        )
+        out, err = capsys.readouterr()
+        assert not err
+        assert "out" not in out
+        assert "err" not in out
+        stderr.seek(0)
+        tempfile_contents = stderr.read().decode("utf-8")
+        assert "out" not in tempfile_contents
+        assert "err" in tempfile_contents
+
+
+def test_custom_stderr_failed_command(capsys, tmpdir):
+    with open(str(tmpdir / "out.txt"), "w+b") as stderr:
+        with pytest.raises(nox.command.CommandFailed):
+            nox.command.run(
+                [
+                    PYTHON,
+                    "-c",
+                    'import sys; sys.stdout.write("out");'
+                    'sys.stderr.write("err"); sys.exit(1)',
+                ],
+                stderr=stderr,
+            )
+        out, err = capsys.readouterr()
+        assert not err
+        assert "out" not in out
+        assert "err" not in out
+        stderr.seek(0)
+        tempfile_contents = stderr.read().decode("utf-8")
+        assert "out" not in tempfile_contents
+        assert "err" in tempfile_contents
