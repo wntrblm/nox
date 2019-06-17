@@ -50,17 +50,17 @@ Projects that use Nox
 
 Nox is lucky to have several wonderful projects that use it and provide feedback and contributions.
 
-- `Urllib3 <https://github.com/urllib3/urllib3>`__
 - `Bezier <https://github.com/dhermes/bezier>`__
-- `Zazo <https://github.com/pradyunsg/zazo>`__
-- `packaging.python.org <https://github.com/pypa/python-packaging-user-guide/>`__
-- `google-cloud-python <https://github.com/googlecloudplatform/google-cloud-python>`__
 - `gapic-generator-python <https://github.com/googleapis/gapic-generator-python>`__
-- `google-resumable-media-python <https://github.com/GoogleCloudPlatform/google-resumable-media-python>`__
 - `Google Assistant SDK <https://github.com/googlesamples/assistant-sdk-python>`__
+- `google-cloud-python <https://github.com/googlecloudplatform/google-cloud-python>`__
+- `google-resumable-media-python <https://github.com/GoogleCloudPlatform/google-resumable-media-python>`__
 - `OpenCensus Python <https://github.com/census-instrumentation/opencensus-python>`__
+- `packaging.python.org <https://github.com/pypa/python-packaging-user-guide/>`__
+- `Salt <https://github.com/saltstack/salt>`__
 - `Subpar <https://github.com/google/subpar>`__
-
+- `Urllib3 <https://github.com/urllib3/urllib3>`__
+- `Zazo <https://github.com/pradyunsg/zazo>`__
 
 Other useful projects
 ---------------------
