@@ -16,12 +16,13 @@ Code Contributors
 ------------------
 
 This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
-.. image:: https://opencollective.com/python-nox/contributors.svg?width=890&button=false" 
+
+.. image:: https://opencollective.com/python-nox/contributors.svg?width=890&button=false
 
 Financial Contributors
 ------------------
 
-Become a financial contributor and help us sustain our community. Contribute__
+Become a financial contributor and help us sustain our community. Contribute_
 
 Individuals
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -32,13 +33,13 @@ Individuals
 Organizations
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Support this project with your organization. Your logo will show up here with a link to your website. Contribute__
+Support this project with your organization. Your logo will show up here with a link to your website. Contribute_
 
 .. image:: https://opencollective.com/python-nox/organization/0/avatar.svg
     :target: https://opencollective.com/python-nox/organization/0/website
 
-.. _Contribute: https://opencollective.com/python-nox
 
+.. _Contribute: https://opencollective.com/python-nox
 .. _tox: https://tox.readthedocs.io
 .. _Read the Docs: https://nox.readthedocs.io
 .. _GitHub: https://github.com/theacodes/nox
