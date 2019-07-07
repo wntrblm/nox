@@ -37,7 +37,7 @@ class Option:
             the ``*args`` for ``ArgumentParser.add_argument``.
         help (str): The help string pass to argparse.
         group (str): The argument group this option belongs to, if any.
-        noxfile (str): Whether or not this option can be set in the
+        noxfile (bool): Whether or not this option can be set in the
             configuration file.
         merge_func (Callable[[Namespace, Namespace], Any]): A function that
             can define custom behavior when merging the command-line options
