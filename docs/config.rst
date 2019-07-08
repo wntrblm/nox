@@ -339,7 +339,6 @@ Produces these sessions when running ``nox --list``:
     * tests(mysql, new)
 
 
-
 The session object
 ------------------
 
@@ -394,3 +393,28 @@ The following options can be specified in the Noxfile:
 
 
 When invoking ``nox``, any options specified on the command line take precedence over the options specified in the Noxfile. If either ``--sessions`` or ``--keywords`` is specified on the command line, *both* options specified in the Noxfile will be ignored.
+
+
+Nox version requirements
+------------------------
+
+Nox version requirements can be specified in your ``noxfile.py`` by setting
+``nox.needs_version``. If the Nox version does not satisfy the requirements, Nox
+exits with a friendly error message. For example:
+
+.. code-block:: python
+
+    import nox
+
+    nox.needs_version = ">=2019.5.30"
+
+    @nox.session(name="test")  # name argument was added in 2019.5.30
+    def pytest(session):
+        session.run("pytest")
+
+
+Any of the version specifiers defined in `PEP 440`_ can be used. If you assign a
+string literal like in the example above, Nox is able to check the version
+without importing the Noxfile.
+
+.. _PEP 440: https://www.python.org/dev/peps/pep-0440/
