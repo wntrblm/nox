@@ -313,6 +313,22 @@ Produces these sessions when running ``nox --list``:
     * tests(mysql, new)
 
 
+Minimum required nox version
+----------------------------
+
+Minimum required Nox version can be specified in your ``noxfile.py`` by simply defining
+a ``needs_nox`` global variable. For example:
+
+.. code-block:: python
+
+    import nox
+
+    needs_nox = '2019.5.30'
+
+    @nox.session(name='test')  # name argument was added in 2019.5.30
+    def pytest(session):
+        session.run('pytest')
+
 
 The session object
 ------------------
