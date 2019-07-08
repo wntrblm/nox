@@ -21,6 +21,7 @@ from colorlog.escape_codes import parse_colors
 
 import nox
 from nox import _options
+from nox import _version
 from nox import registry
 from nox.logger import logger
 from nox.manifest import Manifest
@@ -54,10 +55,33 @@ def load_nox_module(global_config):
         # import-time path resolutions work the way the Noxfile author would
         # guess.
         os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
-        return importlib.machinery.SourceFileLoader(
-            "user_nox_module", global_config.noxfile
-        ).load_module()
 
+        # Make an attempt to import and check for `needs_nox` on imported
+        # module, if import fails - make an attempt to parse it from the
+        # noxfile itself.
+        try:
+            module = importlib.machinery.SourceFileLoader(
+                "user_nox_module", global_config.noxfile
+            ).load_module()
+
+            # Module was successfully imported, if there's a needs_nox in it
+            # we need to verify, that current nox version is ok.
+            needs_nox = _version.needs_nox(global_config.noxfile, module)
+            if not _version.is_version_sufficient(global_config.noxfile, needs_nox):
+                return 2
+        except Exception:
+            # If module didn't even import properly, attempt to parse
+            # `needs_nox` and show an error message about needed nox version.
+            needs_nox = _version.needs_nox(global_config.noxfile)
+            if not _version.is_version_sufficient(global_config.noxfile, needs_nox):
+                return 2
+
+            # If `needs_nox` is not found, or versions are already compatible -
+            # re-raise the exception, so the default nox behaviour can resume.
+            raise
+
+        # if we got this far, return the imported module
+        return module
     except (IOError, OSError):
         logger.error("Noxfile {} not found.".format(global_config.noxfile))
         return 2

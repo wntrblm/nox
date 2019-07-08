@@ -64,6 +64,28 @@ def test_load_nox_module_not_found():
     assert tasks.load_nox_module(config) == 2
 
 
+def test_load_nox_module_works_when_needs_nox_requires_lower_version():
+    config = _options.options.namespace(
+        noxfile=os.path.join(RESOURCES, "noxfile_past.py")
+    )
+    noxfile_module = tasks.load_nox_module(config)
+    assert noxfile_module.needs_nox == "2001.1.1"
+
+
+def test_load_nox_module_returns_2_when_needed_version_is_higher():
+    config = _options.options.namespace(
+        noxfile=os.path.join(RESOURCES, "noxfile_future.py")
+    )
+    assert tasks.load_nox_module(config) == 2
+
+
+def test_load_nox_module_returns_2_when_noxfile_does_not_even_import():
+    config = _options.options.namespace(
+        noxfile=os.path.join(RESOURCES, "noxfile_unimportable.py")
+    )
+    assert tasks.load_nox_module(config) == 2
+
+
 def test_discover_session_functions_decorator():
     # Define sessions using the decorator.
     @nox.session
