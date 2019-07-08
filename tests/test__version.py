@@ -8,10 +8,10 @@ from nox import _version as _v
 @pytest.mark.parametrize(
     "content,version",
     [
-        ("needs_nox='1.0'\n", LooseVersion("1.0")),
-        ('needs_nox="2.0"\n', LooseVersion("2.0")),
-        ("needs_nox = '2019.1.2'  # some comment\n", LooseVersion("2019.1.2")),
-        ("import nox\n\nneeds_nox = '3000'\n", LooseVersion("3000")),
+        ("needs_nox='1.0'\n", "1.0"),
+        ('needs_nox="2.0"\n', "2.0"),
+        ("needs_nox = '2019.1.2'  # some comment\n", "2019.1.2"),
+        ("import nox\n\nneeds_nox = '3000'\n", "3000"),
     ],
 )
 def test_parse_needs_nox_parses_version_correctly(tmpdir, content, version):

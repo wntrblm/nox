@@ -316,7 +316,7 @@ Produces these sessions when running ``nox --list``:
 Minimum required nox version
 ----------------------------
 
-Minimum required Nox version can be specified in your ``noxfile.py`` by simply defining
+Minimum required Nox version can be specified in your ``noxfile.py`` file by simply defining
 a ``needs_nox`` global variable. For example:
 
 .. code-block:: python

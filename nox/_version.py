@@ -22,12 +22,13 @@ from nox.logger import logger
 
 
 def nox_version():
-    # obtain version of the currently running nox instance
+    """Return version of the currently running nox instance."""
     dist = get_distribution("nox")
     return LooseVersion(dist.version)
 
 
 def parse_needs_nox(noxfile):
+    """Attempt to look for needs_nox statement in a given file."""
     if not path.exists(noxfile):
         return None
 
@@ -37,20 +38,26 @@ def parse_needs_nox(noxfile):
         for line in noxfile:
             m = regex.match(line)
             if m:
-                needs_version = LooseVersion(m.group("version"))
+                needs_version = m.group("version")
                 return needs_version
 
 
 def needs_nox(noxfile, noxfile_module=None):
+    """Acquire needs_nox version from the provided noxfile module"""
     needed = None
     if not noxfile_module:
-        needed = parse_needs_nox(noxfile)
+        version = parse_needs_nox(noxfile)
+        if version:
+            needed = LooseVersion(version)
     elif hasattr(noxfile_module, "needs_nox"):
         needed = LooseVersion(noxfile_module.needs_nox)
     return needed
 
 
 def is_version_sufficient(noxfile, needed_version):
+    """Return True only when currently running nox version matches or is
+    newer than the version needed.
+    """
     if needed_version and needed_version > nox_version():
         logger.error(
             "Noxfile {} needs at least Nox {} and therefore it cannot be used "
