@@ -252,7 +252,7 @@ class Manifest:
                 return True
 
         # The session was not found in the list of sessions.
-        raise ValueError("Session %s not found." % session)
+        raise ValueError("Session {} not found.".format(session))
 
 
 class KeywordLocals:
