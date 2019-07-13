@@ -85,6 +85,71 @@ def locate_via_py(version):
             return None
 
 
+class CondaEnv(ProcessEnv):
+    """Conda environemnt management class.
+
+    Args:
+        location (str): The location on the filesystem where the conda environment
+            should be created.
+        interpreter (Optional[str]): The desired Python version. Of the form
+
+            * ``X.Y``, e.g. ``3.5``
+            * ``X.Y-32``. For example, a usage of the Windows Launcher might
+              be ``py -3.6-32``
+            * ``X.Y.Z``, e.g. ``3.4.9``
+            * ``pythonX.Y``, e.g. ``python2.7``
+            * A path in the filesystem to a Python executable
+
+            If not specified, this will use the currently running Python.
+        reuse_existing (Optional[bool]): Flag indicating if the conda environment
+            should be reused if it already exists at ``location``.
+    """
+
+    def __init__(self, location, interpreter=None, reuse_existing=False):
+        self.location_name = location
+        self.location = os.path.abspath(location)
+        self.interpreter = interpreter
+        self._resolved = None
+        self.reuse_existing = reuse_existing
+        super(CondaEnv, self).__init__()
+
+    def _clean_location(self):
+        """Deletes any existing conda env"""
+        if os.path.exists(self.location):
+            if self.reuse_existing:
+                return False
+            else:
+                shutil.rmtree(self.location)
+
+        return True
+
+    @property
+    def bin(self):
+        """Returns the location of the conda env's bin folder."""
+        if _SYSTEM == "Windows":
+            return self.location
+        else:
+            return os.path.join(self.location, "bin")
+
+    def create(self):
+        """Create the conda env."""
+        if not self._clean_location():
+            logger.debug(
+                "Re-using existing conda env at {}.".format(self.location_name)
+            )
+            return False
+
+        cmd = ["conda", "create", "--prefix", self.location]
+
+        if self.interpreter:
+            cmd.append("python={}".format(self.interpreter))
+
+        logger.info("Creating conda env in {}".format(self.location_name))
+        nox.command.run(cmd, silent=True, log=False)
+
+        return True
+
+
 class VirtualEnv(ProcessEnv):
     """Virtualenv management class.
 

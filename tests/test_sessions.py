@@ -318,6 +318,7 @@ class TestSessionRunner:
     def make_runner(self):
         func = mock.Mock()
         func.python = None
+        func.venv_backend = None
         func.reuse_venv = False
         runner = nox.sessions.SessionRunner(
             name="test",
