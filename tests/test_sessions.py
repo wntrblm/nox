@@ -401,18 +401,40 @@ class TestSessionRunner:
         assert runner.venv.interpreter is None
         assert runner.venv.reuse_existing is False
 
-    @mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True)
-    def test__create_venv_options(self, create):
+    @pytest.mark.parametrize(
+        "create_method,venv_backend,expected_backend",
+        [
+            ("nox.virtualenv.VirtualEnv.create", None, nox.virtualenv.VirtualEnv),
+            (
+                "nox.virtualenv.VirtualEnv.create",
+                "virtualenv",
+                nox.virtualenv.VirtualEnv,
+            ),
+            ("nox.virtualenv.CondaEnv.create", "conda", nox.virtualenv.CondaEnv),
+        ],
+    )
+    def test__create_venv_options(self, create_method, venv_backend, expected_backend):
         runner = self.make_runner()
         runner.func.python = "coolpython"
         runner.func.reuse_venv = True
+        runner.func.venv_backend = venv_backend
 
-        runner._create_venv()
+        with mock.patch(create_method, autospec=True) as create:
+            runner._create_venv()
 
         create.assert_called_once_with(runner.venv)
-        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
+        assert isinstance(runner.venv, expected_backend)
         assert runner.venv.interpreter == "coolpython"
         assert runner.venv.reuse_existing is True
+
+    def test__create_venv_unexpected_venv_backend(self):
+        runner = self.make_runner()
+        runner.func.venv_backend = "somenewenvtool"
+
+        with pytest.raises(ValueError) as exc_context:
+            runner._create_venv()
+
+        assert "venv_backend" in str(exc_context.value)
 
     def make_runner_with_mock_venv(self):
         runner = self.make_runner()

@@ -250,7 +250,16 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        self._run("conda", "install", *args, external="error", **kwargs)
+        self._run(
+            "conda",
+            "install",
+            "--yes",
+            "--prefix",
+            self.virtualenv.location,
+            *args,
+            external="error",
+            **kwargs
+        )
 
     def install(self, *args, **kwargs):
         """Install invokes `pip`_ to install packages inside of the session's

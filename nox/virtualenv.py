@@ -109,7 +109,6 @@ class CondaEnv(ProcessEnv):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
-        self._resolved = None
         self.reuse_existing = reuse_existing
         super(CondaEnv, self).__init__()
 
@@ -139,7 +138,7 @@ class CondaEnv(ProcessEnv):
             )
             return False
 
-        cmd = ["conda", "create", "--prefix", self.location]
+        cmd = ["conda", "create", "--yes", "--prefix", self.location]
 
         if self.interpreter:
             cmd.append("python={}".format(self.interpreter))
