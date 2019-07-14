@@ -27,8 +27,12 @@ environment:
 
     - PYTHON: "C:\\Python37-x64"
       NOX_SESSION: "tests-3.7"
+      CONDA_INSTALL_LOCN: C:\Miniconda36-x64
 
 install:
+  # Activate the conda command, if desired.
+  - cmd: IF [%CONDA_INSTALL_LOCN] NEQ [] call %CONDA_INSTALL_LOCN%\Scripts\activate.bat
+
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).

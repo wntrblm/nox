@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import shutil
 import sys
 from unittest import mock
 
@@ -23,6 +24,7 @@ import nox.virtualenv
 
 
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
+HAS_CONDA = shutil.which("conda") is not None
 
 
 @pytest.fixture
@@ -67,6 +69,7 @@ def test_condaenv_constructor_explicit(make_conda):
     assert venv.reuse_existing is True
 
 
+@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
 def test_condaenv_create(make_conda):
     venv, dir_ = make_conda()
     venv.create()
@@ -95,6 +98,7 @@ def test_condaenv_create(make_conda):
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
+@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
 def test_condaenv_create_interpreter(make_conda):
     venv, dir_ = make_conda(interpreter="3.7")
     venv.create()
@@ -103,8 +107,8 @@ def test_condaenv_create_interpreter(make_conda):
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
-def test_condaenv_bin_windows(make_one):
-    venv, dir_ = make_one()
+def test_condaenv_bin_windows(make_conda):
+    venv, dir_ = make_conda()
     assert dir_.strpath == venv.bin
 
 
