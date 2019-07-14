@@ -254,6 +254,7 @@ class Session:
             "conda",
             "install",
             "--yes",
+            "--use-index-cache",
             "--prefix",
             self.virtualenv.location,
             *args,

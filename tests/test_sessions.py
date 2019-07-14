@@ -209,6 +209,85 @@ class TestSession:
         with pytest.raises(nox.command.CommandFailed, match="External"):
             session.run(sys.executable, "--version")
 
+    def test_conda_install_bad_args(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+
+        with pytest.raises(ValueError, match="arg"):
+            session.conda_install()
+
+    def test_conda_install_not_a_condaenv(self):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv = None
+
+        with pytest.raises(ValueError, match="conda environment"):
+            session.conda_install()
+
+    def test_conda_install(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "/path/to/conda/env"
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.conda_install("requests", "urllib3")
+            run.assert_called_once_with(
+                "conda",
+                "install",
+                "--yes",
+                "--use-index-cache",
+                "--prefix",
+                "/path/to/conda/env",
+                "requests",
+                "urllib3",
+                silent=True,
+                external="error",
+            )
+
+    def test_conda_install_non_default_kwargs(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "/path/to/conda/env"
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.conda_install("requests", "urllib3", silent=False)
+            run.assert_called_once_with(
+                "conda",
+                "install",
+                "--yes",
+                "--use-index-cache",
+                "--prefix",
+                "/path/to/conda/env",
+                "requests",
+                "urllib3",
+                silent=False,
+                external="error",
+            )
+
     def test_install_bad_args(self):
         session, _ = self.make_session_and_runner()
 
@@ -431,10 +510,8 @@ class TestSessionRunner:
         runner = self.make_runner()
         runner.func.venv_backend = "somenewenvtool"
 
-        with pytest.raises(ValueError) as exc_context:
+        with pytest.raises(ValueError, match="venv_backend"):
             runner._create_venv()
-
-        assert "venv_backend" in str(exc_context.value)
 
     def make_runner_with_mock_venv(self):
         runner = self.make_runner()

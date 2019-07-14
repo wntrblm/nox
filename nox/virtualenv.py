@@ -85,6 +85,17 @@ def locate_via_py(version):
             return None
 
 
+def _clean_location(self):
+    """Deletes any existing path-based environment"""
+    if os.path.exists(self.location):
+        if self.reuse_existing:
+            return False
+        else:
+            shutil.rmtree(self.location)
+
+    return True
+
+
 class CondaEnv(ProcessEnv):
     """Conda environemnt management class.
 
@@ -112,15 +123,7 @@ class CondaEnv(ProcessEnv):
         self.reuse_existing = reuse_existing
         super(CondaEnv, self).__init__()
 
-    def _clean_location(self):
-        """Deletes any existing conda env"""
-        if os.path.exists(self.location):
-            if self.reuse_existing:
-                return False
-            else:
-                shutil.rmtree(self.location)
-
-        return True
+    _clean_location = _clean_location
 
     @property
     def bin(self):
@@ -138,12 +141,24 @@ class CondaEnv(ProcessEnv):
             )
             return False
 
-        cmd = ["conda", "create", "--yes", "--prefix", self.location]
+        cmd = [
+            "conda",
+            "create",
+            "--yes",
+            "--use-index-cache",
+            "--prefix",
+            self.location,
+        ]
 
         if self.interpreter:
-            cmd.append("python={}".format(self.interpreter))
+            python_dep = "python={}".format(self.interpreter)
+        else:
+            python_dep = "python"
+        cmd.append(python_dep)
 
-        logger.info("Creating conda env in {}".format(self.location_name))
+        logger.info(
+            "Creating conda env in {} with {}".format(self.location_name, python_dep)
+        )
         nox.command.run(cmd, silent=True, log=False)
 
         return True
@@ -177,15 +192,7 @@ class VirtualEnv(ProcessEnv):
         self.reuse_existing = reuse_existing
         super(VirtualEnv, self).__init__()
 
-    def _clean_location(self):
-        """Deletes any existing virtualenv"""
-        if os.path.exists(self.location):
-            if self.reuse_existing:
-                return False
-            else:
-                shutil.rmtree(self.location)
-
-        return True
+    _clean_location = _clean_location
 
     @property
     def _resolved_interpreter(self):

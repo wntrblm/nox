@@ -35,12 +35,77 @@ def make_one(tmpdir):
     return factory
 
 
+@pytest.fixture
+def make_conda(tmpdir):
+    def factory(*args, **kwargs):
+        location = tmpdir.join("condaenv")
+        venv = nox.virtualenv.CondaEnv(location.strpath, *args, **kwargs)
+        return (venv, location)
+
+    return factory
+
+
 def test_process_env_constructor():
     penv = nox.virtualenv.ProcessEnv()
     assert not penv.bin
 
     penv = nox.virtualenv.ProcessEnv(env={"SIGIL": "123"})
     assert penv.env["SIGIL"] == "123"
+
+
+def test_condaenv_constructor_defaults(make_conda):
+    venv, _ = make_conda()
+    assert venv.location
+    assert venv.interpreter is None
+    assert venv.reuse_existing is False
+
+
+def test_condaenv_constructor_explicit(make_conda):
+    venv, _ = make_conda(interpreter="3.5", reuse_existing=True)
+    assert venv.location
+    assert venv.interpreter == "3.5"
+    assert venv.reuse_existing is True
+
+
+def test_condaenv_create(make_conda):
+    venv, dir_ = make_conda()
+    venv.create()
+
+    if IS_WINDOWS:
+        assert dir_.join("python.exe").check()
+        assert dir_.join("pip.exe").check()
+        assert dir_.join("Lib").check()
+    else:
+        assert dir_.join("bin", "python").check()
+        assert dir_.join("bin", "pip").check()
+        assert dir_.join("lib").check()
+
+    # Test running create on an existing environment. It should be deleted.
+    dir_.ensure("test.txt")
+    venv.create()
+    assert not dir_.join("test.txt").check()
+
+    # Test running create on an existing environment with reuse_exising
+    # enabled, it should not be deleted.
+    dir_.ensure("test.txt")
+    assert dir_.join("test.txt").check()
+    venv.reuse_existing = True
+    venv.create()
+    assert dir_.join("test.txt").check()
+
+
+@pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
+def test_condaenv_create_interpreter(make_conda):
+    venv, dir_ = make_conda(interpreter="3.7")
+    venv.create()
+    assert dir_.join("bin", "python").check()
+    assert dir_.join("bin", "python3.7").check()
+
+
+@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+def test_condaenv_bin_windows(make_one):
+    venv, dir_ = make_one()
+    assert dir_.strpath == venv.bin
 
 
 def test_constructor_defaults(make_one):
