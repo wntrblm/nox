@@ -26,7 +26,8 @@ environment:
       NOX_SESSION: "tests-3.6"
 
     - PYTHON: "C:\\Python37"
-      CONDA: "C:\\Miniconda37"
+      # No 32-bit version of Python 3.7 on conda-forge.
+      CONDA: "C:\\Miniconda37-x64"
       NOX_SESSION: "tests-3.7"
 
     - PYTHON: "C:\\Python37-x64"
@@ -37,8 +38,11 @@ install:
   # Add conda command to path.
   # https://www.tjelvarolsson.com/blog/how-to-continuously-test-your-python-code-on-windows-using-appveyor/
   - "SET PATH=%CONDA%;%CONDA%\\Scripts;%PATH%"
-  - conda config --set always_yes yes --set changeps1 no
+  - conda config --set changeps1 no
   - conda update -q conda
+  # Get Python from conda-forge.
+  - conda config --add channels conda-forge
+  - conda config --set channel_priority strict
   - conda info -a
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
