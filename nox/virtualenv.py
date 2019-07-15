@@ -148,6 +148,8 @@ class CondaEnv(ProcessEnv):
             "--use-index-cache",
             "--prefix",
             self.location,
+            # Ensure the pip package is installed.
+            "pip",
         ]
 
         if self.interpreter:
