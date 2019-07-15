@@ -75,9 +75,9 @@ def test_condaenv_create(make_conda):
     venv.create()
 
     if IS_WINDOWS:
-        assert dir_.join("python.exe").check()
-        assert dir_.join("pip.exe").check()
-        assert dir_.join("Lib").check()
+        assert dir_.join("bin", "python.exe").check()
+        assert dir_.join("bin", "pip.exe").check()
+        assert dir_.join("Library").check()
     else:
         assert dir_.join("bin", "python").check()
         assert dir_.join("bin", "pip").check()

@@ -208,7 +208,11 @@ class Session:
             kwargs.setdefault("external", "error")
 
         # If we aren't using a virtualenv allow all external programs.
-        if not isinstance(self.virtualenv, VirtualEnv):
+        if not isinstance(self.virtualenv, (CondaEnv, VirtualEnv)):
+            kwargs["external"] = True
+
+        # Allow the global conda command from conda environments.
+        if isinstance(self.virtualenv, CondaEnv) and args[0] == "conda":
             kwargs["external"] = True
 
         # Run a shell command.

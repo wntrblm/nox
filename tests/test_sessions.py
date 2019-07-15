@@ -201,8 +201,33 @@ class TestSession:
             (sys.executable, "--version"), external=True, env=mock.ANY, path=None
         )
 
+    def test_run_external_condaenv(self):
+        # condaenv sessions should always allow conda.
+        session, runner = self.make_session_and_runner()
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.env = {}
+        runner.venv.bin = "/path/to/env/bin"
+
+        with mock.patch("nox.command.run", autospec=True) as run:
+            session.run("conda", "--version")
+
+        run.assert_called_once_with(
+            ("conda", "--version"), external=True, env=mock.ANY, path="/path/to/env/bin"
+        )
+
     def test_run_external_with_error_on_external_run(self):
         session, runner = self.make_session_and_runner()
+
+        runner.global_config.error_on_external_run = True
+
+        with pytest.raises(nox.command.CommandFailed, match="External"):
+            session.run(sys.executable, "--version")
+
+    def test_run_external_with_error_on_external_run_condaenv(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.env = {}
+        runner.venv.bin = "/path/to/env/bin"
 
         runner.global_config.error_on_external_run = True
 
