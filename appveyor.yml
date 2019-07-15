@@ -11,24 +11,33 @@ environment:
     # See: http://www.appveyor.com/docs/installed-software#python
 
     - PYTHON: "C:\\Python35"
+      CONDA: "C:\\Miniconda35"
       NOX_SESSION: "tests-3.5"
 
     - PYTHON: "C:\\Python35-x64"
+      CONDA: "C:\\Miniconda35-x64"
       NOX_SESSION: "tests-3.5"
 
     - PYTHON: "C:\\Python36"
+      CONDA: "C:\\Miniconda36"
       NOX_SESSION: "tests-3.6"
 
     - PYTHON: "C:\\Python36-x64"
+      CONDA: "C:\\Miniconda36-x64"
       NOX_SESSION: "tests-3.6"
 
     - PYTHON: "C:\\Python37"
+      CONDA: "C:\\Miniconda37"
       NOX_SESSION: "tests-3.7"
 
     - PYTHON: "C:\\Python37-x64"
+      CONDA: "C:\\Miniconda37-x64"
       NOX_SESSION: "tests-3.7"
 
 install:
+  # Add conda command to path.
+  - "SET PATH=%CONDA%;%CONDA%\\Scripts;%PATH%"
+
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
