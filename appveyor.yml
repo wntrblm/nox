@@ -39,7 +39,7 @@ install:
   # https://www.tjelvarolsson.com/blog/how-to-continuously-test-your-python-code-on-windows-using-appveyor/
   - "SET PATH=%CONDA%;%CONDA%\\Scripts;%PATH%"
   - conda config --set changeps1 no
-  - conda update -q conda
+  - conda update -q --yes conda
   # Get Python from conda-forge.
   - conda config --add channels conda-forge
   - conda config --set channel_priority strict
