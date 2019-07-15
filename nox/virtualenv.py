@@ -129,7 +129,7 @@ class CondaEnv(ProcessEnv):
     def bin(self):
         """Returns the location of the conda env's bin folder."""
         if _SYSTEM == "Windows":
-            return self.location
+            return os.path.join(self.location, "Scripts")
         else:
             return os.path.join(self.location, "bin")
 
