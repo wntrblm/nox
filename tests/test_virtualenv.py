@@ -109,7 +109,7 @@ def test_condaenv_create_interpreter(make_conda):
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 def test_condaenv_bin_windows(make_conda):
     venv, dir_ = make_conda()
-    assert dir_.strpath == venv.bin
+    assert dir_.join("Scripts").strpath == venv.bin
 
 
 def test_constructor_defaults(make_one):
