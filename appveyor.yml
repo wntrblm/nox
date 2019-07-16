@@ -19,8 +19,7 @@ environment:
       NOX_SESSION: "tests-3.5"
 
     - PYTHON: "C:\\Python36"
-      # No 32-bit version of pip for Python 3.6 on conda-forge.
-      CONDA: "C:\\Miniconda36-x64"
+      CONDA: "C:\\Miniconda36"
       NOX_SESSION: "tests-3.6"
 
     - PYTHON: "C:\\Python36-x64"
