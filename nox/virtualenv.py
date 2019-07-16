@@ -40,6 +40,12 @@ class InterpreterNotFound(OSError):
 class ProcessEnv:
     """A environment with a 'bin' directory and a set of 'env' vars."""
 
+    # Does this environment provide any process isolation?
+    is_sandboxed = False
+
+    # Special programs that aren't included in the environment.
+    allowed_globals = ()
+
     def __init__(self, bin=None, env=None):
         self._bin = bin
         self.env = os.environ.copy()
@@ -116,6 +122,9 @@ class CondaEnv(ProcessEnv):
             should be reused if it already exists at ``location``.
     """
 
+    is_sandboxed = True
+    allowed_globals = ("conda",)
+
     def __init__(self, location, interpreter=None, reuse_existing=False):
         self.location_name = location
         self.location = os.path.abspath(location)
@@ -145,7 +154,6 @@ class CondaEnv(ProcessEnv):
             "conda",
             "create",
             "--yes",
-            "--use-index-cache",
             "--prefix",
             self.location,
             # Ensure the pip package is installed.
@@ -185,6 +193,8 @@ class VirtualEnv(ProcessEnv):
         reuse_existing (Optional[bool]): Flag indicating if the virtual environment
             should be reused if it already exists at ``location``.
     """
+
+    is_sandboxed = True
 
     def __init__(self, location, interpreter=None, reuse_existing=False):
         self.location_name = location

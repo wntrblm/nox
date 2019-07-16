@@ -205,8 +205,10 @@ class TestSession:
         # condaenv sessions should always allow conda.
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.allowed_globals = ("conda",)
         runner.venv.env = {}
         runner.venv.bin = "/path/to/env/bin"
+        runner.venv.create.return_value = True
 
         with mock.patch("nox.command.run", autospec=True) as run:
             session.run("conda", "--version")
@@ -272,7 +274,6 @@ class TestSession:
                 "conda",
                 "install",
                 "--yes",
-                "--use-index-cache",
                 "--prefix",
                 "/path/to/conda/env",
                 "requests",
@@ -304,7 +305,6 @@ class TestSession:
                 "conda",
                 "install",
                 "--yes",
-                "--use-index-cache",
                 "--prefix",
                 "/path/to/conda/env",
                 "requests",

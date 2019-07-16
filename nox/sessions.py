@@ -207,12 +207,11 @@ class Session:
         if self._runner.global_config.error_on_external_run:
             kwargs.setdefault("external", "error")
 
-        # If we aren't using a virtualenv allow all external programs.
-        if not isinstance(self.virtualenv, (CondaEnv, VirtualEnv)):
+        # Allow all external programs when running outside a sandbox.
+        if not self.virtualenv.is_sandboxed:
             kwargs["external"] = True
 
-        # Allow the global conda command from conda environments.
-        if isinstance(self.virtualenv, CondaEnv) and args[0] == "conda":
+        if args[0] in self.virtualenv.allowed_globals:
             kwargs["external"] = True
 
         # Run a shell command.
@@ -258,7 +257,6 @@ class Session:
             "conda",
             "install",
             "--yes",
-            "--use-index-cache",
             "--prefix",
             self.virtualenv.location,
             *args,
