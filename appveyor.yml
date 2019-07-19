@@ -27,12 +27,15 @@ environment:
       NOX_SESSION: "tests-3.6"
 
     - PYTHON: "C:\\Python37"
-      # No 32-bit version of Python 3.7 on conda-forge.
-      CONDA: "C:\\Miniconda37-x64"
+      # Python 3.7 conda installation appears to be broken on Appveyor:
+      # TypeError: LoadLibrary() argument 1 must be str, not None
+      CONDA: "C:\\Miniconda36"
       NOX_SESSION: "tests-3.7"
 
     - PYTHON: "C:\\Python37-x64"
-      CONDA: "C:\\Miniconda37-x64"
+      # Python 3.7 conda installation appears to be broken on Appveyor:
+      # TypeError: LoadLibrary() argument 1 must be str, not None
+      CONDA: "C:\\Miniconda36-x64"
       NOX_SESSION: "tests-3.7"
 
 install:
