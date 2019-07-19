@@ -15,15 +15,12 @@ matrix:
     env: NOXSESSION="docs"
     dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
 before_install:
-  # Only test with conda on one test session.
-  - if [ ${NOXSESSION} == "tests-3.7" ] then
-      wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-      chmod +x miniconda.sh
-      ./miniconda.sh -b
-      # Prefer the built-in python binary.
-      export PATH="$PATH:/home/travis/miniconda3/bin"
-      conda update --yes conda
-    fi
+  - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  # Prefer the built-in python binary.
+  - export PATH="$PATH:/home/travis/miniconda3/bin"
+  - conda update --yes conda
 install:
   - pip install --upgrade pip setuptools
   - pip install .
