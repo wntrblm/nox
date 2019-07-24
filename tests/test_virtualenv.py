@@ -246,7 +246,7 @@ def test__resolved_interpreter_windows_pyexe(sysfind, make_one, input_, expected
     attrs = {"sysexec.return_value": expected}
     mock_py = mock.Mock()
     mock_py.configure_mock(**attrs)
-    sysfind.side_effect = lambda arg: mock_py if arg == "py" else False
+    sysfind.side_effect = lambda arg: mock_py if arg == "py" else None
 
     # Okay now run the test.
     assert venv._resolved_interpreter == expected
@@ -269,7 +269,7 @@ def test__resolved_interpreter_windows_pyexe_fails(sysfind, make_one):
     attrs = {"sysexec.side_effect": py.process.cmdexec.Error(1, 1, "", "", "")}
     mock_py = mock.Mock()
     mock_py.configure_mock(**attrs)
-    sysfind.side_effect = lambda arg: mock_py if arg == "py" else False
+    sysfind.side_effect = lambda arg: mock_py if arg == "py" else None
 
     # Okay now run the test.
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
@@ -277,6 +277,66 @@ def test__resolved_interpreter_windows_pyexe_fails(sysfind, make_one):
 
     sysfind.assert_any_call("python3.6")
     sysfind.assert_any_call("py")
+
+
+@pytest.mark.parametrize(
+    ["input_", "path_result", "expected"],
+    [
+        ("3.7", r"c:\python37-x64\python.exe", r"c:\python37-x64\python.exe"),
+        ("3.7", r"c:\fails\python.exe", None),
+        ("python3.7", r"c:\python37-x64\python.exe", None),
+        ("2.7", r"c:\python37-x64\python.exe", None),
+        ("goofy", r"c:\python37-x64\python.exe", None),
+        ("3.7", None, None),
+        ("python3.7", None, None),
+        ("2.7", None, None),
+        ("goofy", None, None),
+    ],
+)
+@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch.object(py.path.local, "sysfind")
+def test__resolved_interpreter_windows_path_and_version(
+    sysfind, make_one, input_, path_result, expected
+):
+    # Establish that if we get a standard pythonX.Y path, we look it
+    # up via the path on Windows.
+    venv, _ = make_one(interpreter=input_)
+
+    # Trick the system into thinking that it cannot find python3.6
+    # (it likely will on Unix). Also, we don't give it a dummy
+    # py launcher. But we give it a dummy python interpreter to find
+    # in the system path.
+    if path_result:
+
+        def mock_sysexec(_):
+            if path_result == r"c:\fails\python.exe":
+                raise py.process.cmdexec.Error(1, 1, "", "", "")
+            else:
+                return "Python 3.7.3 | Anaconda\\n"
+
+        attrs = {
+            "sysexec.side_effect": mock_sysexec,
+            "__str__.return_value": path_result,
+        }
+        mock_python = mock.MagicMock()
+        mock_python.configure_mock(**attrs)
+
+        def mock_sysfind(arg):
+            if arg.lower() == "python" or arg.lower() == "python.exe":
+                return mock_python
+            else:
+                return None
+
+        sysfind.side_effect = mock_sysfind
+    else:
+        sysfind.return_value = None
+
+    # Okay now run the test.
+    if expected:
+        assert str(venv._resolved_interpreter) == expected
+    else:
+        with pytest.raises(nox.virtualenv.InterpreterNotFound):
+            venv._resolved_interpreter
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")

@@ -85,6 +85,39 @@ def locate_via_py(version):
             return None
 
 
+def locate_using_path_and_version(version):
+    """Check the PATH's python interpreter and return it if the version
+    matches.
+
+    On systems without version-named interpreters and with missing
+    launcher (which is on all Windows Anaconda installations),
+    we search the PATH for a plain "python" interpreter and accept it
+    if its --version matches the specified interpreter version.
+
+    Args:
+        version (str): The desired Python version. Of the form ``X.Y``.
+
+    Returns:
+        Optional[str]: The full executable path for the Python ``version``,
+        if it is found.
+    """
+    if not version:
+        return None
+
+    path_python = py.path.local.sysfind("python")
+    if path_python:
+        try:
+            version_pattern = "^Python {}".format(version)
+            version_string = path_python.sysexec("--version").strip()
+            match = re.match(version_pattern, version_string)
+            if match:
+                return path_python
+        except py.process.cmdexec.Error:
+            return None
+
+    return None
+
+
 class VirtualEnv(ProcessEnv):
     """Virtualenv management class.
 
@@ -173,9 +206,13 @@ class VirtualEnv(ProcessEnv):
             xy_version = cleaned_interpreter
 
         path_from_launcher = locate_via_py(xy_version)
-
         if path_from_launcher:
             self._resolved = path_from_launcher
+            return self._resolved
+
+        path_from_version_param = locate_using_path_and_version(xy_version)
+        if path_from_version_param:
+            self._resolved = path_from_version_param
             return self._resolved
 
         # If we got this far, then we were unable to resolve the interpreter
