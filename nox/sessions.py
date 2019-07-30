@@ -165,6 +165,11 @@ class Session:
                 'pytest', '-k', 'not slow',
                 success_codes=[0, 5])
 
+        On Windows, builtin commands like ``del`` cannot be directly invoked,
+        but you can use ``cmd /c`` to invoke them::
+
+            session.run('cmd', '/c', 'del', 'docs/modules.rst')
+
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
         :type env: dict or None
