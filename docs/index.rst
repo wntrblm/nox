@@ -57,6 +57,7 @@ Nox is lucky to have several wonderful projects that use it and provide feedback
 - `google-resumable-media-python <https://github.com/GoogleCloudPlatform/google-resumable-media-python>`__
 - `OpenCensus Python <https://github.com/census-instrumentation/opencensus-python>`__
 - `packaging.python.org <https://github.com/pypa/python-packaging-user-guide/>`__
+- `pipx <https://github.com/pipxproject/pipx/>`__
 - `Salt <https://github.com/saltstack/salt>`__
 - `Subpar <https://github.com/google/subpar>`__
 - `Urllib3 <https://github.com/urllib3/urllib3>`__
