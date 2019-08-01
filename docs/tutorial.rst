@@ -31,7 +31,7 @@ If you're interested in running ``nox`` within `docker`_, you can use the `theke
 
 .. _pip: https://pip.readthedocs.org
 .. _user site: https://packaging.python.org/tutorials/installing-packages/#installing-to-the-user-site
-.. _pipx: https://packaging.python.org/guides/installing-stand-alone-command-line-tools/ 
+.. _pipx: https://packaging.python.org/guides/installing-stand-alone-command-line-tools/
 .. _docker: https://www.docker.com/
 .. _thekevjames/nox images: https://hub.docker.com/r/thekevjames/nox
 
@@ -279,6 +279,35 @@ You can read more about configuring the virtual environment used by your
 sessions over at :ref:`virtualenv config`.
 
 
+Testing with conda
+------------------
+
+Some projects, especially in the data science community, need to test that
+they work in a conda environment. If you want your session to run in a conda
+environment:
+
+.. code-block:: python
+
+    @nox.session(venv_backend="conda")
+    def test(session):
+        ...
+
+Install packages with conda:
+
+.. code-block:: python
+
+    session.conda_install("pytest")
+
+It is possible to install packages with pip into the conda environment, but
+it's a best practice only install pip packages with the ``--no-deps`` option.
+This prevents pip from breaking the conda environment by installing
+incompatible versions of packages already installed with conda.
+
+.. code-block:: python
+
+    session.install("contexter", "--no-deps")
+    session.install("-e", ".", "--no-deps")
+
 
 Parametrization
 ---------------
@@ -304,7 +333,7 @@ multiple sessions. One for each argument value that you want to be passed to
 your session:
 
 .. code-block:: console
-    
+
     Sessions defined in noxfile.py:
 
     * test(django='1.9')

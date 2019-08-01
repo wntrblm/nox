@@ -23,7 +23,7 @@ import py
 
 import nox.command
 from nox.logger import logger
-from nox.virtualenv import ProcessEnv, VirtualEnv
+from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
 
 def _normalize_path(envdir, path):
@@ -212,12 +212,62 @@ class Session:
         if self._runner.global_config.error_on_external_run:
             kwargs.setdefault("external", "error")
 
-        # If we aren't using a virtualenv allow all external programs.
-        if not isinstance(self.virtualenv, VirtualEnv):
+        # Allow all external programs when running outside a sandbox.
+        if not self.virtualenv.is_sandboxed:
+            kwargs["external"] = True
+
+        if args[0] in self.virtualenv.allowed_globals:
             kwargs["external"] = True
 
         # Run a shell command.
         return nox.command.run(args, env=env, path=self.bin, **kwargs)
+
+    def conda_install(self, *args, **kwargs):
+        """Install invokes `conda install`_ to install packages inside of the
+        session's environment.
+
+        To install packages directly::
+
+            session.conda_install('pandas')
+            session.conda_install('numpy', 'scipy')
+            session.conda_install('--channel=conda-forge', 'dask==2.1.0')
+
+        To install packages from a `requirements.txt` file::
+
+            session.conda_install('--file', 'requirements.txt')
+            session.conda_install('--file', 'requirements-dev.txt')
+
+        To install the current package without clobbering conda-installed
+        dependencies::
+
+            session.install('.', '--no-deps')
+            # Install in editable mode.
+            session.install('-e', '.', '--no-deps')
+
+        Additional keyword args are the same as for :meth:`run`.
+
+        .. _conda install:
+        """
+        if not isinstance(self.virtualenv, CondaEnv):
+            raise ValueError(
+                "A session without a conda environment can not install dependencies from conda."
+            )
+        if not args:
+            raise ValueError("At least one argument required to install().")
+
+        if "silent" not in kwargs:
+            kwargs["silent"] = True
+
+        self._run(
+            "conda",
+            "install",
+            "--yes",
+            "--prefix",
+            self.virtualenv.location,
+            *args,
+            external="error",
+            **kwargs
+        )
 
     def install(self, *args, **kwargs):
         """Install invokes `pip`_ to install packages inside of the session's
@@ -244,7 +294,7 @@ class Session:
 
         .. _pip: https://pip.readthedocs.org
         """
-        if not isinstance(self.virtualenv, VirtualEnv):
+        if not isinstance(self.virtualenv, (CondaEnv, VirtualEnv)):
             raise ValueError(
                 "A session without a virtualenv can not install dependencies."
             )
@@ -316,9 +366,22 @@ class SessionRunner:
         reuse_existing = (
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
-        self.venv = VirtualEnv(
-            path, interpreter=self.func.python, reuse_existing=reuse_existing
-        )
+
+        if not self.func.venv_backend or self.func.venv_backend == "virtualenv":
+            self.venv = VirtualEnv(
+                path, interpreter=self.func.python, reuse_existing=reuse_existing
+            )
+        elif self.func.venv_backend == "conda":
+            self.venv = CondaEnv(
+                path, interpreter=self.func.python, reuse_existing=reuse_existing
+            )
+        else:
+            raise ValueError(
+                "Expected venv_backend one of ('virtualenv', 'conda'), but got '{}'.".format(
+                    self.func.venv_backend
+                )
+            )
+
         self.venv.create()
 
     def execute(self):
