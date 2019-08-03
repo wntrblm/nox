@@ -104,13 +104,13 @@ def locate_using_path_and_version(version):
     if not version:
         return None
 
+    script = "import platform; print(platform.python_version())"
     path_python = py.path.local.sysfind("python")
     if path_python:
         try:
-            version_pattern = "^Python {}".format(version)
-            version_string = path_python.sysexec("--version").strip()
-            match = re.match(version_pattern, version_string)
-            if match:
+            prefix = "{}.".format(version)
+            version_string = path_python.sysexec("-c", script).strip()
+            if version_string.startswith(prefix):
                 return path_python
         except py.process.cmdexec.Error:
             return None
