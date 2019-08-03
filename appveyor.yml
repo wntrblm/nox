@@ -11,24 +11,43 @@ environment:
     # See: http://www.appveyor.com/docs/installed-software#python
 
     - PYTHON: "C:\\Python35"
+      CONDA: "C:\\Miniconda35"
       NOX_SESSION: "tests-3.5"
 
     - PYTHON: "C:\\Python35-x64"
+      CONDA: "C:\\Miniconda35-x64"
       NOX_SESSION: "tests-3.5"
 
     - PYTHON: "C:\\Python36"
+      CONDA: "C:\\Miniconda36"
       NOX_SESSION: "tests-3.6"
 
     - PYTHON: "C:\\Python36-x64"
+      CONDA: "C:\\Miniconda36-x64"
       NOX_SESSION: "tests-3.6"
 
     - PYTHON: "C:\\Python37"
+      # Python 3.7 conda installation appears to be broken on Appveyor:
+      # TypeError: LoadLibrary() argument 1 must be str, not None
+      CONDA: "C:\\Miniconda36"
       NOX_SESSION: "tests-3.7"
 
     - PYTHON: "C:\\Python37-x64"
+      # Python 3.7 conda installation appears to be broken on Appveyor:
+      # TypeError: LoadLibrary() argument 1 must be str, not None
+      CONDA: "C:\\Miniconda36-x64"
       NOX_SESSION: "tests-3.7"
 
 install:
+  # Add conda command to path.
+  # https://www.tjelvarolsson.com/blog/how-to-continuously-test-your-python-code-on-windows-using-appveyor/
+  - "SET PATH=%CONDA%;%CONDA%\\Scripts;%PATH%"
+  - conda config --set changeps1 no
+  - conda update -q --yes conda
+  # Get Python from conda-forge.
+  - conda config --add channels conda-forge
+  - conda info -a
+
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).

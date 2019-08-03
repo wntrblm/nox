@@ -40,6 +40,12 @@ class InterpreterNotFound(OSError):
 class ProcessEnv:
     """A environment with a 'bin' directory and a set of 'env' vars."""
 
+    # Does this environment provide any process isolation?
+    is_sandboxed = False
+
+    # Special programs that aren't included in the environment.
+    allowed_globals = ()
+
     def __init__(self, bin=None, env=None):
         self._bin = bin
         self.env = os.environ.copy()
@@ -118,6 +124,89 @@ def locate_using_path_and_version(version):
     return None
 
 
+def _clean_location(self):
+    """Deletes any existing path-based environment"""
+    if os.path.exists(self.location):
+        if self.reuse_existing:
+            return False
+        else:
+            shutil.rmtree(self.location)
+
+    return True
+
+
+class CondaEnv(ProcessEnv):
+    """Conda environemnt management class.
+
+    Args:
+        location (str): The location on the filesystem where the conda environment
+            should be created.
+        interpreter (Optional[str]): The desired Python version. Of the form
+
+            * ``X.Y``, e.g. ``3.5``
+            * ``X.Y-32``. For example, a usage of the Windows Launcher might
+              be ``py -3.6-32``
+            * ``X.Y.Z``, e.g. ``3.4.9``
+            * ``pythonX.Y``, e.g. ``python2.7``
+            * A path in the filesystem to a Python executable
+
+            If not specified, this will use the currently running Python.
+        reuse_existing (Optional[bool]): Flag indicating if the conda environment
+            should be reused if it already exists at ``location``.
+    """
+
+    is_sandboxed = True
+    allowed_globals = ("conda",)
+
+    def __init__(self, location, interpreter=None, reuse_existing=False):
+        self.location_name = location
+        self.location = os.path.abspath(location)
+        self.interpreter = interpreter
+        self.reuse_existing = reuse_existing
+        super(CondaEnv, self).__init__()
+
+    _clean_location = _clean_location
+
+    @property
+    def bin(self):
+        """Returns the location of the conda env's bin folder."""
+        if _SYSTEM == "Windows":
+            return os.path.join(self.location, "Scripts")
+        else:
+            return os.path.join(self.location, "bin")
+
+    def create(self):
+        """Create the conda env."""
+        if not self._clean_location():
+            logger.debug(
+                "Re-using existing conda env at {}.".format(self.location_name)
+            )
+            return False
+
+        cmd = [
+            "conda",
+            "create",
+            "--yes",
+            "--prefix",
+            self.location,
+            # Ensure the pip package is installed.
+            "pip",
+        ]
+
+        if self.interpreter:
+            python_dep = "python={}".format(self.interpreter)
+        else:
+            python_dep = "python"
+        cmd.append(python_dep)
+
+        logger.info(
+            "Creating conda env in {} with {}".format(self.location_name, python_dep)
+        )
+        nox.command.run(cmd, silent=True, log=False)
+
+        return True
+
+
 class VirtualEnv(ProcessEnv):
     """Virtualenv management class.
 
@@ -138,6 +227,8 @@ class VirtualEnv(ProcessEnv):
             should be reused if it already exists at ``location``.
     """
 
+    is_sandboxed = True
+
     def __init__(self, location, interpreter=None, reuse_existing=False):
         self.location_name = location
         self.location = os.path.abspath(location)
@@ -146,15 +237,7 @@ class VirtualEnv(ProcessEnv):
         self.reuse_existing = reuse_existing
         super(VirtualEnv, self).__init__()
 
-    def _clean_location(self):
-        """Deletes any existing virtualenv"""
-        if os.path.exists(self.location):
-            if self.reuse_existing:
-                return False
-            else:
-                shutil.rmtree(self.location)
-
-        return True
+    _clean_location = _clean_location
 
     @property
     def _resolved_interpreter(self):
