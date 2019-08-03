@@ -344,7 +344,7 @@ def test__resolved_interpreter_windows_path_and_version(
     )
 
     # Okay, now run the test.
-    assert str(venv._resolved_interpreter) == correct_path
+    assert venv._resolved_interpreter == correct_path
 
 
 @pytest.mark.parametrize("input_", ["2.7", "python3.7", "goofy"])

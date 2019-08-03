@@ -111,7 +111,7 @@ def locate_using_path_and_version(version):
             prefix = "{}.".format(version)
             version_string = path_python.sysexec("-c", script).strip()
             if version_string.startswith(prefix):
-                return path_python
+                return str(path_python)
         except py.process.cmdexec.Error:
             return None
 
