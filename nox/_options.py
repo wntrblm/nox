@@ -17,6 +17,7 @@ import functools
 import os
 import sys
 
+from nox.tasks import load_nox_module, discover_manifest, filter_manifest
 from nox import _option_set
 
 """All of nox's configuration options."""
@@ -97,6 +98,38 @@ def _color_finalizer(value, args):
     return sys.stdin.isatty()
 
 
+def _session_completer(*args, **kwargs):
+    global_config = argparse.Namespace(
+        color=False,
+        envdir=".nox",  # TODO determine this dynamically
+        error_on_external_run=None,
+        error_on_missing_interpreters=None,
+        forcecolor=False,
+        help=None,
+        install_only=None,
+        keywords=None,
+        list_sessions=True,
+        no_error_on_external_run=None,
+        no_error_on_missing_interpreters=None,
+        no_reuse_existing_virtualenvs=None,
+        no_stop_on_first_error=None,
+        nocolor=False,
+        non_interactive=None,
+        noxfile="noxfile.py",  # # TODO determine this dynamically
+        reuse_existing_virtualenvs=None,
+        sessions=None,
+        stop_on_first_error=None,
+        version=None,
+    )
+
+    module = load_nox_module(global_config)
+    manifest = discover_manifest(module, global_config)
+    filtered_manifest = filter_manifest(manifest, global_config)
+    return [
+        session.friendly_name for session, _ in filtered_manifest.list_all_sessions()
+    ]
+
+
 def _posargs_finalizer(value, unused_args):
     """Removes any leading "--"s in the posargs array."""
     if value and value[0] == "--":
@@ -141,6 +174,7 @@ options.add_options(
         nargs="*",
         default=_sessions_default,
         help="Which sessions to run. By default, all sessions will run.",
+        completer=_session_completer,
     ),
     _option_set.Option(
         "keywords",

@@ -17,10 +17,10 @@ can be specified from the command line and the noxfile, easily used in tests,
 and surfaced in documentation."""
 
 
+import argcomplete
 import argparse
 import collections
 import functools
-
 
 Namespace = argparse.Namespace
 ArgumentError = argparse.ArgumentError
@@ -68,6 +68,7 @@ class Option:
         finalizer_func=None,
         default=None,
         hidden=False,
+        completer=None,
         **kwargs
     ):
         self.name = name
@@ -78,6 +79,7 @@ class Option:
         self.merge_func = merge_func
         self.finalizer_func = finalizer_func
         self.hidden = hidden
+        self.completer = completer
         self.kwargs = kwargs
         self._default = default
 
@@ -187,9 +189,11 @@ class OptionSet:
         self.groups[name] = (args, kwargs)
 
     def _add_to_parser(self, parser, option):
-        parser.add_argument(
+        argument = parser.add_argument(
             *option.flags, help=option.help, default=option.default, **option.kwargs
         )
+        if option.completer:
+            argument.completer = option.completer
 
     def parser(self):
         """Returns an ``ArgumentParser`` for this option set.
@@ -233,6 +237,7 @@ class OptionSet:
 
     def parse_args(self):
         parser = self.parser()
+        argcomplete.autocomplete(parser)
         args = parser.parse_args()
 
         try:
