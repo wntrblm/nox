@@ -98,30 +98,8 @@ def _color_finalizer(value, args):
     return sys.stdin.isatty()
 
 
-def _session_completer(*args, **kwargs):
-    global_config = argparse.Namespace(
-        color=False,
-        envdir=".nox",  # TODO determine this dynamically
-        error_on_external_run=None,
-        error_on_missing_interpreters=None,
-        forcecolor=False,
-        help=None,
-        install_only=None,
-        keywords=None,
-        list_sessions=True,
-        no_error_on_external_run=None,
-        no_error_on_missing_interpreters=None,
-        no_reuse_existing_virtualenvs=None,
-        no_stop_on_first_error=None,
-        nocolor=False,
-        non_interactive=None,
-        noxfile="noxfile.py",  # # TODO determine this dynamically
-        reuse_existing_virtualenvs=None,
-        sessions=None,
-        stop_on_first_error=None,
-        version=None,
-    )
-
+def _session_completer(prefix, parsed_args, **kwargs):
+    global_config = parsed_args
     module = load_nox_module(global_config)
     manifest = discover_manifest(module, global_config)
     filtered_manifest = filter_manifest(manifest, global_config)
