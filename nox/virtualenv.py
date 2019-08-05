@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+from pathlib import Path
 import platform
 import re
 import shutil
@@ -174,6 +175,26 @@ class CondaEnv(ProcessEnv):
         return True
 
 
+def resolve_real_python_outside_venv(desired_intepreter: str) -> str:
+    """Return path to the real Python installation based
+
+    See also:
+    https://docs.python.org/3/library/sys.html#sys.prefix
+    https://docs.python.org/3/library/sys.html#sys.base_prefix
+    """
+    interpreter = (
+        desired_intepreter
+        if desired_intepreter
+        else f"{sys.version_info.major}.{sys.version_info.minor}"
+    )
+    python_str = f"python{interpreter}"  # i.e. python3.6
+
+    base_python_installation = Path(sys.base_prefix) / "bin" / python_str
+    if base_python_installation.is_file():
+        return str(base_python_installation)
+    raise InterpreterNotFound(interpreter)
+
+
 class VirtualEnv(ProcessEnv):
     """Virtualenv management class.
 
@@ -196,12 +217,15 @@ class VirtualEnv(ProcessEnv):
 
     is_sandboxed = True
 
-    def __init__(self, location, interpreter=None, reuse_existing=False):
+    def __init__(
+        self, location, interpreter=None, reuse_existing=False, *, venv: bool = False
+    ):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
         self._resolved = None
         self.reuse_existing = reuse_existing
+        self.venv_or_virtualenv = "venv" if venv else "virtualenv"
         super(VirtualEnv, self).__init__()
 
     _clean_location = _clean_location
@@ -212,6 +236,7 @@ class VirtualEnv(ProcessEnv):
 
         Based heavily on tox's implementation (tox/interpreters.py).
         """
+
         # If there is no assigned interpreter, then use the same one used by
         # Nox.
         if isinstance(self._resolved, Exception):
@@ -220,8 +245,13 @@ class VirtualEnv(ProcessEnv):
         if self._resolved is not None:
             return self._resolved
 
+        currently_in_virtual_environment = sys.prefix != sys.base_prefix
+
         if self.interpreter is None:
-            self._resolved = sys.executable
+            if currently_in_virtual_environment:
+                self._resolved = resolve_real_python_outside_venv(self.interpreter)
+            else:
+                self._resolved = sys.executable
             return self._resolved
 
         # Otherwise we need to divine the path to the interpreter. This is
@@ -238,7 +268,10 @@ class VirtualEnv(ProcessEnv):
             cleaned_interpreter = "python{}".format(xy_version)
 
         # If the cleaned interpreter is on the PATH, go ahead and return it.
-        if py.path.local.sysfind(cleaned_interpreter):
+        if currently_in_virtual_environment and _SYSTEM != "Windows":
+            self._resolved = resolve_real_python_outside_venv(self.interpreter)
+            return self._resolved
+        elif py.path.local.sysfind(cleaned_interpreter):
             self._resolved = cleaned_interpreter
             return self._resolved
 
@@ -275,21 +308,26 @@ class VirtualEnv(ProcessEnv):
             return os.path.join(self.location, "bin")
 
     def create(self):
-        """Create the virtualenv."""
+        """Create the virtualenv or venv."""
         if not self._clean_location():
             logger.debug(
-                "Re-using existing virtualenv at {}.".format(self.location_name)
+                "Re-using existing virtual environment at {}.".format(
+                    self.location_name
+                )
             )
             return False
 
-        cmd = [sys.executable, "-m", "virtualenv", self.location]
-
         if self.interpreter:
-            cmd.extend(["-p", self._resolved_interpreter])
+            cmd = [self._resolved_interpreter]
+        else:
+            cmd = [sys.executable]
+        cmd += ["-m", self.venv_or_virtualenv, self.location]
 
         logger.info(
-            "Creating virtualenv using {} in {}".format(
-                os.path.basename(self._resolved_interpreter), self.location_name
+            "Creating virtual environment ({}) using {} in {}".format(
+                self.venv_or_virtualenv,
+                os.path.basename(self._resolved_interpreter),
+                self.location_name,
             )
         )
         nox.command.run(cmd, silent=True, log=False)
