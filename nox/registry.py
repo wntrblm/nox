@@ -16,7 +16,7 @@ import collections
 import copy
 import functools
 
-_REGISTRY = collections.OrderedDict()
+_REGISTRY = collections.OrderedDict()  # type: ignore
 
 
 def session_decorator(
