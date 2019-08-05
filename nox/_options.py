@@ -97,13 +97,6 @@ def _color_finalizer(value, args):
     return sys.stdin.isatty()
 
 
-def _posargs_finalizer(value, unused_args):
-    """Removes any leading "--"s in the posargs array."""
-    if value and value[0] == "--":
-        value.pop(0)
-    return value
-
-
 options.add_options(
     _option_set.Option(
         "help",
@@ -156,7 +149,6 @@ options.add_options(
         group="primary",
         nargs=argparse.REMAINDER,
         help="Arguments following ``--`` that are passed through to the session(s).",
-        finalizer_func=_posargs_finalizer,
     ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
