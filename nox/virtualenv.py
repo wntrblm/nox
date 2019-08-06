@@ -285,10 +285,12 @@ class VirtualEnv(ProcessEnv):
             )
             return False
 
-        cmd = [sys.executable, "-m", self.venv_or_virtualenv, self.location]
-
-        if self.interpreter and self.venv_or_virtualenv == "virtualenv":
-            cmd.extend(["-p", self._resolved_interpreter])
+        if self.venv_or_virtualenv == "virtualenv":
+            cmd = [sys.executable, "-m", "virtualenv", self.location]
+            if self.interpreter:
+                cmd.extend(["-p", self._resolved_interpreter])
+        else:
+            cmd = [self._resolved_interpreter, "-m", "venv", self.location]
 
         logger.info(
             "Creating virtual environment ({}) using {} in {}".format(
