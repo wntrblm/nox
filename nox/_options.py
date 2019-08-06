@@ -97,6 +97,32 @@ def _color_finalizer(value, args):
     return sys.stdin.isatty()
 
 
+def _posargs_finalizer(value, args):
+    """Removes the leading "--"s in the posargs array (if any) and asserts that
+    remaining arguments came after a "--".
+    """
+    posargs = value
+    if not posargs:
+        return []
+
+    if "--" not in posargs:
+        unexpected_posargs = posargs
+        raise _option_set.ArgumentError(
+            None, "Unknown argument(s) '{}'.".format(" ".join(unexpected_posargs))
+        )
+
+    dash_index = posargs.index("--")
+    if dash_index != 0:
+        unexpected_posargs = posargs[0:dash_index]
+        raise _option_set.ArgumentError(
+            None, "Unknown argument(s) '{}'.".format(" ".join(unexpected_posargs))
+        )
+
+    # fmt: off
+    return posargs[dash_index + 1:]
+    # fmt: on
+
+
 options.add_options(
     _option_set.Option(
         "help",
@@ -149,6 +175,7 @@ options.add_options(
         group="primary",
         nargs=argparse.REMAINDER,
         help="Arguments following ``--`` that are passed through to the session(s).",
+        finalizer_func=_posargs_finalizer,
     ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
