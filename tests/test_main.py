@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import sys
 from unittest import mock
@@ -168,18 +169,10 @@ def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
 
 def test_main_positional_args(monkeypatch):
     monkeypatch.setattr(sys, "argv", [sys.executable, "1", "2", "3"])
-    with mock.patch("nox.workflow.execute") as execute:
-        execute.return_value = 0
 
+    with pytest.raises(argparse.ArgumentError, match="1 2 3"):
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
-            exit.assert_called_once_with(0)
-        assert execute.called
-
-        # Verify that the positional args are listed in the config.
-        config = execute.call_args[1]["global_config"]
-        assert config.posargs == ["1", "2", "3"]
+        nox.__main__.main()
 
 
 def test_main_positional_with_double_hyphen(monkeypatch):
