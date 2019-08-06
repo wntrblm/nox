@@ -20,7 +20,7 @@ and surfaced in documentation."""
 import argparse
 import collections
 import functools
-import sys
+
 
 Namespace = argparse.Namespace
 ArgumentError = argparse.ArgumentError
@@ -68,7 +68,7 @@ class Option:
         finalizer_func=None,
         default=None,
         hidden=False,
-        **kwargs,
+        **kwargs
     ):
         self.name = name
         self.flags = flags
@@ -143,7 +143,7 @@ def make_flag_pair(name, enable_flags, disable_flags, **kwargs):
         *enable_flags,
         noxfile=True,
         merge_func=functools.partial(flag_pair_merge_func, name, disable_name),
-        **kwargs,
+        **kwargs
     )
 
     kwargs["help"] = "Disables {} if it is enabled in the Noxfile.".format(
@@ -233,22 +233,8 @@ class OptionSet:
 
     def parse_args(self):
         parser = self.parser()
-        all_args = sys.argv[1:]
-        if "--" in all_args:
-            split_index = all_args.index("--")
-            nox_args = all_args[0:split_index]
-            posargs = all_args[split_index + 1 :]
-        else:
-            nox_args = all_args
-            posargs = []
+        args = parser.parse_args()
 
-        args = parser.parse_args(nox_args)
-        if args.posargs:
-            # posargs should not be present since we explicitly only parsed
-            # values before the '--'
-            parser.error(f"Unrecognized argument(s): '{' '.join(args.posargs)}'")
-
-        args.posargs = posargs
         try:
             self._finalize_args(args)
         except ArgumentError as err:
