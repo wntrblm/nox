@@ -384,7 +384,7 @@ class SessionRunner:
             )
         else:
             raise ValueError(
-                "Expected venv_backend one of ('virtualenv', 'conda'), but got '{}'.".format(
+                "Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{}'.".format(
                     self.func.venv_backend
                 )
             )
