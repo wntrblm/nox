@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-from pathlib import Path
 import platform
 import re
 import shutil
@@ -175,26 +174,6 @@ class CondaEnv(ProcessEnv):
         return True
 
 
-def resolve_real_python_outside_venv(desired_intepreter: str) -> str:
-    """Return path to the real Python installation based
-
-    See also:
-    https://docs.python.org/3/library/sys.html#sys.prefix
-    https://docs.python.org/3/library/sys.html#sys.base_prefix
-    """
-    interpreter = (
-        desired_intepreter
-        if desired_intepreter
-        else f"{sys.version_info.major}.{sys.version_info.minor}"
-    )
-    python_str = f"python{interpreter}"  # i.e. python3.6
-
-    base_python_installation = Path(sys.base_prefix) / "bin" / python_str
-    if base_python_installation.is_file():
-        return str(base_python_installation)
-    raise InterpreterNotFound(interpreter)
-
-
 class VirtualEnv(ProcessEnv):
     """Virtualenv management class.
 
@@ -217,9 +196,7 @@ class VirtualEnv(ProcessEnv):
 
     is_sandboxed = True
 
-    def __init__(
-        self, location, interpreter=None, reuse_existing=False, *, venv: bool = False
-    ):
+    def __init__(self, location, interpreter=None, reuse_existing=False, *, venv=False):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
@@ -236,7 +213,6 @@ class VirtualEnv(ProcessEnv):
 
         Based heavily on tox's implementation (tox/interpreters.py).
         """
-
         # If there is no assigned interpreter, then use the same one used by
         # Nox.
         if isinstance(self._resolved, Exception):
@@ -245,13 +221,8 @@ class VirtualEnv(ProcessEnv):
         if self._resolved is not None:
             return self._resolved
 
-        currently_in_virtual_environment = sys.prefix != sys.base_prefix
-
         if self.interpreter is None:
-            if currently_in_virtual_environment:
-                self._resolved = resolve_real_python_outside_venv(self.interpreter)
-            else:
-                self._resolved = sys.executable
+            self._resolved = sys.executable
             return self._resolved
 
         # Otherwise we need to divine the path to the interpreter. This is
@@ -268,10 +239,7 @@ class VirtualEnv(ProcessEnv):
             cleaned_interpreter = "python{}".format(xy_version)
 
         # If the cleaned interpreter is on the PATH, go ahead and return it.
-        if currently_in_virtual_environment and _SYSTEM != "Windows":
-            self._resolved = resolve_real_python_outside_venv(self.interpreter)
-            return self._resolved
-        elif py.path.local.sysfind(cleaned_interpreter):
+        if py.path.local.sysfind(cleaned_interpreter):
             self._resolved = cleaned_interpreter
             return self._resolved
 
@@ -317,11 +285,10 @@ class VirtualEnv(ProcessEnv):
             )
             return False
 
-        if self.interpreter:
-            cmd = [self._resolved_interpreter]
-        else:
-            cmd = [sys.executable]
-        cmd += ["-m", self.venv_or_virtualenv, self.location]
+        cmd = [sys.executable, "-m", self.venv_or_virtualenv, self.location]
+
+        if self.interpreter and self.venv_or_virtualenv == "virtualenv":
+            cmd.extend(["-p", self._resolved_interpreter])
 
         logger.info(
             "Creating virtual environment ({}) using {} in {}".format(
