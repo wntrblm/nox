@@ -170,9 +170,19 @@ def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
 def test_main_positional_args(monkeypatch):
     monkeypatch.setattr(sys, "argv", [sys.executable, "1", "2", "3"])
 
-    with pytest.raises(argparse.ArgumentError, match="1 2 3"):
-        # Call the main function.
+    with pytest.raises(
+        AttributeError, match="object has no attribute 'color'"
+    ), mock.patch.object(sys, "exit") as _exit:
         nox.__main__.main()
+        _exit.assert_called_once_with(1)
+
+    monkeypatch.setattr(sys, "argv", [sys.executable, "1", "2", "3", "--"])
+
+    with pytest.raises(
+        AttributeError, match="object has no attribute 'color'"
+    ), mock.patch.object(sys, "exit") as _exit:
+        nox.__main__.main()
+        _exit.assert_called_once_with(1)
 
 
 def test_main_positional_with_double_hyphen(monkeypatch):
