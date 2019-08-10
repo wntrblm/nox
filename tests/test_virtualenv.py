@@ -38,16 +38,6 @@ def make_one(tmpdir):
 
 
 @pytest.fixture
-def make_venv(tmpdir):
-    def factory(*args, **kwargs):
-        location = tmpdir.join("venv")
-        venv = nox.virtualenv.VirtualEnv(location.strpath, *args, venv=True, **kwargs)
-        return (venv, location)
-
-    return factory
-
-
-@pytest.fixture
 def make_conda(tmpdir):
     def factory(*args, **kwargs):
         location = tmpdir.join("condaenv")
@@ -77,14 +67,6 @@ def test_condaenv_constructor_explicit(make_conda):
     assert venv.location
     assert venv.interpreter == "3.5"
     assert venv.reuse_existing is True
-
-
-def test_venv_constructor_defaults(make_venv):
-    venv, _ = make_venv()
-    assert venv.location
-    assert venv.interpreter is None
-    assert venv.reuse_existing is False
-    assert venv.venv_or_virtualenv == "venv"
 
 
 @pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
@@ -230,6 +212,11 @@ def test_create(make_one):
     venv.reuse_existing = True
     venv.create()
     assert dir_.join("test.txt").check()
+
+
+def test_create_venv_backend(make_one):
+    venv, dir_ = make_one(venv=True)
+    venv.create()
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
