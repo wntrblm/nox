@@ -17,7 +17,7 @@ import io
 import json
 import os
 
-from colorlog.escape_codes import parse_colors
+from colorlog.escape_codes import parse_colors  # type: ignore
 
 import nox
 from nox import _options

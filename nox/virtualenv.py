@@ -18,7 +18,7 @@ import re
 import shutil
 import sys
 
-import py
+import py  # type: ignore
 
 import nox.command
 from nox.logger import logger
@@ -123,7 +123,7 @@ class CondaEnv(ProcessEnv):
     """
 
     is_sandboxed = True
-    allowed_globals = ("conda",)
+    allowed_globals = ("conda",)  # type: ignore
 
     def __init__(self, location, interpreter=None, reuse_existing=False):
         self.location_name = location
