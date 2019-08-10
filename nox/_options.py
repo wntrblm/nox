@@ -118,9 +118,7 @@ def _posargs_finalizer(value, args):
             None, "Unknown argument(s) '{}'.".format(" ".join(unexpected_posargs))
         )
 
-    # fmt: off
-    return posargs[dash_index + 1:]
-    # fmt: on
+    return posargs[dash_index + 1 :]
 
 
 options.add_options(
