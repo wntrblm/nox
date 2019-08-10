@@ -285,4 +285,4 @@ def _null_session_func(session):
     session.skip("This session had no parameters available.")
 
 
-_null_session_func.python = False
+_null_session_func.python = False  # type: ignore

@@ -19,7 +19,7 @@ import re
 import sys
 import unicodedata
 
-import py
+import py  # type: ignore
 
 import nox.command
 from nox.logger import logger
