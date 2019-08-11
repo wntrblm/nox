@@ -17,8 +17,8 @@ import functools
 import os
 import sys
 
-from nox.tasks import load_nox_module, discover_manifest, filter_manifest
 from nox import _option_set
+from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 
 """All of nox's configuration options."""
 

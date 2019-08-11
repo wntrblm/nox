@@ -17,10 +17,11 @@ can be specified from the command line and the noxfile, easily used in tests,
 and surfaced in documentation."""
 
 
-import argcomplete
 import argparse
 import collections
 import functools
+
+import argcomplete  # type: ignore
 
 Namespace = argparse.Namespace
 ArgumentError = argparse.ArgumentError
