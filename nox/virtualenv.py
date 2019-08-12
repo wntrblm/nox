@@ -196,12 +196,13 @@ class VirtualEnv(ProcessEnv):
 
     is_sandboxed = True
 
-    def __init__(self, location, interpreter=None, reuse_existing=False):
+    def __init__(self, location, interpreter=None, reuse_existing=False, *, venv=False):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
         self._resolved = None
         self.reuse_existing = reuse_existing
+        self.venv_or_virtualenv = "venv" if venv else "virtualenv"
         super(VirtualEnv, self).__init__()
 
     _clean_location = _clean_location
@@ -275,21 +276,27 @@ class VirtualEnv(ProcessEnv):
             return os.path.join(self.location, "bin")
 
     def create(self):
-        """Create the virtualenv."""
+        """Create the virtualenv or venv."""
         if not self._clean_location():
             logger.debug(
-                "Re-using existing virtualenv at {}.".format(self.location_name)
+                "Re-using existing virtual environment at {}.".format(
+                    self.location_name
+                )
             )
             return False
 
-        cmd = [sys.executable, "-m", "virtualenv", self.location]
-
-        if self.interpreter:
-            cmd.extend(["-p", self._resolved_interpreter])
+        if self.venv_or_virtualenv == "virtualenv":
+            cmd = [sys.executable, "-m", "virtualenv", self.location]
+            if self.interpreter:
+                cmd.extend(["-p", self._resolved_interpreter])
+        else:
+            cmd = [self._resolved_interpreter, "-m", "venv", self.location]
 
         logger.info(
-            "Creating virtualenv using {} in {}".format(
-                os.path.basename(self._resolved_interpreter), self.location_name
+            "Creating virtual environment ({}) using {} in {}".format(
+                self.venv_or_virtualenv,
+                os.path.basename(self._resolved_interpreter),
+                self.location_name,
             )
         )
         nox.command.run(cmd, silent=True, log=False)

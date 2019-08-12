@@ -375,9 +375,16 @@ class SessionRunner:
             self.venv = CondaEnv(
                 path, interpreter=self.func.python, reuse_existing=reuse_existing
             )
+        elif self.func.venv_backend == "venv":
+            self.venv = VirtualEnv(
+                path,
+                interpreter=self.func.python,
+                reuse_existing=reuse_existing,
+                venv=True,
+            )
         else:
             raise ValueError(
-                "Expected venv_backend one of ('virtualenv', 'conda'), but got '{}'.".format(
+                "Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{}'.".format(
                     self.func.venv_backend
                 )
             )

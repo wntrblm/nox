@@ -117,6 +117,7 @@ def test_constructor_defaults(make_one):
     assert venv.location
     assert venv.interpreter is None
     assert venv.reuse_existing is False
+    assert venv.venv_or_virtualenv == "virtualenv"
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
@@ -211,6 +212,11 @@ def test_create(make_one):
     venv.reuse_existing = True
     venv.create()
     assert dir_.join("test.txt").check()
+
+
+def test_create_venv_backend(make_one):
+    venv, dir_ = make_one(venv=True)
+    venv.create()
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
