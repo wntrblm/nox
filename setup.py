@@ -49,6 +49,7 @@ setup(
     packages=["nox"],
     include_package_data=True,
     install_requires=[
+        "argcomplete>=1.9.4, <2.0",
         "colorlog>=2.6.1,<4.0.0",
         "py>=1.4.0,<2.0.0",
         "virtualenv>=14.0.0",

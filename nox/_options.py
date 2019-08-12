@@ -18,6 +18,7 @@ import os
 import sys
 
 from nox import _option_set
+from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 
 """All of nox's configuration options."""
 
@@ -97,6 +98,16 @@ def _color_finalizer(value, args):
     return sys.stdin.isatty()
 
 
+def _session_completer(prefix, parsed_args, **kwargs):
+    global_config = parsed_args
+    module = load_nox_module(global_config)
+    manifest = discover_manifest(module, global_config)
+    filtered_manifest = filter_manifest(manifest, global_config)
+    return [
+        session.friendly_name for session, _ in filtered_manifest.list_all_sessions()
+    ]
+
+
 def _posargs_finalizer(value, unused_args):
     """Removes any leading "--"s in the posargs array."""
     if value and value[0] == "--":
@@ -141,6 +152,7 @@ options.add_options(
         nargs="*",
         default=_sessions_default,
         help="Which sessions to run. By default, all sessions will run.",
+        completer=_session_completer,
     ),
     _option_set.Option(
         "keywords",
