@@ -52,6 +52,7 @@ Nox is lucky to have several wonderful projects that use it and provide feedback
 
 - `Bezier <https://github.com/dhermes/bezier>`__
 - `gapic-generator-python <https://github.com/googleapis/gapic-generator-python>`__
+- `gdbgui <https://github.com/cs01/gdbgui>`__
 - `Google Assistant SDK <https://github.com/googlesamples/assistant-sdk-python>`__
 - `google-cloud-python <https://github.com/googlecloudplatform/google-cloud-python>`__
 - `google-resumable-media-python <https://github.com/GoogleCloudPlatform/google-resumable-media-python>`__

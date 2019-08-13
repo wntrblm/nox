@@ -514,6 +514,7 @@ class TestSessionRunner:
                 "virtualenv",
                 nox.virtualenv.VirtualEnv,
             ),
+            ("nox.virtualenv.VirtualEnv.create", "venv", nox.virtualenv.VirtualEnv),
             ("nox.virtualenv.CondaEnv.create", "conda", nox.virtualenv.CondaEnv),
         ],
     )
