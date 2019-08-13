@@ -166,22 +166,27 @@ def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
             assert session in config.sessions
 
 
-def test_main_positional_args(monkeypatch):
+def test_main_positional_args(capsys, monkeypatch):
+    fake_exit = mock.Mock(side_effect=ValueError("asdf!"))
+
     monkeypatch.setattr(sys, "argv", [sys.executable, "1", "2", "3"])
-
-    with pytest.raises(
-        AttributeError, match="object has no attribute 'color'"
-    ), mock.patch.object(sys, "exit") as _exit:
+    with mock.patch.object(sys, "exit", fake_exit), pytest.raises(
+        ValueError, match="asdf!"
+    ):
         nox.__main__.main()
-        _exit.assert_called_once_with(1)
+    _, stderr = capsys.readouterr()
+    assert "Unknown argument(s) '1 2 3'" in stderr
+    fake_exit.assert_called_once_with(2)
 
+    fake_exit.reset_mock()
     monkeypatch.setattr(sys, "argv", [sys.executable, "1", "2", "3", "--"])
-
-    with pytest.raises(
-        AttributeError, match="object has no attribute 'color'"
-    ), mock.patch.object(sys, "exit") as _exit:
+    with mock.patch.object(sys, "exit", fake_exit), pytest.raises(
+        ValueError, match="asdf!"
+    ):
         nox.__main__.main()
-        _exit.assert_called_once_with(1)
+    _, stderr = capsys.readouterr()
+    assert "Unknown argument(s) '1 2 3'" in stderr
+    fake_exit.assert_called_once_with(2)
 
 
 def test_main_positional_with_double_hyphen(monkeypatch):
