@@ -98,6 +98,30 @@ def _color_finalizer(value, args):
     return sys.stdin.isatty()
 
 
+def _posargs_finalizer(value, args):
+    """Removes the leading "--"s in the posargs array (if any) and asserts that
+    remaining arguments came after a "--".
+    """
+    posargs = value
+    if not posargs:
+        return []
+
+    if "--" not in posargs:
+        unexpected_posargs = posargs
+        raise _option_set.ArgumentError(
+            None, "Unknown argument(s) '{}'.".format(" ".join(unexpected_posargs))
+        )
+
+    dash_index = posargs.index("--")
+    if dash_index != 0:
+        unexpected_posargs = posargs[0:dash_index]
+        raise _option_set.ArgumentError(
+            None, "Unknown argument(s) '{}'.".format(" ".join(unexpected_posargs))
+        )
+
+    return posargs[dash_index + 1 :]
+
+
 def _session_completer(prefix, parsed_args, **kwargs):
     global_config = parsed_args
     module = load_nox_module(global_config)
@@ -106,13 +130,6 @@ def _session_completer(prefix, parsed_args, **kwargs):
     return [
         session.friendly_name for session, _ in filtered_manifest.list_all_sessions()
     ]
-
-
-def _posargs_finalizer(value, unused_args):
-    """Removes any leading "--"s in the posargs array."""
-    if value and value[0] == "--":
-        value.pop(0)
-    return value
 
 
 options.add_options(
