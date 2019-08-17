@@ -269,6 +269,53 @@ class Session:
             **kwargs
         )
 
+    def pipenv_install(self, *args, dev=False, **kwargs):
+        """Install invokes `pipenv install`_ to install packages inside of the
+        session's virtualenv.
+
+        To install packages from a Pipfile::
+
+            session.pipenv_install()
+
+        To install both develop and default packages::
+
+            session.pipenv_install(dev=True)
+
+        To pass extra options to "pipenv install", pass the options as args::
+
+            session.pipenv_install("--pre", "--verbose")
+
+        To install the current package::
+
+            session.pipenv_install('.')
+            # Install in editable mode.
+            session.pipenv_install('-e', '.')
+
+        Additional keyword args are the same as for :meth:`run`.
+
+        .. _pipenv install: https://docs.pipenv.org
+        """
+        if not isinstance(self.virtualenv, VirtualEnv):
+            raise ValueError(
+                "A session without a virtualenv can not install dependencies."
+            )
+
+        if "silent" not in kwargs:
+            kwargs["silent"] = True
+
+        if dev:
+            args = "--dev", *args
+
+        self._run(
+            "pipenv",
+            "install",
+            "--ignore-pipfile",
+            *args,
+            external=True,
+            env={"VIRTUAL_ENV": self.virtualenv.location},
+            **kwargs
+        )
+
     def install(self, *args, **kwargs):
         """Install invokes `pip`_ to install packages inside of the session's
         virtualenv.

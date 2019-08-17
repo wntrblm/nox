@@ -371,6 +371,130 @@ class TestSession:
                 "pip", "install", "requests", "urllib3", silent=False, external="error"
             )
 
+    def test_pipenv_install_not_a_virtualenv(self):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv = None
+
+        with pytest.raises(ValueError, match="virtualenv"):
+            session.pipenv_install()
+
+    def test_pipenv_install(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.location = "/path/to/virtualenv"
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.pipenv_install()
+            run.assert_called_once_with(
+                "pipenv",
+                "install",
+                "--ignore-pipfile",
+                silent=True,
+                external=True,
+                env={"VIRTUAL_ENV": "/path/to/virtualenv"},
+            )
+
+    def test_pipenv_install_with_args(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.location = "/path/to/virtualenv"
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.pipenv_install("--verbose")
+            run.assert_called_once_with(
+                "pipenv",
+                "install",
+                "--ignore-pipfile",
+                "--verbose",
+                silent=True,
+                external=True,
+                env={"VIRTUAL_ENV": "/path/to/virtualenv"},
+            )
+
+    def test_pipenv_install_with_kwargs(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.location = "/path/to/virtualenv"
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.pipenv_install("--verbose", silent=False)
+            run.assert_called_once_with(
+                "pipenv",
+                "install",
+                "--ignore-pipfile",
+                "--verbose",
+                env={"VIRTUAL_ENV": "/path/to/virtualenv"},
+                silent=False,
+                external=True,
+            )
+
+    def test_pipenv_install_with_dev(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.location = "/path/to/virtualenv"
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.pipenv_install("--verbose", dev=True)
+            run.assert_called_once_with(
+                "pipenv",
+                "install",
+                "--ignore-pipfile",
+                "--dev",
+                "--verbose",
+                env={"VIRTUAL_ENV": "/path/to/virtualenv"},
+                silent=True,
+                external=True,
+            )
+
     def test_notify(self):
         session, runner = self.make_session_and_runner()
 
