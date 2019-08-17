@@ -50,6 +50,17 @@ def make_conda(tmpdir):
 
 @pytest.fixture
 def make_mocked_interpreter_path():
+    """Provides a factory to create a mocked ``path`` object pointing
+    to a python interpreter.
+
+    This mocked ``path`` provides
+        - a ``__str__`` which is equal to the factory's ``path`` parameter
+        - a ``sysexec`` method which returns the value of the
+          factory's ``sysexec_result`` parameter.
+          (the ``sysexec_result`` parameter can be a version string
+          or ``RAISE_ERROR``).
+    """
+
     def factory(path, sysexec_result):
         def mock_sysexec(*_):
             if sysexec_result == RAISE_ERROR:
@@ -71,7 +82,27 @@ def make_mocked_interpreter_path():
 
 @pytest.fixture
 def patch_sysfind(make_mocked_interpreter_path):
+    """Provides a function to patch ``sysfind`` with parameters for tests related
+    to locating a Python interpreter in the system ``PATH``.
+    """
+
     def patcher(sysfind, only_find, sysfind_result, sysexec_result):
+        """Returns an extended ``sysfind`` patch object for tests related to locating a
+        Python interpreter in the system ``PATH``.
+
+        Args:
+            sysfind: The original sysfind patch object
+            only_find (Tuple[str]): The strings for which ``sysfind`` should be successful,
+                e.g. ``("python", "python.exe")``
+            sysfind_result (Optional[str]): The ``path`` string to create the returned
+                mocked ``path`` object with which will represent the found Python interpreter,
+                or ``None``.
+                This parameter is passed on to ``make_mocked_interpreter_path``.
+            sysexec_result (str): A string that should be returned when executing the
+                mocked ``path`` object. Usually a Python version string.
+                Use the global ``RAISE_ERROR`` to have ``sysexec`` fail.
+                This parameter is passed on to ``make_mocked_interpreter_path``.
+        """
         mock_python = make_mocked_interpreter_path(sysfind_result, sysexec_result)
 
         def mock_sysfind(arg):
