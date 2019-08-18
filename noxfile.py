@@ -42,6 +42,15 @@ def conda_tests(session):
     session.run("pytest", *tests)
 
 
+@nox.session(python=["3.5", "3.6", "3.7"])
+def pipenv_tests(session):
+    """Run tests using Pipenv."""
+    session.pipenv_install("-r", "requirements-test.txt")
+    session.pipenv_install("-e", ".[tox_to_nox]")
+    tests = session.posargs or ["tests/"]
+    session.run("pytest", *tests)
+
+
 @nox.session
 def cover(session):
     """Coverage analysis."""
