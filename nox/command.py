@@ -122,6 +122,9 @@ def run(
 
             raise CommandFailed("Returned code {}".format(return_code))
 
+        if output:
+            logger.output(output)
+
         return output if silent else True
 
     except KeyboardInterrupt:

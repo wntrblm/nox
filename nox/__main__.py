@@ -41,7 +41,7 @@ def main():
         print(dist.version, file=sys.stderr)
         return
 
-    setup_logging(color=args.color)
+    setup_logging(color=args.color, verbose=args.verbose)
 
     # Execute the appropriate tasks.
     exit_code = workflow.execute(

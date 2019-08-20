@@ -17,12 +17,25 @@ import logging
 from colorlog import ColoredFormatter  # type: ignore
 
 SUCCESS = 25
+OUTPUT = logging.DEBUG - 1
 
 
-class LoggerWithSuccess(logging.getLoggerClass()):  # type: ignore
+class NoxFormatter(ColoredFormatter):
+    def __init__(self, *args, **kwargs):
+        super(NoxFormatter, self).__init__(*args, **kwargs)
+        self._simple_fmt = logging.Formatter("%(message)s")
+
+    def format(self, record):
+        if record.levelname == "OUTPUT":
+            return self._simple_fmt.format(record)
+        return super(NoxFormatter, self).format(record)
+
+
+class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore
     def __init__(self, name, level=logging.NOTSET):
-        super(LoggerWithSuccess, self).__init__(name, level)
+        super(LoggerWithSuccessAndOutput, self).__init__(name, level)
         logging.addLevelName(SUCCESS, "SUCCESS")
+        logging.addLevelName(OUTPUT, "OUTPUT")
 
     def success(self, msg, *args, **kwargs):
         if self.isEnabledFor(SUCCESS):
@@ -30,13 +43,18 @@ class LoggerWithSuccess(logging.getLoggerClass()):  # type: ignore
         else:  # pragma: no cover
             pass
 
+    def output(self, msg, *args, **kwargs):
+        if self.isEnabledFor(OUTPUT):
+            self._log(OUTPUT, msg, args, **kwargs)
+        else:  # pragma: no cover
+            pass
 
-logging.setLoggerClass(LoggerWithSuccess)
+
+logging.setLoggerClass(LoggerWithSuccessAndOutput)
 logger = logging.getLogger("nox")
-logger.setLevel(logging.DEBUG)
 
 
-def setup_logging(color):  # pragma: no cover
+def setup_logging(color, verbose=False):  # pragma: no cover
     """Setup logging.
 
     Args:
@@ -44,11 +62,14 @@ def setup_logging(color):  # pragma: no cover
             colorlog. Otherwise, it will be plaintext.
     """
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    if verbose:
+        root_logger.setLevel(OUTPUT)
+    else:
+        root_logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler()
 
     if color is True:
-        formatter = ColoredFormatter(
+        formatter = NoxFormatter(
             "%(cyan)s%(name)s > %(log_color)s%(message)s",
             reset=True,
             log_colors={
