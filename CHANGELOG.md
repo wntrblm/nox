@@ -1,5 +1,26 @@
 # Changelog
 
+## 2019.8.20
+
+- Add `--verbose` for showing the output from all commands. (#174)
+- Immediately exit if unknown arguments are passed. (#229)
+- Document complex test_virtualenv fixtures. (#236)
+- Resolve to interpreter 'python' in PATH if '--version' fits. (#224)
+- Add shell autocomplete. (#228)
+- Add `venv` as an option for `venv_backend`. (#231)
+- Add gdbgui to list of projects. (#235)
+- Add mypy to Nox's lint. (#230)
+- Add pipx to projects that use nox. (#225)
+- Add `session(venv_backend='conda')` option to use Conda environments. (#217, #221)
+- Document how to call builtins on Windows. (#223)
+- Replace `imp.load_source()` with `importlib`. (#214)
+- Fix incorrect type in docstring & replace old-style format string. (#213)
+- Allow specifying `stdout` and `stderr` to `session.run`.
+- Add Salt to the list of projects that use Nox. (#209)
+- Remove Python 2-specific code. (#203, #208)
+- Grammar fixes. (#205, 206, 207)
+- Update Nox's `noxfile.py` to use python3.7. (#204)
+
 ## 2019.5.30
 
 - Add interactive property to session. (#196)
