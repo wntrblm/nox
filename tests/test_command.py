@@ -203,3 +203,95 @@ def test_interrupt():
     with mock.patch("subprocess.Popen", return_value=mock_proc):
         with pytest.raises(KeyboardInterrupt):
             nox.command.run([PYTHON, "-c" "123"])
+
+
+def test_custom_stdout(capsys, tmpdir):
+    with open(str(tmpdir / "out.txt"), "w+b") as stdout:
+        nox.command.run(
+            [
+                PYTHON,
+                "-c",
+                'import sys; sys.stdout.write("out");'
+                'sys.stderr.write("err"); sys.exit(0)',
+            ],
+            stdout=stdout,
+        )
+        out, err = capsys.readouterr()
+        assert not out
+        assert "out" not in err
+        assert "err" not in err
+        stdout.seek(0)
+        tempfile_contents = stdout.read().decode("utf-8")
+        assert "out" in tempfile_contents
+        assert "err" in tempfile_contents
+
+
+def test_custom_stdout_silent_flag(capsys, tmpdir):
+    with open(str(tmpdir / "out.txt"), "w+b") as stdout:
+        with pytest.raises(ValueError, match="silent"):
+            nox.command.run([PYTHON, "-c", 'print("hi")'], stdout=stdout, silent=True)
+
+
+def test_custom_stdout_failed_command(capsys, tmpdir):
+    with open(str(tmpdir / "out.txt"), "w+b") as stdout:
+        with pytest.raises(nox.command.CommandFailed):
+            nox.command.run(
+                [
+                    PYTHON,
+                    "-c",
+                    'import sys; sys.stdout.write("out");'
+                    'sys.stderr.write("err"); sys.exit(1)',
+                ],
+                stdout=stdout,
+            )
+        out, err = capsys.readouterr()
+        assert not out
+        assert "out" not in err
+        assert "err" not in err
+        stdout.seek(0)
+        tempfile_contents = stdout.read().decode("utf-8")
+        assert "out" in tempfile_contents
+        assert "err" in tempfile_contents
+
+
+def test_custom_stderr(capsys, tmpdir):
+    with open(str(tmpdir / "err.txt"), "w+b") as stderr:
+        nox.command.run(
+            [
+                PYTHON,
+                "-c",
+                'import sys; sys.stdout.write("out");'
+                'sys.stderr.write("err"); sys.exit(0)',
+            ],
+            stderr=stderr,
+        )
+        out, err = capsys.readouterr()
+        assert not err
+        assert "out" not in out
+        assert "err" not in out
+        stderr.seek(0)
+        tempfile_contents = stderr.read().decode("utf-8")
+        assert "out" not in tempfile_contents
+        assert "err" in tempfile_contents
+
+
+def test_custom_stderr_failed_command(capsys, tmpdir):
+    with open(str(tmpdir / "out.txt"), "w+b") as stderr:
+        with pytest.raises(nox.command.CommandFailed):
+            nox.command.run(
+                [
+                    PYTHON,
+                    "-c",
+                    'import sys; sys.stdout.write("out");'
+                    'sys.stderr.write("err"); sys.exit(1)',
+                ],
+                stderr=stderr,
+            )
+        out, err = capsys.readouterr()
+        assert not err
+        assert "out" not in out
+        assert "err" not in out
+        stderr.seek(0)
+        tempfile_contents = stderr.read().decode("utf-8")
+        assert "out" not in tempfile_contents
+        assert "err" in tempfile_contents

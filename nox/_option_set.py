@@ -21,6 +21,7 @@ import argparse
 import collections
 import functools
 
+import argcomplete  # type: ignore
 
 Namespace = argparse.Namespace
 ArgumentError = argparse.ArgumentError
@@ -37,7 +38,7 @@ class Option:
             the ``*args`` for ``ArgumentParser.add_argument``.
         help (str): The help string pass to argparse.
         group (str): The argument group this option belongs to, if any.
-        noxfile (str): Whether or not this option can be set in the
+        noxfile (bool): Whether or not this option can be set in the
             configuration file.
         merge_func (Callable[[Namespace, Namespace], Any]): A function that
             can define custom behavior when merging the command-line options
@@ -68,6 +69,7 @@ class Option:
         finalizer_func=None,
         default=None,
         hidden=False,
+        completer=None,
         **kwargs
     ):
         self.name = name
@@ -78,6 +80,7 @@ class Option:
         self.merge_func = merge_func
         self.finalizer_func = finalizer_func
         self.hidden = hidden
+        self.completer = completer
         self.kwargs = kwargs
         self._default = default
 
@@ -187,9 +190,11 @@ class OptionSet:
         self.groups[name] = (args, kwargs)
 
     def _add_to_parser(self, parser, option):
-        parser.add_argument(
+        argument = parser.add_argument(
             *option.flags, help=option.help, default=option.default, **option.kwargs
         )
+        if option.completer:
+            argument.completer = option.completer
 
     def parser(self):
         """Returns an ``ArgumentParser`` for this option set.
@@ -233,6 +238,7 @@ class OptionSet:
 
     def parse_args(self):
         parser = self.parser()
+        argcomplete.autocomplete(parser)
         args = parser.parse_args()
 
         try:

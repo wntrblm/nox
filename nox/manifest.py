@@ -252,7 +252,7 @@ class Manifest:
                 return True
 
         # The session was not found in the list of sessions.
-        raise ValueError("Session %s not found." % session)
+        raise ValueError("Session {} not found.".format(session))
 
 
 class KeywordLocals:
@@ -285,4 +285,4 @@ def _null_session_func(session):
     session.skip("This session had no parameters available.")
 
 
-_null_session_func.python = False
+_null_session_func.python = False  # type: ignore

@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import imp
+import importlib
 import io
 import json
 import os
 
-from colorlog.escape_codes import parse_colors
+from colorlog.escape_codes import parse_colors  # type: ignore
 
 import nox
 from nox import _options
@@ -54,7 +54,10 @@ def load_nox_module(global_config):
         # import-time path resolutions work the way the Noxfile author would
         # guess.
         os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
-        return imp.load_source("user_nox_module", global_config.noxfile)
+        return importlib.machinery.SourceFileLoader(
+            "user_nox_module", global_config.noxfile
+        ).load_module()
+
     except (IOError, OSError):
         logger.error("Noxfile {} not found.".format(global_config.noxfile))
         return 2

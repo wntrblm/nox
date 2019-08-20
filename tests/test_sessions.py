@@ -201,6 +201,22 @@ class TestSession:
             (sys.executable, "--version"), external=True, env=mock.ANY, path=None
         )
 
+    def test_run_external_condaenv(self):
+        # condaenv sessions should always allow conda.
+        session, runner = self.make_session_and_runner()
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.allowed_globals = ("conda",)
+        runner.venv.env = {}
+        runner.venv.bin = "/path/to/env/bin"
+        runner.venv.create.return_value = True
+
+        with mock.patch("nox.command.run", autospec=True) as run:
+            session.run("conda", "--version")
+
+        run.assert_called_once_with(
+            ("conda", "--version"), external=True, env=mock.ANY, path="/path/to/env/bin"
+        )
+
     def test_run_external_with_error_on_external_run(self):
         session, runner = self.make_session_and_runner()
 
@@ -208,6 +224,94 @@ class TestSession:
 
         with pytest.raises(nox.command.CommandFailed, match="External"):
             session.run(sys.executable, "--version")
+
+    def test_run_external_with_error_on_external_run_condaenv(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.env = {}
+        runner.venv.bin = "/path/to/env/bin"
+
+        runner.global_config.error_on_external_run = True
+
+        with pytest.raises(nox.command.CommandFailed, match="External"):
+            session.run(sys.executable, "--version")
+
+    def test_conda_install_bad_args(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+
+        with pytest.raises(ValueError, match="arg"):
+            session.conda_install()
+
+    def test_conda_install_not_a_condaenv(self):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv = None
+
+        with pytest.raises(ValueError, match="conda environment"):
+            session.conda_install()
+
+    def test_conda_install(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "/path/to/conda/env"
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.conda_install("requests", "urllib3")
+            run.assert_called_once_with(
+                "conda",
+                "install",
+                "--yes",
+                "--prefix",
+                "/path/to/conda/env",
+                "requests",
+                "urllib3",
+                silent=True,
+                external="error",
+            )
+
+    def test_conda_install_non_default_kwargs(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "/path/to/conda/env"
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.conda_install("requests", "urllib3", silent=False)
+            run.assert_called_once_with(
+                "conda",
+                "install",
+                "--yes",
+                "--prefix",
+                "/path/to/conda/env",
+                "requests",
+                "urllib3",
+                silent=False,
+                external="error",
+            )
 
     def test_install_bad_args(self):
         session, _ = self.make_session_and_runner()
@@ -318,6 +422,7 @@ class TestSessionRunner:
     def make_runner(self):
         func = mock.Mock()
         func.python = None
+        func.venv_backend = None
         func.reuse_venv = False
         runner = nox.sessions.SessionRunner(
             name="test",
@@ -400,18 +505,39 @@ class TestSessionRunner:
         assert runner.venv.interpreter is None
         assert runner.venv.reuse_existing is False
 
-    @mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True)
-    def test__create_venv_options(self, create):
+    @pytest.mark.parametrize(
+        "create_method,venv_backend,expected_backend",
+        [
+            ("nox.virtualenv.VirtualEnv.create", None, nox.virtualenv.VirtualEnv),
+            (
+                "nox.virtualenv.VirtualEnv.create",
+                "virtualenv",
+                nox.virtualenv.VirtualEnv,
+            ),
+            ("nox.virtualenv.VirtualEnv.create", "venv", nox.virtualenv.VirtualEnv),
+            ("nox.virtualenv.CondaEnv.create", "conda", nox.virtualenv.CondaEnv),
+        ],
+    )
+    def test__create_venv_options(self, create_method, venv_backend, expected_backend):
         runner = self.make_runner()
         runner.func.python = "coolpython"
         runner.func.reuse_venv = True
+        runner.func.venv_backend = venv_backend
 
-        runner._create_venv()
+        with mock.patch(create_method, autospec=True) as create:
+            runner._create_venv()
 
         create.assert_called_once_with(runner.venv)
-        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
+        assert isinstance(runner.venv, expected_backend)
         assert runner.venv.interpreter == "coolpython"
         assert runner.venv.reuse_existing is True
+
+    def test__create_venv_unexpected_venv_backend(self):
+        runner = self.make_runner()
+        runner.func.venv_backend = "somenewenvtool"
+
+        with pytest.raises(ValueError, match="venv_backend"):
+            runner._create_venv()
 
     def make_runner_with_mock_venv(self):
         runner = self.make_runner()

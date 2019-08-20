@@ -16,13 +16,16 @@ import subprocess
 import sys
 
 
-def popen(args, env=None, silent=False):
-    stdout = None
+def popen(args, env=None, silent=False, stdout=None, stderr=subprocess.STDOUT):
+    if silent and stdout is not None:
+        raise ValueError(
+            "Can not specify silent and stdout; passing a custom stdout always silences the commands output in Nox's log."
+        )
 
     if silent:
         stdout = subprocess.PIPE
 
-    proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=subprocess.STDOUT)
+    proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=stderr)
 
     try:
         out, err = proc.communicate()

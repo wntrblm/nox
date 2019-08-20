@@ -32,6 +32,16 @@ def tests(session):
     session.notify("cover")
 
 
+@nox.session(python=["3.5", "3.6", "3.7"], venv_backend="conda")
+def conda_tests(session):
+    """Run test suite with pytest."""
+    session.conda_install("--file", "requirements-conda-test.txt")
+    session.install("contexter", "--no-deps")
+    session.install("-e", ".", "--no-deps")
+    tests = session.posargs or ["tests/"]
+    session.run("pytest", *tests)
+
+
 @nox.session
 def cover(session):
     """Coverage analysis."""
@@ -53,8 +63,8 @@ def blacken(session):
 
 @nox.session(python="3.7")
 def lint(session):
-    """Lint using flake8."""
-    session.install("flake8", "flake8-import-order", "black")
+    session.install("flake8", "flake8-import-order", "black", "mypy")
+    session.run("mypy", "nox")
     session.run("black", "--check", "nox", "tests", "noxfile.py", "setup.py")
     session.run("flake8", "nox", "tests")
 

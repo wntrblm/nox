@@ -320,3 +320,40 @@ This will create a ``noxfile.py`` based on the environments in your ``tox.ini``.
 
 .. _Generative environments: http://tox.readthedocs.io/en/latest/config.html#generating-environments-conditional-settings
 .. _substitutions: http://tox.readthedocs.io/en/latest/config.html#substitutions
+
+
+Shell Completion
+----------------
+Add the appropriate command to your shell's config file
+so that it is run on startup. You will likely have to restart
+or re-login for the autocompletion to start working.
+
+bash
+
+.. code-block:: console
+
+    eval "$(register-python-argcomplete nox)"
+
+zsh
+
+.. code-block:: console
+
+    # To activate completions for zsh you need to have
+    # bashcompinit enabled in zsh:
+    autoload -U bashcompinit
+    bashcompinit
+
+    # Afterwards you can enable completion for nox:
+    eval "$(register-python-argcomplete nox)"
+
+tcsh
+
+.. code-block:: console
+
+    eval `register-python-argcomplete --shell tcsh nox`
+
+fish
+
+.. code-block:: console
+
+    register-python-argcomplete --shell fish nox | .

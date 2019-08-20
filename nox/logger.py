@@ -14,7 +14,7 @@
 
 import logging
 
-from colorlog import ColoredFormatter
+from colorlog import ColoredFormatter  # type: ignore
 
 SUCCESS = 25
 OUTPUT = logging.DEBUG - 1
@@ -31,7 +31,7 @@ class NoxFormatter(ColoredFormatter):
         return super(NoxFormatter, self).format(record)
 
 
-class LoggerWithSuccessAndOutput(logging.getLoggerClass()):
+class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore
     def __init__(self, name, level=logging.NOTSET):
         super(LoggerWithSuccessAndOutput, self).__init__(name, level)
         logging.addLevelName(SUCCESS, "SUCCESS")

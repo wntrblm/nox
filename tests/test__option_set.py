@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+from unittest import mock
+
 import pytest
 
 from nox import _option_set
+from nox import _options
 
 
 # The vast majority of _option_set is tested by test_main, but the test helper
@@ -45,3 +49,14 @@ class TestOptionSet:
 
         with pytest.raises(KeyError):
             optionset.namespace(non_existant_option="meep")
+
+    def test_session_completer(self):
+        with mock.patch("sys.argv", [sys.executable]):
+            parsed_args = _options.options.parse_args()
+            all_nox_sessions = _options._session_completer(
+                prefix=None, parsed_args=parsed_args
+            )
+            # if noxfile.py changes, this will have to change as well since these are
+            # some of the actual sessions found in noxfile.py
+            some_expected_sessions = ["cover", "blacken", "lint", "docs"]
+            assert len(set(some_expected_sessions) - set(all_nox_sessions)) == 0
