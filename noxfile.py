@@ -35,7 +35,9 @@ def tests(session):
 @nox.session(python=["3.5", "3.6", "3.7"], venv_backend="conda")
 def conda_tests(session):
     """Run test suite with pytest."""
-    session.conda_install("--file", "requirements-conda-test.txt")
+    session.conda_install(
+        "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
+    )
     session.install("contexter", "--no-deps")
     session.install("-e", ".", "--no-deps")
     tests = session.posargs or ["tests/"]
