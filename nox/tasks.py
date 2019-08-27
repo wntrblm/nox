@@ -16,6 +16,8 @@ import importlib
 import io
 import json
 import os
+from argparse import Namespace
+from typing import List, Union
 
 from colorlog.escape_codes import parse_colors  # type: ignore
 
@@ -23,6 +25,7 @@ import nox
 from nox import _options, registry
 from nox.logger import logger
 from nox.manifest import Manifest
+from nox.sessions import Result
 
 
 def load_nox_module(global_config):
@@ -93,7 +96,9 @@ def discover_manifest(module, global_config):
     return Manifest(functions, global_config)
 
 
-def filter_manifest(manifest, global_config):
+def filter_manifest(
+    manifest: Manifest, global_config: Namespace
+) -> Union[Manifest, int]:
     """Filter the manifest according to the provided configuration.
 
     Args:
@@ -126,7 +131,9 @@ def filter_manifest(manifest, global_config):
     return manifest
 
 
-def honor_list_request(manifest, global_config):
+def honor_list_request(
+    manifest: Manifest, global_config: Namespace
+) -> Union[Manifest, int]:
     """If --list was passed, simply list the manifest and exit cleanly.
 
     Args:
@@ -180,7 +187,9 @@ def honor_list_request(manifest, global_config):
     return 0
 
 
-def verify_manifest_nonempty(manifest, global_config):
+def verify_manifest_nonempty(
+    manifest: Manifest, global_config: Namespace
+) -> Union[Manifest, int]:
     """Abort with an error code if the manifest is empty.
 
     Args:
@@ -196,7 +205,7 @@ def verify_manifest_nonempty(manifest, global_config):
     return manifest
 
 
-def run_manifest(manifest, global_config):
+def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
     """Run the full manifest of sessions.
 
     Args:
@@ -231,7 +240,7 @@ def run_manifest(manifest, global_config):
     return results
 
 
-def print_summary(results, global_config):
+def print_summary(results: List[Result], global_config: Namespace) -> List[Result]:
     """Print a summary of the results.
 
     Args:
@@ -260,7 +269,7 @@ def print_summary(results, global_config):
     return results
 
 
-def create_report(results, global_config):
+def create_report(results: List[Result], global_config: Namespace) -> List[Result]:
     """Write a report to the location designated in the config, if any.
 
     Args:
@@ -290,7 +299,7 @@ def create_report(results, global_config):
     return results
 
 
-def final_reduce(results, global_config):
+def final_reduce(results: List[Result], global_config: Namespace) -> int:
     """Reduce the results to a final exit code.
 
     Args:
