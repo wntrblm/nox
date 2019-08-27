@@ -245,10 +245,10 @@ If you run ``nox --list``, you'll see that this generates the following set of s
 
 .. code-block:: console
 
-    * tests(django='1.9', database='postgres')
-    * tests(django='2.0', database='mysql')
-    * tests(django='1.9', database='postgres')
-    * tests(django='2.0', database='mysql')
+    * tests(database='postgres', django='1.9')
+    * tests(database='mysql', django='1.9')
+    * tests(database='postgres', django='2.0')
+    * tests(database='mysql', django='2.0')
 
 
 If you only want to run one of the parametrized sessions, see :ref:`running_paramed_sessions`.
