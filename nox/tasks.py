@@ -20,8 +20,7 @@ import os
 from colorlog.escape_codes import parse_colors  # type: ignore
 
 import nox
-from nox import _options
-from nox import registry
+from nox import _options, registry
 from nox.logger import logger
 from nox.manifest import Manifest
 
