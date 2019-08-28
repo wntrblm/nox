@@ -66,11 +66,10 @@ def blacken(session):
 
 @nox.session(python="3.7")
 def lint(session):
-    session.install("flake8", "isort==4.3.21", "black", "mypy")
+    session.install("flake8", "black", "mypy")
     session.run("mypy", "nox")
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", "--check", *files)
-    session.run("isort", "--recursive", "--check", *files)
     session.run("flake8", "nox", *files)
 
 
