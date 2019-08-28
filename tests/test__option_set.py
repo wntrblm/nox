@@ -16,10 +16,7 @@ import sys
 from unittest import mock
 
 import pytest
-
-from nox import _option_set
-from nox import _options
-
+from nox import _option_set, _options
 
 # The vast majority of _option_set is tested by test_main, but the test helper
 # :func:`OptionSet.namespace` needs a bit of help to get to full coverage.

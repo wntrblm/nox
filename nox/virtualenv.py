@@ -18,9 +18,8 @@ import re
 import shutil
 import sys
 
-import py  # type: ignore
-
 import nox.command
+import py  # type: ignore
 from nox.logger import logger
 
 # Problematic environment variables that are stripped from all commands inside

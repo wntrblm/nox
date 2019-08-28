@@ -20,14 +20,10 @@ import os
 import platform
 from unittest import mock
 
-import pytest
-
 import nox
-from nox import _options
-from nox import sessions
-from nox import tasks
+import pytest
+from nox import _options, sessions, tasks
 from nox.manifest import Manifest
-
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 

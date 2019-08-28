@@ -16,7 +16,6 @@ import os
 
 import nox
 
-
 ON_APPVEYOR = os.environ.get("APPVEYOR") == "True"
 
 
@@ -59,17 +58,20 @@ def cover(session):
 @nox.session(python="3.7")
 def blacken(session):
     """Run black code formater."""
-    session.install("black")
-    session.run("black", "nox", "tests", "noxfile.py", "setup.py")
+    session.install("black", "isort")
+    files = ["nox", "tests", "noxfile.py", "setup.py"]
+    session.run("black", *files)
+    session.run("isort", "--recursive", *files)
 
 
 @nox.session(python="3.7")
 def lint(session):
     session.install("flake8", "isort", "black", "mypy")
     session.run("mypy", "nox")
-    session.run("black", "--check", "nox", "tests", "noxfile.py", "setup.py")
-    session.run("flake8", "nox", "tests")
-    session.run("isort", "--recursive", "--check", "nox")
+    files = ["nox", "tests", "noxfile.py", "setup.py"]
+    session.run("black", "--check", *files)
+    session.run("isort", "--recursive", "--check", *files)
+    session.run("flake8", "nox", *files)
 
 
 @nox.session(python="3.7")
