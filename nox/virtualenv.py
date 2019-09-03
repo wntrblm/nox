@@ -236,7 +236,7 @@ class VirtualEnv(ProcessEnv):
         self._resolved = None
         self.reuse_existing = reuse_existing
         self.venv_or_virtualenv = "venv" if venv else "virtualenv"
-        super(VirtualEnv, self).__init__()
+        super(VirtualEnv, self).__init__(env={"VIRTUAL_ENV": self.location})
 
     _clean_location = _clean_location
 
