@@ -23,9 +23,7 @@ import sys
 
 import pkg_resources
 
-from nox import _options
-from nox import tasks
-from nox import workflow
+from nox import _options, tasks, workflow
 from nox.logger import setup_logging
 
 

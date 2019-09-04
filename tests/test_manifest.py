@@ -15,11 +15,9 @@
 import collections
 from unittest import mock
 
-import pytest
-
 import nox
-from nox.manifest import _null_session_func
-from nox.manifest import Manifest
+import pytest
+from nox.manifest import Manifest, _null_session_func
 
 
 def create_mock_sessions():

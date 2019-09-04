@@ -16,7 +16,6 @@ import os
 import sys
 
 import py  # type: ignore
-
 from nox.logger import logger
 from nox.popen import popen
 
