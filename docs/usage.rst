@@ -177,7 +177,7 @@ By default nox stores virtualenvs in ``./.nox``, however, you can change this us
 Skipping everything but install commands
 ----------------------------------------
 
-There are a couple of cases where it makes sense to have Nox only run ``install`` commands, such as preparing an environment for offline testing or re-creating the same virtulenvs used for testing. You can use ``--install-only`` to skip ``run`` commands.
+There are a couple of cases where it makes sense to have Nox only run ``install`` commands, such as preparing an environment for offline testing or re-creating the same virtualenvs used for testing. You can use ``--install-only`` to skip ``run`` commands.
 
 For example, given this Noxfile:
 
