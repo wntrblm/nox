@@ -19,9 +19,8 @@ import re
 import sys
 import unicodedata
 
-import py  # type: ignore
-
 import nox.command
+import py  # type: ignore
 from nox.logger import logger
 from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 

@@ -18,15 +18,14 @@ import os
 import sys
 from unittest import mock
 
-import pytest
-
-from nox import _options
 import nox.command
-from nox.logger import logger
 import nox.manifest
 import nox.registry
 import nox.sessions
 import nox.virtualenv
+import pytest
+from nox import _options
+from nox.logger import logger
 
 
 def test__normalize_path():

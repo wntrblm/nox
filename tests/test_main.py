@@ -16,16 +16,15 @@ import os
 import sys
 from unittest import mock
 
-import contexter
 import pkg_resources
-import pytest
 
+import contexter
 import nox
 import nox.__main__
 import nox._options
 import nox.registry
 import nox.sessions
-
+import pytest
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 VERSION = pkg_resources.get_distribution("nox").version

@@ -15,7 +15,6 @@
 from unittest import mock
 
 import pytest
-
 from nox import _parametrize
 
 
