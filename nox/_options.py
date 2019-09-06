@@ -16,6 +16,7 @@ import argparse
 import functools
 import os
 import sys
+from typing import List
 
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
@@ -122,11 +123,15 @@ def _posargs_finalizer(value, args):
     return posargs[dash_index + 1 :]
 
 
-def _session_completer(prefix, parsed_args, **kwargs):
+def _session_completer(
+    prefix: str, parsed_args: argparse.Namespace, **kwargs
+) -> List[str]:
     global_config = parsed_args
     module = load_nox_module(global_config)
     manifest = discover_manifest(module, global_config)
     filtered_manifest = filter_manifest(manifest, global_config)
+    if isinstance(filtered_manifest, int):
+        return []
     return [
         session.friendly_name for session, _ in filtered_manifest.list_all_sessions()
     ]
