@@ -21,7 +21,7 @@ import argparse
 import collections
 import functools
 from argparse import ArgumentParser, Namespace, _ArgumentGroup
-from typing import Any, Callable, Dict, Sequence, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import argcomplete  # type: ignore
 
