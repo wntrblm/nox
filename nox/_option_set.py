@@ -256,7 +256,7 @@ class OptionSet:
 
         try:
             self._finalize_args(args)
-        except argparse.ArgumentError as err:
+        except ArgumentError as err:
             parser.error(str(err))
         return args
 
