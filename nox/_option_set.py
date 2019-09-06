@@ -20,7 +20,7 @@ and surfaced in documentation."""
 import argparse
 import collections
 import functools
-from argparse import ArgumentParser, Namespace, _ArgumentGroup
+from argparse import ArgumentError, ArgumentParser, Namespace, _ArgumentGroup
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import argcomplete  # type: ignore
@@ -72,7 +72,7 @@ class Option:
         **kwargs
     ) -> None:
         self.name = name
-        self.flags: Sequence[str] = flags
+        self.flags = flags  # type: Sequence[str]
         self.help = help
         self.group = group
         self.noxfile = noxfile
@@ -80,7 +80,7 @@ class Option:
         self.finalizer_func = finalizer_func
         self.hidden = hidden
         self.completer = completer
-        self.kwargs: Dict[str, Any] = kwargs
+        self.kwargs = kwargs  # type: Dict[str, Any]
         self._default = default
 
     @property
@@ -177,10 +177,10 @@ class OptionSet:
     def __init__(self, *args, **kwargs) -> None:
         self.parser_args = args
         self.parser_kwargs = kwargs
-        self.options: Dict[str, Option] = collections.OrderedDict()
-        self.groups: Dict[
-            str, Tuple[Tuple[Any, ...], Dict[str, Any]]
-        ] = collections.OrderedDict()
+        self.options = collections.OrderedDict()  # type: Dict[str, Option]
+        self.groups = (
+            collections.OrderedDict()
+        )  # type: Dict[str, Tuple[Tuple[Any, ...], Dict[str, Any]]]
 
     def add_options(self, *args) -> None:
         """Adds a sequence of Options to the OptionSet.
