@@ -48,12 +48,18 @@ class TestOptionSet:
             optionset.namespace(non_existant_option="meep")
 
     def test_session_completer(self):
-        with mock.patch("sys.argv", [sys.executable]):
-            parsed_args = _options.options.parse_args()
-            all_nox_sessions = _options._session_completer(
-                prefix=None, parsed_args=parsed_args
-            )
-            # if noxfile.py changes, this will have to change as well since these are
-            # some of the actual sessions found in noxfile.py
-            some_expected_sessions = ["cover", "blacken", "lint", "docs"]
-            assert len(set(some_expected_sessions) - set(all_nox_sessions)) == 0
+        parsed_args = _options.options.namespace(sessions=(), keywords=())
+        all_nox_sessions = _options._session_completer(
+            prefix=None, parsed_args=parsed_args
+        )
+        # if noxfile.py changes, this will have to change as well since these are
+        # some of the actual sessions found in noxfile.py
+        some_expected_sessions = ["cover", "blacken", "lint", "docs"]
+        assert len(set(some_expected_sessions) - set(all_nox_sessions)) == 0
+
+    def test_session_completer_invalid_sessions(self):
+        parsed_args = _options.options.namespace(sessions=("baz",), keywords=())
+        all_nox_sessions = _options._session_completer(
+            prefix=None, parsed_args=parsed_args
+        )
+        assert len(all_nox_sessions) == 0

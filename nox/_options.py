@@ -130,7 +130,7 @@ def _session_completer(
     module = load_nox_module(global_config)
     manifest = discover_manifest(module, global_config)
     filtered_manifest = filter_manifest(manifest, global_config)
-    if isinstance(filtered_manifest, int):  # pragma: no cover
+    if isinstance(filtered_manifest, int):
         return []
     return [
         session.friendly_name for session, _ in filtered_manifest.list_all_sessions()
