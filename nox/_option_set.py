@@ -20,11 +20,10 @@ and surfaced in documentation."""
 import argparse
 import collections
 import functools
+from argparse import ArgumentError, ArgumentParser, Namespace, _ArgumentGroup
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import argcomplete  # type: ignore
-
-Namespace = argparse.Namespace
-ArgumentError = argparse.ArgumentError
 
 
 class Option:
@@ -60,20 +59,20 @@ class Option:
 
     def __init__(
         self,
-        name,
+        name: str,
         *flags,
-        help=None,
-        group=None,
-        noxfile=False,
-        merge_func=None,
-        finalizer_func=None,
-        default=None,
-        hidden=False,
-        completer=None,
+        help: str = None,
+        group: str = None,
+        noxfile: bool = False,
+        merge_func: Callable[[Namespace, Namespace], Any] = None,
+        finalizer_func: Callable[[Any, Namespace], Any] = None,
+        default: Union[Any, Callable[[], Any]] = None,
+        hidden: bool = False,
+        completer: Callable[..., List[str]] = None,
         **kwargs
-    ):
+    ) -> None:
         self.name = name
-        self.flags = flags
+        self.flags = flags  # type: Sequence[str]
         self.help = help
         self.group = group
         self.noxfile = noxfile
@@ -81,17 +80,22 @@ class Option:
         self.finalizer_func = finalizer_func
         self.hidden = hidden
         self.completer = completer
-        self.kwargs = kwargs
+        self.kwargs = kwargs  # type: Dict[str, Any]
         self._default = default
 
     @property
-    def default(self):
+    def default(self) -> Optional[Union[bool, str]]:
         if callable(self._default):
             return self._default()
         return self._default
 
 
-def flag_pair_merge_func(enable_name, disable_name, command_args, noxfile_args):
+def flag_pair_merge_func(
+    enable_name: str,
+    disable_name: str,
+    command_args: Namespace,
+    noxfile_args: Namespace,
+) -> bool:
     """Merge function for flag pairs. If the flag is set in the noxfile or
     the command line params, return ``True`` *unless* the disable flag has been
     specified on the command-line.
@@ -132,7 +136,12 @@ def flag_pair_merge_func(enable_name, disable_name, command_args, noxfile_args):
     return (command_value or noxfile_value) and not disable_value
 
 
-def make_flag_pair(name, enable_flags, disable_flags, **kwargs):
+def make_flag_pair(
+    name: str,
+    enable_flags: Union[Tuple[str, str], Tuple[str]],
+    disable_flags: Tuple[str],
+    **kwargs
+) -> Tuple[Option, Option]:
     """Returns two options - one to enable a behavior and another to disable it.
 
     The positive option is considered to be available to the noxfile, as
@@ -165,13 +174,15 @@ class OptionSet:
     finalization, callable defaults, and strongly typed namespaces for tests.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         self.parser_args = args
         self.parser_kwargs = kwargs
-        self.options = collections.OrderedDict()
-        self.groups = collections.OrderedDict()
+        self.options = collections.OrderedDict()  # type: Dict[str, Option]
+        self.groups = (
+            collections.OrderedDict()
+        )  # type: Dict[str, Tuple[Tuple[Any, ...], Dict[str, Any]]]
 
-    def add_options(self, *args):
+    def add_options(self, *args) -> None:
         """Adds a sequence of Options to the OptionSet.
 
         Args:
@@ -180,7 +191,7 @@ class OptionSet:
         for option in args:
             self.options[option.name] = option
 
-    def add_group(self, name, *args, **kwargs):
+    def add_group(self, name: str, *args, **kwargs) -> None:
         """Adds a new argument group.
 
         When :func:`parser` is invoked, the OptionSet will turn all distinct
@@ -189,14 +200,16 @@ class OptionSet:
         """
         self.groups[name] = (args, kwargs)
 
-    def _add_to_parser(self, parser, option):
+    def _add_to_parser(
+        self, parser: Union[_ArgumentGroup, ArgumentParser], option: Option
+    ) -> None:
         argument = parser.add_argument(
             *option.flags, help=option.help, default=option.default, **option.kwargs
         )
-        if option.completer:
-            argument.completer = option.completer
+        if getattr(option, "completer"):
+            setattr(argument, "completer", option.completer)
 
-    def parser(self):
+    def parser(self) -> ArgumentParser:
         """Returns an ``ArgumentParser`` for this option set.
 
         Generally, you won't use this directly. Instead, use
@@ -223,7 +236,7 @@ class OptionSet:
     def print_help(self):
         return self.parser().print_help()
 
-    def _finalize_args(self, args):
+    def _finalize_args(self, args: Namespace) -> None:
         """Does any necessary post-processing on arguments."""
         for option in self.options.values():
             # Handle hidden items.
@@ -236,7 +249,7 @@ class OptionSet:
             if option.finalizer_func:
                 setattr(args, option.name, option.finalizer_func(value, args))
 
-    def parse_args(self):
+    def parse_args(self) -> Namespace:
         parser = self.parser()
         argcomplete.autocomplete(parser)
         args = parser.parse_args()
@@ -267,7 +280,7 @@ class OptionSet:
 
         return argparse.Namespace(**args)
 
-    def noxfile_namespace(self):
+    def noxfile_namespace(self) -> Namespace:
         """Returns a namespace of options that can be set in the configuration
         file."""
         return argparse.Namespace(
@@ -278,7 +291,9 @@ class OptionSet:
             }
         )
 
-    def merge_namespaces(self, command_args, noxfile_args):
+    def merge_namespaces(
+        self, command_args: Namespace, noxfile_args: Namespace
+    ) -> None:
         """Merges the command-line options with the noxfile options."""
         for name, option in self.options.items():
             if option.merge_func:
