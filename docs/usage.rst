@@ -36,7 +36,7 @@ To list all available sessions, including parametrized sessions:
 Running all sessions
 --------------------
 
-You can run every session by just executing `nox` without any arguments:
+You can run every session by just executing ``nox`` without any arguments:
 
 .. code-block:: console
 
@@ -264,8 +264,8 @@ However, this will never output colorful logs:
 Controling commands verbosity
 -----------------------------
 
-By default, Nox will only show output of commands that fail, or, when the commands get passed `silent=False`.
-By passing `--verbose` to Nox, all output of all commands run is shown, regardless of the silent argument.
+By default, Nox will only show output of commands that fail, or, when the commands get passed ``silent=False``.
+By passing ``--verbose`` to Nox, all output of all commands run is shown, regardless of the silent argument.
 
 
 Outputting a machine-readable report
