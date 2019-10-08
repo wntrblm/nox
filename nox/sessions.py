@@ -231,7 +231,7 @@ class Session:
             session.conda_install('numpy', 'scipy')
             session.conda_install('--channel=conda-forge', 'dask==2.1.0')
 
-        To install packages from a `requirements.txt` file::
+        To install packages from a ``requirements.txt`` file::
 
             session.conda_install('--file', 'requirements.txt')
             session.conda_install('--file', 'requirements-dev.txt')
@@ -278,7 +278,7 @@ class Session:
             session.install('requests', 'mock')
             session.install('requests[security]==2.9.1')
 
-        To install packages from a `requirements.txt` file::
+        To install packages from a ``requirements.txt`` file::
 
             session.install('-r', 'requirements.txt')
             session.install('-r', 'requirements-dev.txt')
