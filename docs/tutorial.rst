@@ -11,7 +11,7 @@ Nox can be easily installed via `pip`_:
 
 .. code-block:: console
 
-    python3 -m install nox
+    python3 -m pip install nox
 
 You may want to use the `user site`_ to avoid messing with your global Python install:
 
