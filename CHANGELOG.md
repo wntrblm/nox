@@ -1,5 +1,20 @@
 # Changelog
 
+## 2019.11.4
+
+- Fix example installation call for pip. (#259)
+- Allow colorlog 4. (#257)
+- Order Pythons in descending version in `appveyor.yml`. (#258)
+- Add link to GitHub Action for Nox. (#255)
+- Use double "\`" for inline code. (#254)
+- Add types to `_option_set.py`. (#249)
+- Add type hints to `tasks.py`. (#241)
+- Fix typo (virtulenvs). (#247)
+- Replace flake8 sorter with isort. (#242)
+- Pass `VIRTUAL_ENV` environment variable to commands executed in a virtualenv. (#245)
+- Fix docs to show correct list for parametrize. (#244)
+- Add argcomplete dependency to conda test session. (#240)
+
 ## 2019.8.20
 
 - Add `--verbose` for showing the output from all commands. (#174)
