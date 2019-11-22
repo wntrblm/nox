@@ -209,6 +209,13 @@ options.add_options(
         help="Re-use existing virtualenvs instead of recreating them.",
     ),
     _option_set.Option(
+        "install_cache",
+        "--install-cache",
+        noxfile=True,
+        group="secondary",
+        help="How often to skip succesful install calls (in minutes)",
+    ),
+    _option_set.Option(
         "noxfile",
         "-f",
         "--noxfile",

@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 import enum
 import hashlib
+import json
 import os
 import re
 import sys
+import time
 import unicodedata
 
 import nox.command
@@ -24,6 +27,44 @@ import py  # type: ignore
 from nox.logger import logger
 from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
+
+class InstallCache:
+    def __init__(self, cache_file=".nox_install_cache"):
+        self._cache = defaultdict(dict)
+        self._cache_file = cache_file
+
+    def check(self, venv_path, install_args, expires):
+        if venv_path not in self._cache:
+            if os.path.isdir(venv_path):
+                cache_file = os.path.join(venv_path, self._cache_file)
+                if os.path.isfile(cache_file):
+                    with open(cache_file) as cache:
+                        self._cache[venv_path] = json.loads(cache.read())
+        if venv_path in self._cache:
+            key = InstallCache.jd(install_args)
+            if key in self._cache[venv_path]:
+                curtime = int(time.time())
+                cache_expires = self._cache[venv_path][key] + expires * 60 
+                if cache_expires > curtime:
+                    return True
+                del self._cache[venv_path][key]
+        return False
+
+    @staticmethod
+    def jd(data):
+        return json.dumps(data, indent=None, separators=(",", ":"), sort_keys=True)
+
+    def destroy(self, venv_path):
+        cache_file = os.path.join(venv_path, self._cache_file)
+        if os.path.isfile(cache_file):
+            os.unlink(cache_file)
+
+    def add(self, venv_path, install_args):
+        key = InstallCache.jd(install_args)
+        curtime = int(time.time())
+        self._cache[venv_path][key] = curtime
+        with open(os.path.join(venv_path, self._cache_file), 'w') as cache:
+            cache.write(self.jd(self._cache[venv_path]))
 
 def _normalize_path(envdir, path):
     """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
@@ -268,7 +309,7 @@ class Session:
             **kwargs
         )
 
-    def install(self, *args, **kwargs):
+    def install(self, *args, nox_install_cache=None, **kwargs):
         """Install invokes `pip`_ to install packages inside of the session's
         virtualenv.
 
@@ -303,7 +344,17 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
+        if nox_install_cache is None:
+            nox_install_cache = self._runner.global_config.install_cache
+        if nox_install_cache is not None:
+            nox_install_cache = int(nox_install_cache)
+        ic = InstallCache()
+        if nox_install_cache is not None and nox_install_cache > 0 and ic.check(self.virtualenv.location, args, nox_install_cache):
+            logger.debug(f"skipping install() due to cache for {args}")
+            return
         self._run("pip", "install", *args, external="error", **kwargs)
+        if nox_install_cache is not None and nox_install_cache > 0:
+            ic.add(self.virtualenv.location, args)
 
     def notify(self, target):
         """Place the given session at the end of the queue.
