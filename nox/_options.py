@@ -96,7 +96,7 @@ def _color_finalizer(value, args):
     if args.nocolor is True:
         return False
 
-    return sys.stdin.isatty()
+    return sys.stdout.isatty()
 
 
 def _posargs_finalizer(value, args):
