@@ -106,7 +106,7 @@ You can also tell Nox to run your session against multiple Python interpreters. 
 
 When you provide a version number, Nox automatically prepends python to determine the name of the executable. However, Nox also accepts the full executable name. If you want to test using pypy, for example:
 
-.. code-block:: console
+.. code-block:: python
 
     @nox.session(python=['2.7', '3.6', 'pypy-6.0'])
     def tests(session):
