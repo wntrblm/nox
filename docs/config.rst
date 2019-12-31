@@ -112,11 +112,11 @@ When you provide a version number, Nox automatically prepends python to determin
     def tests(session):
         pass
 
-When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sesions when running ``nox --list``. For example this Noxfile:
+When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sessions when running ``nox --list``. For example this Noxfile:
 
 .. code-block:: python
 
-    @nox.session(python=['2.7', '3.5', '3.6', '3.7'])
+    @nox.session(python=['2.7', '3.5', '3.6', '3.7', '3.8'])
     def tests(session):
         pass
 
@@ -128,6 +128,7 @@ Will produce these sessions:
     * tests-3.5
     * tests-3.6
     * tests-3.7
+    * tests-3.8
 
 Note that this expansion happens *before* parameterization occurs, so you can still parametrize sessions with multiple interpreters.
 
@@ -222,7 +223,7 @@ When you run ``nox``, it will create a two distinct sessions:
     nox > Running session tests(django='1.9')
     nox > pip install django==1.9
     ...
-    nox > Running session tests(djano='2.0')
+    nox > Running session tests(django='2.0')
     nox > pip install django==2.0
 
 
