@@ -18,7 +18,6 @@ from setuptools import setup
 
 long_description = open("README.rst", "r", encoding="utf-8").read()
 
-
 setup(
     name="nox",
     version="2019.11.9",
@@ -39,6 +38,7 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Operating System :: POSIX",
         "Operating System :: MacOS",
         "Operating System :: Unix",
