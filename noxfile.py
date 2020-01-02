@@ -19,7 +19,7 @@ import nox
 ON_APPVEYOR = os.environ.get("APPVEYOR") == "True"
 
 
-@nox.session(python=["3.5", "3.6", "3.7"])
+@nox.session(python=["3.5", "3.6", "3.7", "3.8"])
 def tests(session):
     """Run test suite with pytest."""
     session.install("-r", "requirements-test.txt")
@@ -31,7 +31,7 @@ def tests(session):
     session.notify("cover")
 
 
-@nox.session(python=["3.5", "3.6", "3.7"], venv_backend="conda")
+@nox.session(python=["3.5", "3.6", "3.7", "3.8"], venv_backend="conda")
 def conda_tests(session):
     """Run test suite with pytest."""
     session.conda_install(
@@ -55,7 +55,7 @@ def cover(session):
     session.run("coverage", "erase")
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def blacken(session):
     """Run black code formater."""
     session.install("black==19.3b0", "isort==4.3.21")
@@ -64,7 +64,7 @@ def blacken(session):
     session.run("isort", "--recursive", *files)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def lint(session):
     session.install("flake8==3.7.8", "black==19.3b0", "mypy==0.720")
     session.run("mypy", "nox")
@@ -73,7 +73,7 @@ def lint(session):
     session.run("flake8", "nox", *files)
 
 
-@nox.session(python="3.7")
+@nox.session(python="3.8")
 def docs(session):
     """Build the documentation."""
     session.run("rm", "-rf", "docs/_build", external=True)

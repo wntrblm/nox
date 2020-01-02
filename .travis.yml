@@ -1,4 +1,5 @@
 language: python
+dist: xenial
 matrix:
   include:
   - python: '3.5'
@@ -7,13 +8,12 @@ matrix:
     env: NOXSESSION="tests-3.6"
   - python: '3.7'
     env: NOXSESSION="tests-3.7"
-    dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
-  - python: '3.7'
+  - python: '3.8'
+    env: NOXSESSION="tests-3.8"
+  - python: '3.8'
     env: NOXSESSION="lint"
-    dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
-  - python: '3.7'
+  - python: '3.8'
     env: NOXSESSION="docs"
-    dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
 before_install:
   - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
