@@ -60,7 +60,7 @@ def load_nox_module(global_config):
         ).load_module()
 
     except (IOError, OSError):
-        logger.error("Noxfile {} not found.".format(global_config.noxfile))
+        logger.exception("Failed to load Noxfile {}".format(global_config.noxfile))
         return 2
 
 
