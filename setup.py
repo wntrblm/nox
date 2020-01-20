@@ -46,7 +46,9 @@ setup(
     ],
     keywords="testing automation tox",
     packages=["nox"],
+    package_data={"nox": ["py.typed"]},
     include_package_data=True,
+    zip_safe=False,
     install_requires=[
         "argcomplete>=1.9.4,<2.0",
         "colorlog>=2.6.1,<5.0.0",
