@@ -23,7 +23,7 @@ import sys
 
 try:
     import importlib.metadata as metadata  # type: ignore
-except ImportError:
+except ImportError:  # pragma: no cover
     import importlib_metadata as metadata  # type: ignore
 
 from nox import _options, tasks, workflow
