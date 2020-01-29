@@ -22,9 +22,9 @@ control to :meth:``nox.workflow.execute``.
 import sys
 
 try:
-    import importlib.metadata as metadata
+    import importlib.metadata as metadata  # type: ignore
 except ImportError:
-    import importlib_metadata as metadata
+    import importlib_metadata as metadata  # type: ignore
 
 from nox import _options, tasks, workflow
 from nox.logger import setup_logging
