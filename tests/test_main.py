@@ -16,7 +16,10 @@ import os
 import sys
 from unittest import mock
 
-import pkg_resources
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 import contexter
 import nox
@@ -27,7 +30,7 @@ import nox.sessions
 import pytest
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
-VERSION = pkg_resources.get_distribution("nox").version
+VERSION = metadata.version("nox")
 
 
 # This is needed because CI systems will mess up these tests due to the

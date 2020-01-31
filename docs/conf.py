@@ -13,8 +13,12 @@
 # serve to show the default.
 
 import os
-import pkg_resources
 import sys
+
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    import importlib_metadata as metadata
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -63,7 +67,7 @@ author = u'Alethea Katherine Flowers'
 # built documents.
 #
 # The short X.Y version.
-version = pkg_resources.get_distribution('nox').version
+version = metadata.version('nox')
 # The full version, including alpha/beta/rc tags.
 release = version
 
