@@ -56,6 +56,8 @@ Nox is lucky to have several wonderful projects that use it and provide feedback
 - `Google Assistant SDK <https://github.com/googlesamples/assistant-sdk-python>`__
 - `google-cloud-python <https://github.com/googlecloudplatform/google-cloud-python>`__
 - `google-resumable-media-python <https://github.com/GoogleCloudPlatform/google-resumable-media-python>`__
+- `Hydra <https://hydra.cc>`__
+- `OmegaConf <https://github.com/omry/omegaconf>`__
 - `OpenCensus Python <https://github.com/census-instrumentation/opencensus-python>`__
 - `packaging.python.org <https://github.com/pypa/python-packaging-user-guide/>`__
 - `pipx <https://github.com/pipxproject/pipx/>`__
