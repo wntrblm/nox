@@ -14,6 +14,8 @@
 
 import functools
 import itertools
+from typing import (Any, Callable, Dict, Iterable, List, Optional, Sequence,
+                    Tuple, Union)
 
 
 class Param:
@@ -27,7 +29,12 @@ class Param:
             it will be generated from the parameters.
     """
 
-    def __init__(self, *args, arg_names=None, id=None):
+    def __init__(
+        self,
+        *args: Any,
+        arg_names: Optional[Sequence[str]] = None,
+        id: Optional[str] = None
+    ) -> None:
         self.args = tuple(args)
         self.id = id
 
@@ -37,10 +44,10 @@ class Param:
         self.arg_names = tuple(arg_names)
 
     @property
-    def call_spec(self):
+    def call_spec(self) -> Dict[str, Any]:
         return dict(zip(self.arg_names, self.args))
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.id:
             return self.id
         else:
@@ -51,16 +58,16 @@ class Param:
 
     __repr__ = __str__
 
-    def copy(self):
+    def copy(self) -> "Param":
         new = self.__class__(*self.args, arg_names=self.arg_names, id=self.id)
         return new
 
-    def update(self, other):
+    def update(self, other: "Param") -> None:
         self.id = ", ".join([str(self), str(other)])
         self.args = self.args + other.args
         self.arg_names = self.arg_names + other.arg_names
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, self.__class__):
             return (
                 self.args == other.args
@@ -73,14 +80,21 @@ class Param:
         raise NotImplementedError
 
 
-def _apply_param_specs(param_specs, f):
+def _apply_param_specs(param_specs: List[Param], f: Any) -> Any:
     previous_param_specs = getattr(f, "parametrize", None)
     new_param_specs = update_param_specs(previous_param_specs, param_specs)
     setattr(f, "parametrize", new_param_specs)
     return f
 
 
-def parametrize_decorator(arg_names, arg_values_list, ids=None):
+ArgValue = Union[Param, Iterable[Any]]
+
+
+def parametrize_decorator(
+    arg_names: Union[str, List[str], Tuple[str]],
+    arg_values_list: Union[Iterable[ArgValue], ArgValue],
+    ids: Optional[Iterable[Optional[str]]] = None,
+) -> Callable[[Any], Any]:
     """Parametrize a session.
 
     Add new invocations to the underlying session function using the list of
@@ -124,8 +138,10 @@ def parametrize_decorator(arg_names, arg_values_list, ids=None):
         ids = []
 
     # Generate params for each item in the param_args_values list.
-    param_specs = []
-    for param_arg_values, param_id in itertools.zip_longest(arg_values_list, ids):
+    param_specs = []  # type: List[Param]
+    for param_arg_values, param_id in itertools.zip_longest(
+        arg_values_list, ids  # type: ignore
+    ):
         if isinstance(param_arg_values, Param):
             param_spec = param_arg_values
             param_spec.arg_names = tuple(arg_names)
@@ -137,7 +153,9 @@ def parametrize_decorator(arg_names, arg_values_list, ids=None):
     return functools.partial(_apply_param_specs, param_specs)
 
 
-def update_param_specs(param_specs, new_specs):
+def update_param_specs(
+    param_specs: Iterable[Param], new_specs: List[Param]
+) -> List[Param]:
     """Produces all combinations of the given sets of specs."""
     if not param_specs:
         return new_specs
@@ -152,21 +170,23 @@ def update_param_specs(param_specs, new_specs):
     return combined_specs
 
 
-def generate_calls(func, param_specs):
+def generate_calls(
+    func: Callable[..., Any], param_specs: Iterable[Param]
+) -> List[Callable[..., Any]]:
     calls = []
     for param_spec in param_specs:
 
-        def make_call_wrapper(param_spec):
+        def make_call_wrapper(param_spec: Param) -> Callable[..., Any]:
             @functools.wraps(func)
-            def call_wrapper(*args, **kwargs):
+            def call_wrapper(*args: Any, **kwargs: Any) -> Any:
                 kwargs.update(param_spec.call_spec)
                 return func(*args, **kwargs)
 
             return call_wrapper
 
         call = make_call_wrapper(param_spec)
-        call.session_signature = "({})".format(param_spec)
-        call.param_spec = param_spec
+        call.session_signature = "({})".format(param_spec)  # type: ignore
+        call.param_spec = param_spec  # type: ignore
         calls.append(call)
 
     return calls

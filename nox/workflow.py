@@ -12,8 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
+from typing import Any, Callable, Iterable, List
 
-def execute(workflow, global_config):
+
+def execute(
+    workflow: Iterable[Callable[..., Any]], global_config: argparse.Namespace
+) -> int:
     """Execute each function in the workflow.
 
     Each function in the workflow receives the result of the previous one
@@ -38,7 +43,7 @@ def execute(workflow, global_config):
         return_value = None
         for function_ in workflow:
             # Send the previous task's return value if there was one.
-            args = []
+            args = []  # type: List[Any]
             if return_value is not None:
                 args.append(return_value)
             return_value = function_(*args, global_config=global_config)

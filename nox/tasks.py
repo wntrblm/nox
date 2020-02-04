@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib
+import importlib.machinery
 import io
 import json
 import os
+import types
 from argparse import Namespace
 from typing import List, Union
 
@@ -27,7 +28,7 @@ from nox.manifest import Manifest
 from nox.sessions import Result
 
 
-def load_nox_module(global_config):
+def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
     """Load the user's noxfile and return the module object for it.
 
     .. note::
@@ -57,14 +58,16 @@ def load_nox_module(global_config):
         os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
         return importlib.machinery.SourceFileLoader(
             "user_nox_module", global_config.noxfile
-        ).load_module()
+        ).load_module()  # type: ignore
 
     except (IOError, OSError):
         logger.exception("Failed to load Noxfile {}".format(global_config.noxfile))
         return 2
 
 
-def merge_noxfile_options(module, global_config):
+def merge_noxfile_options(
+    module: types.ModuleType, global_config: Namespace
+) -> types.ModuleType:
     """Merges any modifications made to ``nox.options`` by the Noxfile module
     into global_config.
 
@@ -76,7 +79,7 @@ def merge_noxfile_options(module, global_config):
     return module
 
 
-def discover_manifest(module, global_config):
+def discover_manifest(module: types.ModuleType, global_config: Namespace) -> Manifest:
     """Discover all session functions in the noxfile module.
 
     Args:

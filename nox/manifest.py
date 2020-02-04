@@ -12,26 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import copy
 import functools
 import itertools
 import types
+from typing import (Any, Callable, Iterable, Iterator, List, Mapping, Set,
+                    Tuple, Union)
 
 from nox._parametrize import generate_calls
-from nox.sessions import SessionRunner
+from nox.sessions import Session, SessionRunner
 
 
-def _copy_func(src, name=None):
+def _copy_func(src: Callable, name: str = None) -> Callable:
     dst = types.FunctionType(
         src.__code__,
-        src.__globals__,
-        name=name or src.__name__,
-        argdefs=src.__defaults__,
-        closure=src.__closure__,
+        src.__globals__,  # type: ignore
+        name=name or src.__name__,  # type: ignore
+        argdefs=src.__defaults__,  # type: ignore
+        closure=src.__closure__,  # type: ignore
     )
     dst.__dict__.update(copy.deepcopy(src.__dict__))
-    dst = functools.update_wrapper(dst, src)
-    dst.__kwdefaults__ = src.__kwdefaults__
+    dst = functools.update_wrapper(dst, src)  # type: ignore
+    dst.__kwdefaults__ = src.__kwdefaults__  # type: ignore
     return dst
 
 
@@ -51,18 +54,22 @@ class Manifest:
         global_config (.nox.main.GlobalConfig): The global configuration.
     """
 
-    def __init__(self, session_functions, global_config):
-        self._all_sessions = []
-        self._queue = []
-        self._consumed = []
-        self._config = global_config
+    def __init__(
+        self,
+        session_functions: Mapping[str, Callable],
+        global_config: argparse.Namespace,
+    ) -> None:
+        self._all_sessions = []  # type: List[SessionRunner]
+        self._queue = []  # type: List[SessionRunner]
+        self._consumed = []  # type: List[SessionRunner]
+        self._config = global_config  # type: argparse.Namespace
 
         # Create the sessions based on the provided session functions.
         for name, func in session_functions.items():
             for session in self.make_session(name, func):
                 self.add_session(session)
 
-    def __contains__(self, needle):
+    def __contains__(self, needle: Union[str, SessionRunner]) -> bool:
         if needle in self._queue or needle in self._consumed:
             return True
         for session in self._queue + self._consumed:
@@ -70,16 +77,16 @@ class Manifest:
                 return True
         return False
 
-    def __iter__(self):
+    def __iter__(self) -> "Manifest":
         return self
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> SessionRunner:
         for session in self._queue + self._consumed:
             if session.name == key or key in session.signatures:
                 return session
         raise KeyError(key)
 
-    def __next__(self):
+    def __next__(self) -> SessionRunner:
         """Return the next item in the queue.
 
         Raises:
@@ -91,15 +98,15 @@ class Manifest:
         self._consumed.append(session)
         return session
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._queue) + len(self._consumed)
 
-    def list_all_sessions(self):
+    def list_all_sessions(self) -> Iterator[Tuple[SessionRunner, bool]]:
         """Yields all sessions and whether or not they're selected."""
         for session in self._all_sessions:
             yield session, session in self._queue
 
-    def add_session(self, session):
+    def add_session(self, session: SessionRunner) -> None:
         """Add the given session to the manifest.
 
         Args:
@@ -111,7 +118,7 @@ class Manifest:
         if session not in self._queue:
             self._queue.append(session)
 
-    def filter_by_name(self, specified_sessions):
+    def filter_by_name(self, specified_sessions: Iterable[str]) -> None:
         """Filter sessions in the queue based on the user-specified names.
 
         Args:
@@ -144,7 +151,7 @@ class Manifest:
         if missing_sessions:
             raise KeyError("Sessions not found: {}".format(", ".join(missing_sessions)))
 
-    def filter_by_keywords(self, keywords):
+    def filter_by_keywords(self, keywords: str) -> None:
         """Filter sessions using pytest-like keyword expressions.
 
         Args:
@@ -155,7 +162,9 @@ class Manifest:
             x for x in self._queue if keyword_match(keywords, x.signatures + [x.name])
         ]
 
-    def make_session(self, name, func, multi=False):
+    def make_session(
+        self, name: str, func: Callable, multi: bool = False
+    ) -> List[SessionRunner]:
         """Create a session object from the session function.
 
         Args:
@@ -172,11 +181,11 @@ class Manifest:
 
         # If the func has the python attribute set to a list, we'll need
         # to expand them.
-        if isinstance(func.python, (list, tuple, set)):
+        if isinstance(func.python, (list, tuple, set)):  # type: ignore
 
-            for python in func.python:
+            for python in func.python:  # type: ignore
                 single_func = _copy_func(func)
-                single_func.python = python
+                single_func.python = python  # type: ignore
                 session = self.make_session(name, single_func, multi=True)
                 sessions.extend(session)
 
@@ -188,25 +197,31 @@ class Manifest:
             long_names = []
             if not multi:
                 long_names.append(name)
-            if func.python:
-                long_names.append("{}-{}".format(name, func.python))
+            if func.python:  # type: ignore
+                long_names.append("{}-{}".format(name, func.python))  # type: ignore
 
-            session = SessionRunner(name, long_names, func, self._config, self)
-            return [session]
+            session = SessionRunner(  # type: ignore
+                name, long_names, func, self._config, self
+            )
+            return [session]  # type: ignore
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
-        calls = generate_calls(func, func.parametrize)
+        calls = generate_calls(func, func.parametrize)  # type: ignore
         for call in calls:
             long_names = []
             if not multi:
-                long_names.append("{}{}".format(name, call.session_signature))
-            if func.python:
                 long_names.append(
-                    "{}-{}{}".format(name, func.python, call.session_signature)
+                    "{}{}".format(name, call.session_signature)  # type: ignore
+                )
+            if func.python:  # type: ignore
+                long_names.append(
+                    "{}-{}{}".format(
+                        name, func.python, call.session_signature  # type: ignore
+                    )
                 )
                 # Ensure that specifying session-python will run all parameterizations.
-                long_names.append("{}-{}".format(name, func.python))
+                long_names.append("{}-{}".format(name, func.python))  # type: ignore
 
             sessions.append(SessionRunner(name, long_names, call, self._config, self))
 
@@ -220,10 +235,10 @@ class Manifest:
         # Return the list of sessions.
         return sessions
 
-    def next(self):
+    def next(self) -> SessionRunner:
         return self.__next__()
 
-    def notify(self, session):
+    def notify(self, session: Union[str, SessionRunner]) -> bool:
         """Enqueue the specified session in the queue.
 
         If the session is already in the queue, or has been run already,
@@ -264,23 +279,23 @@ class KeywordLocals:
     returns False.
     """
 
-    def __init__(self, keywords):
+    def __init__(self, keywords: Set[str]) -> None:
         self._keywords = keywords
 
-    def __getitem__(self, variable_name):
+    def __getitem__(self, variable_name: str) -> bool:
         for keyword in self._keywords:
             if variable_name in keyword:
                 return True
         return False
 
 
-def keyword_match(expression, keywords):
+def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
     """See if an expression matches the given set of keywords."""
     locals = KeywordLocals(set(keywords))
-    return eval(expression, {}, locals)
+    return eval(expression, {}, locals)  # type: ignore
 
 
-def _null_session_func(session):
+def _null_session_func(session: Session) -> None:
     """A no-op session for patemetrized sessions with no available params."""
     session.skip("This session had no parameters available.")
 

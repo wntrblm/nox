@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+from typing import Any, cast
 
 from colorlog import ColoredFormatter  # type: ignore
 
@@ -21,29 +22,29 @@ OUTPUT = logging.DEBUG - 1
 
 
 class NoxFormatter(ColoredFormatter):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super(NoxFormatter, self).__init__(*args, **kwargs)
         self._simple_fmt = logging.Formatter("%(message)s")
 
-    def format(self, record):
+    def format(self, record: Any) -> str:
         if record.levelname == "OUTPUT":
             return self._simple_fmt.format(record)
         return super(NoxFormatter, self).format(record)
 
 
 class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore
-    def __init__(self, name, level=logging.NOTSET):
+    def __init__(self, name: str, level: int = logging.NOTSET):
         super(LoggerWithSuccessAndOutput, self).__init__(name, level)
         logging.addLevelName(SUCCESS, "SUCCESS")
         logging.addLevelName(OUTPUT, "OUTPUT")
 
-    def success(self, msg, *args, **kwargs):
+    def success(self, msg: str, *args: Any, **kwargs: Any) -> None:
         if self.isEnabledFor(SUCCESS):
             self._log(SUCCESS, msg, args, **kwargs)
         else:  # pragma: no cover
             pass
 
-    def output(self, msg, *args, **kwargs):
+    def output(self, msg: str, *args: Any, **kwargs: Any) -> None:
         if self.isEnabledFor(OUTPUT):
             self._log(OUTPUT, msg, args, **kwargs)
         else:  # pragma: no cover
@@ -51,10 +52,10 @@ class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore
 
 
 logging.setLoggerClass(LoggerWithSuccessAndOutput)
-logger = logging.getLogger("nox")
+logger = cast(LoggerWithSuccessAndOutput, logging.getLogger("nox"))
 
 
-def setup_logging(color, verbose=False):  # pragma: no cover
+def setup_logging(color: bool, verbose: bool = False) -> None:  # pragma: no cover
     """Setup logging.
 
     Args:

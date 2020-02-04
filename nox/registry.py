@@ -15,13 +15,20 @@
 import collections
 import copy
 import functools
+from typing import Any, Callable, Optional, Sequence, Union
 
-_REGISTRY = collections.OrderedDict()  # type: ignore
+_REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Callable]
+Python = Optional[Union[str, Sequence[str], bool]]
 
 
 def session_decorator(
-    func=None, python=None, py=None, reuse_venv=None, name=None, venv_backend=None
-):
+    func: Optional[Callable] = None,
+    python: Python = None,
+    py: Python = None,
+    reuse_venv: Optional[bool] = None,
+    name: Optional[str] = None,
+    venv_backend: Any = None,
+) -> Callable:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
     # being sent as part of the Python syntax (`@nox.session`).
@@ -49,15 +56,15 @@ def session_decorator(
     if python is None:
         python = py
 
-    func.python = python
-    func.reuse_venv = reuse_venv
-    func.venv_backend = venv_backend
+    func.python = python  # type: ignore
+    func.reuse_venv = reuse_venv  # type: ignore
+    func.venv_backend = venv_backend  # type: ignore
     _REGISTRY[name or func.__name__] = func
 
     return func
 
 
-def get():
+def get() -> "collections.OrderedDict[str, Callable]":
     """Return a shallow copy of the registry.
 
     This ensures that the registry is not accidentally modified by

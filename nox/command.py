@@ -14,6 +14,7 @@
 
 import os
 import sys
+from typing import Any, Iterable, Optional, Sequence, Union
 
 import py  # type: ignore
 from nox.logger import logger
@@ -23,12 +24,12 @@ from nox.popen import popen
 class CommandFailed(Exception):
     """Raised when an executed command returns a non-success status code."""
 
-    def __init__(self, reason=None):
+    def __init__(self, reason: str = None) -> None:
         super(CommandFailed, self).__init__(reason)
         self.reason = reason
 
 
-def which(program, path):
+def which(program: str, path: Optional[str]) -> str:
     """Finds the full path to an executable."""
     full_path = None
 
@@ -47,7 +48,7 @@ def which(program, path):
     raise CommandFailed("Program {} not found".format(program))
 
 
-def _clean_env(env):
+def _clean_env(env: Optional[dict]) -> Optional[dict]:
     if env is None:
         return None
 
@@ -61,16 +62,16 @@ def _clean_env(env):
 
 
 def run(
-    args,
+    args: Sequence[str],
     *,
-    env=None,
-    silent=False,
-    path=None,
-    success_codes=None,
-    log=True,
-    external=False,
-    **popen_kws
-):
+    env: Optional[dict] = None,
+    silent: bool = False,
+    path: Optional[str] = None,
+    success_codes: Optional[Iterable[int]] = None,
+    log: bool = True,
+    external: bool = False,
+    **popen_kws: Any
+) -> Union[str, bool]:
     """Run a command-line program."""
 
     if success_codes is None:
