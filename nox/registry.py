@@ -20,7 +20,13 @@ _REGISTRY = collections.OrderedDict()  # type: ignore
 
 
 def session_decorator(
-    func=None, python=None, py=None, reuse_venv=None, name=None, venv_backend=None
+    func=None,
+    python=None,
+    py=None,
+    reuse_venv=None,
+    name=None,
+    venv_backend=None,
+    venv_params=None,
 ):
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
@@ -38,6 +44,7 @@ def session_decorator(
             reuse_venv=reuse_venv,
             name=name,
             venv_backend=venv_backend,
+            venv_params=venv_params,
         )
 
     if py is not None and python is not None:
@@ -52,6 +59,7 @@ def session_decorator(
     func.python = python
     func.reuse_venv = reuse_venv
     func.venv_backend = venv_backend
+    func.venv_params = venv_params
     _REGISTRY[name or func.__name__] = func
 
     return func
