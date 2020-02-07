@@ -17,7 +17,7 @@ import platform
 import re
 import shutil
 import sys
-from typing import Mapping, Optional, Union
+from typing import Any, Mapping, Optional, Union
 
 import nox.command
 import py  # type: ignore
@@ -245,7 +245,7 @@ class VirtualEnv(ProcessEnv):
         interpreter: Optional[str] = None,
         reuse_existing: bool = False,
         *,
-        venv: bool = False
+        venv: bool = False,
         venv_params: Any = None
     ):
         self.location_name = location

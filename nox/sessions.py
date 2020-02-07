@@ -408,7 +408,7 @@ class SessionRunner:
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv=True,
-                venv_params=self.func.venv_params,
+                venv_params=self.func.venv_params,  # type: ignore
             )
         else:
             raise ValueError(
