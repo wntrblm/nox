@@ -17,8 +17,7 @@ import copy
 import functools
 import itertools
 import types
-from typing import (Any, Callable, Iterable, Iterator, List, Mapping, Set,
-                    Tuple, Union)
+from typing import Any, Callable, Iterable, Iterator, List, Mapping, Set, Tuple, Union
 
 from nox._parametrize import generate_calls
 from nox.sessions import Session, SessionRunner

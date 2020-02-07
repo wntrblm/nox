@@ -19,8 +19,17 @@ import os
 import re
 import sys
 import unicodedata
-from typing import (Any, Callable, Dict, Iterable, List, Mapping, Optional,
-                    Sequence, Union)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import nox.command
 import py  # type: ignore
