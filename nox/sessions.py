@@ -393,12 +393,14 @@ class SessionRunner:
                 path,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
+                venv_params=self.func.venv_params,  # type: ignore
             )
         elif self.func.venv_backend == "conda":  # type: ignore
             self.venv = CondaEnv(
                 path,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
+                venv_params=self.func.venv_params,  # type: ignore
             )
         elif self.func.venv_backend == "venv":  # type: ignore
             self.venv = VirtualEnv(
@@ -406,6 +408,7 @@ class SessionRunner:
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv=True,
+                venv_params=self.func.venv_params,
             )
         else:
             raise ValueError(

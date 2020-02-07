@@ -164,11 +164,13 @@ class CondaEnv(ProcessEnv):
         location: str,
         interpreter: Optional[str] = None,
         reuse_existing: bool = False,
+        venv_params: Any = None,
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
         self.reuse_existing = reuse_existing
+        self.venv_params = venv_params if venv_params else []
         super(CondaEnv, self).__init__()
 
     _clean_location = _clean_location
@@ -198,6 +200,8 @@ class CondaEnv(ProcessEnv):
             # Ensure the pip package is installed.
             "pip",
         ]
+
+        cmd.extend(self.venv_params)
 
         if self.interpreter:
             python_dep = "python={}".format(self.interpreter)
@@ -242,6 +246,7 @@ class VirtualEnv(ProcessEnv):
         reuse_existing: bool = False,
         *,
         venv: bool = False
+        venv_params: Any = None
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
@@ -249,6 +254,7 @@ class VirtualEnv(ProcessEnv):
         self._resolved = None  # type: Union[None, str, InterpreterNotFound]
         self.reuse_existing = reuse_existing
         self.venv_or_virtualenv = "venv" if venv else "virtualenv"
+        self.venv_params = venv_params if venv_params else []
         super(VirtualEnv, self).__init__(env={"VIRTUAL_ENV": self.location})
 
     _clean_location = _clean_location
@@ -341,6 +347,7 @@ class VirtualEnv(ProcessEnv):
                 cmd.extend(["-p", self._resolved_interpreter])
         else:
             cmd = [self._resolved_interpreter, "-m", "venv", self.location]
+        cmd.extend(self.venv_params)
 
         logger.info(
             "Creating virtual environment ({}) using {} in {}".format(

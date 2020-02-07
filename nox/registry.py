@@ -28,6 +28,7 @@ def session_decorator(
     reuse_venv: Optional[bool] = None,
     name: Optional[str] = None,
     venv_backend: Any = None,
+    venv_params: Any = None,
 ) -> Callable:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
@@ -45,6 +46,7 @@ def session_decorator(
             reuse_venv=reuse_venv,
             name=name,
             venv_backend=venv_backend,
+            venv_params=venv_params,
         )
 
     if py is not None and python is not None:
@@ -59,6 +61,7 @@ def session_decorator(
     func.python = python  # type: ignore
     func.reuse_venv = reuse_venv  # type: ignore
     func.venv_backend = venv_backend  # type: ignore
+    func.venv_params = venv_params  # type: ignore
     _REGISTRY[name or func.__name__] = func
 
     return func

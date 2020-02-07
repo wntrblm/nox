@@ -1,6 +1,6 @@
 # Changelog
 
-## 2019.11.4
+## 2019.11.9
 
 - Fix example installation call for pip. (#259)
 - Allow colorlog 4. (#257)
