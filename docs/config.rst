@@ -140,13 +140,29 @@ If you want to disable virtualenv creation altogether, you can set ``python`` to
     def tests(session):
         pass
 
-Finally you can also specify that the virtualenv should *always* be reused instead of recreated every time:
+You can also specify that the virtualenv should *always* be reused instead of recreated every time:
 
 .. code-block:: python
 
     @nox.session(
         python=['2.7', '3.6'],
         reuse_venv=True)
+    def tests(session):
+        pass
+
+You are not limited to virtualenv, there is a selection of backends you can choose from as venv, conda or virtualenv (default):
+
+.. code-block:: python
+
+    @nox.session(venv_backend='venv')
+    def tests(session):
+        pass
+
+Finally, custom backend parameters are supported:
+
+.. code-block:: python
+
+    @nox.session(venv_params=['--no-download'])
     def tests(session):
         pass
 
