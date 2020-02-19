@@ -16,11 +16,6 @@ import os
 import sys
 from unittest import mock
 
-try:
-    import importlib.metadata as metadata
-except ImportError:
-    import importlib_metadata as metadata
-
 import contexter
 import nox
 import nox.__main__
@@ -28,6 +23,12 @@ import nox._options
 import nox.registry
 import nox.sessions
 import pytest
+
+try:
+    import importlib.metadata as metadata
+except ImportError:
+    import importlib_metadata as metadata
+
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 VERSION = metadata.version("nox")

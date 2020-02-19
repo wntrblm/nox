@@ -14,9 +14,16 @@
 
 import subprocess
 import sys
+from typing import IO, Mapping, Sequence, Tuple, Union
 
 
-def popen(args, env=None, silent=False, stdout=None, stderr=subprocess.STDOUT):
+def popen(
+    args: Sequence[str],
+    env: Mapping[str, str] = None,
+    silent: bool = False,
+    stdout: Union[int, IO] = None,
+    stderr: Union[int, IO] = subprocess.STDOUT,
+) -> Tuple[int, str]:
     if silent and stdout is not None:
         raise ValueError(
             "Can not specify silent and stdout; passing a custom stdout always silences the commands output in Nox's log."

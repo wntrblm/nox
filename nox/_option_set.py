@@ -21,7 +21,7 @@ import argparse
 import collections
 import functools
 from argparse import ArgumentError, ArgumentParser, Namespace, _ArgumentGroup
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import argcomplete  # type: ignore
 
@@ -60,19 +60,19 @@ class Option:
     def __init__(
         self,
         name: str,
-        *flags,
-        help: str = None,
-        group: str = None,
+        *flags: str,
+        help: Optional[str] = None,
+        group: Optional[str] = None,
         noxfile: bool = False,
-        merge_func: Callable[[Namespace, Namespace], Any] = None,
-        finalizer_func: Callable[[Any, Namespace], Any] = None,
+        merge_func: Optional[Callable[[Namespace, Namespace], Any]] = None,
+        finalizer_func: Optional[Callable[[Any, Namespace], Any]] = None,
         default: Union[Any, Callable[[], Any]] = None,
         hidden: bool = False,
-        completer: Callable[..., List[str]] = None,
-        **kwargs
+        completer: Optional[Callable[..., List[str]]] = None,
+        **kwargs: Any
     ) -> None:
         self.name = name
-        self.flags = flags  # type: Sequence[str]
+        self.flags = flags
         self.help = help
         self.group = group
         self.noxfile = noxfile
@@ -80,7 +80,7 @@ class Option:
         self.finalizer_func = finalizer_func
         self.hidden = hidden
         self.completer = completer
-        self.kwargs = kwargs  # type: Dict[str, Any]
+        self.kwargs = kwargs
         self._default = default
 
     @property
@@ -140,7 +140,7 @@ def make_flag_pair(
     name: str,
     enable_flags: Union[Tuple[str, str], Tuple[str]],
     disable_flags: Tuple[str],
-    **kwargs
+    **kwargs: Any
 ) -> Tuple[Option, Option]:
     """Returns two options - one to enable a behavior and another to disable it.
 
@@ -174,15 +174,17 @@ class OptionSet:
     finalization, callable defaults, and strongly typed namespaces for tests.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.parser_args = args
         self.parser_kwargs = kwargs
-        self.options = collections.OrderedDict()  # type: Dict[str, Option]
+        self.options = (
+            collections.OrderedDict()
+        )  # type: collections.OrderedDict[str, Option]
         self.groups = (
             collections.OrderedDict()
-        )  # type: Dict[str, Tuple[Tuple[Any, ...], Dict[str, Any]]]
+        )  # type: collections.OrderedDict[str, Tuple[Tuple[Any, ...], Dict[str, Any]]]
 
-    def add_options(self, *args) -> None:
+    def add_options(self, *args: Option) -> None:
         """Adds a sequence of Options to the OptionSet.
 
         Args:
@@ -191,7 +193,7 @@ class OptionSet:
         for option in args:
             self.options[option.name] = option
 
-    def add_group(self, name: str, *args, **kwargs) -> None:
+    def add_group(self, name: str, *args: Any, **kwargs: Any) -> None:
         """Adds a new argument group.
 
         When :func:`parser` is invoked, the OptionSet will turn all distinct
@@ -233,7 +235,7 @@ class OptionSet:
 
         return parser
 
-    def print_help(self):
+    def print_help(self) -> None:
         return self.parser().print_help()
 
     def _finalize_args(self, args: Namespace) -> None:
@@ -260,7 +262,7 @@ class OptionSet:
             parser.error(str(err))
         return args
 
-    def namespace(self, **kwargs):
+    def namespace(self, **kwargs: Any) -> argparse.Namespace:
         """Return a namespace that contains all of the options in this set.
 
         kwargs can be used to set values and does so in a checked way - you

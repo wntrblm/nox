@@ -21,16 +21,16 @@ control to :meth:``nox.workflow.execute``.
 
 import sys
 
+from nox import _options, tasks, workflow
+from nox.logger import setup_logging
+
 try:
     import importlib.metadata as metadata  # type: ignore
 except ImportError:  # pragma: no cover
     import importlib_metadata as metadata  # type: ignore
 
-from nox import _options, tasks, workflow
-from nox.logger import setup_logging
 
-
-def main():
+def main() -> None:
     args = _options.options.parse_args()
 
     if args.help:

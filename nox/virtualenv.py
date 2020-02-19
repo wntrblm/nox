@@ -17,6 +17,7 @@ import platform
 import re
 import shutil
 import sys
+from typing import Any, Mapping, Optional, Union
 
 import nox.command
 import py  # type: ignore
@@ -31,7 +32,7 @@ _SYSTEM = platform.system()
 
 
 class InterpreterNotFound(OSError):
-    def __init__(self, interpreter):
+    def __init__(self, interpreter: str) -> None:
         super().__init__("Python interpreter {} not found".format(interpreter))
         self.interpreter = interpreter
 
@@ -45,7 +46,7 @@ class ProcessEnv:
     # Special programs that aren't included in the environment.
     allowed_globals = ()
 
-    def __init__(self, bin=None, env=None):
+    def __init__(self, bin: None = None, env: Mapping[str, str] = None) -> None:
         self._bin = bin
         self.env = os.environ.copy()
 
@@ -59,11 +60,11 @@ class ProcessEnv:
             self.env["PATH"] = os.pathsep.join([self.bin, self.env.get("PATH", "")])
 
     @property
-    def bin(self):
+    def bin(self) -> Optional[str]:
         return self._bin
 
 
-def locate_via_py(version):
+def locate_via_py(version: str) -> Optional[str]:
     """Find the Python executable using the Windows Launcher.
 
     This is based on :pep:397 which details that executing
@@ -88,9 +89,10 @@ def locate_via_py(version):
             return py_exe.sysexec("-" + version, "-c", script).strip()
         except py.process.cmdexec.Error:
             return None
+    return None
 
 
-def locate_using_path_and_version(version):
+def locate_using_path_and_version(version: str) -> Optional[str]:
     """Check the PATH's python interpreter and return it if the version
     matches.
 
@@ -123,7 +125,7 @@ def locate_using_path_and_version(version):
     return None
 
 
-def _clean_location(self):
+def _clean_location(self: "Union[CondaEnv, VirtualEnv]") -> bool:
     """Deletes any existing path-based environment"""
     if os.path.exists(self.location):
         if self.reuse_existing:
@@ -158,7 +160,11 @@ class CondaEnv(ProcessEnv):
     allowed_globals = ("conda",)  # type: ignore
 
     def __init__(
-        self, location, interpreter=None, reuse_existing=False, venv_params=None
+        self,
+        location: str,
+        interpreter: Optional[str] = None,
+        reuse_existing: bool = False,
+        venv_params: Any = None,
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
@@ -170,14 +176,14 @@ class CondaEnv(ProcessEnv):
     _clean_location = _clean_location
 
     @property
-    def bin(self):
+    def bin(self) -> str:
         """Returns the location of the conda env's bin folder."""
         if _SYSTEM == "Windows":
             return os.path.join(self.location, "Scripts")
         else:
             return os.path.join(self.location, "bin")
 
-    def create(self):
+    def create(self) -> bool:
         """Create the conda env."""
         if not self._clean_location():
             logger.debug(
@@ -235,17 +241,17 @@ class VirtualEnv(ProcessEnv):
 
     def __init__(
         self,
-        location,
-        interpreter=None,
-        reuse_existing=False,
+        location: str,
+        interpreter: Optional[str] = None,
+        reuse_existing: bool = False,
         *,
-        venv=False,
-        venv_params=None
+        venv: bool = False,
+        venv_params: Any = None
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
-        self._resolved = None
+        self._resolved = None  # type: Union[None, str, InterpreterNotFound]
         self.reuse_existing = reuse_existing
         self.venv_or_virtualenv = "venv" if venv else "virtualenv"
         self.venv_params = venv_params if venv_params else []
@@ -254,7 +260,7 @@ class VirtualEnv(ProcessEnv):
     _clean_location = _clean_location
 
     @property
-    def _resolved_interpreter(self):
+    def _resolved_interpreter(self) -> str:
         """Return the interpreter, appropriately resolved for the platform.
 
         Based heavily on tox's implementation (tox/interpreters.py).
@@ -318,14 +324,14 @@ class VirtualEnv(ProcessEnv):
         raise self._resolved
 
     @property
-    def bin(self):
+    def bin(self) -> str:
         """Returns the location of the virtualenv's bin folder."""
         if _SYSTEM == "Windows":
             return os.path.join(self.location, "Scripts")
         else:
             return os.path.join(self.location, "bin")
 
-    def create(self):
+    def create(self) -> bool:
         """Create the virtualenv or venv."""
         if not self._clean_location():
             logger.debug(

@@ -16,7 +16,7 @@ import argparse
 import functools
 import os
 import sys
-from typing import List
+from typing import Any, List, Optional, Sequence, Union
 
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
@@ -39,7 +39,9 @@ options.add_group(
 )
 
 
-def _sessions_and_keywords_merge_func(key, command_args, noxfile_args):
+def _sessions_and_keywords_merge_func(
+    key: str, command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+) -> List[str]:
     """Only return the Noxfile value for sessions/keywords if neither sessions
     or keywords are specified on the command-line.
 
@@ -56,7 +58,9 @@ def _sessions_and_keywords_merge_func(key, command_args, noxfile_args):
     return getattr(command_args, key)
 
 
-def _envdir_merge_func(command_args, noxfile_args):
+def _envdir_merge_func(
+    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+) -> str:
     """Ensure that there is always some envdir.
 
     Args:
@@ -68,14 +72,14 @@ def _envdir_merge_func(command_args, noxfile_args):
     return command_args.envdir or noxfile_args.envdir or ".nox"
 
 
-def _sessions_default():
+def _sessions_default() -> Optional[List[str]]:
     """Looks at the NOXSESSION env var to set the default value for sessions."""
     nox_env = os.environ.get("NOXSESSION")
     env_sessions = nox_env.split(",") if nox_env else None
     return env_sessions
 
 
-def _color_finalizer(value, args):
+def _color_finalizer(value: bool, args: argparse.Namespace) -> bool:
     """Figures out the correct value for "color" based on the two color flags.
 
     Args:
@@ -99,7 +103,9 @@ def _color_finalizer(value, args):
     return sys.stdout.isatty()
 
 
-def _posargs_finalizer(value, args):
+def _posargs_finalizer(
+    value: Sequence[Any], args: argparse.Namespace
+) -> Union[Sequence[Any], List[Any]]:
     """Removes the leading "--"s in the posargs array (if any) and asserts that
     remaining arguments came after a "--".
     """
@@ -124,11 +130,11 @@ def _posargs_finalizer(value, args):
 
 
 def _session_completer(
-    prefix: str, parsed_args: argparse.Namespace, **kwargs
+    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
 ) -> List[str]:
     global_config = parsed_args
     module = load_nox_module(global_config)
-    manifest = discover_manifest(module, global_config)
+    manifest = discover_manifest(module, global_config)  # type: ignore
     filtered_manifest = filter_manifest(manifest, global_config)
     if isinstance(filtered_manifest, int):
         return []

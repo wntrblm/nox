@@ -17,6 +17,7 @@
 import argparse
 import io
 import pkgutil
+from typing import Any, Iterator
 
 import jinja2
 import tox.config  # type: ignore
@@ -27,11 +28,11 @@ _TEMPLATE = jinja2.Template(
 )
 
 
-def wrapjoin(seq):
+def wrapjoin(seq: Iterator[Any]) -> str:
     return ", ".join(["'{}'".format(item) for item in seq])
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Converts toxfiles to noxfiles.")
     parser.add_argument("--output", default="noxfile.py")
 

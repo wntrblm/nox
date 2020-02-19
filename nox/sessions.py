@@ -12,20 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import enum
 import hashlib
 import os
 import re
 import sys
 import unicodedata
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import nox.command
 import py  # type: ignore
+from nox import _typing
 from nox.logger import logger
 from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
+if _typing.TYPE_CHECKING:
+    from nox.manifest import Manifest
 
-def _normalize_path(envdir, path):
+
+def _normalize_path(envdir: str, path: Union[str, bytes]) -> str:
     """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
     if isinstance(path, bytes):
         path = path.decode("utf-8")
@@ -76,11 +92,11 @@ class Session:
 
     __slots__ = ("_runner",)
 
-    def __init__(self, runner):
+    def __init__(self, runner: "SessionRunner") -> None:
         self._runner = runner
 
     @property
-    def __dict__(self):
+    def __dict__(self) -> "Dict[str, SessionRunner]":  # type: ignore
         """Attribute dictionary for object inspection.
 
         This is needed because ``__slots__`` turns off ``__dict__`` by
@@ -90,37 +106,37 @@ class Session:
         return {"_runner": self._runner}
 
     @property
-    def env(self):
+    def env(self) -> dict:
         """A dictionary of environment variables to pass into all commands."""
-        return self._runner.venv.env
+        return self._runner.venv.env  # type: ignore
 
     @property
-    def posargs(self):
+    def posargs(self) -> List[str]:
         """This is set to any extra arguments
         passed to ``nox`` on the commandline."""
         return self._runner.global_config.posargs
 
     @property
-    def virtualenv(self):
+    def virtualenv(self) -> Optional[ProcessEnv]:
         """The virtualenv that all commands are run in."""
         return self._runner.venv
 
     @property
-    def python(self):
+    def python(self) -> Optional[Union[str, Sequence[str], bool]]:
         """The python version passed into ``@nox.session``."""
-        return self._runner.func.python
+        return self._runner.func.python  # type: ignore
 
     @property
-    def bin(self):
+    def bin(self) -> str:
         """The bin directory for the virtualenv."""
-        return self._runner.venv.bin
+        return self._runner.venv.bin  # type: ignore
 
     @property
-    def interactive(self):
+    def interactive(self) -> bool:
         """Returns True if Nox is being run in an interactive session or False otherwise."""
         return not self._runner.global_config.non_interactive and sys.stdin.isatty()
 
-    def chdir(self, dir):
+    def chdir(self, dir: str) -> None:
         """Change the current working directory."""
         self.log("cd {}".format(dir))
         os.chdir(dir)
@@ -128,7 +144,9 @@ class Session:
     cd = chdir
     """An alias for :meth:`chdir`."""
 
-    def _run_func(self, func, args, kwargs):
+    def _run_func(
+        self, func: Callable, args: Iterable[Any], kwargs: Mapping[str, Any]
+    ) -> Any:
         """Legacy support for running a function through :func`run`."""
         self.log("{}(args={!r}, kwargs={!r})".format(func, args, kwargs))
         try:
@@ -137,7 +155,9 @@ class Session:
             logger.exception("Function {!r} raised {!r}.".format(func, e))
             raise nox.command.CommandFailed()
 
-    def run(self, *args, env=None, **kwargs):
+    def run(
+        self, *args: str, env: Mapping[str, str] = None, **kwargs: Any
+    ) -> Optional[Any]:
         """Run a command.
 
         Commands must be specified as a list of strings, for example::
@@ -189,11 +209,11 @@ class Session:
 
         if self._runner.global_config.install_only:
             logger.info("Skipping {} run, as --install-only is set.".format(args[0]))
-            return
+            return None
 
         return self._run(*args, env=env, **kwargs)
 
-    def _run(self, *args, env=None, **kwargs):
+    def _run(self, *args: str, env: Mapping[str, str] = None, **kwargs: Any) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
         if callable(args[0]):
@@ -212,16 +232,16 @@ class Session:
             kwargs.setdefault("external", "error")
 
         # Allow all external programs when running outside a sandbox.
-        if not self.virtualenv.is_sandboxed:
+        if not self.virtualenv.is_sandboxed:  # type: ignore
             kwargs["external"] = True
 
-        if args[0] in self.virtualenv.allowed_globals:
+        if args[0] in self.virtualenv.allowed_globals:  # type: ignore
             kwargs["external"] = True
 
         # Run a shell command.
         return nox.command.run(args, env=env, path=self.bin, **kwargs)
 
-    def conda_install(self, *args, **kwargs):
+    def conda_install(self, *args: str, **kwargs: Any) -> None:
         """Install invokes `conda install`_ to install packages inside of the
         session's environment.
 
@@ -268,7 +288,7 @@ class Session:
             **kwargs
         )
 
-    def install(self, *args, **kwargs):
+    def install(self, *args: str, **kwargs: Any) -> None:
         """Install invokes `pip`_ to install packages inside of the session's
         virtualenv.
 
@@ -305,7 +325,7 @@ class Session:
 
         self._run("pip", "install", *args, external="error", **kwargs)
 
-    def notify(self, target):
+    def notify(self, target: "Union[str, SessionRunner]") -> None:
         """Place the given session at the end of the queue.
 
         This method is idempotent; multiple notifications to the same session
@@ -316,88 +336,99 @@ class Session:
                 may be specified as the appropriate string (same as used for
                 ``nox -s``) or using the function object.
         """
-        self._runner.manifest.notify(target)
+        self._runner.manifest.notify(target)  # type: ignore
 
-    def log(self, *args, **kwargs):
+    def log(self, *args: Any, **kwargs: Any) -> None:
         """Outputs a log during the session."""
         logger.info(*args, **kwargs)
 
-    def error(self, *args, **kwargs):
+    def error(self, *args: Any, **kwargs: Any) -> "_typing.NoReturn":
         """Immediately aborts the session and optionally logs an error."""
-        raise _SessionQuit(*args, **kwargs)
+        raise _SessionQuit(*args, **kwargs)  # type: ignore
 
-    def skip(self, *args, **kwargs):
+    def skip(self, *args: Any, **kwargs: Any) -> "_typing.NoReturn":
         """Immediately skips the session and optionally logs a warning."""
-        raise _SessionSkip(*args, **kwargs)
+        raise _SessionSkip(*args, **kwargs)  # type: ignore
 
 
 class SessionRunner:
-    def __init__(self, name, signatures, func, global_config, manifest=None):
+    def __init__(
+        self,
+        name: str,
+        signatures: List[str],
+        func: Callable,
+        global_config: argparse.Namespace,
+        manifest: "Optional[Manifest]" = None,
+    ) -> None:
         self.name = name
         self.signatures = signatures
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
-        self.venv = None
+        self.venv = None  # type: Optional[ProcessEnv]
 
     @property
-    def description(self):
+    def description(self) -> Optional[str]:
         doc = self.func.__doc__
         if doc:
             first_line = doc.strip().split("\n")[0]
             return first_line
         return None
 
-    def __str__(self):
+    def __str__(self) -> str:
         sigs = ", ".join(self.signatures)
         return "Session(name={}, signatures={})".format(self.name, sigs)
 
     @property
-    def friendly_name(self):
+    def friendly_name(self) -> str:
         return self.signatures[0] if self.signatures else self.name
 
-    def _create_venv(self):
-        if self.func.python is False:
+    def _create_venv(self) -> None:
+        if self.func.python is False:  # type: ignore
             self.venv = ProcessEnv()
             return
 
         path = _normalize_path(self.global_config.envdir, self.friendly_name)
         reuse_existing = (
-            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
+            self.func.reuse_venv  # type: ignore
+            or self.global_config.reuse_existing_virtualenvs
         )
 
-        if not self.func.venv_backend or self.func.venv_backend == "virtualenv":
+        if (
+            not self.func.venv_backend  # type: ignore
+            or self.func.venv_backend == "virtualenv"  # type: ignore
+        ):
             self.venv = VirtualEnv(
                 path,
-                interpreter=self.func.python,
+                interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
-                venv_params=self.func.venv_params,
+                venv_params=self.func.venv_params,  # type: ignore
             )
-        elif self.func.venv_backend == "conda":
+        elif self.func.venv_backend == "conda":  # type: ignore
             self.venv = CondaEnv(
                 path,
-                interpreter=self.func.python,
+                interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
-                venv_params=self.func.venv_params,
+                venv_params=self.func.venv_params,  # type: ignore
             )
-        elif self.func.venv_backend == "venv":
+        elif self.func.venv_backend == "venv":  # type: ignore
             self.venv = VirtualEnv(
                 path,
-                interpreter=self.func.python,
+                interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv=True,
-                venv_params=self.func.venv_params,
+                venv_params=self.func.venv_params,  # type: ignore
             )
         else:
             raise ValueError(
                 "Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{}'.".format(
-                    self.func.venv_backend
+                    self.func.venv_backend  # type: ignore
                 )
             )
 
-        self.venv.create()
+        self.venv.create()  # type: ignore
 
-    def execute(self):
+    def execute(self) -> "Result":
         logger.warning("Running session {}".format(self.friendly_name))
 
         try:
@@ -444,7 +475,9 @@ class SessionRunner:
 class Result:
     """An object representing the result of a session."""
 
-    def __init__(self, session, status, reason=None):
+    def __init__(
+        self, session: SessionRunner, status: Status, reason: Optional[str] = None
+    ) -> None:
         """Initialize the Result object.
 
         Args:
@@ -457,14 +490,14 @@ class Result:
         self.status = status
         self.reason = reason
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self.status.value > 0
 
-    def __nonzero__(self):
+    def __nonzero__(self) -> bool:
         return self.__bool__()
 
     @property
-    def imperfect(self):
+    def imperfect(self) -> str:
         """Return the English imperfect tense for the status.
 
         Returns:
@@ -478,7 +511,7 @@ class Result:
         else:
             return status
 
-    def log(self, message):
+    def log(self, message: str) -> None:
         """Log a message using the appropriate log function.
 
         Args:
@@ -493,7 +526,7 @@ class Result:
             log_function = logger.error
         log_function(message)
 
-    def serialize(self):
+    def serialize(self) -> Dict[str, Any]:
         """Return a serialized representation of this result.
 
         Returns:
