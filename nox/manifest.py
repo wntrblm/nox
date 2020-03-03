@@ -183,8 +183,8 @@ class Manifest:
         if isinstance(func.python, (list, tuple, set)):  # type: ignore
 
             for python in func.python:  # type: ignore
-                single_func = _copy_func(func)
-                single_func.python = python  # type: ignore
+                single_func = func.copy()  # type: ignore
+                single_func.python = python
                 session = self.make_session(name, single_func, multi=True)
                 sessions.extend(session)
 

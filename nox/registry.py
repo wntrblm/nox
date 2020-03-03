@@ -17,8 +17,40 @@ import copy
 import functools
 from typing import Any, Callable, Optional, Sequence, Union
 
-_REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Callable]
+from . import _decorators, manifest
+
+_REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Func]
 Python = Optional[Union[str, Sequence[str], bool]]
+
+
+class Func(_decorators.FunctionDecorator):
+    def __init__(
+        self,
+        func: Callable,
+        python: Python = None,
+        reuse_venv: Optional[bool] = None,
+        name: Optional[str] = None,
+        venv_backend: Any = None,
+        venv_params: Any = None,
+    ):
+        self.func = func
+        self.python = python
+        self.reuse_venv = reuse_venv
+        self.venv_backend = venv_backend
+        self.venv_params = venv_params
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.func(*args, **kwargs)
+
+    def copy(self, name: str = None) -> "Func":
+        return Func(
+            manifest._copy_func(self.func, name),
+            self.python,
+            self.reuse_venv,
+            name,
+            self.venv_backend,
+            self.venv_params,
+        )
 
 
 def session_decorator(
@@ -58,16 +90,12 @@ def session_decorator(
     if python is None:
         python = py
 
-    func.python = python  # type: ignore
-    func.reuse_venv = reuse_venv  # type: ignore
-    func.venv_backend = venv_backend  # type: ignore
-    func.venv_params = venv_params  # type: ignore
-    _REGISTRY[name or func.__name__] = func
-
-    return func
+    fn = Func(func, python, reuse_venv, name, venv_backend, venv_params)
+    _REGISTRY[name or func.__name__] = fn
+    return fn
 
 
-def get() -> "collections.OrderedDict[str, Callable]":
+def get() -> "collections.OrderedDict[str, Func]":
     """Return a shallow copy of the registry.
 
     This ensures that the registry is not accidentally modified by

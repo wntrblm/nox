@@ -18,6 +18,7 @@ from unittest import mock
 import nox
 import pytest
 from nox.manifest import Manifest, _null_session_func
+from nox.registry import Func
 
 
 def create_mock_sessions():
@@ -173,9 +174,8 @@ def test_add_session_multiple_pythons():
     def session_func():
         pass
 
-    session_func.python = ["3.5", "3.6"]
-
-    for session in manifest.make_session("my_session", session_func):
+    func = Func(session_func, python=["3.5", "3.6"])
+    for session in manifest.make_session("my_session", func):
         manifest.add_session(session)
 
     assert len(manifest) == 2
@@ -205,10 +205,10 @@ def test_add_session_parametrized_multiple_pythons():
     def my_session(session, param):
         pass
 
-    my_session.python = ["2.7", "3.6"]
+    func = Func(my_session, python=["2.7", "3.6"])
 
     # Add the session to the manifest.
-    for session in manifest.make_session("my_session", my_session):
+    for session in manifest.make_session("my_session", func):
         manifest.add_session(session)
     assert len(manifest) == 4
 
