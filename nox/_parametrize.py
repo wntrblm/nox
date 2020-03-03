@@ -14,7 +14,18 @@
 
 import functools
 import itertools
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
 
 class Param:
@@ -169,23 +180,23 @@ def update_param_specs(
     return combined_specs
 
 
-def generate_calls(
-    func: Callable[..., Any], param_specs: Iterable[Param]
-) -> List[Callable[..., Any]]:
-    calls = []
-    for param_spec in param_specs:
+class Call:
+    def __new__(cls, func: Callable[..., Any], param_spec: Param) -> "Call":
+        obj = super().__new__(cls)
+        obj.__init__(func, param_spec)
+        return cast("Call", functools.wraps(func)(obj))
 
-        def make_call_wrapper(param_spec: Param) -> Callable[..., Any]:
-            @functools.wraps(func)
-            def call_wrapper(*args: Any, **kwargs: Any) -> Any:
-                kwargs.update(param_spec.call_spec)
-                return func(*args, **kwargs)
+    def __init__(self, func: Callable[..., Any], param_spec: Param) -> None:
+        self._func = func
+        self.param_spec = param_spec
+        self.session_signature = "({})".format(param_spec)
 
-            return call_wrapper
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        kwargs.update(self.param_spec.call_spec)
+        return self._func(*args, **kwargs)
 
-        call = make_call_wrapper(param_spec)
-        call.session_signature = "({})".format(param_spec)  # type: ignore
-        call.param_spec = param_spec  # type: ignore
-        calls.append(call)
-
-    return calls
+    @classmethod
+    def generate_calls(
+        cls, func: Callable[..., Any], param_specs: Iterable[Param]
+    ) -> "List[Call]":
+        return [cls(func, param_spec) for param_spec in param_specs]

@@ -19,7 +19,7 @@ import itertools
 import types
 from typing import Any, Callable, Iterable, Iterator, List, Mapping, Set, Tuple, Union
 
-from nox._parametrize import generate_calls
+from nox._parametrize import Call
 from nox.sessions import Session, SessionRunner
 
 
@@ -27,7 +27,7 @@ def _copy_func(src: Callable, name: str = None) -> Callable:
     dst = types.FunctionType(
         src.__code__,
         src.__globals__,  # type: ignore
-        name=name or src.__name__,  # type: ignore
+        name=name or src.__name__,
         argdefs=src.__defaults__,  # type: ignore
         closure=src.__closure__,  # type: ignore
     )
@@ -206,13 +206,11 @@ class Manifest:
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
-        calls = generate_calls(func, func.parametrize)  # type: ignore
+        calls = Call.generate_calls(func, func.parametrize)  # type: ignore
         for call in calls:
             long_names = []
             if not multi:
-                long_names.append(
-                    "{}{}".format(name, call.session_signature)  # type: ignore
-                )
+                long_names.append("{}{}".format(name, call.session_signature))
             if func.python:  # type: ignore
                 long_names.append(
                     "{}-{}{}".format(
