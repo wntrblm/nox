@@ -14,9 +14,9 @@
 
 import argparse
 import itertools
-from typing import Any, Callable, Iterable, Iterator, List, Mapping, Set, Tuple, Union
+from typing import Any, Iterable, Iterator, List, Mapping, Set, Tuple, Union
 
-from nox._decorators import Call
+from nox._decorators import Call, Func
 from nox.sessions import Session, SessionRunner
 
 
@@ -37,9 +37,7 @@ class Manifest:
     """
 
     def __init__(
-        self,
-        session_functions: Mapping[str, Callable],
-        global_config: argparse.Namespace,
+        self, session_functions: Mapping[str, "Func"], global_config: argparse.Namespace
     ) -> None:
         self._all_sessions = []  # type: List[SessionRunner]
         self._queue = []  # type: List[SessionRunner]
@@ -145,7 +143,7 @@ class Manifest:
         ]
 
     def make_session(
-        self, name: str, func: Callable, multi: bool = False
+        self, name: str, func: "Func", multi: bool = False
     ) -> List[SessionRunner]:
         """Create a session object from the session function.
 
@@ -163,13 +161,12 @@ class Manifest:
 
         # If the func has the python attribute set to a list, we'll need
         # to expand them.
-        if isinstance(func.python, (list, tuple, set)):  # type: ignore
+        if isinstance(func.python, (list, tuple, set)):
 
-            for python in func.python:  # type: ignore
-                single_func = func.copy()  # type: ignore
+            for python in func.python:
+                single_func = func.copy()
                 single_func.python = python
-                session = self.make_session(name, single_func, multi=True)
-                sessions.extend(session)
+                sessions.extend(self.make_session(name, single_func, multi=True))
 
             return sessions
 
@@ -179,31 +176,31 @@ class Manifest:
             long_names = []
             if not multi:
                 long_names.append(name)
-            if func.python:  # type: ignore
-                long_names.append("{}-{}".format(name, func.python))  # type: ignore
+            if func.python:
+                long_names.append("{}-{}".format(name, func.python))
 
-            session = SessionRunner(  # type: ignore
-                name, long_names, func, self._config, self
-            )
-            return [session]  # type: ignore
+            return [SessionRunner(name, long_names, func, self._config, self)]
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
-        calls = Call.generate_calls(func, func.parametrize)  # type: ignore
+        parametrize = func.parametrize  # type: ignore
+        calls = Call.generate_calls(func, parametrize)
         for call in calls:
             long_names = []
             if not multi:
                 long_names.append("{}{}".format(name, call.session_signature))
-            if func.python:  # type: ignore
+            if func.python:
                 long_names.append(
-                    "{}-{}{}".format(
-                        name, func.python, call.session_signature  # type: ignore
-                    )
+                    "{}-{}{}".format(name, func.python, call.session_signature)
                 )
                 # Ensure that specifying session-python will run all parameterizations.
-                long_names.append("{}-{}".format(name, func.python))  # type: ignore
+                long_names.append("{}-{}".format(name, func.python))
 
-            sessions.append(SessionRunner(name, long_names, call, self._config, self))
+            sessions.append(
+                SessionRunner(
+                    name, long_names, call, self._config, self
+                )  # type: ignore
+            )
 
         # Edge case: If the parameters made it such that there were no valid
         # calls, add an empty, do-nothing session.
@@ -275,9 +272,9 @@ def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
     return eval(expression, {}, locals)  # type: ignore
 
 
-def _null_session_func(session: Session) -> None:
+def _null_session_func_(session: Session) -> None:
     """A no-op session for patemetrized sessions with no available params."""
     session.skip("This session had no parameters available.")
 
 
-_null_session_func.python = False  # type: ignore
+_null_session_func = Func(_null_session_func_, python=False)

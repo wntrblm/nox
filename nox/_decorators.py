@@ -62,7 +62,7 @@ class Func(FunctionDecorator):
 
 
 class Call(FunctionDecorator):
-    def __init__(self, func: Callable[..., Any], param_spec: "Param") -> None:
+    def __init__(self, func: Func, param_spec: "Param") -> None:
         self._func = func
         self.param_spec = param_spec
         self.session_signature = "({})".format(param_spec)
@@ -72,7 +72,5 @@ class Call(FunctionDecorator):
         return self._func(*args, **kwargs)
 
     @classmethod
-    def generate_calls(
-        cls, func: Callable[..., Any], param_specs: "Iterable[Param]"
-    ) -> "List[Call]":
+    def generate_calls(cls, func: Func, param_specs: "Iterable[Param]") -> "List[Call]":
         return [cls(func, param_spec) for param_spec in param_specs]
