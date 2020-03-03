@@ -14,18 +14,9 @@
 
 import functools
 import itertools
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+
+from . import _decorators
 
 
 class Param:
@@ -180,12 +171,7 @@ def update_param_specs(
     return combined_specs
 
 
-class Call:
-    def __new__(cls, func: Callable[..., Any], param_spec: Param) -> "Call":
-        obj = super().__new__(cls)
-        obj.__init__(func, param_spec)
-        return cast("Call", functools.wraps(func)(obj))
-
+class Call(_decorators.FunctionDecorator):
     def __init__(self, func: Callable[..., Any], param_spec: Param) -> None:
         self._func = func
         self.param_spec = param_spec
