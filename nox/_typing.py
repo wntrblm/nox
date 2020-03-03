@@ -1,4 +1,6 @@
-__all__ = ["TYPE_CHECKING", "NoReturn"]
+__all__ = ["TYPE_CHECKING", "NoReturn", "Python"]
+
+import typing as _typing
 
 try:
     from typing import TYPE_CHECKING
@@ -15,3 +17,5 @@ except ImportError:
         from typing_extensions import NoReturn
     except ImportError:
         pass
+
+Python = _typing.Optional[_typing.Union[str, _typing.Sequence[str], bool]]

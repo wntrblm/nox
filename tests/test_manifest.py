@@ -17,8 +17,8 @@ from unittest import mock
 
 import nox
 import pytest
+from nox._decorators import Func
 from nox.manifest import Manifest, _null_session_func
-from nox.registry import Func
 
 
 def create_mock_sessions():

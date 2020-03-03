@@ -16,8 +16,6 @@ import functools
 import itertools
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
-from . import _decorators
-
 
 class Param:
     """A class that encapsulates a single set of parameters to a parametrized
@@ -169,20 +167,3 @@ def update_param_specs(
             spec.update(new_spec)
             combined_specs.append(spec)
     return combined_specs
-
-
-class Call(_decorators.FunctionDecorator):
-    def __init__(self, func: Callable[..., Any], param_spec: Param) -> None:
-        self._func = func
-        self.param_spec = param_spec
-        self.session_signature = "({})".format(param_spec)
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        kwargs.update(self.param_spec.call_spec)
-        return self._func(*args, **kwargs)
-
-    @classmethod
-    def generate_calls(
-        cls, func: Callable[..., Any], param_specs: Iterable[Param]
-    ) -> "List[Call]":
-        return [cls(func, param_spec) for param_spec in param_specs]

@@ -15,42 +15,12 @@
 import collections
 import copy
 import functools
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, Optional
 
-from . import _decorators, manifest
+from ._decorators import Func
+from ._typing import Python
 
 _REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Func]
-Python = Optional[Union[str, Sequence[str], bool]]
-
-
-class Func(_decorators.FunctionDecorator):
-    def __init__(
-        self,
-        func: Callable,
-        python: Python = None,
-        reuse_venv: Optional[bool] = None,
-        name: Optional[str] = None,
-        venv_backend: Any = None,
-        venv_params: Any = None,
-    ):
-        self.func = func
-        self.python = python
-        self.reuse_venv = reuse_venv
-        self.venv_backend = venv_backend
-        self.venv_params = venv_params
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        return self.func(*args, **kwargs)
-
-    def copy(self, name: str = None) -> "Func":
-        return Func(
-            manifest._copy_func(self.func, name),
-            self.python,
-            self.reuse_venv,
-            name,
-            self.venv_backend,
-            self.venv_params,
-        )
 
 
 def session_decorator(

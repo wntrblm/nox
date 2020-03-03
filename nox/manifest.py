@@ -13,28 +13,11 @@
 # limitations under the License.
 
 import argparse
-import copy
-import functools
 import itertools
-import types
 from typing import Any, Callable, Iterable, Iterator, List, Mapping, Set, Tuple, Union
 
-from nox._parametrize import Call
+from nox._decorators import Call
 from nox.sessions import Session, SessionRunner
-
-
-def _copy_func(src: Callable, name: str = None) -> Callable:
-    dst = types.FunctionType(
-        src.__code__,
-        src.__globals__,  # type: ignore
-        name=name or src.__name__,
-        argdefs=src.__defaults__,  # type: ignore
-        closure=src.__closure__,  # type: ignore
-    )
-    dst.__dict__.update(copy.deepcopy(src.__dict__))
-    dst = functools.update_wrapper(dst, src)  # type: ignore
-    dst.__kwdefaults__ = src.__kwdefaults__  # type: ignore
-    return dst
 
 
 class Manifest:
