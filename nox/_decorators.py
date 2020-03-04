@@ -3,9 +3,9 @@ import functools
 import types
 from typing import Any, Callable, Iterable, List, Optional, cast
 
-from ._typing import TYPE_CHECKING, Python
+from . import _typing
 
-if TYPE_CHECKING:
+if _typing.TYPE_CHECKING:
     from ._parametrize import Param
 
 
@@ -35,7 +35,7 @@ class Func(FunctionDecorator):
     def __init__(
         self,
         func: Callable,
-        python: Python = None,
+        python: _typing.Python = None,
         reuse_venv: Optional[bool] = None,
         name: Optional[str] = None,
         venv_backend: Any = None,
