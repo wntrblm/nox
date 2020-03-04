@@ -196,11 +196,7 @@ class Manifest:
                 # Ensure that specifying session-python will run all parameterizations.
                 long_names.append("{}-{}".format(name, func.python))
 
-            sessions.append(
-                SessionRunner(
-                    name, long_names, call, self._config, self
-                )  # type: ignore
-            )
+            sessions.append(SessionRunner(name, long_names, call, self._config, self))
 
         # Edge case: If the parameters made it such that there were no valid
         # calls, add an empty, do-nothing session.

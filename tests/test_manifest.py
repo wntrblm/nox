@@ -189,10 +189,10 @@ def test_add_session_parametrized():
     def my_session(session, param):
         pass
 
-    my_session.python = None
+    func = Func(my_session, python=None)
 
     # Add the session to the manifest.
-    for session in manifest.make_session("my_session", my_session):
+    for session in manifest.make_session("my_session", func):
         manifest.add_session(session)
     assert len(manifest) == 3
 

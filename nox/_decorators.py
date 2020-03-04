@@ -61,15 +61,22 @@ class Func(FunctionDecorator):
         )
 
 
-class Call(FunctionDecorator):
+class Call(Func):
     def __init__(self, func: Func, param_spec: "Param") -> None:
-        self._func = func
+        super().__init__(
+            func,
+            func.python,
+            func.reuse_venv,
+            None,
+            func.venv_backend,
+            func.venv_params,
+        )
         self.param_spec = param_spec
         self.session_signature = "({})".format(param_spec)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         kwargs.update(self.param_spec.call_spec)
-        return self._func(*args, **kwargs)
+        return super().__call__(*args, **kwargs)
 
     @classmethod
     def generate_calls(cls, func: Func, param_specs: "Iterable[Param]") -> "List[Call]":
