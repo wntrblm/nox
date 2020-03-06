@@ -15,7 +15,7 @@
 from unittest import mock
 
 import pytest
-from nox import _parametrize
+from nox import _decorators, _parametrize
 
 
 @pytest.mark.parametrize(
@@ -166,7 +166,7 @@ def test_generate_calls_simple():
         _parametrize.Param(3, arg_names=arg_names),
     ]
 
-    calls = _parametrize.generate_calls(f, call_specs)
+    calls = _decorators.Call.generate_calls(f, call_specs)
 
     assert len(calls) == 3
     assert calls[0].session_signature == "(abc=1)"
@@ -198,7 +198,7 @@ def test_generate_calls_multiple_args():
         _parametrize.Param(3, "c", arg_names=arg_names),
     ]
 
-    calls = _parametrize.generate_calls(f, call_specs)
+    calls = _decorators.Call.generate_calls(f, call_specs)
 
     assert len(calls) == 3
     assert calls[0].session_signature == "(abc=1, foo='a')"
@@ -223,7 +223,7 @@ def test_generate_calls_ids():
         _parametrize.Param(2, arg_names=arg_names, id="b"),
     ]
 
-    calls = _parametrize.generate_calls(f, call_specs)
+    calls = _decorators.Call.generate_calls(f, call_specs)
 
     assert len(calls) == 2
     assert calls[0].session_signature == "(a)"

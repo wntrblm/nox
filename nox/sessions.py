@@ -34,6 +34,7 @@ from typing import (
 import nox.command
 import py  # type: ignore
 from nox import _typing
+from nox._decorators import Func
 from nox.logger import logger
 from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
@@ -124,7 +125,7 @@ class Session:
     @property
     def python(self) -> Optional[Union[str, Sequence[str], bool]]:
         """The python version passed into ``@nox.session``."""
-        return self._runner.func.python  # type: ignore
+        return self._runner.func.python
 
     @property
     def bin(self) -> str:
@@ -356,7 +357,7 @@ class SessionRunner:
         self,
         name: str,
         signatures: List[str],
-        func: Callable,
+        func: Func,
         global_config: argparse.Namespace,
         manifest: "Optional[Manifest]" = None,
     ) -> None:
@@ -384,45 +385,41 @@ class SessionRunner:
         return self.signatures[0] if self.signatures else self.name
 
     def _create_venv(self) -> None:
-        if self.func.python is False:  # type: ignore
+        if self.func.python is False:
             self.venv = ProcessEnv()
             return
 
         path = _normalize_path(self.global_config.envdir, self.friendly_name)
         reuse_existing = (
-            self.func.reuse_venv  # type: ignore
-            or self.global_config.reuse_existing_virtualenvs
+            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
-        if (
-            not self.func.venv_backend  # type: ignore
-            or self.func.venv_backend == "virtualenv"  # type: ignore
-        ):
+        if not self.func.venv_backend or self.func.venv_backend == "virtualenv":
             self.venv = VirtualEnv(
                 path,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
-                venv_params=self.func.venv_params,  # type: ignore
+                venv_params=self.func.venv_params,
             )
-        elif self.func.venv_backend == "conda":  # type: ignore
+        elif self.func.venv_backend == "conda":
             self.venv = CondaEnv(
                 path,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
-                venv_params=self.func.venv_params,  # type: ignore
+                venv_params=self.func.venv_params,
             )
-        elif self.func.venv_backend == "venv":  # type: ignore
+        elif self.func.venv_backend == "venv":
             self.venv = VirtualEnv(
                 path,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv=True,
-                venv_params=self.func.venv_params,  # type: ignore
+                venv_params=self.func.venv_params,
             )
         else:
             raise ValueError(
                 "Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{}'.".format(
-                    self.func.venv_backend  # type: ignore
+                    self.func.venv_backend
                 )
             )
 

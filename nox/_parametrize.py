@@ -167,25 +167,3 @@ def update_param_specs(
             spec.update(new_spec)
             combined_specs.append(spec)
     return combined_specs
-
-
-def generate_calls(
-    func: Callable[..., Any], param_specs: Iterable[Param]
-) -> List[Callable[..., Any]]:
-    calls = []
-    for param_spec in param_specs:
-
-        def make_call_wrapper(param_spec: Param) -> Callable[..., Any]:
-            @functools.wraps(func)
-            def call_wrapper(*args: Any, **kwargs: Any) -> Any:
-                kwargs.update(param_spec.call_spec)
-                return func(*args, **kwargs)
-
-            return call_wrapper
-
-        call = make_call_wrapper(param_spec)
-        call.session_signature = "({})".format(param_spec)  # type: ignore
-        call.param_spec = param_spec  # type: ignore
-        calls.append(call)
-
-    return calls

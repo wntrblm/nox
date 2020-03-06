@@ -15,10 +15,12 @@
 import collections
 import copy
 import functools
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, Optional
 
-_REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Callable]
-Python = Optional[Union[str, Sequence[str], bool]]
+from ._decorators import Func
+from ._typing import Python
+
+_REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Func]
 
 
 def session_decorator(
@@ -58,16 +60,12 @@ def session_decorator(
     if python is None:
         python = py
 
-    func.python = python  # type: ignore
-    func.reuse_venv = reuse_venv  # type: ignore
-    func.venv_backend = venv_backend  # type: ignore
-    func.venv_params = venv_params  # type: ignore
-    _REGISTRY[name or func.__name__] = func
-
-    return func
+    fn = Func(func, python, reuse_venv, name, venv_backend, venv_params)
+    _REGISTRY[name or func.__name__] = fn
+    return fn
 
 
-def get() -> "collections.OrderedDict[str, Callable]":
+def get() -> "collections.OrderedDict[str, Func]":
     """Return a shallow copy of the registry.
 
     This ensures that the registry is not accidentally modified by
