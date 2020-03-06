@@ -343,13 +343,13 @@ class Session:
         """Outputs a log during the session."""
         logger.info(*args, **kwargs)
 
-    def error(self, *args: Any, **kwargs: Any) -> "_typing.NoReturn":
+    def error(self, *args: Any) -> "_typing.NoReturn":
         """Immediately aborts the session and optionally logs an error."""
-        raise _SessionQuit(*args, **kwargs)  # type: ignore
+        raise _SessionQuit(*args)
 
-    def skip(self, *args: Any, **kwargs: Any) -> "_typing.NoReturn":
+    def skip(self, *args: Any) -> "_typing.NoReturn":
         """Immediately skips the session and optionally logs a warning."""
-        raise _SessionSkip(*args, **kwargs)  # type: ignore
+        raise _SessionSkip(*args)
 
 
 class SessionRunner:
