@@ -23,7 +23,7 @@ import functools
 from argparse import ArgumentError, ArgumentParser, Namespace, _ArgumentGroup
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import argcomplete  # type: ignore
+import argcomplete
 
 
 class Option:

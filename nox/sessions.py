@@ -32,7 +32,7 @@ from typing import (
 )
 
 import nox.command
-import py  # type: ignore
+import py
 from nox import _typing
 from nox._decorators import Func
 from nox.logger import logger

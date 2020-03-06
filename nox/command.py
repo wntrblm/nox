@@ -16,7 +16,7 @@ import os
 import sys
 from typing import Any, Iterable, Optional, Sequence, Union
 
-import py  # type: ignore
+import py
 from nox.logger import logger
 from nox.popen import popen
 

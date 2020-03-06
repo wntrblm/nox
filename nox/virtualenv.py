@@ -20,7 +20,7 @@ import sys
 from typing import Any, Mapping, Optional, Union
 
 import nox.command
-import py  # type: ignore
+import py
 from nox.logger import logger
 
 # Problematic environment variables that are stripped from all commands inside
