@@ -17,7 +17,7 @@ import platform
 import re
 import shutil
 import sys
-from typing import Any, Mapping, Optional, Union
+from typing import Any, ClassVar, Mapping, Optional, Tuple, Union
 
 import nox.command
 import py
@@ -44,7 +44,7 @@ class ProcessEnv:
     is_sandboxed = False
 
     # Special programs that aren't included in the environment.
-    allowed_globals = ()
+    allowed_globals = ()  # type: ClassVar[Tuple[Any, ...]]
 
     def __init__(self, bin: None = None, env: Mapping[str, str] = None) -> None:
         self._bin = bin
@@ -160,7 +160,7 @@ class CondaEnv(ProcessEnv):
     """
 
     is_sandboxed = True
-    allowed_globals = ("conda",)  # type: ignore
+    allowed_globals = ("conda",)
 
     def __init__(
         self,
