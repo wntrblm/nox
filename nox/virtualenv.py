@@ -63,6 +63,9 @@ class ProcessEnv:
     def bin(self) -> Optional[str]:
         return self._bin
 
+    def create(self) -> bool:
+        raise NotImplementedError("ProcessEnv.create should be overwitten in subclass")
+
 
 def locate_via_py(version: str) -> Optional[str]:
     """Find the Python executable using the Windows Launcher.

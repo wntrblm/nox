@@ -423,7 +423,7 @@ class SessionRunner:
                 )
             )
 
-        self.venv.create()  # type: ignore
+        self.venv.create()
 
     def execute(self) -> "Result":
         logger.warning("Running session {}".format(self.friendly_name))
