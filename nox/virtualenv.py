@@ -17,11 +17,13 @@ import platform
 import re
 import shutil
 import sys
-from typing import Any, ClassVar, Mapping, Optional, Tuple, Union
+from typing import Any, Mapping, Optional, Tuple, Union
 
 import nox.command
 import py
 from nox.logger import logger
+
+from . import _typing
 
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
@@ -44,7 +46,7 @@ class ProcessEnv:
     is_sandboxed = False
 
     # Special programs that aren't included in the environment.
-    allowed_globals = ()  # type: ClassVar[Tuple[Any, ...]]
+    allowed_globals = ()  # type: _typing.ClassVar[Tuple[Any, ...]]
 
     def __init__(self, bin: None = None, env: Mapping[str, str] = None) -> None:
         self._bin = bin
