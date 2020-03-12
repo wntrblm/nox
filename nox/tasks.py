@@ -21,7 +21,7 @@ from argparse import Namespace
 from typing import List, Union
 
 import nox
-from colorlog.escape_codes import parse_colors  # type: ignore
+from colorlog.escape_codes import parse_colors
 from nox import _options, registry
 from nox.logger import logger
 from nox.manifest import Manifest

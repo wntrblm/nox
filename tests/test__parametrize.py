@@ -63,6 +63,15 @@ def test_parametrize_decorator_one_with_args():
     assert f.parametrize == [{"abc": 1}, {"abc": 2}, {"abc": 3}]
 
 
+def test_parametrize_decorator_param():
+    def f():
+        pass
+
+    _parametrize.parametrize_decorator(["abc", "def"], _parametrize.Param(1))(f)
+
+    assert f.parametrize == [_parametrize.Param(1, arg_names=("abc", "def"))]
+
+
 def test_parametrize_decorator_id_list():
     def f():
         pass

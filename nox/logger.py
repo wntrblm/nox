@@ -15,7 +15,7 @@
 import logging
 from typing import Any, cast
 
-from colorlog import ColoredFormatter  # type: ignore
+from colorlog import ColoredFormatter
 
 SUCCESS = 25
 OUTPUT = logging.DEBUG - 1

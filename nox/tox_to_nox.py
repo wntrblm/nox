@@ -20,7 +20,7 @@ import pkgutil
 from typing import Any, Iterator
 
 import jinja2
-import tox.config  # type: ignore
+import tox.config
 
 _TEMPLATE = jinja2.Template(
     pkgutil.get_data(__name__, "tox_to_nox.jinja2").decode("utf-8"),  # type: ignore

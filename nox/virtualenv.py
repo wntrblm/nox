@@ -17,11 +17,13 @@ import platform
 import re
 import shutil
 import sys
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Mapping, Optional, Tuple, Union
 
 import nox.command
-import py  # type: ignore
+import py
 from nox.logger import logger
+
+from . import _typing
 
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
@@ -44,7 +46,7 @@ class ProcessEnv:
     is_sandboxed = False
 
     # Special programs that aren't included in the environment.
-    allowed_globals = ()
+    allowed_globals = ()  # type: _typing.ClassVar[Tuple[Any, ...]]
 
     def __init__(self, bin: None = None, env: Mapping[str, str] = None) -> None:
         self._bin = bin
@@ -62,6 +64,9 @@ class ProcessEnv:
     @property
     def bin(self) -> Optional[str]:
         return self._bin
+
+    def create(self) -> bool:
+        raise NotImplementedError("ProcessEnv.create should be overwitten in subclass")
 
 
 def locate_via_py(version: str) -> Optional[str]:
@@ -157,7 +162,7 @@ class CondaEnv(ProcessEnv):
     """
 
     is_sandboxed = True
-    allowed_globals = ("conda",)  # type: ignore
+    allowed_globals = ("conda",)
 
     def __init__(
         self,

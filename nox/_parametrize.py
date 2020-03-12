@@ -120,17 +120,22 @@ def parametrize_decorator(
 
     # If there's only one arg_name, arg_values_list should be a single item
     # or list. Transform it so it'll work with the combine step.
+    _arg_values_list = []  # type: List[Union[Param, Iterable[Union[Any, ArgValue]]]]
     if len(arg_names) == 1:
         # In this case, the arg_values_list can also just be a single item.
-        if isinstance(arg_values_list, tuple):
-            # Must be mutable for the transformation steps
-            arg_values_list = list(arg_values_list)
-        if not isinstance(arg_values_list, list):
-            arg_values_list = [arg_values_list]
+        # Must be mutable for the transformation steps
+        if isinstance(arg_values_list, (tuple, list)):
+            _arg_values_list = list(arg_values_list)
+        else:
+            _arg_values_list = [arg_values_list]
 
-        for n, value in enumerate(arg_values_list):
+        for n, value in enumerate(_arg_values_list):
             if not isinstance(value, Param):
-                arg_values_list[n] = [value]
+                _arg_values_list[n] = [value]
+    elif isinstance(arg_values_list, Param):
+        _arg_values_list = [arg_values_list]
+    else:
+        _arg_values_list = list(arg_values_list)
 
     # if ids aren't specified at all, make them an empty list for zip.
     if not ids:
@@ -138,9 +143,7 @@ def parametrize_decorator(
 
     # Generate params for each item in the param_args_values list.
     param_specs = []  # type: List[Param]
-    for param_arg_values, param_id in itertools.zip_longest(
-        arg_values_list, ids  # type: ignore
-    ):
+    for param_arg_values, param_id in itertools.zip_longest(_arg_values_list, ids):
         if isinstance(param_arg_values, Param):
             param_spec = param_arg_values
             param_spec.arg_names = tuple(arg_names)

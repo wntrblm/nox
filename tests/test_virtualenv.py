@@ -126,6 +126,12 @@ def test_process_env_constructor():
     assert penv.env["SIGIL"] == "123"
 
 
+def test_process_env_create():
+    penv = nox.virtualenv.ProcessEnv()
+    with pytest.raises(NotImplementedError):
+        penv.create()
+
+
 def test_condaenv_constructor_defaults(make_conda):
     venv, _ = make_conda()
     assert venv.location

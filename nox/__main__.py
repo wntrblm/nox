@@ -25,9 +25,9 @@ from nox import _options, tasks, workflow
 from nox.logger import setup_logging
 
 try:
-    import importlib.metadata as metadata  # type: ignore
+    import importlib.metadata as metadata
 except ImportError:  # pragma: no cover
-    import importlib_metadata as metadata  # type: ignore
+    import importlib_metadata as metadata
 
 
 def main() -> None:

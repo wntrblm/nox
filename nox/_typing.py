@@ -1,4 +1,4 @@
-__all__ = ["TYPE_CHECKING", "NoReturn", "Python"]
+__all__ = ["TYPE_CHECKING", "ClassVar", "NoReturn", "Python"]
 
 import typing as _typing
 
@@ -15,6 +15,15 @@ try:
 except ImportError:
     try:
         from typing_extensions import NoReturn
+    except ImportError:
+        pass
+
+
+try:
+    from typing import ClassVar
+except ImportError:
+    try:
+        from typing_extensions import ClassVar
     except ImportError:
         pass
 
