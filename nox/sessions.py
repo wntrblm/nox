@@ -341,7 +341,7 @@ class Session:
                 may be specified as the appropriate string (same as used for
                 ``nox -s``) or using the function object.
         """
-        self._runner.manifest.notify(target)  # type: ignore
+        self._runner.manifest.notify(target)
 
     def log(self, *args: Any, **kwargs: Any) -> None:
         """Outputs a log during the session."""
@@ -363,7 +363,7 @@ class SessionRunner:
         signatures: List[str],
         func: Func,
         global_config: argparse.Namespace,
-        manifest: "Optional[Manifest]" = None,
+        manifest: "Manifest",
     ) -> None:
         self.name = name
         self.signatures = signatures
