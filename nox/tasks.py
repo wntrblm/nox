@@ -79,7 +79,9 @@ def merge_noxfile_options(
     return module
 
 
-def discover_manifest(module: types.ModuleType, global_config: Namespace) -> Manifest:
+def discover_manifest(
+    module: Union[types.ModuleType, int], global_config: Namespace
+) -> Manifest:
     """Discover all session functions in the noxfile module.
 
     Args:
