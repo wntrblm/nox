@@ -83,6 +83,14 @@ class TestSession:
         assert session.bin is runner.venv.bin
         assert session.python is runner.func.python
 
+    def test_virtualenv_as_none(self):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv = None
+
+        with pytest.raises(ValueError, match="virtualenv"):
+            _ = session.virtualenv
+
     def test_interactive(self):
         session, runner = self.make_session_and_runner()
 
