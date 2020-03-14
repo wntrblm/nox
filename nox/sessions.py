@@ -318,7 +318,7 @@ class Session:
 
         .. _pip: https://pip.readthedocs.org
         """
-        if not isinstance(self.virtualenv, (CondaEnv, VirtualEnv)):
+        if not isinstance(self._runner.venv, (CondaEnv, VirtualEnv)):
             raise ValueError(
                 "A session without a virtualenv can not install dependencies."
             )
