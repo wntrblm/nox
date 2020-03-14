@@ -131,9 +131,9 @@ class Session:
         return self._runner.func.python
 
     @property
-    def bin(self) -> str:
+    def bin(self) -> Optional[str]:
         """The bin directory for the virtualenv."""
-        return self.virtualenv.bin  # type: ignore
+        return self.virtualenv.bin
 
     @property
     def interactive(self) -> bool:
