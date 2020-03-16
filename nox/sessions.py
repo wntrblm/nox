@@ -109,7 +109,7 @@ class Session:
     @property
     def env(self) -> dict:
         """A dictionary of environment variables to pass into all commands."""
-        return self._runner.venv.env  # type: ignore
+        return self.virtualenv.env
 
     @property
     def posargs(self) -> List[str]:
@@ -118,9 +118,12 @@ class Session:
         return self._runner.global_config.posargs
 
     @property
-    def virtualenv(self) -> Optional[ProcessEnv]:
+    def virtualenv(self) -> ProcessEnv:
         """The virtualenv that all commands are run in."""
-        return self._runner.venv
+        venv = self._runner.venv
+        if venv is None:
+            raise ValueError("A virtualenv has not been created for this session")
+        return venv
 
     @property
     def python(self) -> Optional[Union[str, Sequence[str], bool]]:
@@ -128,9 +131,9 @@ class Session:
         return self._runner.func.python
 
     @property
-    def bin(self) -> str:
+    def bin(self) -> Optional[str]:
         """The bin directory for the virtualenv."""
-        return self._runner.venv.bin  # type: ignore
+        return self.virtualenv.bin
 
     @property
     def interactive(self) -> bool:
@@ -233,10 +236,10 @@ class Session:
             kwargs.setdefault("external", "error")
 
         # Allow all external programs when running outside a sandbox.
-        if not self.virtualenv.is_sandboxed:  # type: ignore
+        if not self.virtualenv.is_sandboxed:
             kwargs["external"] = True
 
-        if args[0] in self.virtualenv.allowed_globals:  # type: ignore
+        if args[0] in self.virtualenv.allowed_globals:
             kwargs["external"] = True
 
         # Run a shell command.
@@ -268,7 +271,8 @@ class Session:
 
         .. _conda install:
         """
-        if not isinstance(self.virtualenv, CondaEnv):
+        venv = self._runner.venv
+        if not isinstance(venv, CondaEnv):
             raise ValueError(
                 "A session without a conda environment can not install dependencies from conda."
             )
@@ -283,7 +287,7 @@ class Session:
             "install",
             "--yes",
             "--prefix",
-            self.virtualenv.location,
+            venv.location,
             *args,
             external="error",
             **kwargs
@@ -314,7 +318,7 @@ class Session:
 
         .. _pip: https://pip.readthedocs.org
         """
-        if not isinstance(self.virtualenv, (CondaEnv, VirtualEnv)):
+        if not isinstance(self._runner.venv, (CondaEnv, VirtualEnv)):
             raise ValueError(
                 "A session without a virtualenv can not install dependencies."
             )
@@ -337,7 +341,7 @@ class Session:
                 may be specified as the appropriate string (same as used for
                 ``nox -s``) or using the function object.
         """
-        self._runner.manifest.notify(target)  # type: ignore
+        self._runner.manifest.notify(target)
 
     def log(self, *args: Any, **kwargs: Any) -> None:
         """Outputs a log during the session."""
@@ -359,7 +363,7 @@ class SessionRunner:
         signatures: List[str],
         func: Func,
         global_config: argparse.Namespace,
-        manifest: "Optional[Manifest]" = None,
+        manifest: "Manifest",
     ) -> None:
         self.name = name
         self.signatures = signatures

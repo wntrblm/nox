@@ -18,7 +18,7 @@ from unittest import mock
 import nox
 import pytest
 from nox._decorators import Func
-from nox.manifest import Manifest, _null_session_func
+from nox.manifest import KeywordLocals, Manifest, _null_session_func
 
 
 def create_mock_sessions():
@@ -301,3 +301,14 @@ def test_null_session_function():
     session = mock.Mock(spec=("skip",))
     _null_session_func(session)
     assert session.skip.called
+
+
+def test_keyword_locals_length():
+    kw = KeywordLocals({"foo", "bar"})
+    assert len(kw) == 2
+
+
+def test_keyword_locals_iter():
+    values = ["foo", "bar"]
+    kw = KeywordLocals(values)
+    assert list(kw) == values

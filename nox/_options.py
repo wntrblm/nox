@@ -134,7 +134,7 @@ def _session_completer(
 ) -> List[str]:
     global_config = parsed_args
     module = load_nox_module(global_config)
-    manifest = discover_manifest(module, global_config)  # type: ignore
+    manifest = discover_manifest(module, global_config)
     filtered_manifest = filter_manifest(manifest, global_config)
     if isinstance(filtered_manifest, int):
         return []

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import collections.abc
 import itertools
 from typing import Any, Iterable, Iterator, List, Mapping, Set, Tuple, Union
 
@@ -243,7 +244,7 @@ class Manifest:
         raise ValueError("Session {} not found.".format(session))
 
 
-class KeywordLocals:
+class KeywordLocals(collections.abc.Mapping):
     """Eval locals using keywords.
 
     When looking up a local variable the variable name is compared against
@@ -261,11 +262,17 @@ class KeywordLocals:
                 return True
         return False
 
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._keywords)
+
+    def __len__(self) -> int:
+        return len(self._keywords)
+
 
 def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
     """See if an expression matches the given set of keywords."""
     locals = KeywordLocals(set(keywords))
-    return eval(expression, {}, locals)  # type: ignore
+    return eval(expression, {}, locals)
 
 
 def _null_session_func_(session: Session) -> None:
