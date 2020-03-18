@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import shutil
 
 import nox
 
@@ -79,10 +80,10 @@ def lint(session):
     session.run("flake8", "nox", *files)
 
 
-@nox.session(python="3.8")
+@nox.session(python="3.7")
 def docs(session):
     """Build the documentation."""
-    session.run("rm", "-rf", "docs/_build", external=True)
+    shutil.rmtree("docs/_build", ignore_errors=True)
     session.install("-r", "requirements-test.txt")
     session.install(".")
     session.cd("docs")
