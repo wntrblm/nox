@@ -19,12 +19,23 @@ import nox
 ON_APPVEYOR = os.environ.get("APPVEYOR") == "True"
 
 
+def is_python_version(session, version):
+    if not version.startswith(session.python):
+        return False
+    py_version = session.run("python", "-V", silent=True)
+    py_version = py_version.partition(" ")[2].strip()
+    return py_version.startswith(version)
+
+
 @nox.session(python=["3.5", "3.6", "3.7", "3.8"])
 def tests(session):
     """Run test suite with pytest."""
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
     tests = session.posargs or ["tests/"]
+    if is_python_version(session, "3.6.0"):
+        session.run("pytest", *tests)
+        return
     session.run(
         "pytest", "--cov=nox", "--cov-config", ".coveragerc", "--cov-report=", *tests
     )
@@ -67,13 +78,7 @@ def blacken(session):
 @nox.session(python="3.8")
 def lint(session):
     session.install("flake8==3.7.8", "black==19.3b0", "mypy==0.720")
-    session.run(
-        "mypy",
-        "--disallow-untyped-defs",
-        "--warn-unused-ignores",
-        "--ignore-missing-imports",
-        "nox",
-    )
+    session.run("mypy", "--disallow-untyped-defs", "--warn-unused-ignores", "nox")
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", "--check", *files)
     session.run("flake8", "nox", *files)
