@@ -183,10 +183,8 @@ class CondaEnv(ProcessEnv):
     @property
     def bin(self) -> str:
         """Returns the location of the conda env's bin folder."""
-        if _SYSTEM == "Windows":
-            return os.path.join(self.location, "Scripts")
-        else:
-            return os.path.join(self.location, "bin")
+        bin_folder = "Scripts" if _SYSTEM == "Windows" else "bin"
+        return os.path.join(self.location, bin_folder)
 
     def create(self) -> bool:
         """Create the conda env."""
