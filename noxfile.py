@@ -38,7 +38,13 @@ def tests(session):
         session.run("pytest", *tests)
         return
     session.run(
-        "pytest", "--cov=nox", "--cov-config", ".coveragerc", "--cov-report=", *tests
+        "pytest",
+        "--cov=nox",
+        "--cov-config",
+        ".coveragerc",
+        "--cov-report=",
+        *tests,
+        env={"COVERAGE_FILE": ".coverage.{}".format(session.python)}
     )
     session.notify("cover")
 
@@ -63,6 +69,7 @@ def cover(session):
         fail_under = "--fail-under=99"
     else:
         fail_under = "--fail-under=100"
+    session.run("coverage", "combine")
     session.run("coverage", "report", fail_under, "--show-missing")
     session.run("coverage", "erase")
 
