@@ -137,6 +137,16 @@ def test_filter_by_name_not_found():
         manifest.filter_by_name(("baz",))
 
 
+def test_filter_by_python_interpreter():
+    sessions = create_mock_sessions()
+    manifest = Manifest(sessions, mock.sentinel.CONFIG)
+    manifest["foo"].func.python = "3.8"
+    manifest["bar"].func.python = "3.7"
+    manifest.filter_by_python_interpreter(("3.8",))
+    assert "foo" in manifest
+    assert "bar" not in manifest
+
+
 def test_filter_by_keyword():
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, mock.sentinel.CONFIG)
