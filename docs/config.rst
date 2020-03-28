@@ -274,7 +274,7 @@ If you only want to run one of the parametrized sessions, see :ref:`running_para
 Giving friendly names to parametrized sessions
 ----------------------------------------------
 
-The automatically generated names for parametrized sessions, such as ``tests(django='1.9', database='postgres')``, can be long and unwieldy to work with even with using :ref:`keyword filtering <opt-sessions-and-keywords>`. You can give parametrized sessions custom IDs to help in this scenario. These two examples are equivalent:
+The automatically generated names for parametrized sessions, such as ``tests(django='1.9', database='postgres')``, can be long and unwieldy to work with even with using :ref:`keyword filtering <opt-sessions-pythons-and-keywords>`. You can give parametrized sessions custom IDs to help in this scenario. These two examples are equivalent:
 
 .. code-block:: python
 
@@ -372,8 +372,9 @@ Or, if you wanted to provide a set of sessions that are run by default:
 The following options can be specified in the Noxfile:
 
 * ``nox.options.envdir`` is equivalent to specifying :ref:`--envdir <opt-envdir>`.
-* ``nox.options.sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-and-keywords>`.
-* ``nox.options.keywords`` is equivalent to specifying :ref:`-k or --keywords <opt-sessions-and-keywords>`.
+* ``nox.options.sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-pythons-and-keywords>`.
+* ``nox.options.pythons`` is equivalent to specifying :ref:`-p or --pythons <opt-sessions-pythons-and-keywords>`.
+* ``nox.options.keywords`` is equivalent to specifying :ref:`-k or --keywords <opt-sessions-pythons-and-keywords>`.
 * ``nox.options.reuse_existing_virtualenvs`` is equivalent to specifying :ref:`--reuse-existing-virtualenvs <opt-reuse-existing-virtualenvs>`. You can force this off by specifying ``--no-reuse-existing-virtualenvs`` during invocation.
 * ``nox.options.stop_on_first_error`` is equivalent to specifying :ref:`--stop-on-first-error <opt-stop-on-first-error>`. You can force this off by specifying ``--no-stop-on-first-error`` during invocation.
 * ``nox.options.error_on_missing_interpreters`` is equivalent to specifying :ref:`--error-on-missing-interpreters <opt-error-on-missing-interpreters>`. You can force this off by specifying ``--no-error-on-missing-interpreters`` during invocation.

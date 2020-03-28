@@ -45,7 +45,7 @@ You can run every session by just executing ``nox`` without any arguments:
 The order that sessions are executed is the order that they appear in the Noxfile.
 
 
-.. _opt-sessions-and-keywords:
+.. _opt-sessions-pythons-and-keywords:
 
 Specifying one or more sessions
 -------------------------------
@@ -66,6 +66,13 @@ You can also use the ``NOXSESSION`` environment variable:
     NOXSESSION=lint,tests nox
 
 Nox will run these sessions in the same order they are specified.
+
+If you have a :ref:`configured session's virtualenv <virtualenv config>`, you can choose to run only sessions with given Python versions:
+
+.. code-block:: console
+
+    nox --python 3.8
+    nox -p 3.7 3.8
 
 You can also use `pytest-style keywords`_ to filter test sessions:
 
