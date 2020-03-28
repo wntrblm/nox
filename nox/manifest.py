@@ -15,7 +15,7 @@
 import argparse
 import collections.abc
 import itertools
-from typing import Any, Iterable, Iterator, List, Mapping, Set, Tuple, Union
+from typing import Any, Iterable, Iterator, List, Mapping, Sequence, Set, Tuple, Union
 
 from nox._decorators import Call, Func
 from nox.sessions import Session, SessionRunner
@@ -131,6 +131,16 @@ class Manifest:
         missing_sessions = set(specified_sessions) - all_sessions
         if missing_sessions:
             raise KeyError("Sessions not found: {}".format(", ".join(missing_sessions)))
+
+    def filter_by_python_interpreter(self, specified_pythons: Sequence[str]) -> None:
+        """Filter sessions in the queue based on the user-specified
+        python interpreter versions.
+
+        Args:
+            specified_pythons (Sequence[str]): A list of specified
+                python interpreter versions.
+        """
+        self._queue = [x for x in self._queue if x.func.python in specified_pythons]
 
     def filter_by_keywords(self, keywords: str) -> None:
         """Filter sessions using pytest-like keyword expressions.

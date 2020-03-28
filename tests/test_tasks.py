@@ -35,6 +35,13 @@ def session_func():
 session_func.python = None
 
 
+def session_func_with_python():
+    pass
+
+
+session_func_with_python.python = "3.8"
+
+
 def test_load_nox_module():
     config = _options.options.namespace(noxfile=os.path.join(RESOURCES, "noxfile.py"))
     noxfile_module = tasks.load_nox_module(config)
@@ -91,7 +98,7 @@ def test_discover_session_functions_decorator():
 
 
 def test_filter_manifest():
-    config = _options.options.namespace(sessions=(), keywords=())
+    config = _options.options.namespace(sessions=(), pythons=(), keywords=())
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
@@ -99,14 +106,25 @@ def test_filter_manifest():
 
 
 def test_filter_manifest_not_found():
-    config = _options.options.namespace(sessions=("baz",), keywords=())
+    config = _options.options.namespace(sessions=("baz",), pythons=(), keywords=())
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value == 3
 
 
+def test_filter_manifest_pythons():
+    config = _options.options.namespace(sessions=(), pythons=("3.8",), keywords=())
+    manifest = Manifest(
+        {"foo": session_func_with_python, "bar": session_func, "baz": session_func},
+        config,
+    )
+    return_value = tasks.filter_manifest(manifest, config)
+    assert return_value is manifest
+    assert len(manifest) == 1
+
+
 def test_filter_manifest_keywords():
-    config = _options.options.namespace(sessions=(), keywords="foo or bar")
+    config = _options.options.namespace(sessions=(), pythons=(), keywords="foo or bar")
     manifest = Manifest(
         {"foo": session_func, "bar": session_func, "baz": session_func}, config
     )

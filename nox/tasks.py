@@ -125,6 +125,12 @@ def filter_manifest(
             logger.error(exc.args[0])
             return 3
 
+    # Filter by python interpreter versions.
+    # This function never errors, but may cause an empty list of sessions
+    # (which is an error condition later).
+    if global_config.pythons:
+        manifest.filter_by_python_interpreter(global_config.pythons)
+
     # Filter by keywords.
     # This function never errors, but may cause an empty list of sessions
     # (which is an error condition later).
