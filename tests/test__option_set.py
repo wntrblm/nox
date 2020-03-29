@@ -22,7 +22,12 @@ from nox import _option_set, _options
 class TestOptionSet:
     def test_namespace(self):
         optionset = _option_set.OptionSet()
-        optionset.add_options(_option_set.Option("option_a", default="meep"))
+        optionset.add_groups(_option_set.OptionGroup("group_a"))
+        optionset.add_options(
+            _option_set.Option(
+                "option_a", group=optionset.groups["group_a"], default="meep"
+            )
+        )
 
         namespace = optionset.namespace()
 
@@ -32,7 +37,12 @@ class TestOptionSet:
 
     def test_namespace_values(self):
         optionset = _option_set.OptionSet()
-        optionset.add_options(_option_set.Option("option_a", default="meep"))
+        optionset.add_groups(_option_set.OptionGroup("group_a"))
+        optionset.add_options(
+            _option_set.Option(
+                "option_a", group=optionset.groups["group_a"], default="meep"
+            )
+        )
 
         namespace = optionset.namespace(option_a="moop")
 
