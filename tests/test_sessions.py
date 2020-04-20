@@ -290,7 +290,9 @@ class TestSession:
             )
 
     @pytest.mark.parametrize(
-        "version_constraint", ['no', 'yes', 'already_dbl_quoted'], ids="version_constraint={}".format
+        "version_constraint",
+        ["no", "yes", "already_dbl_quoted"],
+        ids="version_constraint={}".format,
     )
     def test_conda_install_non_default_kwargs(self, version_constraint):
         runner = nox.sessions.SessionRunner(
@@ -315,7 +317,7 @@ class TestSession:
             pkg_requirement = "urllib3<1.25"
             passed_arg = '"%s"' % pkg_requirement
         elif version_constraint == "already_dbl_quoted":
-            pkg_requirement = passed_arg = "\"urllib3<1.25\""
+            pkg_requirement = passed_arg = '"urllib3<1.25"'
         else:
             raise ValueError(version_constraint)
 
@@ -344,13 +346,13 @@ class TestSession:
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError, match="odd number of quotes"):
-            session.install("a\"a")
+            session.install('a"a')
 
     def test_install_bad_args_cannot_escape(self):
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError, match="Cannot escape"):
-            session.install("a\"o\"a")
+            session.install('a"o"a')
 
     def test_install_not_a_virtualenv(self):
         session, runner = self.make_session_and_runner()

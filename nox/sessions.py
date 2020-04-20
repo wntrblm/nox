@@ -76,7 +76,9 @@ def _dblquote_pkg_install_args(args):
     def _dblquote_pkg_install_arg(pkg_req_str):
         # sanity check: we need an even number of double-quotes
         if pkg_req_str.count('"') % 2 != 0:
-            raise ValueError("ill-formated argument with odd number of quotes: %s" % pkg_req_str)
+            raise ValueError(
+                "ill-formated argument with odd number of quotes: %s" % pkg_req_str
+            )
 
         if "<" in pkg_req_str or ">" in pkg_req_str:
             if pkg_req_str[0] == '"' and pkg_req_str[-1] == '"':
