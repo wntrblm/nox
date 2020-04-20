@@ -221,7 +221,10 @@ class TestSession:
             session.run("conda", "--version")
 
         run.assert_called_once_with(
-            ("conda", "--version"), external=True, env=mock.ANY, paths=["/path/to/env/bin"]
+            ("conda", "--version"),
+            external=True,
+            env=mock.ANY,
+            paths=["/path/to/env/bin"],
         )
 
     def test_run_external_with_error_on_external_run(self):

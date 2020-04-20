@@ -85,7 +85,9 @@ def run(
     if log:
         logger.info(full_cmd)
 
-        is_external_tool = paths is not None and not any(cmd_path.startswith(path) for path in paths)
+        is_external_tool = paths is not None and not any(
+            cmd_path.startswith(path) for path in paths
+        )
         if is_external_tool:
             if external == "error":
                 logger.error(

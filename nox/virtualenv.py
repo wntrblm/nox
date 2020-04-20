@@ -59,7 +59,9 @@ class ProcessEnv:
             self.env.pop(key, None)
 
         if self.bin_paths:
-            self.env["PATH"] = os.pathsep.join(self.bin_paths + [self.env.get("PATH", "")])
+            self.env["PATH"] = os.pathsep.join(
+                self.bin_paths + [self.env.get("PATH", "")]
+            )
 
     @property
     def bin_paths(self) -> Optional[List[str]]:
