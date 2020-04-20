@@ -17,7 +17,7 @@ import platform
 import re
 import shutil
 import sys
-from typing import Any, Mapping, Optional, Tuple, Union
+from typing import Any, Mapping, Optional, Tuple, Union, List
 
 import nox.command
 import py
@@ -48,8 +48,8 @@ class ProcessEnv:
     # Special programs that aren't included in the environment.
     allowed_globals = ()  # type: _typing.ClassVar[Tuple[Any, ...]]
 
-    def __init__(self, bin: None = None, env: Mapping[str, str] = None) -> None:
-        self._bin = bin
+    def __init__(self, bin_paths: None = None, env: Mapping[str, str] = None) -> None:
+        self._bin_paths = bin_paths
         self.env = os.environ.copy()
 
         if env is not None:
@@ -58,12 +58,12 @@ class ProcessEnv:
         for key in _BLACKLISTED_ENV_VARS:
             self.env.pop(key, None)
 
-        if self.bin:
-            self.env["PATH"] = os.pathsep.join([self.bin, self.env.get("PATH", "")])
+        if self.bin_paths:
+            self.env["PATH"] = os.pathsep.join(self.bin_paths + [self.env.get("PATH", "")])
 
     @property
-    def bin(self) -> Optional[str]:
-        return self._bin
+    def bin_paths(self) -> Optional[List[str]]:
+        return self._bin_paths
 
     def create(self) -> bool:
         raise NotImplementedError("ProcessEnv.create should be overwitten in subclass")
@@ -181,12 +181,13 @@ class CondaEnv(ProcessEnv):
     _clean_location = _clean_location
 
     @property
-    def bin(self) -> str:
+    def bin_paths(self) -> List[str]:
         """Returns the location of the conda env's bin folder."""
+        # see https://docs.anaconda.com/anaconda/user-guide/tasks/integration/python-path/#examples
         if _SYSTEM == "Windows":
-            return os.path.join(self.location, "Scripts")
+            return [self.location, os.path.join(self.location, "Scripts")]
         else:
-            return os.path.join(self.location, "bin")
+            return [os.path.join(self.location, "bin")]
 
     def create(self) -> bool:
         """Create the conda env."""
@@ -329,12 +330,12 @@ class VirtualEnv(ProcessEnv):
         raise self._resolved
 
     @property
-    def bin(self) -> str:
+    def bin_paths(self) -> List[str]:
         """Returns the location of the virtualenv's bin folder."""
         if _SYSTEM == "Windows":
-            return os.path.join(self.location, "Scripts")
+            return [os.path.join(self.location, "Scripts")]
         else:
-            return os.path.join(self.location, "bin")
+            return [os.path.join(self.location, "bin")]
 
     def create(self) -> bool:
         """Create the virtualenv or venv."""

@@ -131,9 +131,9 @@ class Session:
         return self._runner.func.python
 
     @property
-    def bin(self) -> Optional[str]:
-        """The bin directory for the virtualenv."""
-        return self.virtualenv.bin
+    def bin_paths(self) -> Optional[List[str]]:
+        """The bin directories for the virtualenv."""
+        return self.virtualenv.bin_paths
 
     @property
     def interactive(self) -> bool:
@@ -243,7 +243,7 @@ class Session:
             kwargs["external"] = True
 
         # Run a shell command.
-        return nox.command.run(args, env=env, path=self.bin, **kwargs)
+        return nox.command.run(args, env=env, paths=self.bin_paths, **kwargs)
 
     def conda_install(self, *args: str, **kwargs: Any) -> None:
         """Install invokes `conda install`_ to install packages inside of the

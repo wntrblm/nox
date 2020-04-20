@@ -14,7 +14,7 @@
 
 import os
 import sys
-from typing import Any, Iterable, Optional, Sequence, Union
+from typing import Any, Iterable, Optional, Sequence, Union, List
 
 import py
 from nox.logger import logger
@@ -29,12 +29,12 @@ class CommandFailed(Exception):
         self.reason = reason
 
 
-def which(program: str, path: Optional[str]) -> str:
+def which(program: str, paths: Optional[List[str]]) -> str:
     """Finds the full path to an executable."""
     full_path = None
 
-    if path:
-        full_path = py.path.local.sysfind(program, paths=[path])
+    if paths:
+        full_path = py.path.local.sysfind(program, paths=paths)
 
     if full_path:
         return full_path.strpath
@@ -66,7 +66,7 @@ def run(
     *,
     env: Optional[dict] = None,
     silent: bool = False,
-    path: Optional[str] = None,
+    paths: Optional[List[str]] = None,
     success_codes: Optional[Iterable[int]] = None,
     log: bool = True,
     external: bool = False,
@@ -80,12 +80,12 @@ def run(
     cmd, args = args[0], args[1:]
     full_cmd = "{} {}".format(cmd, " ".join(args))
 
-    cmd_path = which(cmd, path)
+    cmd_path = which(cmd, paths)
 
     if log:
         logger.info(full_cmd)
 
-        is_external_tool = path is not None and not cmd_path.startswith(path)
+        is_external_tool = paths is not None and not any(cmd_path.startswith(path) for path in paths)
         if is_external_tool:
             if external == "error":
                 logger.error(
