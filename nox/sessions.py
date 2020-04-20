@@ -24,6 +24,7 @@ from typing import (
     Callable,
     Dict,
     Iterable,
+    Tuple,
     List,
     Mapping,
     Optional,
@@ -69,11 +70,11 @@ def _normalize_path(envdir: str, path: Union[str, bytes]) -> str:
     return full_path
 
 
-def _dblquote_pkg_install_args(args):
+def _dblquote_pkg_install_args(args: Tuple[str, ...]) -> Tuple[str, ...]:
     """Double-quote package install arguments in case they contain '>' or '<' symbols"""
 
     # routine used to handle a single arg
-    def _dblquote_pkg_install_arg(pkg_req_str):
+    def _dblquote_pkg_install_arg(pkg_req_str: str) -> str:
         # sanity check: we need an even number of double-quotes
         if pkg_req_str.count('"') % 2 != 0:
             raise ValueError(
@@ -96,7 +97,7 @@ def _dblquote_pkg_install_args(args):
             return pkg_req_str
 
     # double-quote all args that need to be and return the result
-    return [_dblquote_pkg_install_arg(a) for a in args]
+    return tuple(_dblquote_pkg_install_arg(a) for a in args)
 
 
 class _SessionQuit(Exception):
