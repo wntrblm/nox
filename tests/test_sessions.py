@@ -71,7 +71,7 @@ class TestSession:
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         runner.venv.env = {}
-        runner.venv.bin = "/no/bin/for/you"
+        runner.venv.bin_paths = ["/no/bin/for/you"]
         return nox.sessions.Session(runner=runner), runner
 
     def test_properties(self):
@@ -80,7 +80,7 @@ class TestSession:
         assert session.env is runner.venv.env
         assert session.posargs is runner.global_config.posargs
         assert session.virtualenv is runner.venv
-        assert session.bin is runner.venv.bin
+        assert session.bin_paths is runner.venv.bin_paths
         assert session.python is runner.func.python
 
     def test_virtualenv_as_none(self):
@@ -167,7 +167,7 @@ class TestSession:
             ("pip", "install", "spam"),
             env=mock.ANY,
             external=mock.ANY,
-            path=mock.ANY,
+            paths=mock.ANY,
             silent=mock.ANY,
         )
 
@@ -205,7 +205,7 @@ class TestSession:
             session.run(sys.executable, "--version")
 
         run.assert_called_once_with(
-            (sys.executable, "--version"), external=True, env=mock.ANY, path=None
+            (sys.executable, "--version"), external=True, env=mock.ANY, paths=None
         )
 
     def test_run_external_condaenv(self):
@@ -214,14 +214,14 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.allowed_globals = ("conda",)
         runner.venv.env = {}
-        runner.venv.bin = "/path/to/env/bin"
+        runner.venv.bin_paths = ["/path/to/env/bin"]
         runner.venv.create.return_value = True
 
         with mock.patch("nox.command.run", autospec=True) as run:
             session.run("conda", "--version")
 
         run.assert_called_once_with(
-            ("conda", "--version"), external=True, env=mock.ANY, path="/path/to/env/bin"
+            ("conda", "--version"), external=True, env=mock.ANY, paths=["/path/to/env/bin"]
         )
 
     def test_run_external_with_error_on_external_run(self):
@@ -236,7 +236,7 @@ class TestSession:
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.env = {}
-        runner.venv.bin = "/path/to/env/bin"
+        runner.venv.bin_paths = ["/path/to/env/bin"]
 
         runner.global_config.error_on_external_run = True
 
