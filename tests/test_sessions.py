@@ -290,7 +290,7 @@ class TestSession:
             )
 
     @pytest.mark.parametrize(
-        "version_constraint", [False, True], ids="version_constraint={}".format
+        "version_constraint", ['no', 'yes', 'already_dbl_quoted'], ids="version_constraint={}".format
     )
     def test_conda_install_non_default_kwargs(self, version_constraint):
         runner = nox.sessions.SessionRunner(
@@ -308,7 +308,17 @@ class TestSession:
             pass
 
         session = SessionNoSlots(runner=runner)
-        pkg_requirement = "urllib3<1.25" if version_constraint else "urllib3"
+
+        if version_constraint == "no":
+            pkg_requirement = passed_arg = "urllib3"
+        elif version_constraint == "yes":
+            pkg_requirement = "urllib3<1.25"
+            passed_arg = '"%s"' % pkg_requirement
+        elif version_constraint == "already_dbl_quoted":
+            pkg_requirement = passed_arg = "\"urllib3<1.25\""
+        else:
+            raise ValueError(version_constraint)
+
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.conda_install("requests", pkg_requirement, silent=False)
             run.assert_called_once_with(
@@ -318,17 +328,29 @@ class TestSession:
                 "--prefix",
                 "/path/to/conda/env",
                 "requests",
-                # double quoted if constraint is present
-                '"%s"' % pkg_requirement if version_constraint else pkg_requirement,
+                # this will be double quoted if unquoted constraint is present
+                passed_arg,
                 silent=False,
                 external="error",
             )
 
-    def test_install_bad_args(self):
+    def test_install_bad_args_no_arg(self):
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError, match="arg"):
             session.install()
+
+    def test_install_bad_args_odd_nb_double_quotes(self):
+        session, _ = self.make_session_and_runner()
+
+        with pytest.raises(ValueError, match="odd number of quotes"):
+            session.install("a\"a")
+
+    def test_install_bad_args_cannot_escape(self):
+        session, _ = self.make_session_and_runner()
+
+        with pytest.raises(ValueError, match="Cannot escape"):
+            session.install("a\"o\"a")
 
     def test_install_not_a_virtualenv(self):
         session, runner = self.make_session_and_runner()
