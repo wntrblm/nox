@@ -289,7 +289,8 @@ class TestSession:
                 external="error",
             )
 
-    def test_conda_install_non_default_kwargs(self):
+    @pytest.mark.parametrize("version_constraint", [False, True], ids="version_constraint={}".format)
+    def test_conda_install_non_default_kwargs(self, version_constraint):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -305,9 +306,9 @@ class TestSession:
             pass
 
         session = SessionNoSlots(runner=runner)
-
+        pkg_requirement = "urllib3<1.25" if version_constraint else "urllib3"
         with mock.patch.object(session, "_run", autospec=True) as run:
-            session.conda_install("requests", "urllib3", silent=False)
+            session.conda_install("requests", pkg_requirement, silent=False)
             run.assert_called_once_with(
                 "conda",
                 "install",
@@ -315,7 +316,8 @@ class TestSession:
                 "--prefix",
                 "/path/to/conda/env",
                 "requests",
-                "urllib3",
+                # double quoted if constraint is present
+                '"%s"' % pkg_requirement if version_constraint else pkg_requirement,
                 silent=False,
                 external="error",
             )
