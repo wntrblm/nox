@@ -74,14 +74,16 @@ def _dblquote_pkg_install_args(args):
 
     # routine used to handle a single arg
     def _dblquote_pkg_install_arg(pkg_req_str):
-        if '<' in pkg_req_str or '>' in pkg_req_str:
+        if "<" in pkg_req_str or ">" in pkg_req_str:
             if pkg_req_str[0] == '"':
                 # already double-quoted string
                 return pkg_req_str
             else:
                 # need to double-quote string
                 if '"' in pkg_req_str:
-                    raise ValueError("Cannot escape requirement string: %s" % pkg_req_str)
+                    raise ValueError(
+                        "Cannot escape requirement string: %s" % pkg_req_str
+                    )
                 return '"%s"' % pkg_req_str
         else:
             # no dangerous char: no need to double-quote string

@@ -289,7 +289,9 @@ class TestSession:
                 external="error",
             )
 
-    @pytest.mark.parametrize("version_constraint", [False, True], ids="version_constraint={}".format)
+    @pytest.mark.parametrize(
+        "version_constraint", [False, True], ids="version_constraint={}".format
+    )
     def test_conda_install_non_default_kwargs(self, version_constraint):
         runner = nox.sessions.SessionRunner(
             name="test",
