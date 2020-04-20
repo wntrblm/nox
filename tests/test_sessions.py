@@ -352,7 +352,7 @@ class TestSession:
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError, match="Cannot escape"):
-            session.install('a"o"a')
+            session.install('a"o"<a')
 
     def test_install_not_a_virtualenv(self):
         session, runner = self.make_session_and_runner()
