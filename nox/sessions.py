@@ -359,8 +359,8 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to install().")
 
-        # Escape args that should be
-        args = _dblquote_pkg_install_args(args)
+        # Escape args that should be: not needed and would make pip raise an InvalidRequirement
+        # args = _dblquote_pkg_install_args(args)
 
         if "silent" not in kwargs:
             kwargs["silent"] = True
