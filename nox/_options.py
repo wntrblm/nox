@@ -60,6 +60,20 @@ def _session_filters_merge_func(
     return getattr(command_args, key)
 
 
+def _venv_backend_merge_func(
+    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+) -> str:
+    """Ensure that there is always some venv_backend.
+
+    Args:
+        command_args (_option_set.Namespace): The options specified on the
+            command-line.
+        noxfile_Args (_option_set.Namespace): The options specified in the
+            Noxfile.
+    """
+    return command_args.venv_backend or noxfile_args.venv_backend or "virtualenv"
+
+
 def _envdir_merge_func(
     command_args: argparse.Namespace, noxfile_args: argparse.Namespace
 ) -> str:
@@ -145,6 +159,12 @@ def _session_completer(
     ]
 
 
+def _venv_backend_completer(
+    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
+) -> List[str]:
+    return ['virtualenv', 'conda', 'venv']
+
+
 options.add_options(
     _option_set.Option(
         "help",
@@ -220,6 +240,17 @@ options.add_options(
         action="store_true",
         help="Logs the output of all commands run including commands marked silent.",
         noxfile=True,
+    ),
+    _option_set.Option(
+        "venv_backend",
+        "-vb",
+        "--venv_backend",
+        group=options.groups["secondary"],
+        noxfile=True,
+        merge_func=_venv_backend_merge_func,
+        help="Virtual environment backend to use by default for nox sessions, this is ``'virtualenv'`` by default but "
+             "any of ``('virtualenv', 'conda', 'venv')`` are accepted.",
+        completer=_venv_backend_completer,
     ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",

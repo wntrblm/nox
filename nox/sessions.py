@@ -398,21 +398,22 @@ class SessionRunner:
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
-        if not self.func.venv_backend or self.func.venv_backend == "virtualenv":
+        backend = self.func.venv_backend or self.global_config.venv_backend
+        if backend == "virtualenv":
             self.venv = VirtualEnv(
                 path,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
-        elif self.func.venv_backend == "conda":
+        elif backend == "conda":
             self.venv = CondaEnv(
                 path,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
-        elif self.func.venv_backend == "venv":
+        elif backend == "venv":
             self.venv = VirtualEnv(
                 path,
                 interpreter=self.func.python,  # type: ignore
@@ -423,7 +424,7 @@ class SessionRunner:
         else:
             raise ValueError(
                 "Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{}'.".format(
-                    self.func.venv_backend
+                    backend
                 )
             )
 
