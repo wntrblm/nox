@@ -29,7 +29,7 @@ from typing import (
     Optional,
     Sequence,
     Union,
-    Tuple
+    Tuple,
 )
 
 import nox.command
