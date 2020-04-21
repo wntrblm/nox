@@ -257,7 +257,7 @@ class CondaEnv(ProcessEnv):
 
     @staticmethod
     def is_offline():
-        return not _is_connected(url='https://repo.anaconda.com')
+        return not _is_connected(url="https://repo.anaconda.com")
 
 
 class VirtualEnv(ProcessEnv):

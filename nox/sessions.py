@@ -245,7 +245,9 @@ class Session:
         # Run a shell command.
         return nox.command.run(args, env=env, path=self.bin, **kwargs)
 
-    def conda_install(self, *args: str, auto_offline: bool = True, **kwargs: Any) -> None:
+    def conda_install(
+        self, *args: str, auto_offline: bool = True, **kwargs: Any
+    ) -> None:
         """Install invokes `conda install`_ to install packages inside of the
         session's environment.
 
@@ -286,7 +288,7 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        extraopts = ('--offline', ) if auto_offline and venv.is_offline() else ()
+        extraopts = ("--offline",) if auto_offline and venv.is_offline() else ()
 
         self._run(
             "conda",
