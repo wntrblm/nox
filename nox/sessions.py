@@ -399,7 +399,7 @@ class SessionRunner:
         )
 
         backend = self.func.venv_backend or self.global_config.venv_backend
-        if backend == "virtualenv":
+        if backend is None or backend == "virtualenv":
             self.venv = VirtualEnv(
                 path,
                 interpreter=self.func.python,  # type: ignore
