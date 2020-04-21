@@ -256,8 +256,12 @@ class CondaEnv(ProcessEnv):
         return True
 
     @staticmethod
-    def is_offline() -> bool:
-        return not _is_connected(url="https://repo.anaconda.com")
+    def is_offline(dns_check_only: bool = False) -> bool:
+        """Return `True` if `https://repo.anaconda.com` is unreachable."""
+        if dns_check_only:
+            return not _is_connected(hostname="repo.anaconda.com")
+        else:
+            return not _is_connected(url="https://repo.anaconda.com")
 
 
 class VirtualEnv(ProcessEnv):
