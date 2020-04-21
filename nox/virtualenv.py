@@ -169,7 +169,7 @@ def _is_connected(hostname: str = None, url: str = None) -> bool:
             # HTTP resolution, compliant with http proxy env settings
             code = requests.get(url).status_code
             assert code is not None
-    except:  # pragma: no cover
+    except:  # pragma: no cover # noqa E722
         return False
     else:
         return True
