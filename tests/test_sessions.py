@@ -307,6 +307,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
+        runner.venv.is_offline = lambda: False
 
         class SessionNoSlots(nox.sessions.Session):
             pass
