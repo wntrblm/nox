@@ -288,7 +288,13 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        extraopts = ("--offline",) if auto_offline and venv.is_offline() else ()
+        if auto_offline and venv.is_offline():
+            logger.warning(
+                "Automatically setting the `--offline` flag as conda repo seems unreachable."
+            )
+            extraopts = ("--offline",)
+        else:
+            extraopts = ()
 
         self._run(
             "conda",
