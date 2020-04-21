@@ -105,6 +105,24 @@ Then running ``nox --session tests`` will actually run all parametrized versions
     nox --session "tests(django='2.0')"
 
 
+.. opt-default-venv_backend:
+
+Changing the sessions default backend
+-------------------------------------
+
+By default nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``conda`` and ``venv``. You can change the default behaviour by using ``-vb <backend>`` or ``--venv_backend <backend>``. Supported names are ``('virtualenv', 'conda', 'venv')``.
+
+.. code-block:: console
+
+    nox -vb conda
+    nox --venv_backend conda
+
+
+You can also set this option in the Noxfile with ``nox.options.venv_backend``. In case both are provided, the commandline argument takes precedence.
+
+Note that using this option does not change the backend for sessions where ``venv_backend`` is explicitly set.
+
+
 .. _opt-reuse-existing-virtualenvs:
 
 Re-using virtualenvs
