@@ -258,7 +258,9 @@ class TestSession:
         with pytest.raises(ValueError, match="conda environment"):
             session.conda_install()
 
-    def test_conda_install(self):
+    @pytest.mark.parametrize("auto_offline", [False, True], ids="auto_offline={}".format)
+    @pytest.mark.parametrize("offline", [False, True], ids="offline={}".format)
+    def test_conda_install(self, auto_offline, offline):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -269,6 +271,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
+        runner.venv.is_offline = lambda: offline
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -276,12 +279,14 @@ class TestSession:
         session = SessionNoSlots(runner=runner)
 
         with mock.patch.object(session, "_run", autospec=True) as run:
-            session.conda_install("requests", "urllib3")
+            args = ('--offline',) if auto_offline and offline else ()
+            session.conda_install("requests", "urllib3", auto_offline=auto_offline)
             run.assert_called_once_with(
                 "conda",
                 "install",
                 "--yes",
                 "--prefix",
+                *args,
                 "/path/to/conda/env",
                 "requests",
                 "urllib3",

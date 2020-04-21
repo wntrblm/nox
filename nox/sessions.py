@@ -286,14 +286,14 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        if auto_offline and CondaEnv.is_offline():
-            args = ('--offline', ) + args
+        extraopts = ('--offline', ) if auto_offline and venv.is_offline() else ()
 
         self._run(
             "conda",
             "install",
             "--yes",
             "--prefix",
+            *extraopts,
             venv.location,
             *args,
             external="error",
