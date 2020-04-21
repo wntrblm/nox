@@ -105,7 +105,7 @@ Then running ``nox --session tests`` will actually run all parametrized versions
     nox --session "tests(django='2.0')"
 
 
-.. opt-default-venv_backend:
+.. _opt-default-venv-backend:
 
 Changing the sessions default backend
 -------------------------------------
