@@ -143,7 +143,7 @@ def _clean_location(self: "Union[CondaEnv, VirtualEnv]") -> bool:
     return True
 
 
-def _is_connected(hostname=None, url=None):
+def _is_connected(hostname=None, url=None) -> bool:
     """
     Returns True if an internet connection is present. Supports two kind of checks:
 
@@ -256,7 +256,7 @@ class CondaEnv(ProcessEnv):
         return True
 
     @staticmethod
-    def is_offline():
+    def is_offline() -> bool:
         return not _is_connected(url="https://repo.anaconda.com")
 
 
