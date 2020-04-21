@@ -15,7 +15,9 @@
 import os
 import platform
 import re
+import requests
 import shutil
+from socket import gethostbyname
 import sys
 from typing import Any, Mapping, Optional, Tuple, Union
 
@@ -141,6 +143,38 @@ def _clean_location(self: "Union[CondaEnv, VirtualEnv]") -> bool:
     return True
 
 
+def _is_connected(hostname=None, url=None):
+    """
+    Returns True if an internet connection is present. Supports two kind of checks:
+
+     - If a non-None `hostname` is provided, a DNS check is performed with `socket.gethostbyname`. This does
+       not guarantee network availability as a local DNS server acting as a cache could be present
+
+     - If a non-None `url` is provided, an HTTP(s) GET is performed with `requests.get`, so as to take into
+       account possible http proxy settings
+
+    Inspired by
+    https://stackoverflow.com/questions/20913411/test-if-an-internet-connection-is-present-in-python
+
+    :param hostname:
+    :param url:
+    :return:
+    """
+    try:
+        if hostname is not None:
+            # DNS resolution.
+            host = gethostbyname(hostname)
+            assert host is not None
+        if url is not None:
+            # HTTP resolution, compliant with http proxy env settings
+            code = requests.get(url).status_code
+            assert code is not None
+    except:
+        return False
+    else:
+        return True
+
+
 class CondaEnv(ProcessEnv):
     """Conda environemnt management class.
 
@@ -220,6 +254,10 @@ class CondaEnv(ProcessEnv):
         nox.command.run(cmd, silent=True, log=False)
 
         return True
+
+    @staticmethod
+    def is_offline():
+        return not _is_connected(url='https://repo.anaconda.com')
 
 
 class VirtualEnv(ProcessEnv):

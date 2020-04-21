@@ -245,7 +245,7 @@ class Session:
         # Run a shell command.
         return nox.command.run(args, env=env, path=self.bin, **kwargs)
 
-    def conda_install(self, *args: str, **kwargs: Any) -> None:
+    def conda_install(self, *args: str, auto_offline: bool = True, **kwargs: Any) -> None:
         """Install invokes `conda install`_ to install packages inside of the
         session's environment.
 
@@ -259,6 +259,10 @@ class Session:
 
             session.conda_install('--file', 'requirements.txt')
             session.conda_install('--file', 'requirements-dev.txt')
+
+        By default this method will detect when internet connection is not
+        available and will add the `--offline` flag automatically in that case.
+        To disable this behaviour, set `auto_offline=False`.
 
         To install the current package without clobbering conda-installed
         dependencies::
@@ -281,6 +285,9 @@ class Session:
 
         if "silent" not in kwargs:
             kwargs["silent"] = True
+
+        if auto_offline and CondaEnv.is_offline():
+            args = ('--offline', ) + args
 
         self._run(
             "conda",
