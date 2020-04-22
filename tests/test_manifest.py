@@ -333,3 +333,20 @@ def test_keyword_locals_iter():
     values = ["foo", "bar"]
     kw = KeywordLocals(values)
     assert list(kw) == values
+
+
+def test_no_venv_backend_but_some_pythons():
+    manifest = Manifest({}, create_mock_config())
+
+    # Define a session and add it to the manifest.
+    def my_session(session):
+        pass
+
+    # the session sets "no venv backend" but declares some pythons
+    my_session.python = ["3.7", "3.8"]
+    my_session.venv_backend = "none"
+
+    sessions = manifest.make_session("my_session", my_session)
+
+    # check that the pythons were correctly removed (a log warning is also emitted)
+    assert sessions[0].func.python is False
