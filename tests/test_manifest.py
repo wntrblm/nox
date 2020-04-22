@@ -18,7 +18,12 @@ from unittest import mock
 import nox
 import pytest
 from nox._decorators import Func
-from nox.manifest import KeywordLocals, Manifest, _null_session_func, WARN_PYTHONS_IGNORED
+from nox.manifest import (
+    KeywordLocals,
+    Manifest,
+    _null_session_func,
+    WARN_PYTHONS_IGNORED,
+)
 
 
 def create_mock_sessions():
