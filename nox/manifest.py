@@ -18,6 +18,7 @@ import itertools
 from typing import Any, Iterable, Iterator, List, Mapping, Sequence, Set, Tuple, Union
 
 from nox._decorators import Call, Func
+from nox.logger import logger
 from nox.sessions import Session, SessionRunner
 
 
@@ -169,6 +170,12 @@ class Manifest:
                 bound to this manifest and configuration.
         """
         sessions = []
+
+        # if backend is none we wont parametrize the pythons
+        backend = self._config.force_venv_backend or func.venv_backend or self._config.default_venv_backend
+        if backend == "none" and isinstance(func.python, (list, tuple, set)):
+            logger.warning("Running session '{}' with venv_backend='none', ignoring python={}".format(name, func.python))
+            func.python = False
 
         # If the func has the python attribute set to a list, we'll need
         # to expand them.

@@ -389,7 +389,9 @@ class SessionRunner:
         return self.signatures[0] if self.signatures else self.name
 
     def _create_venv(self) -> None:
-        if self.func.python is False:
+        backend = self.global_config.force_venv_backend or self.func.venv_backend or self.global_config.default_venv_backend
+
+        if backend == "none" or self.func.python is False:
             self.venv = ProcessEnv()
             return
 
@@ -398,7 +400,6 @@ class SessionRunner:
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
-        backend = self.global_config.force_venv_backend or self.func.venv_backend or self.global_config.default_venv_backend
         if backend is None or backend == "virtualenv":
             self.venv = VirtualEnv(
                 path,
