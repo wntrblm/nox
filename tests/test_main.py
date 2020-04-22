@@ -120,7 +120,10 @@ def test_main_no_venv(monkeypatch, capsys):
         nox.__main__.main()
         stdout, stderr = capsys.readouterr()
         assert stdout == "Noms, cheddar so good!\n"
-        assert "Session snack is set to run with venv_backend='none', IGNORING its python" in stderr
+        assert (
+            "Session snack is set to run with venv_backend='none', IGNORING its python"
+            in stderr
+        )
         assert "Session snack(cheese='cheddar') was successful." in stderr
         sys_exit.assert_called_once_with(0)
 
