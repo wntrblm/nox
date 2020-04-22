@@ -159,12 +159,6 @@ def _session_completer(
     ]
 
 
-def _venv_backend_completer(
-    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
-) -> List[str]:
-    return ["virtualenv", "conda", "venv"]
-
-
 options.add_options(
     _option_set.Option(
         "help",
@@ -250,7 +244,7 @@ options.add_options(
         merge_func=_venv_backend_merge_func,
         help="Virtual environment backend to use by default for nox sessions, this is ``'virtualenv'`` by default but "
         "any of ``('virtualenv', 'conda', 'venv')`` are accepted.",
-        completer=_venv_backend_completer,
+        choices=["virtualenv", "conda", "venv"]
     ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
