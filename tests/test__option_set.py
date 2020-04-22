@@ -72,15 +72,15 @@ class TestOptionSet:
         assert len(all_nox_sessions) == 0
 
     def test_venv_backend_completer(self):
-        parsed_args = _options.options.namespace(venv_backend=(), keywords=())
+        parsed_args = _options.options.namespace(venv_backend=())
         all_nox_venv_backends = _options._venv_backend_completer(
             prefix=None, parsed_args=parsed_args
         )
         assert set(all_nox_venv_backends) == {'venv', 'conda', 'virtualenv'}
 
     def test_venv_backend_completer_invalid_venv_backends(self):
-        parsed_args = _options.options.namespace(venv_backend=("baz",), keywords=())
-        all_nox_venv_backends = _options._session_completer(
+        parsed_args = _options.options.namespace(venv_backend=("baz",))
+        all_nox_venv_backends = _options._venv_backend_completer(
             prefix=None, parsed_args=parsed_args
         )
         assert len(all_nox_venv_backends) == 0
