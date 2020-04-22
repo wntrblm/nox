@@ -237,7 +237,7 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
         if WARN_PYTHONS_IGNORED in session.func.should_warn:
             logger.warning(
                 "Session {} is set to run with venv_backend='none', IGNORING its python={} parametrization. ".format(
-                    session.name, session.func.should_warn['python_ignored']
+                    session.name, session.func.should_warn[WARN_PYTHONS_IGNORED]
                 )
             )
 

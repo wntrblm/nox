@@ -90,8 +90,13 @@ def _force_venv_backend_merge_func(
             Noxfile.
     """
     if command_args.no_venv:
-        if command_args.force_venv_backend is not None and command_args.force_venv_backend != "none":
-            raise ValueError("You can not use `--no-venv` with a non-none `--force-venv-backend`")
+        if (
+            command_args.force_venv_backend is not None
+            and command_args.force_venv_backend != "none"
+        ):
+            raise ValueError(
+                "You can not use `--no-venv` with a non-none `--force-venv-backend`"
+            )
         else:
             return "none"
     else:
