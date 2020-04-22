@@ -246,6 +246,7 @@ class TestSession:
     def test_conda_install_bad_args(self):
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "dummy"
 
         with pytest.raises(ValueError, match="arg"):
             session.conda_install()
