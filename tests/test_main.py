@@ -70,6 +70,8 @@ def test_main_long_form_args():
         "--sessions",
         "1",
         "2",
+        "--venv_backend",
+        "venv",
         "--reuse-existing-virtualenvs",
         "--stop-on-first-error",
     ]
@@ -87,6 +89,7 @@ def test_main_long_form_args():
         assert config.noxfile == "noxfile.py"
         assert config.envdir.endswith(".other")
         assert config.sessions == ["1", "2"]
+        assert config.venv_backend == "venv"
         assert config.reuse_existing_virtualenvs is True
         assert config.stop_on_first_error is True
         assert config.posargs == []
@@ -94,7 +97,7 @@ def test_main_long_form_args():
 
 def test_main_short_form_args(monkeypatch):
     monkeypatch.setattr(
-        sys, "argv", [sys.executable, "-f", "noxfile.py", "-s", "1", "2", "-r"]
+        sys, "argv", [sys.executable, "-f", "noxfile.py", "-s", "1", "2", "-vb", "venv", "-r"]
     )
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
@@ -109,6 +112,7 @@ def test_main_short_form_args(monkeypatch):
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
         assert config.sessions == ["1", "2"]
+        assert config.venv_backend == "venv"
         assert config.reuse_existing_virtualenvs is True
 
 
