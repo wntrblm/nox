@@ -33,6 +33,7 @@ def session_func():
 
 
 session_func.python = None
+session_func.venv_backend = None
 
 
 def session_func_with_python():
@@ -40,6 +41,7 @@ def session_func_with_python():
 
 
 session_func_with_python.python = "3.8"
+session_func_with_python.venv_backend = None
 
 
 def test_load_nox_module():
