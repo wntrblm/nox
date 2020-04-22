@@ -138,6 +138,11 @@ You might work in a different environment than a project's default continuous in
 
 You can also set this option in the Noxfile with ``nox.options.force_venv_backend``. In case both are provided, the commandline argument takes precedence.
 
+Finally note that the ``--no-venv`` flag is a shortcut for ``--force-venv-backend none`` and allows to temporarily run all selected sessions on the current python interpreter (the one running nox).
+
+.. code-block:: console
+
+    nox --no-venv
 
 .. _opt-reuse-existing-virtualenvs:
 

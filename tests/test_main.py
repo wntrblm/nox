@@ -55,6 +55,7 @@ def test_main_no_args(monkeypatch):
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
         assert config.sessions is None
+        assert not config.no_venv
         assert not config.reuse_existing_virtualenvs
         assert not config.stop_on_first_error
         assert config.posargs == []
@@ -73,7 +74,8 @@ def test_main_long_form_args():
         "--default-venv-backend",
         "venv",
         "--force-venv-backend",
-        "conda",
+        "none",
+        "--no-venv",
         "--reuse-existing-virtualenvs",
         "--stop-on-first-error",
     ]
@@ -92,10 +94,25 @@ def test_main_long_form_args():
         assert config.envdir.endswith(".other")
         assert config.sessions == ["1", "2"]
         assert config.default_venv_backend == "venv"
-        assert config.force_venv_backend == "conda"
+        assert config.force_venv_backend == "none"
+        assert config.no_venv is True
         assert config.reuse_existing_virtualenvs is True
         assert config.stop_on_first_error is True
         assert config.posargs == []
+
+
+def test_main_no_venv_error():
+    # Check that -no-venv can not be set together with a non-none --force-venv-backend
+    sys.argv = [
+        sys.executable,
+        "--noxfile",
+        "noxfile.py",
+        "--force-venv-backend",
+        "conda",
+        "--no-venv",
+    ]
+    with pytest.raises(ValueError, match="You can not use"):
+        nox.__main__.main()
 
 
 def test_main_short_form_args(monkeypatch):

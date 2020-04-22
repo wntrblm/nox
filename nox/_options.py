@@ -89,7 +89,13 @@ def _force_venv_backend_merge_func(
         noxfile_Args (_option_set.Namespace): The options specified in the
             Noxfile.
     """
-    return command_args.force_venv_backend or noxfile_args.force_venv_backend
+    if command_args.no_venv:
+        if command_args.force_venv_backend is not None and command_args.force_venv_backend != "none":
+            raise ValueError("You can not use `--no-venv` with a non-none `--force-venv-backend`")
+        else:
+            return "none"
+    else:
+        return command_args.force_venv_backend or noxfile_args.force_venv_backend
 
 
 def _envdir_merge_func(
@@ -275,6 +281,15 @@ options.add_options(
         "backend declared in the nox file and ignoring the default backend. Any of ``('virtualenv', 'conda', 'venv')`` "
         "are accepted.",
         choices=["none", "virtualenv", "conda", "venv"],
+    ),
+    _option_set.Option(
+        "no_venv",
+        "--no-venv",
+        group=options.groups["secondary"],
+        default=False,
+        action="store_true",
+        help="Runs the selected sessions directly on the current interpreter, without creating a venv. This is an alias "
+        "for '--force-venv-backend none'.",
     ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",

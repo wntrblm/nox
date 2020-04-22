@@ -132,7 +132,7 @@ Will produce these sessions:
 
 Note that this expansion happens *before* parameterization occurs, so you can still parametrize sessions with multiple interpreters.
 
-If you want to disable virtualenv creation altogether, you can set ``python`` to ``False``, or set `venv_backend` to ``"none"``, both are equivalent.
+If you want to disable virtualenv creation altogether, you can set ``python`` to ``False``, or set ``venv_backend`` to ``"none"``, both are equivalent. Note that this can be done temporarily through the :ref:`--no-venv <opt-force-venv-backend>` commandline flag, too.
 
 .. code-block:: python
 
