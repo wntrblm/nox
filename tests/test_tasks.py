@@ -23,7 +23,7 @@ from unittest import mock
 import nox
 import pytest
 from nox import _options, sessions, tasks
-from nox.manifest import Manifest
+from nox.manifest import Manifest, WARN_PYTHONS_IGNORED
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 
@@ -43,6 +43,15 @@ def session_func_with_python():
 
 session_func_with_python.python = "3.8"
 session_func_with_python.venv_backend = None
+
+
+def session_func_venv_pythons_warning():
+    pass
+
+
+session_func_venv_pythons_warning.python = ["3.7"]
+session_func_venv_pythons_warning.venv_backend = "none"
+session_func_venv_pythons_warning.should_warn = {WARN_PYTHONS_IGNORED: ["3.7"]}
 
 
 def test_load_nox_module():
@@ -188,7 +197,8 @@ def test_verify_manifest_nonempty():
     assert return_value == manifest
 
 
-def test_run_manifest():
+@pytest.mark.parametrize("with_warnings", [False, True], ids="with_warnings={}".format)
+def test_run_manifest(with_warnings):
     # Set up a valid manifest.
     config = _options.options.namespace(stop_on_first_error=False)
     sessions_ = [
@@ -204,7 +214,11 @@ def test_run_manifest():
             session=mock_session, status=sessions.Status.SUCCESS
         )
         # we need the should_warn attribute, add some func
-        mock_session.func = session_func
+        if with_warnings:
+            mock_session.name = "hello"
+            mock_session.func = session_func_venv_pythons_warning
+        else:
+            mock_session.func = session_func
 
     # Run the manifest.
     results = tasks.run_manifest(manifest, global_config=config)

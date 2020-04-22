@@ -18,7 +18,7 @@ from unittest import mock
 import nox
 import pytest
 from nox._decorators import Func
-from nox.manifest import KeywordLocals, Manifest, _null_session_func
+from nox.manifest import KeywordLocals, Manifest, _null_session_func, WARN_PYTHONS_IGNORED
 
 
 def create_mock_sessions():
@@ -351,3 +351,4 @@ def test_no_venv_backend_but_some_pythons():
 
     # check that the pythons were correctly removed (a log warning is also emitted)
     assert sessions[0].func.python is False
+    assert sessions[0].func.should_warn == {WARN_PYTHONS_IGNORED: ["3.7", "3.8"]}
