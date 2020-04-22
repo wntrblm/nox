@@ -60,6 +60,7 @@ class Func(FunctionDecorator):
             name,
             self.venv_backend,
             self.venv_params,
+            self.should_warn
         )
 
 
@@ -72,6 +73,7 @@ class Call(Func):
             None,
             func.venv_backend,
             func.venv_params,
+            func.should_warn
         )
         self.param_spec = param_spec
         self.session_signature = "({})".format(param_spec)

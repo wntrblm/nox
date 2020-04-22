@@ -101,8 +101,32 @@ def test_main_long_form_args():
         assert config.posargs == []
 
 
+def test_main_no_venv(monkeypatch, capsys):
+    # Check that --no-venv overrides force_venv_backend
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "nox",
+            "--noxfile",
+            os.path.join(RESOURCES, "noxfile_pythons.py"),
+            "--no-venv",
+            "-s",
+            "snack(cheese='cheddar')",
+        ],
+    )
+
+    with mock.patch("sys.exit") as sys_exit:
+        nox.__main__.main()
+        stdout, stderr = capsys.readouterr()
+        assert stdout == "Noms, cheddar so good!\n"
+        assert "Session snack is set to run with venv_backend='none', IGNORING its python" in stderr
+        assert "Session snack(cheese='cheddar') was successful." in stderr
+        sys_exit.assert_called_once_with(0)
+
+
 def test_main_no_venv_error():
-    # Check that -no-venv can not be set together with a non-none --force-venv-backend
+    # Check that --no-venv can not be set together with a non-none --force-venv-backend
     sys.argv = [
         sys.executable,
         "--noxfile",
