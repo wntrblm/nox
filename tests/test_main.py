@@ -100,7 +100,21 @@ def test_main_long_form_args():
 
 def test_main_short_form_args(monkeypatch):
     monkeypatch.setattr(
-        sys, "argv", [sys.executable, "-f", "noxfile.py", "-s", "1", "2", "-db", "venv", "-fb", "conda", "-r"]
+        sys,
+        "argv",
+        [
+            sys.executable,
+            "-f",
+            "noxfile.py",
+            "-s",
+            "1",
+            "2",
+            "-db",
+            "venv",
+            "-fb",
+            "conda",
+            "-r",
+        ],
     )
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0

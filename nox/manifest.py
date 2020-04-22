@@ -172,9 +172,17 @@ class Manifest:
         sessions = []
 
         # if backend is none we wont parametrize the pythons
-        backend = self._config.force_venv_backend or func.venv_backend or self._config.default_venv_backend
+        backend = (
+            self._config.force_venv_backend
+            or func.venv_backend
+            or self._config.default_venv_backend
+        )
         if backend == "none" and isinstance(func.python, (list, tuple, set)):
-            logger.warning("Running session '{}' with venv_backend='none', ignoring python={}".format(name, func.python))
+            logger.warning(
+                "Running session '{}' with venv_backend='none', ignoring python={}".format(
+                    name, func.python
+                )
+            )
             func.python = False
 
         # If the func has the python attribute set to a list, we'll need
