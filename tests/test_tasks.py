@@ -34,6 +34,7 @@ def session_func():
 
 session_func.python = None
 session_func.venv_backend = None
+session_func.should_warn = dict()
 
 
 def session_func_with_python():
@@ -202,6 +203,8 @@ def test_run_manifest():
         mock_session.execute.return_value = sessions.Result(
             session=mock_session, status=sessions.Status.SUCCESS
         )
+        # we need the should_warn attribute, add some func
+        mock_session.func = session_func
 
     # Run the manifest.
     results = tasks.run_manifest(manifest, global_config=config)
@@ -230,6 +233,8 @@ def test_run_manifest_abort_on_first_failure():
         mock_session.execute.return_value = sessions.Result(
             session=mock_session, status=sessions.Status.FAILED
         )
+        # we need the should_warn attribute, add some func
+        mock_session.func = session_func
 
     # Run the manifest.
     results = tasks.run_manifest(manifest, global_config=config)
