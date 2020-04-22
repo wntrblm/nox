@@ -398,7 +398,7 @@ class SessionRunner:
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
-        backend = self.func.venv_backend or self.global_config.venv_backend
+        backend = self.global_config.force_venv_backend or self.func.venv_backend or self.global_config.default_venv_backend
         if backend is None or backend == "virtualenv":
             self.venv = VirtualEnv(
                 path,

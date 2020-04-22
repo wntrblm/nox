@@ -60,10 +60,10 @@ def _session_filters_merge_func(
     return getattr(command_args, key)
 
 
-def _venv_backend_merge_func(
+def _default_venv_backend_merge_func(
     command_args: argparse.Namespace, noxfile_args: argparse.Namespace
 ) -> str:
-    """Ensure that there is always some venv_backend.
+    """Merge default_venv_backend from command args and nox file. Default is "virtualenv".
 
     Args:
         command_args (_option_set.Namespace): The options specified on the
@@ -71,7 +71,21 @@ def _venv_backend_merge_func(
         noxfile_Args (_option_set.Namespace): The options specified in the
             Noxfile.
     """
-    return command_args.venv_backend or noxfile_args.venv_backend or "virtualenv"
+    return command_args.default_venv_backend or noxfile_args.default_venv_backend or "virtualenv"
+
+
+def _force_venv_backend_merge_func(
+    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+) -> str:
+    """Merge force_venv_backend from command args and nox file. Default is None.
+
+    Args:
+        command_args (_option_set.Namespace): The options specified on the
+            command-line.
+        noxfile_Args (_option_set.Namespace): The options specified in the
+            Noxfile.
+    """
+    return command_args.force_venv_backend or noxfile_args.force_venv_backend
 
 
 def _envdir_merge_func(
@@ -236,14 +250,26 @@ options.add_options(
         noxfile=True,
     ),
     _option_set.Option(
-        "venv_backend",
-        "-vb",
-        "--venv_backend",
+        "default_venv_backend",
+        "-db",
+        "--default-venv-backend",
         group=options.groups["secondary"],
         noxfile=True,
-        merge_func=_venv_backend_merge_func,
+        merge_func=_default_venv_backend_merge_func,
         help="Virtual environment backend to use by default for nox sessions, this is ``'virtualenv'`` by default but "
         "any of ``('virtualenv', 'conda', 'venv')`` are accepted.",
+        choices=["virtualenv", "conda", "venv"]
+    ),
+    _option_set.Option(
+        "force_venv_backend",
+        "-fb",
+        "--force-venv-backend",
+        group=options.groups["secondary"],
+        noxfile=True,
+        merge_func=_force_venv_backend_merge_func,
+        help="Virtual environment backend to force-use for all nox sessions in this run, overriding any other venv "
+        "backend declared in the nox file and ignoring the default backend. Any of ``('virtualenv', 'conda', 'venv')`` "
+        "are accepted.",
         choices=["virtualenv", "conda", "venv"]
     ),
     *_option_set.make_flag_pair(
