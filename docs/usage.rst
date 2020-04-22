@@ -110,17 +110,33 @@ Then running ``nox --session tests`` will actually run all parametrized versions
 Changing the sessions default backend
 -------------------------------------
 
-By default nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``conda`` and ``venv``. You can change the default behaviour by using ``-vb <backend>`` or ``--venv_backend <backend>``. Supported names are ``('virtualenv', 'conda', 'venv')``.
+By default nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``conda`` and ``venv`` as well as no backend (passthrough to whatever python environment nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
 
 .. code-block:: console
 
-    nox -vb conda
-    nox --venv_backend conda
+    nox -db conda
+    nox --default-venv-backend conda
 
 
-You can also set this option in the Noxfile with ``nox.options.venv_backend``. In case both are provided, the commandline argument takes precedence.
+You can also set this option in the Noxfile with ``nox.options.default_venv_backend``. In case both are provided, the commandline argument takes precedence.
 
 Note that using this option does not change the backend for sessions where ``venv_backend`` is explicitly set.
+
+
+.. _opt-force-venv-backend:
+
+Forcing the sessions backend
+----------------------------
+
+You might work in a different environment than a project's default continuous integration setttings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and nox file configuration. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
+
+.. code-block:: console
+
+    nox -fb conda
+    nox --force-venv-backend conda
+
+
+You can also set this option in the Noxfile with ``nox.options.force_venv_backend``. In case both are provided, the commandline argument takes precedence.
 
 
 .. _opt-reuse-existing-virtualenvs:
