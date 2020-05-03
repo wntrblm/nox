@@ -135,6 +135,16 @@ class Session:
         """The bin directory for the virtualenv."""
         return self.virtualenv.bin
 
+    def create_tmp(self) -> Optional[str]:
+        bin = self.virtualenv.bin
+        if bin is None:
+            raise ValueError("Cannot have a tmp if no bin")
+        updir = os.path.dirname(bin)
+        tmpdir = os.path.join(updir, 'tmp')
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        return tmpdir
+
     @property
     def interactive(self) -> bool:
         """Returns True if Nox is being run in an interactive session or False otherwise."""

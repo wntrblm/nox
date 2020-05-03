@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import os
 
 import nox
@@ -93,11 +94,14 @@ def lint(session):
 @nox.session(python="3.8")
 def docs(session):
     """Build the documentation."""
-    session.run("rm", "-rf", "docs/_build", external=True)
+    output_dir = os.path.join(session.create_tmp(), "output")
+    doctrees, html = map(functools.partial(os.path.join, output_dir),
+                         ["doctrees", "html"])
+    session.run("rm", "-rf", output_dir, external=True)
     session.install("-r", "requirements-test.txt")
     session.install(".")
     session.cd("docs")
-    sphinx_args = ["-b", "html", "-W", "-d", "_build/doctrees", ".", "_build/html"]
+    sphinx_args = ["-b", "html", "-W", "-d", doctrees, ".", html]
 
     if not session.interactive:
         sphinx_cmd = "sphinx-build"
@@ -106,3 +110,4 @@ def docs(session):
         sphinx_args.insert(0, "--open-browser")
 
     session.run(sphinx_cmd, *sphinx_args)
+    session.create_tmp()
