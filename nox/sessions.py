@@ -141,10 +141,10 @@ class Session:
         if bin is None:
             raise ValueError("Cannot have a tmp if no bin")
         updir = os.path.dirname(bin)
-        tmpdir = os.path.join(updir, 'tmp')
+        tmpdir = os.path.join(updir, "tmp")
         if not os.path.exists(tmpdir):
             os.mkdir(tmpdir)
-        self.env['TMPDIR'] = tmpdir
+        self.env["TMPDIR"] = tmpdir
         return tmpdir
 
     @property

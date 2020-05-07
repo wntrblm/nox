@@ -78,20 +78,20 @@ class TestSession:
     def test_create_tmp(self):
         session, runner = self.make_session_and_runner()
         with tempfile.TemporaryDirectory() as root:
-            bin = os.path.join(root, 'bin')
+            bin = os.path.join(root, "bin")
             runner.venv.bin = bin
             tmpdir = session.create_tmp()
-            assert session.env['TMPDIR'] == tmpdir
+            assert session.env["TMPDIR"] == tmpdir
             assert tmpdir.startswith(root)
 
     def test_create_tmp_twice(self):
         session, runner = self.make_session_and_runner()
         with tempfile.TemporaryDirectory() as root:
-            bin = os.path.join(root, 'bin')
+            bin = os.path.join(root, "bin")
             runner.venv.bin = bin
             session.create_tmp()
             tmpdir = session.create_tmp()
-            assert session.env['TMPDIR'] == tmpdir
+            assert session.env["TMPDIR"] == tmpdir
             assert tmpdir.startswith(root)
 
     def test_create_tmp_fail(self):

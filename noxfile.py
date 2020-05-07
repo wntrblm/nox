@@ -97,8 +97,9 @@ def lint(session):
 def docs(session):
     """Build the documentation."""
     output_dir = os.path.join(session.create_tmp(), "output")
-    doctrees, html = map(functools.partial(os.path.join, output_dir),
-                         ["doctrees", "html"])
+    doctrees, html = map(
+        functools.partial(os.path.join, output_dir), ["doctrees", "html"]
+    )
     session.run("rm", "-rf", output_dir, external=True)
     session.install("-r", "requirements-test.txt")
     session.install(".")
