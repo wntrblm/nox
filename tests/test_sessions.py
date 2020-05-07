@@ -98,7 +98,7 @@ class TestSession:
         session, runner = self.make_session_and_runner()
         runner.venv.bin = None
         with pytest.raises(ValueError):
-            tmpdir = session.create_tmp()
+            session.create_tmp()
 
     def test_properties(self):
         session, runner = self.make_session_and_runner()
