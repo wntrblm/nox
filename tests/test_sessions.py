@@ -16,6 +16,7 @@ import argparse
 import logging
 import os
 import sys
+import tempfile
 from unittest import mock
 
 import nox.command
@@ -73,6 +74,31 @@ class TestSession:
         runner.venv.env = {}
         runner.venv.bin = "/no/bin/for/you"
         return nox.sessions.Session(runner=runner), runner
+
+    def test_create_tmp(self):
+        session, runner = self.make_session_and_runner()
+        with tempfile.TemporaryDirectory() as root:
+            bin = os.path.join(root, 'bin')
+            runner.venv.bin = bin
+            tmpdir = session.create_tmp()
+            assert session.env['TMPDIR'] == tmpdir
+            assert tmpdir.startswith(root)
+
+    def test_create_tmp_twice(self):
+        session, runner = self.make_session_and_runner()
+        with tempfile.TemporaryDirectory() as root:
+            bin = os.path.join(root, 'bin')
+            runner.venv.bin = bin
+            session.create_tmp()
+            tmpdir = session.create_tmp()
+            assert session.env['TMPDIR'] == tmpdir
+            assert tmpdir.startswith(root)
+
+    def test_create_tmp_fail(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv.bin = None
+        with pytest.raises(ValueError):
+            tmpdir = session.create_tmp()
 
     def test_properties(self):
         session, runner = self.make_session_and_runner()

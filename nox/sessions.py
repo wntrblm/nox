@@ -135,7 +135,8 @@ class Session:
         """The bin directory for the virtualenv."""
         return self.virtualenv.bin
 
-    def create_tmp(self) -> Optional[str]:
+    def create_tmp(self) -> str:
+        """Create, and return, a temporary directory."""
         bin = self.virtualenv.bin
         if bin is None:
             raise ValueError("Cannot have a tmp if no bin")
@@ -143,6 +144,7 @@ class Session:
         tmpdir = os.path.join(updir, 'tmp')
         if not os.path.exists(tmpdir):
             os.mkdir(tmpdir)
+        self.env['TMPDIR'] = tmpdir
         return tmpdir
 
     @property

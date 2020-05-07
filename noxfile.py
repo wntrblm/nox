@@ -31,6 +31,7 @@ def is_python_version(session, version):
 @nox.session(python=["3.5", "3.6", "3.7", "3.8"])
 def tests(session):
     """Run test suite with pytest."""
+    session.create_tmp()
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
     tests = session.posargs or ["tests/"]
@@ -46,6 +47,7 @@ def tests(session):
 @nox.session(python=["3.5", "3.6", "3.7", "3.8"], venv_backend="conda")
 def conda_tests(session):
     """Run test suite with pytest."""
+    session.create_tmp()
     session.conda_install(
         "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
     )
@@ -110,4 +112,3 @@ def docs(session):
         sphinx_args.insert(0, "--open-browser")
 
     session.run(sphinx_cmd, *sphinx_args)
-    session.create_tmp()
