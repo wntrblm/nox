@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import logging
-from typing import Any, cast
+from typing import Any, cast, Optional
 
 from colorlog import ColoredFormatter
 
@@ -21,15 +21,53 @@ SUCCESS = 25
 OUTPUT = logging.DEBUG - 1
 
 
-class NoxFormatter(ColoredFormatter):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super(NoxFormatter, self).__init__(*args, **kwargs)
+def _get_format(colorlog: bool, add_timestamp: bool):
+    if colorlog:
+        if add_timestamp:
+            return "%(cyan)s%(name)s > [%(asctime)s] %(log_color)s%(message)s"
+        else:
+            return "%(cyan)s%(name)s > %(log_color)s%(message)s"
+    else:
+        if add_timestamp:
+            return "%(name)s > [%(asctime)s] %(message)s"
+        else:
+            return "%(name)s > %(message)s"
+
+
+class NoxFormatter(logging.Formatter):
+    def __init__(self, add_timestamp: bool = False) -> None:
+        super().__init__(fmt=_get_format(colorlog=False, add_timestamp=add_timestamp))
         self._simple_fmt = logging.Formatter("%(message)s")
 
     def format(self, record: Any) -> str:
         if record.levelname == "OUTPUT":
             return self._simple_fmt.format(record)
-        return super(NoxFormatter, self).format(record)
+        return super().format(record)
+
+
+class NoxColoredFormatter(ColoredFormatter):
+    def __init__(
+        self,
+        datefmt=None,
+        style=None,
+        log_colors=None,
+        reset=True,
+        secondary_log_colors=None,
+        add_timestamp: bool = False,
+    ) -> None:
+        super().__init__(
+            fmt=_get_format(colorlog=True, add_timestamp=add_timestamp),
+            datefmt=datefmt,
+            style=style,
+            log_colors=log_colors,
+            reset=reset,
+            secondary_log_colors=secondary_log_colors,
+        )
+
+    def format(self, record: Any) -> str:
+        if record.levelname == "OUTPUT":
+            return self._simple_fmt.format(record)
+        return super().format(record)
 
 
 class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore
@@ -55,7 +93,9 @@ logging.setLoggerClass(LoggerWithSuccessAndOutput)
 logger = cast(LoggerWithSuccessAndOutput, logging.getLogger("nox"))
 
 
-def setup_logging(color: bool, verbose: bool = False) -> None:  # pragma: no cover
+def setup_logging(
+    color: bool, verbose: bool = False, add_timestamp: bool = False
+) -> None:  # pragma: no cover
     """Setup logging.
 
     Args:
@@ -68,10 +108,8 @@ def setup_logging(color: bool, verbose: bool = False) -> None:  # pragma: no cov
     else:
         root_logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler()
-
     if color is True:
-        formatter = NoxFormatter(
-            "%(cyan)s%(name)s > %(log_color)s%(message)s",
+        formatter = NoxColoredFormatter(
             reset=True,
             log_colors={
                 "DEBUG": "cyan",
@@ -81,9 +119,13 @@ def setup_logging(color: bool, verbose: bool = False) -> None:  # pragma: no cov
                 "CRITICAL": "red,bg_white",
                 "SUCCESS": "green",
             },
+            style="%",
+            secondary_log_colors=None,
+            add_timestamp=add_timestamp,
         )
-
-        handler.setFormatter(formatter)
+    else:
+        formatter = NoxFormatter(add_timestamp=add_timestamp)
+    handler.setFormatter(formatter)
 
     root_logger.addHandler(handler)
 

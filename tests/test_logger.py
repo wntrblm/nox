@@ -15,6 +15,8 @@
 import logging
 from unittest import mock
 
+import pytest
+
 from nox import logger
 
 
@@ -39,6 +41,7 @@ def test_formatter(caplog):
 
     logs = [rec for rec in caplog.records if rec.levelname in ("INFO", "OUTPUT")]
     assert len(logs) == 1
+    assert not hasattr(logs[0], "asctime")
 
     caplog.clear()
     with caplog.at_level(logger.OUTPUT):
@@ -52,3 +55,38 @@ def test_formatter(caplog):
     assert len(logs) == 1
     # Make sure output level log records are not nox prefixed
     assert "nox" not in logs[0].message
+
+
+@pytest.mark.parametrize(
+    "color",
+    [
+        # This currently fails due to some incompatibility between caplog and colorlog
+        # that causes caplog to not collect the asctime from colorlog.
+        pytest.param(True, id="color", marks=pytest.mark.xfail),
+        pytest.param(False, id="no-color"),
+    ],
+)
+def test_no_color_timestamp(caplog, color):
+    logger.setup_logging(color=color, add_timestamp=True)
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG):
+        logger.logger.info("bar")
+        logger.logger.output("foo")
+
+    logs = [rec for rec in caplog.records if rec.levelname in ("INFO", "OUTPUT")]
+    assert len(logs) == 1
+    assert hasattr(logs[0], "asctime")
+
+    caplog.clear()
+    with caplog.at_level(logger.OUTPUT):
+        logger.logger.info("bar")
+        logger.logger.output("foo")
+
+    logs = [rec for rec in caplog.records if rec.levelname != "OUTPUT"]
+    assert len(logs) == 1
+    assert hasattr(logs[0], "asctime")
+
+    logs = [rec for rec in caplog.records if rec.levelname == "OUTPUT"]
+    assert len(logs) == 1
+    # no timestamp for output
+    assert not hasattr(logs[0], "asctime")
