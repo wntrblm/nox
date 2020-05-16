@@ -135,6 +135,13 @@ class Session:
         """The bin directory for the virtualenv."""
         return self.virtualenv.bin
 
+    def create_tmp(self) -> str:
+        """Create, and return, a temporary directory."""
+        tmpdir = os.path.join(self._runner.envdir, "tmp")
+        os.makedirs(tmpdir, exist_ok=True)
+        self.env["TMPDIR"] = tmpdir
+        return tmpdir
+
     @property
     def interactive(self) -> bool:
         """Returns True if Nox is being run in an interactive session or False otherwise."""
@@ -388,33 +395,36 @@ class SessionRunner:
     def friendly_name(self) -> str:
         return self.signatures[0] if self.signatures else self.name
 
+    @property
+    def envdir(self) -> str:
+        return _normalize_path(self.global_config.envdir, self.friendly_name)
+
     def _create_venv(self) -> None:
         if self.func.python is False:
             self.venv = ProcessEnv()
             return
 
-        path = _normalize_path(self.global_config.envdir, self.friendly_name)
         reuse_existing = (
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
         if not self.func.venv_backend or self.func.venv_backend == "virtualenv":
             self.venv = VirtualEnv(
-                path,
+                self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
         elif self.func.venv_backend == "conda":
             self.venv = CondaEnv(
-                path,
+                self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
         elif self.func.venv_backend == "venv":
             self.venv = VirtualEnv(
-                path,
+                self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv=True,
