@@ -138,8 +138,7 @@ class Session:
     def create_tmp(self) -> str:
         """Create, and return, a temporary directory."""
         tmpdir = os.path.join(self._runner.envdir, "tmp")
-        if not os.path.exists(tmpdir):
-            os.mkdir(tmpdir)
+        os.makedirs(tmpdir, exist_ok=True)
         self.env["TMPDIR"] = tmpdir
         return tmpdir
 
