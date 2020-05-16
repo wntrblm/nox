@@ -137,11 +137,7 @@ class Session:
 
     def create_tmp(self) -> str:
         """Create, and return, a temporary directory."""
-        bin = self.virtualenv.bin
-        if bin is None:
-            raise ValueError("Cannot have a tmp if no bin")
-        updir = os.path.dirname(bin)
-        tmpdir = os.path.join(updir, "tmp")
+        tmpdir = os.path.join(self._runner.envdir, "tmp")
         if not os.path.exists(tmpdir):
             os.mkdir(tmpdir)
         self.env["TMPDIR"] = tmpdir
@@ -400,33 +396,36 @@ class SessionRunner:
     def friendly_name(self) -> str:
         return self.signatures[0] if self.signatures else self.name
 
+    @property
+    def envdir(self) -> str:
+        return _normalize_path(self.global_config.envdir, self.friendly_name)
+
     def _create_venv(self) -> None:
         if self.func.python is False:
             self.venv = ProcessEnv()
             return
 
-        path = _normalize_path(self.global_config.envdir, self.friendly_name)
         reuse_existing = (
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
         if not self.func.venv_backend or self.func.venv_backend == "virtualenv":
             self.venv = VirtualEnv(
-                path,
+                self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
         elif self.func.venv_backend == "conda":
             self.venv = CondaEnv(
-                path,
+                self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
         elif self.func.venv_backend == "venv":
             self.venv = VirtualEnv(
-                path,
+                self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv=True,
