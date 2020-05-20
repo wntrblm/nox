@@ -269,7 +269,7 @@ However, this will never output colorful logs:
 
 
 Controlling commands verbosity
------------------------------
+------------------------------
 
 By default, Nox will only show output of commands that fail, or, when the commands get passed ``silent=False``.
 By passing ``--verbose`` to Nox, all output of all commands run is shown, regardless of the silent argument.
