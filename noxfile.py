@@ -71,7 +71,7 @@ def cover(session):
 
 @nox.session(python="3.8")
 def blacken(session):
-    """Run black code formater."""
+    """Run black code formatter."""
     session.install("black==19.3b0", "isort==4.3.21")
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", *files)
