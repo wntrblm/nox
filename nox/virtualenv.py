@@ -141,6 +141,16 @@ def _clean_location(self: "Union[CondaEnv, VirtualEnv]") -> bool:
     return True
 
 
+class PassthroughEnv(ProcessEnv):
+    """Represents the environment used to run nox itself
+
+    For now, this class is empty but it might contain tools to grasp some
+    hints about the actual env.
+    """
+
+    pass
+
+
 class CondaEnv(ProcessEnv):
     """Conda environment management class.
 

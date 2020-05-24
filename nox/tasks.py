@@ -24,7 +24,7 @@ import nox
 from colorlog.escape_codes import parse_colors
 from nox import _options, registry
 from nox.logger import logger
-from nox.manifest import Manifest
+from nox.manifest import Manifest, WARN_PYTHONS_IGNORED
 from nox.sessions import Result
 
 
@@ -233,6 +233,14 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
     # Note that it is possible for the manifest to be altered in any given
     # iteration.
     for session in manifest:
+        # possibly raise warnings associated with this session
+        if WARN_PYTHONS_IGNORED in session.func.should_warn:
+            logger.warning(
+                "Session {} is set to run with venv_backend='none', IGNORING its python={} parametrization. ".format(
+                    session.name, session.func.should_warn[WARN_PYTHONS_IGNORED]
+                )
+            )
+
         result = session.execute()
         result.log(
             "Session {name} {status}.".format(

@@ -24,6 +24,7 @@ from typing import (
     Callable,
     Dict,
     Iterable,
+    Tuple,
     List,
     Mapping,
     Optional,
@@ -36,7 +37,7 @@ import py
 from nox import _typing
 from nox._decorators import Func
 from nox.logger import logger
-from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
+from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv, PassthroughEnv
 
 if _typing.TYPE_CHECKING:
     from nox.manifest import Manifest
@@ -279,10 +280,15 @@ class Session:
         .. _conda install:
         """
         venv = self._runner.venv
-        if not isinstance(venv, CondaEnv):
+
+        prefix_args = ()  # type: Tuple[str, ...]
+        if isinstance(venv, CondaEnv):
+            prefix_args = ("--prefix", venv.location)
+        elif not isinstance(venv, PassthroughEnv):  # pragma: no cover
             raise ValueError(
                 "A session without a conda environment can not install dependencies from conda."
             )
+
         if not args:
             raise ValueError("At least one argument required to install().")
 
@@ -290,14 +296,7 @@ class Session:
             kwargs["silent"] = True
 
         self._run(
-            "conda",
-            "install",
-            "--yes",
-            "--prefix",
-            venv.location,
-            *args,
-            external="error",
-            **kwargs
+            "conda", "install", "--yes", *prefix_args, *args, external="error", **kwargs
         )
 
     def install(self, *args: str, **kwargs: Any) -> None:
@@ -325,7 +324,9 @@ class Session:
 
         .. _pip: https://pip.readthedocs.org
         """
-        if not isinstance(self._runner.venv, (CondaEnv, VirtualEnv)):
+        if not isinstance(
+            self._runner.venv, (CondaEnv, VirtualEnv, PassthroughEnv)
+        ):  # pragma: no cover
             raise ValueError(
                 "A session without a virtualenv can not install dependencies."
             )
@@ -400,29 +401,35 @@ class SessionRunner:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def _create_venv(self) -> None:
-        if self.func.python is False:
-            self.venv = ProcessEnv()
+        backend = (
+            self.global_config.force_venv_backend
+            or self.func.venv_backend
+            or self.global_config.default_venv_backend
+        )
+
+        if backend == "none" or self.func.python is False:
+            self.venv = PassthroughEnv()
             return
 
         reuse_existing = (
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
-        if not self.func.venv_backend or self.func.venv_backend == "virtualenv":
+        if backend is None or backend == "virtualenv":
             self.venv = VirtualEnv(
                 self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
-        elif self.func.venv_backend == "conda":
+        elif backend == "conda":
             self.venv = CondaEnv(
                 self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
-        elif self.func.venv_backend == "venv":
+        elif backend == "venv":
             self.venv = VirtualEnv(
                 self.envdir,
                 interpreter=self.func.python,  # type: ignore
@@ -433,7 +440,7 @@ class SessionRunner:
         else:
             raise ValueError(
                 "Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{}'.".format(
-                    self.func.venv_backend
+                    backend
                 )
             )
 

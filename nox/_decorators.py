@@ -1,7 +1,7 @@
 import copy
 import functools
 import types
-from typing import Any, Callable, Iterable, List, Optional, cast
+from typing import Any, Callable, Iterable, List, Dict, Optional, cast
 
 from . import _typing
 
@@ -40,12 +40,14 @@ class Func(FunctionDecorator):
         name: Optional[str] = None,
         venv_backend: Any = None,
         venv_params: Any = None,
+        should_warn: Dict[str, Any] = None,
     ):
         self.func = func
         self.python = python
         self.reuse_venv = reuse_venv
         self.venv_backend = venv_backend
         self.venv_params = venv_params
+        self.should_warn = should_warn or dict()
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
@@ -58,6 +60,7 @@ class Func(FunctionDecorator):
             name,
             self.venv_backend,
             self.venv_params,
+            self.should_warn,
         )
 
 
@@ -70,6 +73,7 @@ class Call(Func):
             None,
             func.venv_backend,
             func.venv_params,
+            func.should_warn,
         )
         self.param_spec = param_spec
         self.session_signature = "({})".format(param_spec)
