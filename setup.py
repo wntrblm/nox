@@ -20,7 +20,7 @@ long_description = open("README.rst", "r", encoding="utf-8").read()
 
 setup(
     name="nox",
-    version="2019.11.9",
+    version="2019.5.24",
     description="Flexible test automation.",
     long_description=long_description,
     url="https://nox.thea.codes",
