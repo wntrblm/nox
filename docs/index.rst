@@ -11,9 +11,6 @@ Welcome to Nox
    CONTRIBUTING
    CHANGELOG
 
-.. |eacute| unicode:: U+000E9 .. LATIN SMALL LETTER E WITH ACUTE
-   :trim:
-
 ``nox`` is a command-line tool that automates testing in multiple Python environments, similar to `tox`_. Unlike tox, Nox uses a standard Python file for configuration.
 
 Install nox via `pip`_::
@@ -53,7 +50,7 @@ Projects that use Nox
 
 Nox is lucky to have several wonderful projects that use it and provide feedback and contributions.
 
-- B |eacute| zier `project <https://github.com/dhermes/bezier>`__
+- `Bézier <https://github.com/dhermes/bezier>`__
 - `gapic-generator-python <https://github.com/googleapis/gapic-generator-python>`__
 - `gdbgui <https://github.com/cs01/gdbgui>`__
 - `Google Assistant SDK <https://github.com/googlesamples/assistant-sdk-python>`__
