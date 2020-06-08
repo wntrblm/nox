@@ -270,7 +270,7 @@ class TestSession:
             session.run_always()
 
         exc_args = exc_info.value.args
-        assert exc_args == ('At least one argument required to run_always().',)
+        assert exc_args == ("At least one argument required to run_always().",)
 
     def test_run_always_success(self):
         session, _ = self.make_session_and_runner()
