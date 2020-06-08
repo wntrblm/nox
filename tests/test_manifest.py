@@ -19,10 +19,10 @@ import nox
 import pytest
 from nox._decorators import Func
 from nox.manifest import (
+    WARN_PYTHONS_IGNORED,
     KeywordLocals,
     Manifest,
     _null_session_func,
-    WARN_PYTHONS_IGNORED,
 )
 
 

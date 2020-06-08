@@ -24,11 +24,11 @@ from typing import (
     Callable,
     Dict,
     Iterable,
-    Tuple,
     List,
     Mapping,
     Optional,
     Sequence,
+    Tuple,
     Union,
 )
 
@@ -37,7 +37,7 @@ import py
 from nox import _typing
 from nox._decorators import Func
 from nox.logger import logger
-from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv, PassthroughEnv
+from nox.virtualenv import CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
 
 if _typing.TYPE_CHECKING:
     from nox.manifest import Manifest

@@ -24,7 +24,7 @@ import nox
 from colorlog.escape_codes import parse_colors
 from nox import _options, registry
 from nox.logger import logger
-from nox.manifest import Manifest, WARN_PYTHONS_IGNORED
+from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 from nox.sessions import Result
 
 
