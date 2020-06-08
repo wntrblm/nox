@@ -20,7 +20,6 @@ from typing import Any, Iterable, Iterator, List, Mapping, Sequence, Set, Tuple,
 from nox._decorators import Call, Func
 from nox.sessions import Session, SessionRunner
 
-
 WARN_PYTHONS_IGNORED = "python_ignored"
 
 

@@ -23,7 +23,7 @@ from unittest import mock
 import nox
 import pytest
 from nox import _options, sessions, tasks
-from nox.manifest import Manifest, WARN_PYTHONS_IGNORED
+from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 
