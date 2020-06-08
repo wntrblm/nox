@@ -14,6 +14,7 @@
 
 import argparse
 import logging
+import operator
 import os
 import sys
 import tempfile
@@ -151,7 +152,7 @@ class TestSession:
     def test_run_with_func(self):
         session, _ = self.make_session_and_runner()
 
-        assert session.run(lambda a, b: a + b, 1, 2) == 3
+        assert session.run(operator.add, 1, 2) == 3
 
     def test_run_with_func_error(self):
         session, _ = self.make_session_and_runner()
@@ -168,7 +169,7 @@ class TestSession:
         runner.global_config.install_only = True
 
         with mock.patch.object(nox.command, "run") as run:
-            session.run("spam", "eggs")
+            assert session.run("spam", "eggs") is None
 
         run.assert_not_called()
 
@@ -261,6 +262,26 @@ class TestSession:
 
         with pytest.raises(nox.command.CommandFailed, match="External"):
             session.run(sys.executable, "--version")
+
+    def test_run_always_bad_args(self):
+        session, _ = self.make_session_and_runner()
+
+        with pytest.raises(ValueError) as exc_info:
+            session.run_always()
+
+        exc_args = exc_info.value.args
+        assert exc_args == ("At least one argument required to run_always().",)
+
+    def test_run_always_success(self):
+        session, _ = self.make_session_and_runner()
+
+        assert session.run_always(operator.add, 1300, 37) == 1337
+
+    def test_run_always_install_only(self, caplog):
+        session, runner = self.make_session_and_runner()
+        runner.global_config.install_only = True
+
+        assert session.run_always(operator.add, 23, 19) == 42
 
     def test_conda_install_bad_args(self):
         session, runner = self.make_session_and_runner()

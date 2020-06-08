@@ -225,6 +225,34 @@ class Session:
 
         return self._run(*args, env=env, **kwargs)
 
+    def run_always(
+        self, *args: str, env: Mapping[str, str] = None, **kwargs: Any
+    ) -> Optional[Any]:
+        """Run a command **always**.
+
+        This is a variant of :meth:`run` that runs in all cases, including in
+        the presence of ``--install-only``.
+
+        :param env: A dictionary of environment variables to expose to the
+            command. By default, all environment variables are passed.
+        :type env: dict or None
+        :param bool silent: Silence command output, unless the command fails.
+            ``False`` by default.
+        :param success_codes: A list of return codes that are considered
+            successful. By default, only ``0`` is considered success.
+        :type success_codes: list, tuple, or None
+        :param external: If False (the default) then programs not in the
+            virtualenv path will cause a warning. If True, no warning will be
+            emitted. These warnings can be turned into errors using
+            ``--error-on-external-run``. This has no effect for sessions that
+            do not have a virtualenv.
+        :type external: bool
+        """
+        if not args:
+            raise ValueError("At least one argument required to run_always().")
+
+        return self._run(*args, env=env, **kwargs)
+
     def _run(self, *args: str, env: Mapping[str, str] = None, **kwargs: Any) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
