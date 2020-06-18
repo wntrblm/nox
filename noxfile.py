@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import os
 
 import nox
@@ -30,6 +31,7 @@ def is_python_version(session, version):
 @nox.session(python=["3.5", "3.6", "3.7", "3.8"])
 def tests(session):
     """Run test suite with pytest."""
+    session.create_tmp()
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
     tests = session.posargs or ["tests/"]
@@ -45,6 +47,7 @@ def tests(session):
 @nox.session(python=["3.5", "3.6", "3.7", "3.8"], venv_backend="conda")
 def conda_tests(session):
     """Run test suite with pytest."""
+    session.create_tmp()
     session.conda_install(
         "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
     )
@@ -68,7 +71,7 @@ def cover(session):
 
 @nox.session(python="3.8")
 def blacken(session):
-    """Run black code formater."""
+    """Run black code formatter."""
     session.install("black==19.3b0", "isort==4.3.21")
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", *files)
@@ -93,11 +96,15 @@ def lint(session):
 @nox.session(python="3.8")
 def docs(session):
     """Build the documentation."""
-    session.run("rm", "-rf", "docs/_build", external=True)
+    output_dir = os.path.join(session.create_tmp(), "output")
+    doctrees, html = map(
+        functools.partial(os.path.join, output_dir), ["doctrees", "html"]
+    )
+    session.run("rm", "-rf", output_dir, external=True)
     session.install("-r", "requirements-test.txt")
     session.install(".")
     session.cd("docs")
-    sphinx_args = ["-b", "html", "-W", "-d", "_build/doctrees", ".", "_build/html"]
+    sphinx_args = ["-b", "html", "-W", "-d", doctrees, ".", html]
 
     if not session.interactive:
         sphinx_cmd = "sphinx-build"

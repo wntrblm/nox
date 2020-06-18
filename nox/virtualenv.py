@@ -66,7 +66,7 @@ class ProcessEnv:
         return self._bin
 
     def create(self) -> bool:
-        raise NotImplementedError("ProcessEnv.create should be overwitten in subclass")
+        raise NotImplementedError("ProcessEnv.create should be overwritten in subclass")
 
 
 def locate_via_py(version: str) -> Optional[str]:
@@ -141,8 +141,18 @@ def _clean_location(self: "Union[CondaEnv, VirtualEnv]") -> bool:
     return True
 
 
+class PassthroughEnv(ProcessEnv):
+    """Represents the environment used to run nox itself
+
+    For now, this class is empty but it might contain tools to grasp some
+    hints about the actual env.
+    """
+
+    pass
+
+
 class CondaEnv(ProcessEnv):
-    """Conda environemnt management class.
+    """Conda environment management class.
 
     Args:
         location (str): The location on the filesystem where the conda environment

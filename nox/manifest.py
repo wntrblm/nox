@@ -20,6 +20,8 @@ from typing import Any, Iterable, Iterator, List, Mapping, Sequence, Set, Tuple,
 from nox._decorators import Call, Func
 from nox.sessions import Session, SessionRunner
 
+WARN_PYTHONS_IGNORED = "python_ignored"
+
 
 class Manifest:
     """Session manifest.
@@ -169,6 +171,18 @@ class Manifest:
                 bound to this manifest and configuration.
         """
         sessions = []
+
+        # if backend is none we wont parametrize the pythons
+        backend = (
+            self._config.force_venv_backend
+            or func.venv_backend
+            or self._config.default_venv_backend
+        )
+        if backend == "none" and isinstance(func.python, (list, tuple, set)):
+            # we can not log a warning here since the session is maybe deselected.
+            # instead let's set a flag, to warn later when session is actually run.
+            func.should_warn[WARN_PYTHONS_IGNORED] = func.python
+            func.python = False
 
         # If the func has the python attribute set to a list, we'll need
         # to expand them.

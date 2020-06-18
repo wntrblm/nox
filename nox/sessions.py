@@ -29,6 +29,7 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Tuple,
     Union,
 )
 
@@ -37,7 +38,7 @@ import py
 from nox import _typing
 from nox._decorators import Func
 from nox.logger import logger
-from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
+from nox.virtualenv import CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
 
 if _typing.TYPE_CHECKING:
     from nox.manifest import Manifest
@@ -166,6 +167,13 @@ class Session:
         """The bin directory for the virtualenv."""
         return self.virtualenv.bin
 
+    def create_tmp(self) -> str:
+        """Create, and return, a temporary directory."""
+        tmpdir = os.path.join(self._runner.envdir, "tmp")
+        os.makedirs(tmpdir, exist_ok=True)
+        self.env["TMPDIR"] = tmpdir
+        return tmpdir
+
     @property
     def interactive(self) -> bool:
         """Returns True if Nox is being run in an interactive session or False otherwise."""
@@ -248,6 +256,34 @@ class Session:
 
         return self._run(*args, env=env, **kwargs)
 
+    def run_always(
+        self, *args: str, env: Mapping[str, str] = None, **kwargs: Any
+    ) -> Optional[Any]:
+        """Run a command **always**.
+
+        This is a variant of :meth:`run` that runs in all cases, including in
+        the presence of ``--install-only``.
+
+        :param env: A dictionary of environment variables to expose to the
+            command. By default, all environment variables are passed.
+        :type env: dict or None
+        :param bool silent: Silence command output, unless the command fails.
+            ``False`` by default.
+        :param success_codes: A list of return codes that are considered
+            successful. By default, only ``0`` is considered success.
+        :type success_codes: list, tuple, or None
+        :param external: If False (the default) then programs not in the
+            virtualenv path will cause a warning. If True, no warning will be
+            emitted. These warnings can be turned into errors using
+            ``--error-on-external-run``. This has no effect for sessions that
+            do not have a virtualenv.
+        :type external: bool
+        """
+        if not args:
+            raise ValueError("At least one argument required to run_always().")
+
+        return self._run(*args, env=env, **kwargs)
+
     def _run(self, *args: str, env: Mapping[str, str] = None, **kwargs: Any) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
@@ -303,10 +339,15 @@ class Session:
         .. _conda install:
         """
         venv = self._runner.venv
-        if not isinstance(venv, CondaEnv):
+
+        prefix_args = ()  # type: Tuple[str, ...]
+        if isinstance(venv, CondaEnv):
+            prefix_args = ("--prefix", venv.location)
+        elif not isinstance(venv, PassthroughEnv):  # pragma: no cover
             raise ValueError(
                 "A session without a conda environment can not install dependencies from conda."
             )
+
         if not args:
             raise ValueError("At least one argument required to install().")
 
@@ -317,14 +358,7 @@ class Session:
             kwargs["silent"] = True
 
         self._run(
-            "conda",
-            "install",
-            "--yes",
-            "--prefix",
-            venv.location,
-            *args,
-            external="error",
-            **kwargs
+            "conda", "install", "--yes", *prefix_args, *args, external="error", **kwargs
         )
 
     def install(self, *args: str, **kwargs: Any) -> None:
@@ -352,7 +386,9 @@ class Session:
 
         .. _pip: https://pip.readthedocs.org
         """
-        if not isinstance(self._runner.venv, (CondaEnv, VirtualEnv)):
+        if not isinstance(
+            self._runner.venv, (CondaEnv, VirtualEnv, PassthroughEnv)
+        ):  # pragma: no cover
             raise ValueError(
                 "A session without a virtualenv can not install dependencies."
             )
@@ -425,33 +461,42 @@ class SessionRunner:
     def friendly_name(self) -> str:
         return self.signatures[0] if self.signatures else self.name
 
+    @property
+    def envdir(self) -> str:
+        return _normalize_path(self.global_config.envdir, self.friendly_name)
+
     def _create_venv(self) -> None:
-        if self.func.python is False:
-            self.venv = ProcessEnv()
+        backend = (
+            self.global_config.force_venv_backend
+            or self.func.venv_backend
+            or self.global_config.default_venv_backend
+        )
+
+        if backend == "none" or self.func.python is False:
+            self.venv = PassthroughEnv()
             return
 
-        path = _normalize_path(self.global_config.envdir, self.friendly_name)
         reuse_existing = (
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
-        if not self.func.venv_backend or self.func.venv_backend == "virtualenv":
+        if backend is None or backend == "virtualenv":
             self.venv = VirtualEnv(
-                path,
+                self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
-        elif self.func.venv_backend == "conda":
+        elif backend == "conda":
             self.venv = CondaEnv(
-                path,
+                self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
-        elif self.func.venv_backend == "venv":
+        elif backend == "venv":
             self.venv = VirtualEnv(
-                path,
+                self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv=True,
@@ -460,7 +505,7 @@ class SessionRunner:
         else:
             raise ValueError(
                 "Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{}'.".format(
-                    self.func.venv_backend
+                    backend
                 )
             )
 

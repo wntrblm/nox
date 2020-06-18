@@ -124,6 +124,30 @@ If your project is a Python package and you want to install it:
         session.install(".")
         ...
 
+In some cases such as Python binary extensions, your package may depend on
+code compiled outside of the Python ecosystem. To make sure a low-level
+dependency (e.g. ``libfoo``) is available during installation
+
+.. code-block:: python
+
+    @nox.session
+    def tests(session):
+        ...
+        session.run_always(
+            "cmake", "-DCMAKE_BUILD_TYPE=Debug",
+            "-S", libfoo_src_dir,
+            "-B", build_dir,
+            external=True,
+        )
+        session.run_always(
+            "cmake",
+            "--build", build_dir,
+            "--config", "Debug",
+            "--target", "install",
+            external=True,
+        )
+        session.install(".")
+        ...
 
 Running commands
 ----------------
