@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import logging
-from typing import Any, cast, Optional
+from typing import Any, cast
 
 from colorlog import ColoredFormatter
 
@@ -21,7 +21,7 @@ SUCCESS = 25
 OUTPUT = logging.DEBUG - 1
 
 
-def _get_format(colorlog: bool, add_timestamp: bool):
+def _get_format(colorlog: bool, add_timestamp: bool) -> str:
     if colorlog:
         if add_timestamp:
             return "%(cyan)s%(name)s > [%(asctime)s] %(log_color)s%(message)s"
@@ -48,11 +48,11 @@ class NoxFormatter(logging.Formatter):
 class NoxColoredFormatter(ColoredFormatter):
     def __init__(
         self,
-        datefmt=None,
-        style=None,
-        log_colors=None,
-        reset=True,
-        secondary_log_colors=None,
+        datefmt: Any = None,
+        style: Any = None,
+        log_colors: Any = None,
+        reset: bool = True,
+        secondary_log_colors: Any = None,
         add_timestamp: bool = False,
     ) -> None:
         super().__init__(
@@ -108,6 +108,7 @@ def setup_logging(
     else:
         root_logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler()
+    formatter: logging.Formatter
     if color is True:
         formatter = NoxColoredFormatter(
             reset=True,
