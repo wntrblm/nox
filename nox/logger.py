@@ -93,6 +93,26 @@ logging.setLoggerClass(LoggerWithSuccessAndOutput)
 logger = cast(LoggerWithSuccessAndOutput, logging.getLogger("nox"))
 
 
+def _get_formatter(color: bool, add_timestamp: bool) -> logging.Formatter:
+    if color is True:
+        return NoxColoredFormatter(
+            reset=True,
+            log_colors={
+                "DEBUG": "cyan",
+                "INFO": "blue",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red,bg_white",
+                "SUCCESS": "green",
+            },
+            style="%",
+            secondary_log_colors=None,
+            add_timestamp=add_timestamp,
+        )
+    else:
+        return NoxFormatter(add_timestamp=add_timestamp)
+
+
 def setup_logging(
     color: bool, verbose: bool = False, add_timestamp: bool = False
 ) -> None:  # pragma: no cover
@@ -108,26 +128,8 @@ def setup_logging(
     else:
         root_logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler()
-    formatter: logging.Formatter
-    if color is True:
-        formatter = NoxColoredFormatter(
-            reset=True,
-            log_colors={
-                "DEBUG": "cyan",
-                "INFO": "blue",
-                "WARNING": "yellow",
-                "ERROR": "red",
-                "CRITICAL": "red,bg_white",
-                "SUCCESS": "green",
-            },
-            style="%",
-            secondary_log_colors=None,
-            add_timestamp=add_timestamp,
-        )
-    else:
-        formatter = NoxFormatter(add_timestamp=add_timestamp)
-    handler.setFormatter(formatter)
 
+    handler.setFormatter(_get_formatter(color, add_timestamp))
     root_logger.addHandler(handler)
 
     # Silence noisy loggers
