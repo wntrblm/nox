@@ -55,6 +55,7 @@ def test_main_no_args(monkeypatch):
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
         assert config.sessions is None
+        assert not config.no_venv
         assert not config.reuse_existing_virtualenvs
         assert not config.stop_on_first_error
         assert config.posargs == []
@@ -70,6 +71,11 @@ def test_main_long_form_args():
         "--sessions",
         "1",
         "2",
+        "--default-venv-backend",
+        "venv",
+        "--force-venv-backend",
+        "none",
+        "--no-venv",
         "--reuse-existing-virtualenvs",
         "--stop-on-first-error",
     ]
@@ -87,14 +93,72 @@ def test_main_long_form_args():
         assert config.noxfile == "noxfile.py"
         assert config.envdir.endswith(".other")
         assert config.sessions == ["1", "2"]
+        assert config.default_venv_backend == "venv"
+        assert config.force_venv_backend == "none"
+        assert config.no_venv is True
         assert config.reuse_existing_virtualenvs is True
         assert config.stop_on_first_error is True
         assert config.posargs == []
 
 
+def test_main_no_venv(monkeypatch, capsys):
+    # Check that --no-venv overrides force_venv_backend
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "nox",
+            "--noxfile",
+            os.path.join(RESOURCES, "noxfile_pythons.py"),
+            "--no-venv",
+            "-s",
+            "snack(cheese='cheddar')",
+        ],
+    )
+
+    with mock.patch("sys.exit") as sys_exit:
+        nox.__main__.main()
+        stdout, stderr = capsys.readouterr()
+        assert stdout == "Noms, cheddar so good!\n"
+        assert (
+            "Session snack is set to run with venv_backend='none', IGNORING its python"
+            in stderr
+        )
+        assert "Session snack(cheese='cheddar') was successful." in stderr
+        sys_exit.assert_called_once_with(0)
+
+
+def test_main_no_venv_error():
+    # Check that --no-venv can not be set together with a non-none --force-venv-backend
+    sys.argv = [
+        sys.executable,
+        "--noxfile",
+        "noxfile.py",
+        "--force-venv-backend",
+        "conda",
+        "--no-venv",
+    ]
+    with pytest.raises(ValueError, match="You can not use"):
+        nox.__main__.main()
+
+
 def test_main_short_form_args(monkeypatch):
     monkeypatch.setattr(
-        sys, "argv", [sys.executable, "-f", "noxfile.py", "-s", "1", "2", "-r"]
+        sys,
+        "argv",
+        [
+            sys.executable,
+            "-f",
+            "noxfile.py",
+            "-s",
+            "1",
+            "2",
+            "-db",
+            "venv",
+            "-fb",
+            "conda",
+            "-r",
+        ],
     )
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
@@ -109,6 +173,8 @@ def test_main_short_form_args(monkeypatch):
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
         assert config.sessions == ["1", "2"]
+        assert config.default_venv_backend == "venv"
+        assert config.force_venv_backend == "conda"
         assert config.reuse_existing_virtualenvs is True
 
 

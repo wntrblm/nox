@@ -14,8 +14,10 @@
 
 import argparse
 import logging
+import operator
 import os
 import sys
+import tempfile
 from unittest import mock
 
 import nox.command
@@ -73,6 +75,24 @@ class TestSession:
         runner.venv.env = {}
         runner.venv.bin_paths = ["/no/bin/for/you"]
         return nox.sessions.Session(runner=runner), runner
+
+    def test_create_tmp(self):
+        session, runner = self.make_session_and_runner()
+        with tempfile.TemporaryDirectory() as root:
+            runner.global_config.envdir = root
+            tmpdir = session.create_tmp()
+            assert session.env["TMPDIR"] == tmpdir
+            assert tmpdir.startswith(root)
+
+    def test_create_tmp_twice(self):
+        session, runner = self.make_session_and_runner()
+        with tempfile.TemporaryDirectory() as root:
+            runner.global_config.envdir = root
+            runner.venv.bin = bin
+            session.create_tmp()
+            tmpdir = session.create_tmp()
+            assert session.env["TMPDIR"] == tmpdir
+            assert tmpdir.startswith(root)
 
     def test_properties(self):
         session, runner = self.make_session_and_runner()
@@ -132,7 +152,7 @@ class TestSession:
     def test_run_with_func(self):
         session, _ = self.make_session_and_runner()
 
-        assert session.run(lambda a, b: a + b, 1, 2) == 3
+        assert session.run(operator.add, 1, 2) == 3
 
     def test_run_with_func_error(self):
         session, _ = self.make_session_and_runner()
@@ -149,7 +169,7 @@ class TestSession:
         runner.global_config.install_only = True
 
         with mock.patch.object(nox.command, "run") as run:
-            session.run("spam", "eggs")
+            assert session.run("spam", "eggs") is None
 
         run.assert_not_called()
 
@@ -246,9 +266,30 @@ class TestSession:
         with pytest.raises(nox.command.CommandFailed, match="External"):
             session.run(sys.executable, "--version")
 
+    def test_run_always_bad_args(self):
+        session, _ = self.make_session_and_runner()
+
+        with pytest.raises(ValueError) as exc_info:
+            session.run_always()
+
+        exc_args = exc_info.value.args
+        assert exc_args == ("At least one argument required to run_always().",)
+
+    def test_run_always_success(self):
+        session, _ = self.make_session_and_runner()
+
+        assert session.run_always(operator.add, 1300, 37) == 1337
+
+    def test_run_always_install_only(self, caplog):
+        session, runner = self.make_session_and_runner()
+        runner.global_config.install_only = True
+
+        assert session.run_always(operator.add, 23, 19) == 42
+
     def test_conda_install_bad_args(self):
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "dummy"
 
         with pytest.raises(ValueError, match="arg"):
             session.conda_install()
