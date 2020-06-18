@@ -136,6 +136,14 @@ class Session:
         """The bin directories for the virtualenv."""
         return self.virtualenv.bin_paths
 
+    @property
+    def bin(self) -> Optional[str]:
+        """The first bin directory for the virtualenv."""
+        try:
+            return self.bin_paths[0]
+        except (TypeError, KeyError):
+            return None
+
     def create_tmp(self) -> str:
         """Create, and return, a temporary directory."""
         tmpdir = os.path.join(self._runner.envdir, "tmp")

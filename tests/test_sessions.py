@@ -101,7 +101,15 @@ class TestSession:
         assert session.posargs is runner.global_config.posargs
         assert session.virtualenv is runner.venv
         assert session.bin_paths is runner.venv.bin_paths
+        assert session.bin is runner.venv.bin_paths[0]
         assert session.python is runner.func.python
+
+    def test_no_bin_paths(self):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv.bin_paths = None
+        assert session.bin is None
+        assert session.bin_paths is None
 
     def test_virtualenv_as_none(self):
         session, runner = self.make_session_and_runner()
