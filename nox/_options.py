@@ -60,6 +60,49 @@ def _session_filters_merge_func(
     return getattr(command_args, key)
 
 
+def _default_venv_backend_merge_func(
+    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+) -> str:
+    """Merge default_venv_backend from command args and nox file. Default is "virtualenv".
+
+    Args:
+        command_args (_option_set.Namespace): The options specified on the
+            command-line.
+        noxfile_Args (_option_set.Namespace): The options specified in the
+            Noxfile.
+    """
+    return (
+        command_args.default_venv_backend
+        or noxfile_args.default_venv_backend
+        or "virtualenv"
+    )
+
+
+def _force_venv_backend_merge_func(
+    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+) -> str:
+    """Merge force_venv_backend from command args and nox file. Default is None.
+
+    Args:
+        command_args (_option_set.Namespace): The options specified on the
+            command-line.
+        noxfile_Args (_option_set.Namespace): The options specified in the
+            Noxfile.
+    """
+    if command_args.no_venv:
+        if (
+            command_args.force_venv_backend is not None
+            and command_args.force_venv_backend != "none"
+        ):
+            raise ValueError(
+                "You can not use `--no-venv` with a non-none `--force-venv-backend`"
+            )
+        else:
+            return "none"
+    else:
+        return command_args.force_venv_backend or noxfile_args.force_venv_backend
+
+
 def _envdir_merge_func(
     command_args: argparse.Namespace, noxfile_args: argparse.Namespace
 ) -> str:
@@ -220,6 +263,47 @@ options.add_options(
         action="store_true",
         help="Logs the output of all commands run including commands marked silent.",
         noxfile=True,
+    ),
+    _option_set.Option(
+        "add_timestamp",
+        "-ts",
+        "--add-timestamp",
+        group=options.groups["secondary"],
+        action="store_true",
+        help="Adds a timestamp to logged output.",
+        noxfile=True,
+    ),
+    _option_set.Option(
+        "default_venv_backend",
+        "-db",
+        "--default-venv-backend",
+        group=options.groups["secondary"],
+        noxfile=True,
+        merge_func=_default_venv_backend_merge_func,
+        help="Virtual environment backend to use by default for nox sessions, this is ``'virtualenv'`` by default but "
+        "any of ``('virtualenv', 'conda', 'venv')`` are accepted.",
+        choices=["none", "virtualenv", "conda", "venv"],
+    ),
+    _option_set.Option(
+        "force_venv_backend",
+        "-fb",
+        "--force-venv-backend",
+        group=options.groups["secondary"],
+        noxfile=True,
+        merge_func=_force_venv_backend_merge_func,
+        help="Virtual environment backend to force-use for all nox sessions in this run, overriding any other venv "
+        "backend declared in the nox file and ignoring the default backend. Any of ``('virtualenv', 'conda', 'venv')`` "
+        "are accepted.",
+        choices=["none", "virtualenv", "conda", "venv"],
+    ),
+    _option_set.Option(
+        "no_venv",
+        "--no-venv",
+        group=options.groups["secondary"],
+        default=False,
+        action="store_true",
+        help="Runs the selected sessions directly on the current interpreter, without creating a venv. This is an alias "
+        "for '--force-venv-backend none'.",
     ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
