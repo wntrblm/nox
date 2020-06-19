@@ -54,7 +54,6 @@ setup(
         "colorlog>=2.6.1,<5.0.0",
         "py>=1.4.0,<2.0.0",
         "virtualenv>=14.0.0",
-        "requests",
         "importlib_metadata; python_version < '3.8'",
     ],
     extras_require={"tox_to_nox": ["jinja2", "tox"]},

@@ -15,7 +15,6 @@
 import os
 import platform
 import re
-import requests
 import shutil
 from socket import gethostbyname
 import sys
@@ -26,6 +25,7 @@ import py
 from nox.logger import logger
 
 from . import _typing
+from ._requests import requests_get_status_code
 
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
@@ -167,7 +167,7 @@ def _is_connected(hostname: str = None, url: str = None) -> bool:
             assert host is not None
         if url is not None:
             # HTTP resolution, compliant with http proxy env settings
-            code = requests.get(url).status_code
+            code = requests_get_status_code(url)
             assert code is not None
     except:  # pragma: no cover # noqa E722
         return False
