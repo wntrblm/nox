@@ -41,7 +41,9 @@ def main() -> None:
         print(metadata.version("nox"), file=sys.stderr)
         return
 
-    setup_logging(color=args.color, verbose=args.verbose)
+    setup_logging(
+        color=args.color, verbose=args.verbose, add_timestamp=args.add_timestamp
+    )
 
     # Execute the appropriate tasks.
     exit_code = workflow.execute(
