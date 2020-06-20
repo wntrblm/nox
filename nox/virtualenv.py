@@ -25,7 +25,6 @@ import py
 from nox.logger import logger
 
 from . import _typing
-from ._requests import requests_get_status_code
 
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
