@@ -218,7 +218,8 @@ def test_blacklisted_env(monkeypatch, make_one):
     monkeypatch.setenv("__PYVENV_LAUNCHER__", "meep")
     venv, _ = make_one()
     assert len(venv.bin_paths) == 1
-    assert "__PYVENV_LAUNCHER__" not in venv.bin_paths[0]
+    assert venv.bin_paths[0] == venv.bin
+    assert "__PYVENV_LAUNCHER__" not in venv.bin
 
 
 def test__clean_location(monkeypatch, make_one):
@@ -255,17 +256,20 @@ def test_bin_paths(make_one):
     venv, dir_ = make_one()
 
     assert len(venv.bin_paths) == 1
+    assert venv.bin_paths[0] == venv.bin
+
     if IS_WINDOWS:
-        assert dir_.join("Scripts").strpath == venv.bin_paths[0]
+        assert dir_.join("Scripts").strpath == venv.bin
     else:
-        assert dir_.join("bin").strpath == venv.bin_paths[0]
+        assert dir_.join("bin").strpath == venv.bin
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 def test_bin_windows(make_one):
     venv, dir_ = make_one()
     assert len(venv.bin_paths) == 1
-    assert dir_.join("Scripts").strpath == venv.bin_paths[0]
+    assert venv.bin_paths[0] == venv.bin
+    assert dir_.join("Scripts").strpath == venv.bin
 
 
 def test_create(make_one):
