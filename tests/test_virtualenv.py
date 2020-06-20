@@ -192,7 +192,6 @@ def test_condaenv_bin_windows(make_conda):
 def test_condaenv_(make_conda):
     venv, dir_ = make_conda()
     assert not venv.is_offline()
-    assert not venv.is_offline(dns_check_only=True)
 
 
 def test_constructor_defaults(make_one):

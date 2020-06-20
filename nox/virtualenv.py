@@ -143,38 +143,6 @@ def _clean_location(self: "Union[CondaEnv, VirtualEnv]") -> bool:
     return True
 
 
-def _is_connected(hostname: str = None, url: str = None) -> bool:
-    """
-    Returns True if an internet connection is present. Supports two kind of checks:
-
-     - If a non-None `hostname` is provided, a DNS check is performed with `socket.gethostbyname`. This does
-       not guarantee network availability as a local DNS server acting as a cache could be present
-
-     - If a non-None `url` is provided, an HTTP(s) GET is performed with `requests.get`, so as to take into
-       account possible http proxy settings
-
-    Inspired by
-    https://stackoverflow.com/questions/20913411/test-if-an-internet-connection-is-present-in-python
-
-    :param hostname:
-    :param url:
-    :return:
-    """
-    try:
-        if hostname is not None:
-            # DNS resolution.
-            host = gethostbyname(hostname)
-            assert host is not None
-        if url is not None:
-            # HTTP resolution, compliant with http proxy env settings
-            code = requests_get_status_code(url)
-            assert code is not None
-    except:  # pragma: no cover # noqa E722
-        return False
-    else:
-        return True
-
-
 class PassthroughEnv(ProcessEnv):
     """Represents the environment used to run nox itself
 
@@ -266,12 +234,21 @@ class CondaEnv(ProcessEnv):
         return True
 
     @staticmethod
-    def is_offline(dns_check_only: bool = False) -> bool:
-        """Return `True` if `https://repo.anaconda.com` is unreachable."""
-        if dns_check_only:
-            return not _is_connected(hostname="repo.anaconda.com")
-        else:
-            return not _is_connected(url="https://repo.anaconda.com")
+    def is_offline() -> bool:
+        """Return `True` if we are sure that the user is not able to connect to https://repo.anaconda.com.
+
+        Since an HTTP proxy might be correctly configured for `conda` using the `.condarc` `proxy_servers` section,
+        while not being correctly configured in the OS environment variables used by all other tools including python
+        `urllib` or `requests`, we are basically not able to do much more than testing the DNS resolution.
+
+        See details in this explanation: https://stackoverflow.com/a/62486343/7262247
+        """
+        try:
+            # DNS resolution to detect situation (1) or (2).
+            host = gethostbyname("repo.anaconda.com")
+            return host is None
+        except:  # pragma: no cover # noqa E722
+            return True
 
 
 class VirtualEnv(ProcessEnv):
