@@ -152,7 +152,7 @@ class PassthroughEnv(ProcessEnv):
     @staticmethod
     def is_offline() -> bool:
         """As of now this is only used in conda_install"""
-        return CondaEnv.is_offline()
+        return CondaEnv.is_offline()  # pragma: no cover
 
 
 class CondaEnv(ProcessEnv):
