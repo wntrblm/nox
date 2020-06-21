@@ -189,6 +189,11 @@ def test_condaenv_bin_windows(make_conda):
     assert [dir_.strpath, dir_.join("Scripts").strpath] == venv.bin_paths
 
 
+def test_condaenv_(make_conda):
+    venv, dir_ = make_conda()
+    assert not venv.is_offline()
+
+
 def test_constructor_defaults(make_one):
     venv, _ = make_one()
     assert venv.location

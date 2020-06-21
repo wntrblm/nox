@@ -16,6 +16,7 @@ import os
 import platform
 import re
 import shutil
+from socket import gethostbyname
 import sys
 from typing import Any, Mapping, Optional, Tuple, Union, List
 
@@ -156,7 +157,10 @@ class PassthroughEnv(ProcessEnv):
     hints about the actual env.
     """
 
-    pass
+    @staticmethod
+    def is_offline() -> bool:
+        """As of now this is only used in conda_install"""
+        return CondaEnv.is_offline()  # pragma: no cover
 
 
 class CondaEnv(ProcessEnv):
@@ -239,6 +243,23 @@ class CondaEnv(ProcessEnv):
         nox.command.run(cmd, silent=True, log=False)
 
         return True
+
+    @staticmethod
+    def is_offline() -> bool:
+        """Return `True` if we are sure that the user is not able to connect to https://repo.anaconda.com.
+
+        Since an HTTP proxy might be correctly configured for `conda` using the `.condarc` `proxy_servers` section,
+        while not being correctly configured in the OS environment variables used by all other tools including python
+        `urllib` or `requests`, we are basically not able to do much more than testing the DNS resolution.
+
+        See details in this explanation: https://stackoverflow.com/a/62486343/7262247
+        """
+        try:
+            # DNS resolution to detect situation (1) or (2).
+            host = gethostbyname("repo.anaconda.com")
+            return host is None
+        except:  # pragma: no cover # noqa E722
+            return True
 
 
 class VirtualEnv(ProcessEnv):
