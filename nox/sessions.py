@@ -132,9 +132,15 @@ class Session:
         return self._runner.func.python
 
     @property
+    def bin_paths(self) -> Optional[List[str]]:
+        """The bin directories for the virtualenv."""
+        return self.virtualenv.bin_paths
+
+    @property
     def bin(self) -> Optional[str]:
-        """The bin directory for the virtualenv."""
-        return self.virtualenv.bin
+        """The first bin directory for the virtualenv."""
+        paths = self.bin_paths
+        return paths[0] if paths is not None else None
 
     def create_tmp(self) -> str:
         """Create, and return, a temporary directory."""
@@ -279,7 +285,7 @@ class Session:
             kwargs["external"] = True
 
         # Run a shell command.
-        return nox.command.run(args, env=env, path=self.bin, **kwargs)
+        return nox.command.run(args, env=env, paths=self.bin_paths, **kwargs)
 
     def conda_install(self, *args: str, **kwargs: Any) -> None:
         """Install invokes `conda install`_ to install packages inside of the
