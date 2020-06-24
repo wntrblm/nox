@@ -73,7 +73,7 @@ class TestSession:
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         runner.venv.env = {}
-        runner.venv.bin = "/no/bin/for/you"
+        runner.venv.bin_paths = ["/no/bin/for/you"]
         return nox.sessions.Session(runner=runner), runner
 
     def test_create_tmp(self):
@@ -100,8 +100,16 @@ class TestSession:
         assert session.env is runner.venv.env
         assert session.posargs is runner.global_config.posargs
         assert session.virtualenv is runner.venv
-        assert session.bin is runner.venv.bin
+        assert session.bin_paths is runner.venv.bin_paths
+        assert session.bin is runner.venv.bin_paths[0]
         assert session.python is runner.func.python
+
+    def test_no_bin_paths(self):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv.bin_paths = None
+        assert session.bin is None
+        assert session.bin_paths is None
 
     def test_virtualenv_as_none(self):
         session, runner = self.make_session_and_runner()
@@ -187,7 +195,7 @@ class TestSession:
             ("pip", "install", "spam"),
             env=mock.ANY,
             external=mock.ANY,
-            path=mock.ANY,
+            paths=mock.ANY,
             silent=mock.ANY,
         )
 
@@ -225,7 +233,7 @@ class TestSession:
             session.run(sys.executable, "--version")
 
         run.assert_called_once_with(
-            (sys.executable, "--version"), external=True, env=mock.ANY, path=None
+            (sys.executable, "--version"), external=True, env=mock.ANY, paths=None
         )
 
     def test_run_external_condaenv(self):
@@ -234,14 +242,17 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.allowed_globals = ("conda",)
         runner.venv.env = {}
-        runner.venv.bin = "/path/to/env/bin"
+        runner.venv.bin_paths = ["/path/to/env/bin"]
         runner.venv.create.return_value = True
 
         with mock.patch("nox.command.run", autospec=True) as run:
             session.run("conda", "--version")
 
         run.assert_called_once_with(
-            ("conda", "--version"), external=True, env=mock.ANY, path="/path/to/env/bin"
+            ("conda", "--version"),
+            external=True,
+            env=mock.ANY,
+            paths=["/path/to/env/bin"],
         )
 
     def test_run_external_with_error_on_external_run(self):
@@ -256,7 +267,7 @@ class TestSession:
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.env = {}
-        runner.venv.bin = "/path/to/env/bin"
+        runner.venv.bin_paths = ["/path/to/env/bin"]
 
         runner.global_config.error_on_external_run = True
 
@@ -315,7 +326,11 @@ class TestSession:
         with pytest.raises(ValueError, match="conda environment"):
             session.conda_install()
 
-    def test_conda_install(self):
+    @pytest.mark.parametrize(
+        "auto_offline", [False, True], ids="auto_offline={}".format
+    )
+    @pytest.mark.parametrize("offline", [False, True], ids="offline={}".format)
+    def test_conda_install(self, auto_offline, offline):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -326,6 +341,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
+        runner.venv.is_offline = lambda: offline
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -333,11 +349,13 @@ class TestSession:
         session = SessionNoSlots(runner=runner)
 
         with mock.patch.object(session, "_run", autospec=True) as run:
-            session.conda_install("requests", "urllib3")
+            args = ("--offline",) if auto_offline and offline else ()
+            session.conda_install("requests", "urllib3", auto_offline=auto_offline)
             run.assert_called_once_with(
                 "conda",
                 "install",
                 "--yes",
+                *args,
                 "--prefix",
                 "/path/to/conda/env",
                 "requests",
@@ -362,6 +380,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
+        runner.venv.is_offline = lambda: False
 
         class SessionNoSlots(nox.sessions.Session):
             pass

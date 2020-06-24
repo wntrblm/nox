@@ -162,9 +162,15 @@ class Session:
         return self._runner.func.python
 
     @property
+    def bin_paths(self) -> Optional[List[str]]:
+        """The bin directories for the virtualenv."""
+        return self.virtualenv.bin_paths
+
+    @property
     def bin(self) -> Optional[str]:
-        """The bin directory for the virtualenv."""
-        return self.virtualenv.bin
+        """The first bin directory for the virtualenv."""
+        paths = self.bin_paths
+        return paths[0] if paths is not None else None
 
     def create_tmp(self) -> str:
         """Create, and return, a temporary directory."""
@@ -309,9 +315,11 @@ class Session:
             kwargs["external"] = True
 
         # Run a shell command.
-        return nox.command.run(args, env=env, path=self.bin, **kwargs)
+        return nox.command.run(args, env=env, paths=self.bin_paths, **kwargs)
 
-    def conda_install(self, *args: str, **kwargs: Any) -> None:
+    def conda_install(
+        self, *args: str, auto_offline: bool = True, **kwargs: Any
+    ) -> None:
         """Install invokes `conda install`_ to install packages inside of the
         session's environment.
 
@@ -325,6 +333,10 @@ class Session:
 
             session.conda_install('--file', 'requirements.txt')
             session.conda_install('--file', 'requirements-dev.txt')
+
+        By default this method will detect when internet connection is not
+        available and will add the `--offline` flag automatically in that case.
+        To disable this behaviour, set `auto_offline=False`.
 
         To install the current package without clobbering conda-installed
         dependencies::
@@ -356,8 +368,22 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
+        extraopts = ()  # type: Tuple[str, ...]
+        if auto_offline and venv.is_offline():
+            logger.warning(
+                "Automatically setting the `--offline` flag as conda repo seems unreachable."
+            )
+            extraopts = ("--offline",)
+
         self._run(
-            "conda", "install", "--yes", *prefix_args, *args, external="error", **kwargs
+            "conda",
+            "install",
+            "--yes",
+            *extraopts,
+            *prefix_args,
+            *args,
+            external="error",
+            **kwargs
         )
 
     def install(self, *args: str, **kwargs: Any) -> None:

@@ -265,6 +265,15 @@ options.add_options(
         noxfile=True,
     ),
     _option_set.Option(
+        "add_timestamp",
+        "-ts",
+        "--add-timestamp",
+        group=options.groups["secondary"],
+        action="store_true",
+        help="Adds a timestamp to logged output.",
+        noxfile=True,
+    ),
+    _option_set.Option(
         "default_venv_backend",
         "-db",
         "--default-venv-backend",

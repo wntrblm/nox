@@ -122,7 +122,7 @@ def test_run_path_nonexistent():
     result = nox.command.run(
         [PYTHON, "-c", "import sys; print(sys.executable)"],
         silent=True,
-        path="/non/existent",
+        paths=["/non/existent"],
     )
 
     assert "/non/existent" not in result
@@ -135,14 +135,14 @@ def test_run_path_existent(tmpdir, monkeypatch):
 
     with mock.patch("nox.command.popen") as mock_command:
         mock_command.return_value = (0, "")
-        nox.command.run(["testexc"], silent=True, path=tmpdir.strpath)
+        nox.command.run(["testexc"], silent=True, paths=[tmpdir.strpath])
         mock_command.assert_called_with([executable.strpath], env=None, silent=True)
 
 
 def test_run_external_warns(tmpdir, caplog):
     caplog.set_level(logging.WARNING)
 
-    nox.command.run([PYTHON, "--version"], silent=True, path=tmpdir.strpath)
+    nox.command.run([PYTHON, "--version"], silent=True, paths=[tmpdir.strpath])
 
     assert "external=True" in caplog.text
 
@@ -151,7 +151,7 @@ def test_run_external_silences(tmpdir, caplog):
     caplog.set_level(logging.WARNING)
 
     nox.command.run(
-        [PYTHON, "--version"], silent=True, path=tmpdir.strpath, external=True
+        [PYTHON, "--version"], silent=True, paths=[tmpdir.strpath], external=True
     )
 
     assert "external=True" not in caplog.text
@@ -162,7 +162,7 @@ def test_run_external_raises(tmpdir, caplog):
 
     with pytest.raises(nox.command.CommandFailed):
         nox.command.run(
-            [PYTHON, "--version"], silent=True, path=tmpdir.strpath, external="error"
+            [PYTHON, "--version"], silent=True, paths=[tmpdir.strpath], external="error"
         )
 
     assert "external=True" in caplog.text
