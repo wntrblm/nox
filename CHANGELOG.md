@@ -1,5 +1,13 @@
 # Changelog
 
+## 2020.8.22
+
+- `conda_install` and `install` args are now automatically double-quoted when needed. (#312)
+- Offline mode is now auto-detected by default by `conda_install`. This allows users to continue executing Nox sessions on already installed environments. (#314)
+- Fix the default paths for Conda on Windows where the `python.exe` found was not the correct one. (#310)
+- Add the `--add-timestamp` option (#323)
+- Add `Session.run_always()`. (#331)
+
 ## 2020.5.24
 
 - Add new options for `venv_backend`, including the ability to set the backend globally. (#326)
