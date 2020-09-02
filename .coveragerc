@@ -7,3 +7,4 @@ omit =
 exclude_lines =
     pragma: no cover
     if _typing.TYPE_CHECKING:
+    @overload
