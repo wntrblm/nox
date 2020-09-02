@@ -21,6 +21,7 @@ before_install:
   # Prefer the built-in python binary.
   - export PATH="$PATH:/home/travis/miniconda3/bin"
   - conda update --yes conda
+  - export SETUPTOOLS_USE_DISTUTILS=stdlib
 install:
   - pip install --upgrade pip setuptools
   - pip install .
