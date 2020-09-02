@@ -15,23 +15,44 @@
 import collections
 import copy
 import functools
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, TypeVar, Union, overload
 
 from ._decorators import Func
 from ._typing import Python
 
+F = TypeVar('F', bound=Callable[..., Any])
+G = Callable[[F], F]
+
 _REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Func]
 
 
+@overload
+def session_decorator(__func: F) -> F:
+    ...
+
+
+@overload
 def session_decorator(
-    func: Optional[Callable] = None,
+    __func: None = ...,
+    python: Python = ...,
+    py: Python = ...,
+    reuse_venv: Optional[bool] = ...,
+    name: Optional[str] = ...,
+    venv_backend: Any = ...,
+    venv_params: Any = ...,
+) -> G:
+    ...
+
+
+def session_decorator(
+    func: Optional[F] = None,
     python: Python = None,
     py: Python = None,
     reuse_venv: Optional[bool] = None,
     name: Optional[str] = None,
     venv_backend: Any = None,
     venv_params: Any = None,
-) -> Callable:
+) -> Union[F, G]:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
     # being sent as part of the Python syntax (`@nox.session`).
