@@ -20,7 +20,7 @@ from typing import Any, Callable, Optional, TypeVar, Union, overload
 from ._decorators import Func
 from ._typing import Python
 
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 G = Callable[[F], F]
 
 _REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Func]
