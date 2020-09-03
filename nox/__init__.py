@@ -16,5 +16,6 @@ from nox._options import noxfile_options as options
 from nox._parametrize import Param as param
 from nox._parametrize import parametrize_decorator as parametrize
 from nox.registry import session_decorator as session
+from nox.sessions import Session
 
-__all__ = ["parametrize", "param", "session", "options"]
+__all__ = ["parametrize", "param", "session", "options", "Session"]
