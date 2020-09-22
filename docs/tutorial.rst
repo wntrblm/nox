@@ -110,7 +110,7 @@ To install a ``requirements.txt`` file:
 
     @nox.session
     def tests(session):
-        # same as pip install -r -requirements.txt
+        # same as pip install -r requirements.txt
         session.install("-r", "requirements.txt")
         ...
 
