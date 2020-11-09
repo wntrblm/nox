@@ -14,7 +14,7 @@
 
 import os
 import sys
-from typing import Any, Iterable, Optional, Sequence, Union, List
+from typing import Any, Iterable, List, Optional, Sequence, Union
 
 import py
 from nox.logger import logger
