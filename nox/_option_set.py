@@ -304,13 +304,16 @@ class OptionSet:
         self, command_args: Namespace, noxfile_args: Namespace
     ) -> None:
         """Merges the command-line options with the noxfile options."""
+        command_args_copy = Namespace(**vars(command_args))
         for name, option in self.options.items():
             if option.merge_func:
                 setattr(
-                    command_args, name, option.merge_func(command_args, noxfile_args)
+                    command_args,
+                    name,
+                    option.merge_func(command_args_copy, noxfile_args),
                 )
             elif option.noxfile:
-                value = getattr(command_args, name, None) or getattr(
+                value = getattr(command_args_copy, name, None) or getattr(
                     noxfile_args, name, None
                 )
                 setattr(command_args, name, value)
