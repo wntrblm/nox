@@ -14,6 +14,7 @@
 
 import os
 import sys
+from pathlib import Path
 from unittest import mock
 
 import contexter
@@ -442,6 +443,30 @@ def test_main_noxfile_options_sessions(monkeypatch):
         # Verify that the config looks correct.
         config = honor_list_request.call_args[1]["global_config"]
         assert config.sessions == ["test"]
+
+
+@pytest.fixture
+def generate_noxfile_options_pythons(tmp_path):
+    """Generate noxfile.py with test and launch_rocket sessions.
+
+    The sessions are defined for both the default and alternate Python versions.
+    The ``default_session`` and ``default_python`` parameters determine what
+    goes into ``nox.options.sessions`` and ``nox.options.pythons``, respectively.
+    """
+
+    def generate_noxfile(default_session, default_python, alternate_python):
+        path = Path(RESOURCES) / "noxfile_options_pythons.py"
+        text = path.read_text()
+        text = text.format(
+            default_session=default_session,
+            default_python=default_python,
+            alternate_python=alternate_python,
+        )
+        path = tmp_path / "noxfile.py"
+        path.write_text(text)
+        return str(path)
+
+    return generate_noxfile
 
 
 @pytest.mark.parametrize(("isatty_value", "expected"), [(True, True), (False, False)])
