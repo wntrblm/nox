@@ -41,7 +41,7 @@ options.add_groups(
 )
 
 
-def _session_filters_merge_func(
+def _sessions_and_keywords_merge_func(
     key: str, command_args: argparse.Namespace, noxfile_args: argparse.Namespace
 ) -> List[str]:
     """Only return the Noxfile value for sessions/keywords if neither sessions
@@ -221,7 +221,7 @@ options.add_options(
         "--session",
         group=options.groups["primary"],
         noxfile=True,
-        merge_func=functools.partial(_session_filters_merge_func, "sessions"),
+        merge_func=functools.partial(_sessions_and_keywords_merge_func, "sessions"),
         nargs="*",
         default=_sessions_default,
         help="Which sessions to run. By default, all sessions will run.",
@@ -243,7 +243,7 @@ options.add_options(
         "--keywords",
         group=options.groups["primary"],
         noxfile=True,
-        merge_func=functools.partial(_session_filters_merge_func, "keywords"),
+        merge_func=functools.partial(_sessions_and_keywords_merge_func, "keywords"),
         help="Only run sessions that match the given expression.",
     ),
     _option_set.Option(
