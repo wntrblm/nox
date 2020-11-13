@@ -234,7 +234,6 @@ options.add_options(
         "--python",
         group=options.groups["primary"],
         noxfile=True,
-        merge_func=functools.partial(_session_filters_merge_func, "pythons"),
         nargs="*",
         help="Only run sessions that use the given python interpreter versions.",
     ),
