@@ -500,6 +500,33 @@ def test_main_noxfile_options_with_pythons_override(
                 assert line not in stderr
 
 
+def test_main_noxfile_options_with_sessions_override(
+    capsys, monkeypatch, generate_noxfile_options_pythons
+):
+    noxfile = generate_noxfile_options_pythons(
+        default_session="test",
+        default_python=python_current_version,
+        alternate_python=python_next_version,
+    )
+
+    monkeypatch.setattr(
+        sys, "argv", ["nox", "--noxfile", noxfile, "--session", "launch_rocket"]
+    )
+
+    with mock.patch("sys.exit") as sys_exit:
+        nox.__main__.main()
+        _, stderr = capsys.readouterr()
+        sys_exit.assert_called_once_with(0)
+
+    for python_version in [python_current_version, python_next_version]:
+        for session in ["test", "launch_rocket"]:
+            line = "Running session {}-{}".format(session, python_version)
+            if session == "launch_rocket" and python_version == python_current_version:
+                assert line in stderr
+            else:
+                assert line not in stderr
+
+
 @pytest.mark.parametrize(("isatty_value", "expected"), [(True, True), (False, False)])
 def test_main_color_from_isatty(monkeypatch, isatty_value, expected):
     monkeypatch.setattr(sys, "argv", [sys.executable])
