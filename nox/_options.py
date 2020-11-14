@@ -41,21 +41,21 @@ options.add_groups(
 )
 
 
-def _session_filters_merge_func(
+def _sessions_and_keywords_merge_func(
     key: str, command_args: argparse.Namespace, noxfile_args: argparse.Namespace
 ) -> List[str]:
-    """Only return the Noxfile value for sessions/pythons/keywords if neither sessions,
-    pythons or keywords are specified on the command-line.
+    """Only return the Noxfile value for sessions/keywords if neither sessions
+    or keywords are specified on the command-line.
 
     Args:
-        key (str): This function is used for the "sessions", "pythons" and "keywords"
+        key (str): This function is used for both the "sessions" and "keywords"
             options, this allows using ``funtools.partial`` to pass the
             same function for both options.
         command_args (_option_set.Namespace): The options specified on the
             command-line.
-        noxfile_args (_option_set.Namespace): The options specified in the
+        noxfile_Args (_option_set.Namespace): The options specified in the
             Noxfile."""
-    if not any((command_args.sessions, command_args.pythons, command_args.keywords)):
+    if not command_args.sessions and not command_args.keywords:
         return getattr(noxfile_args, key)
     return getattr(command_args, key)
 
@@ -221,7 +221,7 @@ options.add_options(
         "--session",
         group=options.groups["primary"],
         noxfile=True,
-        merge_func=functools.partial(_session_filters_merge_func, "sessions"),
+        merge_func=functools.partial(_sessions_and_keywords_merge_func, "sessions"),
         nargs="*",
         default=_sessions_default,
         help="Which sessions to run. By default, all sessions will run.",
@@ -234,7 +234,6 @@ options.add_options(
         "--python",
         group=options.groups["primary"],
         noxfile=True,
-        merge_func=functools.partial(_session_filters_merge_func, "pythons"),
         nargs="*",
         help="Only run sessions that use the given python interpreter versions.",
     ),
@@ -244,7 +243,7 @@ options.add_options(
         "--keywords",
         group=options.groups["primary"],
         noxfile=True,
-        merge_func=functools.partial(_session_filters_merge_func, "keywords"),
+        merge_func=functools.partial(_sessions_and_keywords_merge_func, "keywords"),
         help="Only run sessions that match the given expression.",
     ),
     _option_set.Option(
