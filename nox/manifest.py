@@ -157,17 +157,18 @@ class Manifest:
                 # Find a matching session and copy its function which should
                 # resulting all other params being the same, except a newly
                 # added python interpeter option.
-                for session in self._all_sessions:
-                    if session.name == session_name:
-                        session_function = session.func.copy()
-                        session_function.python = python_func_name
+                session = next(
+                    (s for s in self._all_sessions if s.name == session_name)
+                )
+                session_function = session.func.copy()
+                session_function.python = python_func_name
 
-                        # Use make_session, but only take the final item which is the
-                        # most recently created session. Add this to the sessions and queue.
-                        session = self.make_session(session_name, session_function)[-1]
-                        self._all_sessions.append(session)
-                        self._queue.append(session)
-                        break
+                # Use make_session, but only take the final item which is the
+                # most recently created session. Add this to the sessions and queue.
+                session = self.make_session(session_name, session_function)[-1]
+                self._all_sessions.append(session)
+                self._queue.append(session)
+                # break
 
     def filter_by_python_interpreter(self, specified_pythons: Sequence[str]) -> None:
         """Filter sessions in the queue based on the user-specified
