@@ -10,14 +10,24 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
+    - PYTHON: "C:\\Python39"
+      # There is no miniconda for python3.9 at this time
+      CONDA: "C:\\Miniconda38"
+      NOX_SESSION: "tests-3.9"
+
+    - PYTHON: "C:\\Python39-x64"
+      # There is no miniconda for python3.9 at this time
+      CONDA: "C:\\Miniconda38-x64"
+      NOX_SESSION: "tests-3.9"
+
     - PYTHON: "C:\\Python38"
-      # There is no miniconda for python3.8 at this time
-      CONDA: "C:\\Miniconda37"
+      # There is no miniconda for python3.8 at this time (this is 3.7.6)
+      CONDA: "C:\\Miniconda38"
       NOX_SESSION: "tests-3.8"
 
     - PYTHON: "C:\\Python38-x64"
-      # There is no miniconda for python3.8 at this time
-      CONDA: "C:\\Miniconda37-x64"
+      # There is no miniconda for python3.8 at this time (this is 3.7.6)
+      CONDA: "C:\\Miniconda38-x64"
       NOX_SESSION: "tests-3.8"
 
     - PYTHON: "C:\\Python37"
@@ -36,13 +46,6 @@ environment:
       CONDA: "C:\\Miniconda36-x64"
       NOX_SESSION: "tests-3.6"
 
-    - PYTHON: "C:\\Python35"
-      CONDA: "C:\\Miniconda35"
-      NOX_SESSION: "tests-3.5"
-
-    - PYTHON: "C:\\Python35-x64"
-      CONDA: "C:\\Miniconda35-x64"
-      NOX_SESSION: "tests-3.5"
 
 install:
   # Add conda command to path.

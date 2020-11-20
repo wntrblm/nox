@@ -116,7 +116,7 @@ When collecting your sessions, Nox will create a separate session for each inter
 
 .. code-block:: python
 
-    @nox.session(python=['2.7', '3.5', '3.6', '3.7', '3.8'])
+    @nox.session(python=['2.7', '3.6', '3.7', '3.8', '3.9'])
     def tests(session):
         pass
 
@@ -125,10 +125,10 @@ Will produce these sessions:
 .. code-block:: console
 
     * tests-2.7
-    * tests-3.5
     * tests-3.6
     * tests-3.7
     * tests-3.8
+    * tests-3.9
 
 Note that this expansion happens *before* parameterization occurs, so you can still parametrize sessions with multiple interpreters.
 

@@ -282,7 +282,7 @@ If you want your session to run against multiple versions of Python:
 
 .. code-block:: python
 
-    @nox.session(python=["2.7", "3.5", "3.7"])
+    @nox.session(python=["2.7", "3.6", "3.7"])
     def test(session):
         ...
 
@@ -294,7 +294,7 @@ been expanded into three distinct sessions:
     Sessions defined in noxfile.py:
 
     * test-2.7
-    * test-3.5
+    * test-3.6
     * test-3.7
 
 You can run all of the ``test`` sessions using ``nox --sessions test`` or run
