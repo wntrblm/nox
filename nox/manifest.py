@@ -136,18 +136,18 @@ class Manifest:
             # specified wasn't listed in the parametrization, allow running
 
             for s in missing_sessions:
-                # Separate sessino name from python_func_name
+                # Separate session name from python_func_name
                 parts = s.split("-")
                 if len(parts) > 1:
                     session_name = "-".join(parts[:-1])
                     python_func_name = parts[-1]
                 else:
                     session_name = parts[0]
-                    python_func_name = ""
+                    python_func_name = None
 
                 # Search through sessions. If the session name provided isn't
-                # discovered, raise an error.
-                if session_name not in all_sessions:
+                # discovered, or this session isn't parametrized, raise an error.
+                if not python_func_name or session_name not in all_sessions:
                     # TODO: This will return all missing, not just the one that failed
                     # to be found. This could be edited to make the clear.
                     raise KeyError(
