@@ -203,6 +203,25 @@ def test_add_session_multiple_pythons():
     assert len(manifest) == 2
 
 
+def test_add_session_multiple_pythons_not_found_python():
+    manifest = Manifest({}, create_mock_config())
+
+    def session_func():
+        pass
+
+    func = Func(session_func, python=["3.5", "3.6"])
+    for session in manifest.make_session("my_session", func):
+        manifest.add_session(session)
+
+    assert len(manifest._all_sessions) == 2
+    assert len(manifest) == 2
+
+    manifest.filter_by_name(("my_session-3.8",))
+
+    assert len(manifest._all_sessions) == 3
+    assert len(manifest) == 1
+
+
 def test_add_session_parametrized():
     manifest = Manifest({}, create_mock_config())
 
