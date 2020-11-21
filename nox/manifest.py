@@ -142,7 +142,7 @@ class Manifest:
                 python_func_name = parts[-1]
             else:
                 session_name = parts[0]
-                python_func_name = None
+                python_func_name = ""
 
             # Find a matching session and copy its function which should
             # resulting all other params being the same, except a newly
