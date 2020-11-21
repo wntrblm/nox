@@ -39,10 +39,11 @@ To just check for lint errors, run:
 
 To run against a particular Python version:
 
-    nox --session tests-3.5
     nox --session tests-3.6
     nox --session tests-3.7
     nox --session tests-3.8
+    nox --session tests-3.9
+
 
 When you send a pull request Travis will handle running everything, but it is
 recommended to test as much as possible locally before pushing.
