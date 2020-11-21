@@ -131,44 +131,41 @@ class Manifest:
             )
         )
         missing_sessions = set(specified_sessions) - all_sessions
-        if missing_sessions:
-            # If a session is missing, but only because the python interpreter
-            # specified wasn't listed in the parametrization, allow running
 
-            for s in missing_sessions:
-                # Separate session name from python_func_name
-                parts = s.split("-")
-                if len(parts) > 1:
-                    session_name = "-".join(parts[:-1])
-                    python_func_name = parts[-1]
-                else:
-                    session_name = parts[0]
-                    python_func_name = None
+        # If a session is missing, but only because the python interpreter
+        # specified wasn't listed in the parametrization, allow running.
+        for s in missing_sessions:
+            # Separate session name from python_func_name
+            parts = s.split("-")
+            if len(parts) > 1:
+                session_name = "-".join(parts[:-1])
+                python_func_name = parts[-1]
+            else:
+                session_name = parts[0]
+                python_func_name = None
 
-                # Search through sessions. If the session name provided isn't
-                # discovered, or this session isn't parametrized, raise an error.
-                if not python_func_name or session_name not in all_sessions:
-                    # TODO: This will return all missing, not just the one that failed
-                    # to be found. This could be edited to make the clear.
-                    raise KeyError(
-                        "Sessions not found: {}".format(", ".join(missing_sessions))
-                    )
-
-                # Find a matching session and copy its function which should
-                # resulting all other params being the same, except a newly
-                # added python interpeter option.
-                session = next(
-                    (s for s in self._all_sessions if s.name == session_name)
-                )
+            # Find a matching session and copy its function which should
+            # resulting all other params being the same, except a newly
+            # added python interpeter option.
+            # If the session provided isn't
+            # discovered, raise an error.
+            for session in (s for s in self._all_sessions if s.name == session_name):
+                # session = [s for s in self._all_sessions if s.name == session_name][0]
                 session_function = session.func.copy()
                 session_function.python = python_func_name
 
                 # Use make_session, but only take the final item which is the
                 # most recently created session. Add this to the sessions and queue.
-                session = self.make_session(session_name, session_function)[-1]
+                session = self.make_session(session_name, session_function, multi=True)[
+                    -1
+                ]
                 self._all_sessions.append(session)
                 self._queue.append(session)
-                # break
+                break
+            else:
+                raise KeyError(
+                    "Sessions not found: {}".format(", ".join(missing_sessions))
+                )
 
     def filter_by_python_interpreter(self, specified_pythons: Sequence[str]) -> None:
         """Filter sessions in the queue based on the user-specified
