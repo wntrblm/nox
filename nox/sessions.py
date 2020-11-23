@@ -423,7 +423,7 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        self._run("pip", "install", *args, external="error", **kwargs)
+        self._run("python", "-m", "pip", "install", *args, external="error", **kwargs)
 
     def notify(self, target: "Union[str, SessionRunner]") -> None:
         """Place the given session at the end of the queue.

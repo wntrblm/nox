@@ -237,10 +237,10 @@ When you run ``nox``, it will create a two distinct sessions:
 
     $ nox
     nox > Running session tests(django='1.9')
-    nox > pip install django==1.9
+    nox > python -m pip install django==1.9
     ...
     nox > Running session tests(django='2.0')
-    nox > pip install django==2.0
+    nox > python -m pip install django==2.0
 
 
 :func:`nox.parametrize` has an interface and usage intentionally similar to `pytest's parametrize <https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize>`_.
