@@ -37,6 +37,7 @@ def create_mock_config():
     cfg = mock.sentinel.CONFIG
     cfg.force_venv_backend = None
     cfg.default_venv_backend = None
+    cfg.extra_pythons = None
     return cfg
 
 
@@ -207,7 +208,7 @@ def test_add_session_single_python_extra_python():
     cfg = mock.sentinel.CONFIG
     cfg.force_venv_backend = None
     cfg.default_venv_backend = None
-    cfg.extra_python = "3.8"
+    cfg.extra_pythons = ["3.8"]
 
     manifest = Manifest({}, cfg)
 
@@ -226,7 +227,7 @@ def test_add_session_multiple_pythons_extra_python():
     cfg = mock.sentinel.CONFIG
     cfg.force_venv_backend = None
     cfg.default_venv_backend = None
-    cfg.extra_python = "3.8"
+    cfg.extra_pythons = ["3.8"]
 
     manifest = Manifest({}, cfg)
 
