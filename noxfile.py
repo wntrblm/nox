@@ -28,7 +28,7 @@ def is_python_version(session, version):
     return py_version.startswith(version)
 
 
-@nox.session(python=["3.5", "3.6", "3.7", "3.8"])
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
 def tests(session):
     """Run test suite with pytest."""
     session.create_tmp()
@@ -44,7 +44,7 @@ def tests(session):
     session.notify("cover")
 
 
-@nox.session(python=["3.5", "3.6", "3.7", "3.8"], venv_backend="conda")
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"], venv_backend="conda")
 def conda_tests(session):
     """Run test suite with pytest."""
     session.create_tmp()
