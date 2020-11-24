@@ -203,8 +203,32 @@ def test_add_session_multiple_pythons():
     assert len(manifest) == 2
 
 
-def test_add_session_multiple_pythons_not_found_python():
-    manifest = Manifest({}, create_mock_config())
+def test_add_session_single_python_extra_python():
+    cfg = mock.sentinel.CONFIG
+    cfg.force_venv_backend = None
+    cfg.default_venv_backend = None
+    cfg.extra_python = "3.8"
+
+    manifest = Manifest({}, cfg)
+
+    def session_func():
+        pass
+
+    func = Func(session_func, python="3.5")
+    for session in manifest.make_session("my_session", func):
+        manifest.add_session(session)
+
+    assert len(manifest._all_sessions) == 2
+    assert len(manifest) == 2
+
+
+def test_add_session_multiple_pythons_extra_python():
+    cfg = mock.sentinel.CONFIG
+    cfg.force_venv_backend = None
+    cfg.default_venv_backend = None
+    cfg.extra_python = "3.8"
+
+    manifest = Manifest({}, cfg)
 
     def session_func():
         pass
@@ -213,13 +237,8 @@ def test_add_session_multiple_pythons_not_found_python():
     for session in manifest.make_session("my_session", func):
         manifest.add_session(session)
 
-    assert len(manifest._all_sessions) == 2
-    assert len(manifest) == 2
-
-    manifest.filter_by_name(("my_session-3.8",))
-
     assert len(manifest._all_sessions) == 3
-    assert len(manifest) == 1
+    assert len(manifest) == 3
 
 
 def test_add_session_parametrized():

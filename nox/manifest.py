@@ -131,41 +131,8 @@ class Manifest:
             )
         )
         missing_sessions = set(specified_sessions) - all_sessions
-
-        # If a session is missing, but only because the python interpreter
-        # specified wasn't listed in the parametrization, allow running.
-        for s in missing_sessions:
-            # Separate session name from python_func_name
-            parts = s.split("-")
-            if len(parts) > 1:
-                session_name = "-".join(parts[:-1])
-                python_func_name = parts[-1]
-            else:
-                session_name = parts[0]
-                python_func_name = ""
-
-            # Find a matching session and copy its function which should
-            # resulting all other params being the same, except a newly
-            # added python interpeter option.
-            # If the session provided isn't
-            # discovered, raise an error.
-            for session in (s for s in self._all_sessions if s.name == session_name):
-                # session = [s for s in self._all_sessions if s.name == session_name][0]
-                session_function = session.func.copy()
-                session_function.python = python_func_name
-
-                # Use make_session, but only take the final item which is the
-                # most recently created session. Add this to the sessions and queue.
-                session = self.make_session(session_name, session_function, multi=True)[
-                    -1
-                ]
-                self._all_sessions.append(session)
-                self._queue.append(session)
-                break
-            else:
-                raise KeyError(
-                    "Sessions not found: {}".format(", ".join(missing_sessions))
-                )
+        if missing_sessions:
+            raise KeyError("Sessions not found: {}".format(", ".join(missing_sessions)))
 
     def filter_by_python_interpreter(self, specified_pythons: Sequence[str]) -> None:
         """Filter sessions in the queue based on the user-specified
@@ -216,6 +183,19 @@ class Manifest:
             # instead let's set a flag, to warn later when session is actually run.
             func.should_warn[WARN_PYTHONS_IGNORED] = func.python
             func.python = False
+
+        if self._config.extra_pythons:
+            # if extra python is provided, expand the func.python list to
+            # include additional python interpreters
+            if isinstance(func.python, (list, tuple, set)):
+                func.python.extend(self._config.extra_pythons)
+            elif not multi:
+                # if this is multi, but there is only a single interpreter,
+                # it is the reentrant case.  The extra_python interpreter
+                # shouldn't be added in that case. Otherwise, add the extra
+                # specified python.
+                func.python = [func.python]
+                func.python.extend(self._config.extra_pythons)
 
         # If the func has the python attribute set to a list, we'll need
         # to expand them.

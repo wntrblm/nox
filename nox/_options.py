@@ -327,6 +327,14 @@ options.add_options(
         group=options.groups["secondary"],
         help="Directory where nox will store virtualenvs, this is ``.nox`` by default.",
     ),
+    _option_set.Option(
+        "extra_pythons",
+        "--extra-pythons",
+        "--extra-python",
+        group=options.groups["secondary"],
+        nargs="*",
+        help="Additionally, run sessions using the givein python interpreter versions.",
+    ),
     *_option_set.make_flag_pair(
         "stop_on_first_error",
         ("-x", "--stop-on-first-error"),
