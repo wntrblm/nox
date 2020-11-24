@@ -187,15 +187,17 @@ class Manifest:
         if self._config.extra_pythons:
             # if extra python is provided, expand the func.python list to
             # include additional python interpreters
+            extra_pythons = self._config.extra_pythons  # type: List[str]
             if isinstance(func.python, (list, tuple, set)):
-                func.python.extend(self._config.extra_pythons)
-            elif not multi:
-                # if this is multi, but there is only a single interpreter,
-                # it is the reentrant case.  The extra_python interpreter
-                # shouldn't be added in that case. Otherwise, add the extra
-                # specified python.
-                func.python = [func.python]
-                func.python.extend(self._config.extra_pythons)
+                func.python = list({*func.python, *extra_pythons})
+            elif not multi and func.python:
+                # if this is multi, but there is only a single interpreter, it
+                # is the reentrant case. The extra_python interpreter shouldn't
+                # be added in that case. If func.python is False, the session
+                # has no backend; treat None and the empty string equivalently.
+                # Otherwise, add the extra specified python.
+                assert isinstance(func.python, str)
+                func.python = list({func.python, *extra_pythons})
 
         # If the func has the python attribute set to a list, we'll need
         # to expand them.
