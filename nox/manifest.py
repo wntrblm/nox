@@ -23,6 +23,10 @@ from nox.sessions import Session, SessionRunner
 WARN_PYTHONS_IGNORED = "python_ignored"
 
 
+def _unique_list(*args: str) -> List[str]:
+    """Return a list without duplicates, while preserving order."""
+    return list(OrderedDict.fromkeys(args))
+
 class Manifest:
     """Session manifest.
 
@@ -190,7 +194,7 @@ class Manifest:
             # include additional python interpreters
             extra_pythons = self._config.extra_pythons  # type: List[str]
             if isinstance(func.python, (list, tuple, set)):
-                func.python = list({*func.python, *extra_pythons})
+                func.python = _unique_list(*func.python, *extra_pythons)
             elif not multi and func.python:
                 # if this is multi, but there is only a single interpreter, it
                 # is the reentrant case. The extra_python interpreter shouldn't
@@ -198,8 +202,7 @@ class Manifest:
                 # has no backend; treat None and the empty string equivalently.
                 # Otherwise, add the extra specified python.
                 assert isinstance(func.python, str)
-                func.python = list({func.python, *extra_pythons})
-
+                func.python = _unique_list(func.python, *extra_pythons)
         # If the func has the python attribute set to a list, we'll need
         # to expand them.
         if isinstance(func.python, (list, tuple, set)):
