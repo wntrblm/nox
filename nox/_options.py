@@ -333,7 +333,7 @@ options.add_options(
         "--extra-python",
         group=options.groups["secondary"],
         nargs="*",
-        help="Additionally, run sessions using the givein python interpreter versions.",
+        help="Additionally, run sessions using the given python interpreter versions.",
     ),
     *_option_set.make_flag_pair(
         "stop_on_first_error",

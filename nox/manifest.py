@@ -15,6 +15,7 @@
 import argparse
 import collections.abc
 import itertools
+from collections import OrderedDict
 from typing import Any, Iterable, Iterator, List, Mapping, Sequence, Set, Tuple, Union
 
 from nox._decorators import Call, Func
@@ -189,20 +190,29 @@ class Manifest:
             func.python = False
 
         if self._config.extra_pythons:
-            # breakpoint()
-            # if extra python is provided, expand the func.python list to
+            # If extra python is provided, expand the func.python list to
             # include additional python interpreters
             extra_pythons = self._config.extra_pythons  # type: List[str]
             if isinstance(func.python, (list, tuple, set)):
                 func.python = _unique_list(*func.python, *extra_pythons)
             elif not multi and func.python:
-                # if this is multi, but there is only a single interpreter, it
+                # If this is multi, but there is only a single interpreter, it
                 # is the reentrant case. The extra_python interpreter shouldn't
                 # be added in that case. If func.python is False, the session
                 # has no backend; treat None and the empty string equivalently.
                 # Otherwise, add the extra specified python.
                 assert isinstance(func.python, str)
                 func.python = _unique_list(func.python, *extra_pythons)
+            elif not multi:
+                # If no pythons are specified, consider extra_pythons to be an
+                # override, not an addition, as these sessions are often meant
+                # to be run once, not in a parameterized way.
+                if len(extra_pythons) == 1:
+                    # By setting func.python to a single str, the friendly name
+                    # will not have python appended, as there is a single run
+                    func.python = extra_pythons[0]
+                else:
+                    func.python = _unique_list(*extra_pythons)
         # If the func has the python attribute set to a list, we'll need
         # to expand them.
         if isinstance(func.python, (list, tuple, set)):

@@ -204,7 +204,51 @@ def test_add_session_multiple_pythons():
     assert len(manifest) == 2
 
 
-def test_add_session_single_python_extra_python():
+def test_extra_python_no_python():
+    cfg = mock.sentinel.CONFIG
+    cfg.force_venv_backend = None
+    cfg.default_venv_backend = None
+    cfg.extra_pythons = ["3.8"]
+
+    manifest = Manifest({}, cfg)
+
+    def session_func():
+        pass
+
+    func = Func(session_func)
+    for session in manifest.make_session("my_session", func):
+        manifest.add_session(session)
+
+    assert len(manifest._all_sessions) == 1
+    assert len(manifest) == 1
+    session_friendly_names = [s.friendly_name for s in manifest._all_sessions]
+    assert session_friendly_names == ["my_session"]
+    session_pythons = [s.func.python for s in manifest._all_sessions]
+    assert session_pythons == ["3.8"]
+
+def test_extra_python_no_python_multiples():
+    cfg = mock.sentinel.CONFIG
+    cfg.force_venv_backend = None
+    cfg.default_venv_backend = None
+    cfg.extra_pythons = ["3.8", "3.9"]
+
+    manifest = Manifest({}, cfg)
+
+    def session_func():
+        pass
+
+    func = Func(session_func)
+    for session in manifest.make_session("my_session", func):
+        manifest.add_session(session)
+
+    assert len(manifest._all_sessions) == 2
+    assert len(manifest) == 2
+    session_friendly_names = [s.friendly_name for s in manifest._all_sessions]
+    assert session_friendly_names == ["my_session-3.8", "my_session-3.9"]
+    session_pythons = [s.func.python for s in manifest._all_sessions]
+    assert session_pythons == ["3.8", "3.9"]
+
+def test_extra_python_single_python():
     cfg = mock.sentinel.CONFIG
     cfg.force_venv_backend = None
     cfg.default_venv_backend = None
@@ -221,25 +265,29 @@ def test_add_session_single_python_extra_python():
 
     assert len(manifest._all_sessions) == 2
     assert len(manifest) == 2
+    session_pythons = [s.func.python for s in manifest._all_sessions]
+    assert session_pythons == ["3.5", "3.8"]
 
 
-def test_add_session_multiple_pythons_extra_python():
+def test_extra_python_multiple_python():
     cfg = mock.sentinel.CONFIG
     cfg.force_venv_backend = None
     cfg.default_venv_backend = None
-    cfg.extra_pythons = ["3.8"]
+    cfg.extra_pythons = ["3.8", "3.4"]
 
     manifest = Manifest({}, cfg)
 
     def session_func():
         pass
 
-    func = Func(session_func, python=["3.5", "3.6"])
+    func = Func(session_func, python=["3.5", "3.9"])
     for session in manifest.make_session("my_session", func):
         manifest.add_session(session)
 
-    assert len(manifest._all_sessions) == 3
-    assert len(manifest) == 3
+    assert len(manifest._all_sessions) == 4
+    assert len(manifest) == 4
+    session_pythons = [s.func.python for s in manifest._all_sessions]
+    assert session_pythons == ["3.5", "3.9", "3.8", "3.4"]
 
 
 def test_add_session_parametrized():
