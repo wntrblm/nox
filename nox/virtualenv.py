@@ -16,9 +16,9 @@ import os
 import platform
 import re
 import shutil
-from socket import gethostbyname
 import sys
-from typing import Any, Mapping, Optional, Tuple, Union, List
+from socket import gethostbyname
+from typing import Any, List, Mapping, Optional, Tuple, Union
 
 import nox.command
 import py
