@@ -28,6 +28,7 @@ def _unique_list(*args: str) -> List[str]:
     """Return a list without duplicates, while preserving order."""
     return list(OrderedDict.fromkeys(args))
 
+
 class Manifest:
     """Session manifest.
 
