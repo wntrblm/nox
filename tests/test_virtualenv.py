@@ -330,6 +330,7 @@ def test__resolved_interpreter_none(make_one):
         ("3", "python3"),
         ("3.6", "python3.6"),
         ("3.6.2", "python3.6"),
+        ("3.10", "python3.10"),
         ("2.7.15", "python2.7"),
     ],
 )
