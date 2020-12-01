@@ -16,9 +16,9 @@ import os
 import platform
 import re
 import shutil
-from socket import gethostbyname
 import sys
-from typing import Any, Mapping, Optional, Tuple, Union, List
+from socket import gethostbyname
+from typing import Any, List, Mapping, Optional, Tuple, Union
 
 import nox.command
 import py
@@ -330,7 +330,7 @@ class VirtualEnv(ProcessEnv):
 
         # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
         # part and add Python to the front of it.
-        match = re.match(r"^(?P<xy_ver>\d(\.\d)?)(\.\d+)?$", self.interpreter)
+        match = re.match(r"^(?P<xy_ver>\d(\.\d+)?)(\.\d+)?$", self.interpreter)
         if match:
             xy_version = match.group("xy_ver")
             cleaned_interpreter = "python{}".format(xy_version)
@@ -347,7 +347,7 @@ class VirtualEnv(ProcessEnv):
             raise self._resolved
 
         # Allow versions of the form ``X.Y-32`` for Windows.
-        match = re.match(r"^\d\.\d-32?$", cleaned_interpreter)
+        match = re.match(r"^\d\.\d+-32?$", cleaned_interpreter)
         if match:
             # preserve the "-32" suffix, as the Python launcher expects
             # it.
