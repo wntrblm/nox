@@ -80,7 +80,7 @@ def blacken(session):
 
 @nox.session(python="3.8")
 def lint(session):
-    session.install("flake8==3.7.8", "black==19.3b0", "mypy==0.720")
+    session.install("flake8==3.7.8", "black==19.3b0", "isort==4.3.21", "mypy==0.720")
     session.run(
         "mypy",
         "--disallow-untyped-defs",
@@ -90,6 +90,7 @@ def lint(session):
     )
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", "--check", *files)
+    session.run("isort", "--check", "--recursive", *files)
     session.run("flake8", "nox", *files)
 
 
