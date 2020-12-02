@@ -161,7 +161,7 @@ If the Noxfile sets ``nox.options.reuse_existing_virtualenvs``, you can override
 
 .. _opt-running-extra-pythons:
 
-Running additional python versions
+Running additional Python versions
 ----------------------------------
 In addition to Nox supporting executing single sessions, it also supports runnings python versions that aren't specified using ``--extra-pythons``.
 
