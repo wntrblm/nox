@@ -183,6 +183,21 @@ def test_condaenv_create_interpreter(make_conda):
     assert dir_.join("bin", "python3.7").check()
 
 
+@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+def test_conda_env_create_verbose(make_conda):
+    venv, dir_ = make_conda()
+    with mock.patch("nox.virtualenv.nox.command.run") as mock_run:
+        venv.create()
+    args, kwargs = mock_run.call_args
+    assert kwargs["log"] is False
+
+    nox.options.verbose = True
+    with mock.patch("nox.virtualenv.nox.command.run") as mock_run:
+        venv.create()
+    args, kwargs = mock_run.call_args
+    assert kwargs["log"]
+
+
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 def test_condaenv_bin_windows(make_conda):
     venv, dir_ = make_conda()

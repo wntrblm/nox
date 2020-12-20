@@ -20,6 +20,7 @@ import sys
 from socket import gethostbyname
 from typing import Any, List, Mapping, Optional, Tuple, Union
 
+import nox
 import nox.command
 import py
 from nox.logger import logger
@@ -240,7 +241,7 @@ class CondaEnv(ProcessEnv):
         logger.info(
             "Creating conda env in {} with {}".format(self.location_name, python_dep)
         )
-        nox.command.run(cmd, silent=True, log=False)
+        nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
 
