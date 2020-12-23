@@ -171,6 +171,15 @@ In addition to Nox supporting executing single sessions, it also supports runnin
 
 This will, in addition to specified python versions in the Noxfile, also create sessions for the specified versions.
 
+This option can be combined with ``--python`` to replace, instead of appending, the Python interpreter for a given session::
+
+    nox --python 3.10 --extra-python 3.10 -s lint
+
+Also, you can can specify ``python`` in place of a specific version. This will run the session
+using the ``python`` specified for the current ``PATH``:
+
+    nox --python python --extra-python python -s lint
+
 
 .. _opt-stop-on-first-error:
 
