@@ -176,7 +176,7 @@ This option can be combined with ``--python`` to replace, instead of appending, 
     nox --python 3.10 --extra-python 3.10 -s lint
 
 Also, you can specify ``python`` in place of a specific version. This will run the session
-using the ``python`` specified for the current ``PATH``:
+using the ``python`` specified for the current ``PATH``::
 
     nox --python python --extra-python python -s lint
 
