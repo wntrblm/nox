@@ -21,7 +21,6 @@ from ._decorators import Func
 from ._typing import Python
 
 F = TypeVar("F", bound=Callable[..., Any])
-G = Callable[[F], F]
 
 _REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Func]
 
@@ -40,7 +39,7 @@ def session_decorator(
     name: Optional[str] = ...,
     venv_backend: Any = ...,
     venv_params: Any = ...,
-) -> G:
+) -> Callable[[F], F]:
     ...
 
 
@@ -52,7 +51,7 @@ def session_decorator(
     name: Optional[str] = None,
     venv_backend: Any = None,
     venv_params: Any = None,
-) -> Union[F, G]:
+) -> Union[F, Callable[[F], F]]:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
     # being sent as part of the Python syntax (`@nox.session`).
