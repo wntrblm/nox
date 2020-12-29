@@ -159,6 +159,28 @@ By default, Nox deletes and recreates virtualenvs every time it is run. This is 
 
 If the Noxfile sets ``nox.options.reuse_existing_virtualenvs``, you can override the Noxfile setting from the command line by using ``--no-reuse-existing-virtualenvs``.
 
+.. _opt-running-extra-pythons:
+
+Running additional Python versions
+----------------------------------
+In addition to Nox supporting executing single sessions, it also supports runnings python versions that aren't specified using ``--extra-pythons``.
+
+.. code-block:: console
+
+    nox --extra-pythons 3.8 3.9
+
+This will, in addition to specified python versions in the Noxfile, also create sessions for the specified versions.
+
+This option can be combined with ``--python`` to replace, instead of appending, the Python interpreter for a given session::
+
+    nox --python 3.10 --extra-python 3.10 -s lint
+
+Also, you can specify ``python`` in place of a specific version. This will run the session
+using the ``python`` specified for the current ``PATH``::
+
+    nox --python python --extra-python python -s lint
+
+
 .. _opt-stop-on-first-error:
 
 Stopping if any session fails
