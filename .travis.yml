@@ -23,8 +23,8 @@ before_install:
   - conda update --yes conda
   - export SETUPTOOLS_USE_DISTUTILS=stdlib
 install:
-  - pip install --upgrade pip setuptools
-  - pip install .
+  - python -m pip install --upgrade pip setuptools
+  - python -m pip install .
 script: nox --non-interactive --session "$NOXSESSION"
 deploy:
   provider: pypi
