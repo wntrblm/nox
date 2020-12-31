@@ -63,6 +63,7 @@ class NoxColoredFormatter(ColoredFormatter):
             reset=reset,
             secondary_log_colors=secondary_log_colors,
         )
+        self._simple_fmt = logging.Formatter("%(message)s")
 
     def format(self, record: Any) -> str:
         if record.levelname == "OUTPUT":
@@ -72,7 +73,7 @@ class NoxColoredFormatter(ColoredFormatter):
 
 class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore
     def __init__(self, name: str, level: int = logging.NOTSET):
-        super(LoggerWithSuccessAndOutput, self).__init__(name, level)
+        super().__init__(name, level)
         logging.addLevelName(SUCCESS, "SUCCESS")
         logging.addLevelName(OUTPUT, "OUTPUT")
 
