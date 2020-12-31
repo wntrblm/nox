@@ -139,17 +139,6 @@ def locate_using_path_and_version(version: str) -> Optional[str]:
     return None
 
 
-def _clean_location(self: "Union[CondaEnv, VirtualEnv]") -> bool:
-    """Deletes any existing path-based environment"""
-    if os.path.exists(self.location):
-        if self.reuse_existing:
-            return False
-        else:
-            shutil.rmtree(self.location)
-
-    return True
-
-
 class PassthroughEnv(ProcessEnv):
     """Represents the environment used to run nox itself
 
@@ -200,7 +189,21 @@ class CondaEnv(ProcessEnv):
         self.venv_params = venv_params if venv_params else []
         super(CondaEnv, self).__init__()
 
-    _clean_location = _clean_location
+    def _clean_location(self) -> bool:
+        """Deletes existing conda environment"""
+        if os.path.exists(self.location):
+            if self.reuse_existing:
+                return False
+            else:
+                cmd = ["conda", "remove", "--yes", "--prefix", self.location, "--all"]
+                nox.command.run(cmd, silent=True, log=False)
+                # Make sure that location is clean
+                try:
+                    shutil.rmtree(self.location)
+                except FileNotFoundError:
+                    pass
+
+        return True
 
     @property
     def bin_paths(self) -> List[str]:
@@ -302,7 +305,15 @@ class VirtualEnv(ProcessEnv):
         self.venv_params = venv_params if venv_params else []
         super(VirtualEnv, self).__init__(env={"VIRTUAL_ENV": self.location})
 
-    _clean_location = _clean_location
+    def _clean_location(self) -> bool:
+        """Deletes any existing virtual environment"""
+        if os.path.exists(self.location):
+            if self.reuse_existing:
+                return False
+            else:
+                shutil.rmtree(self.location)
+
+        return True
 
     @property
     def _resolved_interpreter(self) -> str:
