@@ -1,5 +1,15 @@
 # Changelog
 
+## 2020.12.31
+- Fix `NoxColoredFormatter.format`(#374)
+- Use conda remove to clean up existing conda environments (#373)
+- Support users specifying an undeclared parametrization of python via `--extra-python` (#361)
+- Support double-digit minor version in `python` keyword (#367)
+- Add `py.typed` to `manifest.in` (#360)
+- Update nox to latest supported python versions. (#362)
+- Decouple merging of `--python` with `nox.options` from `--sessions` and `--keywords` (#359)
+- Do not merge command-line options in place (#357)
+
 ## 2020.8.22
 
 - `conda_install` and `install` args are now automatically double-quoted when needed. (#312)
