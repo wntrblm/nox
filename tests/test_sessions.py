@@ -18,6 +18,7 @@ import operator
 import os
 import sys
 import tempfile
+from pathlib import Path
 from unittest import mock
 
 import nox.command
@@ -147,6 +148,17 @@ class TestSession:
         session, _ = self.make_session_and_runner()
 
         session.chdir(cdto)
+
+        assert os.getcwd() == cdto
+        os.chdir(current_cwd)
+
+    def test_chdir_pathlib(self, tmpdir):
+        cdto = str(tmpdir.join("cdbby").ensure(dir=True))
+        current_cwd = os.getcwd()
+
+        session, _ = self.make_session_and_runner()
+
+        session.chdir(Path(cdto))
 
         assert os.getcwd() == cdto
         os.chdir(current_cwd)
