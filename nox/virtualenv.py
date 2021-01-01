@@ -69,10 +69,12 @@ class ProcessEnv:
         return self._bin_paths
 
     @property
-    def bin(self) -> Optional[str]:
+    def bin(self) -> str:
         """The first bin directory for the virtualenv."""
         paths = self.bin_paths
-        return paths[0] if paths is not None else None
+        if paths is None:
+            raise ValueError("The environment does not have a bin directory.")
+        return paths[0]
 
     def create(self) -> bool:
         raise NotImplementedError("ProcessEnv.create should be overwritten in subclass")

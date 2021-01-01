@@ -108,7 +108,10 @@ class TestSession:
         session, runner = self.make_session_and_runner()
 
         runner.venv.bin_paths = None
-        assert session.bin is None
+        with pytest.raises(
+            ValueError, match=r"^The environment does not have a bin directory\.$"
+        ):
+            session.bin
         assert session.bin_paths is None
 
     def test_virtualenv_as_none(self):
