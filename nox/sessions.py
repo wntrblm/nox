@@ -184,7 +184,7 @@ class Session:
         """Returns True if Nox is being run in an interactive session or False otherwise."""
         return not self._runner.global_config.non_interactive and sys.stdin.isatty()
 
-    def chdir(self, dir: str) -> None:
+    def chdir(self, dir: Union[str, os.PathLike]) -> None:
         """Change the current working directory."""
         self.log("cd {}".format(dir))
         os.chdir(dir)
