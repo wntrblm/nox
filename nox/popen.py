@@ -12,9 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import locale
 import subprocess
 import sys
 from typing import IO, Mapping, Sequence, Tuple, Union
+
+
+def decode_output(output: bytes) -> str:
+    """Try to decode the given bytes with encodings from the system.
+
+    :param output: output to decode
+    :raises UnicodeDecodeError: if all encodings fail
+    :return: decoded string
+    """
+    decoded_output = ""
+    encodings = {
+        "utf8",
+        sys.stdout.encoding or "utf8",
+        sys.getdefaultencoding() or "utf8",
+        locale.getpreferredencoding() or "utf8",
+    }
+
+    for idx, encoding in enumerate(encodings):
+        try:
+            print(encoding)
+            decoded_output = output.decode(encoding)
+        except UnicodeDecodeError as exc:
+            if idx + 1 < len(encodings):
+                continue
+            exc.encoding = str(encodings).replace("'", "")
+            raise
+        else:
+            break
+
+    return decoded_output
 
 
 def popen(
@@ -45,4 +76,4 @@ def popen(
 
     return_code = proc.wait()
 
-    return return_code, out.decode("utf-8") if out else ""
+    return return_code, decode_output(out) if out else ""
