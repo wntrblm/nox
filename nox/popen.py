@@ -30,14 +30,14 @@ def decode_output(output: bytes) -> str:
     try:
         decoded_output = output.decode("utf8")
     except UnicodeDecodeError:
-        nd_enc = locale.getpreferredencoding()
-        if nd_enc.casefold() in ("utf8", "utf-8"):
+        second_encoding = locale.getpreferredencoding()
+        if second_encoding.casefold() in ("utf8", "utf-8"):
             raise
 
         try:
-            decoded_output = output.decode("utf8")
+            decoded_output = output.decode(second_encoding)
         except UnicodeDecodeError as exc:
-            exc.encoding = f"[utf-8, {nd_enc}]"
+            exc.encoding = f"[utf-8, {second_encoding}]"
             raise
 
     return decoded_output
