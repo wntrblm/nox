@@ -39,7 +39,6 @@ def decode_output(output: bytes) -> str:
         except UnicodeDecodeError as exc:
             exc.encoding = f"[utf-8, {nd_enc}]"
             raise
-            
 
     return decoded_output
 
