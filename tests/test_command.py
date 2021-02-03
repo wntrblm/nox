@@ -18,6 +18,7 @@ import sys
 from unittest import mock
 
 import nox.command
+import nox.popen
 import pytest
 
 PYTHON = sys.executable
@@ -294,3 +295,41 @@ def test_custom_stderr_failed_command(capsys, tmpdir):
         tempfile_contents = stderr.read().decode("utf-8")
         assert "out" not in tempfile_contents
         assert "err" in tempfile_contents
+
+
+def test_output_decoding() -> None:
+    result = nox.popen.decode_output(b"abc")
+
+    assert result == "abc"
+
+
+def test_output_decoding_non_ascii() -> None:
+    result = nox.popen.decode_output("ü".encode("utf-8"))
+
+    assert result == "ü"
+
+
+def test_output_decoding_utf8_only_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "utf8")
+
+    with pytest.raises(UnicodeDecodeError) as exc:
+        nox.popen.decode_output(b"\x95")
+    
+    assert exc.value.encoding == "utf-8"
+
+
+def test_output_decoding_utf8_fail_cp1252_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "cp1252")
+
+    result = nox.popen.decode_output(b"\x95")
+    
+    assert result == "•"  # U+2022
+
+
+def test_output_decoding_both_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "ascii")
+
+    with pytest.raises(UnicodeDecodeError) as exc:
+            nox.popen.decode_output(b"\x95")
+        
+    assert exc.value.encoding == "[utf-8, ascii]"
