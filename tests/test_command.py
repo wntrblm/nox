@@ -314,15 +314,17 @@ def test_output_decoding_utf8_only_fail(monkeypatch: pytest.MonkeyPatch) -> None
 
     with pytest.raises(UnicodeDecodeError) as exc:
         nox.popen.decode_output(b"\x95")
-    
+
     assert exc.value.encoding == "utf-8"
 
 
-def test_output_decoding_utf8_fail_cp1252_success(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_output_decoding_utf8_fail_cp1252_success(
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "cp1252")
 
     result = nox.popen.decode_output(b"\x95")
-    
+
     assert result == "•"  # U+2022
 
 
@@ -330,6 +332,6 @@ def test_output_decoding_both_fail(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "ascii")
 
     with pytest.raises(UnicodeDecodeError) as exc:
-            nox.popen.decode_output(b"\x95")
-        
+        nox.popen.decode_output(b"\x95")
+
     assert exc.value.encoding == "[utf-8, ascii]"
