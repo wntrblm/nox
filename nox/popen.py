@@ -26,24 +26,20 @@ def decode_output(output: bytes) -> str:
     :return: decoded string
     """
     decoded_output = ""
-    encodings = {
-        "utf8",
-        sys.stdout.encoding or "utf8",
-        sys.getdefaultencoding() or "utf8",
-        locale.getpreferredencoding() or "utf8",
-    }
 
-    for idx, encoding in enumerate(encodings):
-        try:
-            print(encoding)
-            decoded_output = output.decode(encoding)
-        except UnicodeDecodeError as exc:
-            if idx + 1 < len(encodings):
-                continue
-            exc.encoding = str(encodings).replace("'", "")
+    try:
+        decoded_output = output.decode("utf8")
+    except UnicodeDecodeError:
+        nd_enc = locale.getpreferredencoding()
+        if nd_enc.casefold() in ("utf8", "utf-8"):
             raise
-        else:
-            break
+
+        try:
+            decoded_output = output.decode("utf8")
+        except UnicodeDecodeError as exc:
+            exc.encoding = f"[utf-8, {nd_enc}]"
+            raise
+            
 
     return decoded_output
 
