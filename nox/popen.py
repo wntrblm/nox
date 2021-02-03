@@ -28,7 +28,7 @@ def decode_output(output: bytes) -> str:
     decoded_output = ""
 
     try:
-        decoded_output = output.decode("utf8")
+        decoded_output = output.decode("utf-8")
     except UnicodeDecodeError:
         second_encoding = locale.getpreferredencoding()
         if second_encoding.casefold() in ("utf8", "utf-8"):
