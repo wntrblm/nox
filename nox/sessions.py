@@ -167,10 +167,12 @@ class Session:
         return self.virtualenv.bin_paths
 
     @property
-    def bin(self) -> Optional[str]:
+    def bin(self) -> str:
         """The first bin directory for the virtualenv."""
         paths = self.bin_paths
-        return paths[0] if paths is not None else None
+        if paths is None:
+            raise ValueError("The environment does not have a bin directory.")
+        return paths[0]
 
     def create_tmp(self) -> str:
         """Create, and return, a temporary directory."""
