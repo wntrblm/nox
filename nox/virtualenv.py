@@ -43,6 +43,8 @@ class InterpreterNotFound(OSError):
 class ProcessEnv:
     """A environment with a 'bin' directory and a set of 'env' vars."""
 
+    location: str
+
     # Does this environment provide any process isolation?
     is_sandboxed = False
 
