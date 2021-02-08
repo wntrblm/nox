@@ -121,9 +121,16 @@ def patch_sysfind(make_mocked_interpreter_path):
 def test_process_env_constructor():
     penv = nox.virtualenv.ProcessEnv()
     assert not penv.bin_paths
+    with pytest.raises(
+        ValueError, match=r"^The environment does not have a bin directory\.$"
+    ):
+        penv.bin
 
     penv = nox.virtualenv.ProcessEnv(env={"SIGIL": "123"})
     assert penv.env["SIGIL"] == "123"
+
+    penv = nox.virtualenv.ProcessEnv(bin_paths=["/bin"])
+    assert penv.bin == "/bin"
 
 
 def test_process_env_create():
