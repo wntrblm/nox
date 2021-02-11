@@ -334,4 +334,4 @@ def test_output_decoding_both_fail(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(UnicodeDecodeError) as exc:
         nox.popen.decode_output(b"\x95")
 
-    assert exc.value.encoding == "[utf-8, ascii]"
+    assert exc.value.encoding == "ascii"
