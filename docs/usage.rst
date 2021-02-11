@@ -346,23 +346,6 @@ You can output a report in ``json`` format by specifying ``--report``:
     nox --report status.json
 
 
-Windows
--------
-
-Nox has provisional support for running on Windows. However, depending on your Windows, Python, and virtualenv versions there may be issues. See the following threads for more info:
-
-* `tox issue 260 <https://github.com/tox-dev/tox/issues/260>`_
-* `Python issue 24493 <http://bugs.python.org/issue24493>`_
-* `Virtualenv issue 774 <https://github.com/pypa/virtualenv/issues/774>`_
-
-The Python binaries on Windows are found via the Python `Launcher`_ for
-Windows (``py``). For example, Python 3.5 can be found by determining which
-executable is invoked by ``py -3.5``. If a given test needs to use the 32-bit
-version of a given Python, then ``X.Y-32`` should be used as the version.
-
-.. _Launcher: https://docs.python.org/3/using/windows.html#python-launcher-for-windows
-
-
 Converting from tox
 -------------------
 
