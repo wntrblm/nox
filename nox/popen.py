@@ -25,22 +25,14 @@ def decode_output(output: bytes) -> str:
     :raises UnicodeDecodeError: if all encodings fail
     :return: decoded string
     """
-    decoded_output = ""
-
     try:
-        decoded_output = output.decode("utf-8")
+        return output.decode("utf-8")
     except UnicodeDecodeError:
         second_encoding = locale.getpreferredencoding()
         if second_encoding.casefold() in ("utf8", "utf-8"):
             raise
 
-        try:
-            decoded_output = output.decode(second_encoding)
-        except UnicodeDecodeError as exc:
-            exc.encoding = f"[utf-8, {second_encoding}]"
-            raise
-
-    return decoded_output
+        return output.decode(second_encoding)
 
 
 def popen(
