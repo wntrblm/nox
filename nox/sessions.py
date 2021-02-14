@@ -138,6 +138,11 @@ class Session:
         return {"_runner": self._runner}
 
     @property
+    def name(self) -> str:
+        """The name of this session."""
+        return self._runner.friendly_name
+
+    @property
     def env(self) -> dict:
         """A dictionary of environment variables to pass into all commands."""
         return self.virtualenv.env

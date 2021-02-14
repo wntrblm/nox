@@ -98,6 +98,7 @@ class TestSession:
     def test_properties(self):
         session, runner = self.make_session_and_runner()
 
+        assert session.name is runner.friendly_name
         assert session.env is runner.venv.env
         assert session.posargs is runner.global_config.posargs
         assert session.virtualenv is runner.venv
