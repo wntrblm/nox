@@ -18,6 +18,8 @@ import io
 import json
 import os
 import platform
+from pathlib import Path
+from textwrap import dedent
 from unittest import mock
 
 import nox
@@ -76,6 +78,31 @@ def test_load_nox_module_expandvars():
 
 def test_load_nox_module_not_found():
     config = _options.options.namespace(noxfile="bogus.py")
+    assert tasks.load_nox_module(config) == 2
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        dedent(
+            """
+            import nox
+            nox.needs_version = ">=9999.99.99"
+            """
+        ),
+        dedent(
+            """
+            import nox
+            NOX_NEEDS_VERSION = ">=9999.99.99"
+            nox.needs_version = NOX_NEEDS_VERSION
+            """
+        ),
+    ],
+)
+def test_load_nox_module_needs_version(text: str, tmp_path: Path):
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(text)
+    config = _options.options.namespace(noxfile=str(noxfile))
     assert tasks.load_nox_module(config) == 2
 
 
