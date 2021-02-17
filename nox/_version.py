@@ -39,14 +39,14 @@ def get_nox_version() -> str:
     return metadata.version("nox")
 
 
-def _parse_string_constant(node: ast.AST) -> Optional[str]:
+def _parse_string_constant(node: ast.AST) -> Optional[str]:  # pragma: no cover
     """Return the value of a string constant."""
-    if sys.version_info < (3, 8):  # pragma: no cover
+    if sys.version_info < (3, 8):
         if isinstance(node, ast.Str) and isinstance(node.s, str):
             return node.s
     elif isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
-    return None  # pragma: no cover
+    return None
 
 
 def _parse_needs_version(source: str, filename: str = "<unknown>") -> Optional[str]:
