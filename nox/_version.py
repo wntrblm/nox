@@ -13,13 +13,25 @@
 # limitations under the License.
 
 import ast
+import contextlib
 import sys
 from typing import Optional
+
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.version import InvalidVersion, Version
 
 try:
     import importlib.metadata as metadata
 except ImportError:  # pragma: no cover
     import importlib_metadata as metadata
+
+
+class VersionCheckFailed(Exception):
+    """The Nox version does not satisfy what ``nox.needs_version`` specifies."""
+
+
+class InvalidVersionSpecifier(Exception):
+    """The ``nox.needs_version`` specifier cannot be parsed."""
 
 
 def get_nox_version() -> str:
@@ -60,3 +72,46 @@ def _read_needs_version(filename: str) -> Optional[str]:
         source = io.read()
 
     return _parse_needs_version(source, filename=filename)
+
+
+def _check_nox_version_satisfies(needs_version: str) -> None:
+    """Check if the Nox version satisfies the given specifiers."""
+    version = Version(get_nox_version())
+
+    try:
+        specifiers = SpecifierSet(needs_version)
+    except InvalidSpecifier as error:
+        message = f"Cannot parse `nox.needs_version`: {error}"
+        with contextlib.suppress(InvalidVersion):
+            Version(needs_version)
+            message += f", did you mean '>= {needs_version}'?"
+        raise InvalidVersionSpecifier(message)
+
+    if not specifiers.contains(version, prereleases=True):
+        raise VersionCheckFailed(
+            f"The Noxfile requires nox {specifiers}, you have {version}"
+        )
+
+
+def check_nox_version(filename: Optional[str] = None) -> None:
+    """Check if ``nox.needs_version`` in the user's noxfile is satisfied.
+
+    Args:
+        filename: The location of the user's noxfile. When specified, read
+            ``nox.needs_version`` from the noxfile by parsing the AST.
+            Otherwise, assume that the noxfile was already imported, and
+            use ``nox.needs_version`` directly.
+
+    Raises:
+        VersionCheckFailed: The Nox version does not satisfy what
+            ``nox.needs_version`` specifies.
+        InvalidVersionSpecifier: The ``nox.needs_version`` specifier cannot be
+            parsed.
+    """
+    from nox import needs_version
+
+    if filename is not None:
+        needs_version = _read_needs_version(filename)  # noqa: F811
+
+    if needs_version is not None:
+        _check_nox_version_satisfies(needs_version)
