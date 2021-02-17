@@ -89,7 +89,7 @@ def _check_nox_version_satisfies(needs_version: str) -> None:
 
     if not specifiers.contains(version, prereleases=True):
         raise VersionCheckFailed(
-            f"The Noxfile requires nox {specifiers}, you have {version}"
+            f"The Noxfile requires Nox {specifiers}, you have {version}"
         )
 
 
