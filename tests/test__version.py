@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nox import needs_version
-from nox._version import get_nox_version
+from textwrap import dedent
+from typing import Optional
 
+import pytest
+from nox import needs_version
+from nox._version import _parse_needs_version, get_nox_version
 
 
 def test_needs_version_default() -> None:
@@ -27,3 +30,51 @@ def test_get_nox_version() -> None:
     result = get_nox_version()
     year, month, day = [int(part) for part in result.split(".")[:3]]
     assert year >= 2020
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("", None),
+        (
+            dedent(
+                """
+                import nox
+                nox.needs_version = '>=2020.12.31'
+                """
+            ),
+            ">=2020.12.31",
+        ),
+        (
+            dedent(
+                """
+                import nox
+                nox.needs_version = 'bogus'
+                nox.needs_version = '>=2020.12.31'
+                """
+            ),
+            ">=2020.12.31",
+        ),
+        (
+            dedent(
+                """
+                import nox.sessions
+                nox.needs_version = '>=2020.12.31'
+                """
+            ),
+            ">=2020.12.31",
+        ),
+        (
+            dedent(
+                """
+                import nox as _nox
+                _nox.needs_version = '>=2020.12.31'
+                """
+            ),
+            None,
+        ),
+    ],
+)
+def test_parse_needs_version(text: str, expected: Optional[str]) -> None:
+    """It is parsed successfully."""
+    assert expected == _parse_needs_version(text)
