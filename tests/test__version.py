@@ -13,8 +13,17 @@
 # limitations under the License.
 
 from nox import needs_version
+from nox._version import get_nox_version
+
 
 
 def test_needs_version_default() -> None:
     """It is None by default."""
     assert needs_version is None
+
+
+def test_get_nox_version() -> None:
+    """It returns something that looks like a Nox version."""
+    result = get_nox_version()
+    year, month, day = [int(part) for part in result.split(".")[:3]]
+    assert year >= 2020
