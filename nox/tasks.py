@@ -23,6 +23,7 @@ from typing import List, Union
 import nox
 from colorlog.escape_codes import parse_colors
 from nox import _options, registry
+from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
 from nox.logger import logger
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 from nox.sessions import Result
@@ -51,15 +52,26 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
             os.path.expandvars(global_config.noxfile)
         )
 
+        # Check ``nox.needs_version`` by parsing the AST.
+        check_nox_version(global_config.noxfile)
+
         # Move to the path where the Noxfile is.
         # This will ensure that the Noxfile's path is on sys.path, and that
         # import-time path resolutions work the way the Noxfile author would
         # guess.
         os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
-        return importlib.machinery.SourceFileLoader(
+        module = importlib.machinery.SourceFileLoader(
             "user_nox_module", global_config.noxfile
         ).load_module()  # type: ignore
 
+        # Check ``nox.needs_version`` as set by the Noxfile.
+        check_nox_version()
+
+        return module
+
+    except (VersionCheckFailed, InvalidVersionSpecifier) as error:
+        logger.error(str(error))
+        return 2
     except (IOError, OSError):
         logger.exception("Failed to load Noxfile {}".format(global_config.noxfile))
         return 2
