@@ -414,8 +414,8 @@ exits with a friendly error message. For example:
 
 Any of the version specifiers defined in `PEP 440`_ can be used.
 
-**Important**: Version requirements *must* be specified as a string literal,
-using a simple assignment to ``nox.needs_version`` at the module level. This
-allows Nox to check the version without importing the Noxfile.
+.. warning:: Version requirements *must* be specified as a string literal,
+    using a simple assignment to ``nox.needs_version`` at the module level. This
+    allows Nox to check the version without importing the Noxfile.
 
 .. _PEP 440: https://www.python.org/dev/peps/pep-0440/
