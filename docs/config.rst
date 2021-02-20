@@ -398,7 +398,7 @@ When invoking ``nox``, any options specified on the command line take precedence
 Nox version requirements
 ------------------------
 
-Nox version requirements can be specified in your ``noxfile.py`` by setting
+Nox version requirements can be specified in your Noxfile by setting
 ``nox.needs_version``. If the Nox version does not satisfy the requirements, Nox
 exits with a friendly error message. For example:
 
@@ -412,9 +412,10 @@ exits with a friendly error message. For example:
     def pytest(session):
         session.run("pytest")
 
+Any of the version specifiers defined in `PEP 440`_ can be used.
 
-Any of the version specifiers defined in `PEP 440`_ can be used. If you assign a
-string literal like in the example above, Nox is able to check the version
-without importing the Noxfile.
+**Important**: Version requirements *must* be specified as a string literal,
+using a simple assignment to ``nox.needs_version`` at the module level. This
+allows Nox to check the version without importing the Noxfile.
 
 .. _PEP 440: https://www.python.org/dev/peps/pep-0440/

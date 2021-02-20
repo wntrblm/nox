@@ -18,7 +18,6 @@ import io
 import json
 import os
 import platform
-from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
@@ -81,29 +80,42 @@ def test_load_nox_module_not_found():
     assert tasks.load_nox_module(config) == 2
 
 
-@pytest.mark.parametrize(
-    "text",
-    [
-        dedent(
-            """
-            import nox
-            nox.needs_version = ">=9999.99.99"
-            """
-        ),
-        dedent(
-            """
-            import nox
-            NOX_NEEDS_VERSION = ">=9999.99.99"
-            nox.needs_version = NOX_NEEDS_VERSION
-            """
-        ),
-    ],
-)
-def test_load_nox_module_needs_version(text: str, tmp_path: Path):
+@pytest.fixture
+def reset_needs_version():
+    """Do not leak ``nox.needs_version`` between tests."""
+    try:
+        yield
+    finally:
+        nox.needs_version = None
+
+
+def test_load_nox_module_needs_version_static(reset_needs_version, tmp_path):
+    text = dedent(
+        """
+        import nox
+        nox.needs_version = ">=9999.99.99"
+        """
+    )
     noxfile = tmp_path / "noxfile.py"
     noxfile.write_text(text)
     config = _options.options.namespace(noxfile=str(noxfile))
     assert tasks.load_nox_module(config) == 2
+
+
+def test_load_nox_module_needs_version_dynamic(reset_needs_version, tmp_path):
+    text = dedent(
+        """
+        import nox
+        NOX_NEEDS_VERSION = ">=9999.99.99"
+        nox.needs_version = NOX_NEEDS_VERSION
+        """
+    )
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(text)
+    config = _options.options.namespace(noxfile=str(noxfile))
+    tasks.load_nox_module(config)
+    # Dynamic version requirements are not checked.
+    assert nox.needs_version == ">=9999.99.99"
 
 
 def test_discover_session_functions_decorator():

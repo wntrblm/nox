@@ -60,14 +60,9 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         # import-time path resolutions work the way the Noxfile author would
         # guess.
         os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
-        module = importlib.machinery.SourceFileLoader(
+        return importlib.machinery.SourceFileLoader(
             "user_nox_module", global_config.noxfile
         ).load_module()  # type: ignore
-
-        # Check ``nox.needs_version`` as set by the Noxfile.
-        check_nox_version()
-
-        return module
 
     except (VersionCheckFailed, InvalidVersionSpecifier) as error:
         logger.error(str(error))

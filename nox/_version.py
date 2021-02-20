@@ -93,14 +93,13 @@ def _check_nox_version_satisfies(needs_version: str) -> None:
         )
 
 
-def check_nox_version(filename: Optional[str] = None) -> None:
+def check_nox_version(filename: str) -> None:
     """Check if ``nox.needs_version`` in the user's noxfile is satisfied.
 
     Args:
-        filename: The location of the user's noxfile. When specified, read
-            ``nox.needs_version`` from the noxfile by parsing the AST.
-            Otherwise, assume that the noxfile was already imported, and
-            use ``nox.needs_version`` directly.
+
+        filename: The location of the user's noxfile. ``nox.needs_version`` is
+            read from the noxfile by parsing the AST.
 
     Raises:
         VersionCheckFailed: The Nox version does not satisfy what
@@ -108,10 +107,7 @@ def check_nox_version(filename: Optional[str] = None) -> None:
         InvalidVersionSpecifier: The ``nox.needs_version`` specifier cannot be
             parsed.
     """
-    from nox import needs_version
-
-    if filename is not None:
-        needs_version = _read_needs_version(filename)  # noqa: F811
+    needs_version = _read_needs_version(filename)
 
     if needs_version is not None:
         _check_nox_version_satisfies(needs_version)
