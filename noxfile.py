@@ -14,10 +14,11 @@
 
 import functools
 import os
+import platform
 
 import nox
 
-ON_APPVEYOR = os.environ.get("APPVEYOR") == "True"
+ON_WINDOWS_CI = "CI" in os.environ and platform.system() == "Windows"
 
 
 def is_python_version(session, version):
@@ -60,12 +61,11 @@ def conda_tests(session):
 @nox.session
 def cover(session):
     """Coverage analysis."""
+    if ON_WINDOWS_CI:
+        return
+
     session.install("coverage")
-    if ON_APPVEYOR:
-        fail_under = "--fail-under=99"
-    else:
-        fail_under = "--fail-under=100"
-    session.run("coverage", "report", fail_under, "--show-missing")
+    session.run("coverage", "report", "--fail-under=100", "--show-missing")
     session.run("coverage", "erase")
 
 
