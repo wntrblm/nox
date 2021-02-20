@@ -18,7 +18,7 @@ import platform
 
 import nox
 
-ON_WINDOWS = platform.system == "Windows"
+ON_WINDOWS_CI = "CI" in os.environ and platform.system() == "Windows"
 
 
 def is_python_version(session, version):
@@ -61,7 +61,7 @@ def conda_tests(session):
 @nox.session
 def cover(session):
     """Coverage analysis."""
-    if ON_WINDOWS:
+    if ON_WINDOWS_CI:
         return
 
     session.install("coverage")
