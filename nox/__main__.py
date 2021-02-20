@@ -22,12 +22,8 @@ control to :meth:``nox.workflow.execute``.
 import sys
 
 from nox import _options, tasks, workflow
+from nox._version import get_nox_version
 from nox.logger import setup_logging
-
-try:
-    import importlib.metadata as metadata
-except ImportError:  # pragma: no cover
-    import importlib_metadata as metadata
 
 
 def main() -> None:
@@ -38,7 +34,7 @@ def main() -> None:
         return
 
     if args.version:
-        print(metadata.version("nox"), file=sys.stderr)
+        print(get_nox_version(), file=sys.stderr)
         return
 
     setup_logging(
