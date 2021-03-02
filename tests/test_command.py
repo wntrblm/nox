@@ -207,6 +207,31 @@ def marker(tmp_path):
     return tmp_path / "marker"
 
 
+def interrupt_process(proc):
+    """Send SIGINT or CTRL_C_EVENT to the process."""
+    if platform.system() == "Windows":
+        # https://stackoverflow.com/a/35792192
+        import threading
+
+        handler = signal.getsignal(signal.SIGINT)
+        event = threading.Event()
+
+        def handler_set_event(signum, frame):
+            event.set()
+            return handler(signum, frame)
+
+        signal.signal(signal.SIGINT, handler_set_event)
+
+        try:
+            os.kill(0, signal.CTRL_C_EVENT)
+            while not event.is_set():
+                pass
+        finally:
+            signal.signal(signal.SIGINT, handler)
+    else:
+        proc.send_signal(signal.SIGINT)
+
+
 @pytest.fixture
 def command_with_keyboard_interrupt(monkeypatch, marker):
     """Monkeypatch Popen.communicate to raise KeyboardInterrupt."""
@@ -224,9 +249,7 @@ def command_with_keyboard_interrupt(monkeypatch, marker):
                 time.sleep(0.05)
 
             # Send a real keyboard interrupt to the child.
-            proc.send_signal(
-                signal.CTRL_C_EVENT if platform.system() == "Windows" else signal.SIGINT
-            )
+            interrupt_process(proc)
 
             # Fake a keyboard interrupt in the parent.
             raise KeyboardInterrupt
