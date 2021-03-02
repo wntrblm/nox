@@ -103,7 +103,7 @@ def test_run_env_unicode():
     result = nox.command.run(
         [PYTHON, "-c", 'import os; print(os.environ["SIGIL"])'],
         silent=True,
-        env={u"SIGIL": u"123"},
+        env={"SIGIL": "123"},
     )
 
     assert "123" in result
