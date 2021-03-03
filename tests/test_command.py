@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import ctypes
 import logging
 import os
 import platform
@@ -27,6 +28,15 @@ import nox.popen
 import pytest
 
 PYTHON = sys.executable
+
+skip_on_windows_console = pytest.mark.skipif(
+    platform.system() == "Windows" and "DETACHED_FROM_CONSOLE" not in os.environ,
+    reason="Do not run this test attached to a Windows console.",
+)
+
+only_on_windows = pytest.mark.skipif(
+    platform.system() != "Windows", reason="Only run this test on Windows."
+)
 
 
 def test_run_defaults(capsys):
@@ -207,32 +217,23 @@ def marker(tmp_path):
     return tmp_path / "marker"
 
 
+def enable_ctrl_c(enabled):
+    """Enable keyboard interrupts (CTRL-C) on Windows."""
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+    if not kernel32.SetConsoleCtrlHandler(None, not enabled):
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
 def interrupt_process(proc):
     """Send SIGINT or CTRL_C_EVENT to the process."""
-    if platform.system() == "Windows" and "CI" in os.environ:
-        # Do nothing. The interrupt would be received by every console process,
-        # including the parent process of pytest that is running the CI step.
-        return
-
     if platform.system() == "Windows":
-        # https://stackoverflow.com/a/35792192
-        import threading
+        # Disable Ctrl-C so we don't terminate ourselves.
+        enable_ctrl_c(False)
 
-        handler = signal.getsignal(signal.SIGINT)
-        event = threading.Event()
-
-        def handler_set_event(signum, frame):
-            event.set()
-            return handler(signum, frame)
-
-        signal.signal(signal.SIGINT, handler_set_event)
-
-        try:
-            os.kill(0, signal.CTRL_C_EVENT)
-            while not event.is_set():
-                pass
-        finally:
-            signal.signal(signal.SIGINT, handler)
+        # Send the keyboard interrupt to all processes attached to the current
+        # console session.
+        os.kill(0, signal.CTRL_C_EVENT)
     else:
         proc.send_signal(signal.SIGINT)
 
@@ -240,6 +241,10 @@ def interrupt_process(proc):
 @pytest.fixture
 def command_with_keyboard_interrupt(monkeypatch, marker):
     """Monkeypatch Popen.communicate to raise KeyboardInterrupt."""
+    if platform.system() == "Windows":
+        # Enable Ctrl-C because the child inherits the setting from us.
+        enable_ctrl_c(True)
+
     communicate = subprocess.Popen.communicate
 
     def wrapper(proc, *args, **kwargs):
@@ -278,6 +283,26 @@ def format_program(program, marker):
     return dedent(program).format(MAIN=dedent(main))
 
 
+def run_pytest_without_console_window(test):
+    """Run the given test in a subprocess detached from the console window."""
+    env = dict(os.environ, DETACHED_FROM_CONSOLE="")
+    creationflags = (
+        subprocess.CREATE_NO_WINDOW
+        if sys.version_info[:2] >= (3, 7)
+        else subprocess.CREATE_NEW_CONSOLE
+    )
+
+    subprocess.run(
+        ["pytest", f"{__file__}::{test}"],
+        env=env,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        creationflags=creationflags,
+    )
+
+
+@skip_on_windows_console
 @pytest.mark.parametrize(
     "program",
     [
@@ -307,10 +332,13 @@ def test_interrupt_raises(command_with_keyboard_interrupt, program, marker):
         nox.command.run([PYTHON, "-c", format_program(program, marker)])
 
 
-@pytest.mark.skipif(
-    platform.system() == "Windows" and "CI" in os.environ,
-    reason="On Windows CI, the keyboard interrupt would terminate our parent process.",
-)
+@only_on_windows
+def test_interrupt_raises_on_windows():
+    """It kills the process and reraises the keyboard interrupt."""
+    run_pytest_without_console_window("test_interrupt_raises")
+
+
+@skip_on_windows_console
 def test_interrupt_handled(command_with_keyboard_interrupt, marker):
     """It does not raise if the child handles the keyboard interrupt."""
     program = """
@@ -324,6 +352,12 @@ def test_interrupt_handled(command_with_keyboard_interrupt, marker):
     {MAIN}
     """
     nox.command.run([PYTHON, "-c", format_program(program, marker)])
+
+
+@only_on_windows
+def test_interrupt_handled_on_windows():
+    """It does not raise if the child handles the keyboard interrupt."""
+    run_pytest_without_console_window("test_interrupt_handled")
 
 
 def test_custom_stdout(capsys, tmpdir):
