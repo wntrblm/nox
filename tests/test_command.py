@@ -209,6 +209,11 @@ def marker(tmp_path):
 
 def interrupt_process(proc):
     """Send SIGINT or CTRL_C_EVENT to the process."""
+    if platform.system() == "Windows" and "CI" in os.environ:
+        # Do nothing. The interrupt would be received by every console process,
+        # including the parent process of pytest that is running the CI step.
+        return
+
     if platform.system() == "Windows":
         # https://stackoverflow.com/a/35792192
         import threading
@@ -302,6 +307,10 @@ def test_interrupt_raises(command_with_keyboard_interrupt, program, marker):
         nox.command.run([PYTHON, "-c", format_program(program, marker)])
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows" and "CI" in os.environ,
+    reason="On Windows CI, the keyboard interrupt would terminate our parent process.",
+)
 def test_interrupt_handled(command_with_keyboard_interrupt, marker):
     """It does not raise if the child handles the keyboard interrupt."""
     program = """
