@@ -12,10 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
 import locale
 import subprocess
 import sys
-from typing import IO, Mapping, Sequence, Tuple, Union
+from typing import IO, Mapping, Optional, Sequence, Tuple, Union
+
+
+def shutdown_process(proc: subprocess.Popen) -> Tuple[Optional[bytes], Optional[bytes]]:
+    """Gracefully shutdown a child process."""
+
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        return proc.communicate(timeout=0.3)
+
+    proc.terminate()
+
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        return proc.communicate(timeout=0.2)
+
+    proc.kill()
+
+    return proc.communicate()
 
 
 def decode_output(output: bytes) -> str:
@@ -57,9 +74,9 @@ def popen(
         sys.stdout.flush()
 
     except KeyboardInterrupt:
-        proc.terminate()
-        proc.wait()
-        raise
+        out, err = shutdown_process(proc)
+        if proc.returncode != 0:
+            raise
 
     return_code = proc.wait()
 
