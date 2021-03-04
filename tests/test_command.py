@@ -29,9 +29,9 @@ import pytest
 
 PYTHON = sys.executable
 
-skip_on_windows_console = pytest.mark.skipif(
-    platform.system() == "Windows" and "DETACHED_FROM_CONSOLE" not in os.environ,
-    reason="Do not run this test attached to a Windows console.",
+skip_on_windows_primary_console_session = pytest.mark.skipif(
+    platform.system() == "Windows" and "SECONDARY_CONSOLE_SESSION" not in os.environ,
+    reason="On Windows, this test must run in a separate console session.",
 )
 
 only_on_windows = pytest.mark.skipif(
@@ -283,9 +283,9 @@ def format_program(program, marker):
     return dedent(program).format(MAIN=dedent(main))
 
 
-def run_pytest_without_console_window(test):
-    """Run the given test in a subprocess detached from the console window."""
-    env = dict(os.environ, DETACHED_FROM_CONSOLE="")
+def run_pytest_in_new_console_session(test):
+    """Run the given test in a separate console session."""
+    env = dict(os.environ, SECONDARY_CONSOLE_SESSION="")
     creationflags = (
         subprocess.CREATE_NO_WINDOW
         if sys.version_info[:2] >= (3, 7)
@@ -302,7 +302,7 @@ def run_pytest_without_console_window(test):
     )
 
 
-@skip_on_windows_console
+@skip_on_windows_primary_console_session
 @pytest.mark.parametrize(
     "program",
     [
@@ -335,10 +335,10 @@ def test_interrupt_raises(command_with_keyboard_interrupt, program, marker):
 @only_on_windows
 def test_interrupt_raises_on_windows():
     """It kills the process and reraises the keyboard interrupt."""
-    run_pytest_without_console_window("test_interrupt_raises")
+    run_pytest_in_new_console_session("test_interrupt_raises")
 
 
-@skip_on_windows_console
+@skip_on_windows_primary_console_session
 def test_interrupt_handled(command_with_keyboard_interrupt, marker):
     """It does not raise if the child handles the keyboard interrupt."""
     program = """
@@ -357,7 +357,7 @@ def test_interrupt_handled(command_with_keyboard_interrupt, marker):
 @only_on_windows
 def test_interrupt_handled_on_windows():
     """It does not raise if the child handles the keyboard interrupt."""
-    run_pytest_without_console_window("test_interrupt_handled")
+    run_pytest_in_new_console_session("test_interrupt_handled")
 
 
 def test_custom_stdout(capsys, tmpdir):
