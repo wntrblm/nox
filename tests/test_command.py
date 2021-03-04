@@ -293,7 +293,7 @@ def run_pytest_in_new_console_session(test):
     )
 
     subprocess.run(
-        ["pytest", f"{__file__}::{test}"],
+        [sys.executable, "-m", "pytest", f"{__file__}::{test}"],
         env=env,
         check=True,
         stdout=subprocess.PIPE,
