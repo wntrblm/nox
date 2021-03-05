@@ -14,7 +14,20 @@
 
 import functools
 import itertools
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import (
+    AbstractSet,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
+
+VALID_SESSION_PARAMS = frozenset(["python", "py"])
 
 
 class Param:
@@ -78,10 +91,14 @@ class Param:
         raise NotImplementedError
 
 
-def _apply_param_specs(param_specs: List[Param], f: Any) -> Any:
+def _apply_param_specs(
+    param_specs: List[Param], sessionparams: AbstractSet[str], f: Any
+) -> Any:
     previous_param_specs = getattr(f, "parametrize", None)
     new_param_specs = update_param_specs(previous_param_specs, param_specs)
+    sessionparams |= getattr(f, "sessionparams", frozenset())
     setattr(f, "parametrize", new_param_specs)
+    setattr(f, "sessionparams", sessionparams)
     return f
 
 
@@ -92,6 +109,7 @@ def parametrize_decorator(
     arg_names: Union[str, List[str], Tuple[str]],
     arg_values_list: Union[Iterable[ArgValue], ArgValue],
     ids: Optional[Iterable[Optional[str]]] = None,
+    sessionparams: Optional[Iterable[str]] = None,
 ) -> Callable[[Any], Any]:
     """Parametrize a session.
 
@@ -111,6 +129,9 @@ def parametrize_decorator(
             argument name, for example ``[(1, 'a'), (2, 'b')]``.
         ids (Sequence[str]): Optional sequence of test IDs to use for the
             parametrized arguments.
+        sessionparams (Iterable[str]): Optionally, parameters to be passed
+            to ``@nox.session`` instead of the session function. Currently, only
+            ``python`` and its alias ``py`` are supported.
     """
 
     # Allow args names to be specified as any of 'arg', 'arg,arg2' or ('arg', 'arg2')
@@ -151,7 +172,16 @@ def parametrize_decorator(
 
         param_specs.append(param_spec)
 
-    return functools.partial(_apply_param_specs, param_specs)
+    sessionparams = frozenset(sessionparams if sessionparams is not None else [])
+    invalidparams = sessionparams - VALID_SESSION_PARAMS
+    if invalidparams:
+        raise ValueError(
+            "nox.parametrize received an invalid session parameter: {}".format(
+                ", ".join(invalidparams)
+            )
+        )
+
+    return functools.partial(_apply_param_specs, param_specs, sessionparams)
 
 
 def update_param_specs(

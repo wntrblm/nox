@@ -240,8 +240,11 @@ class Manifest:
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
-        parametrize = func.parametrize  # type: ignore
-        calls = Call.generate_calls(func, parametrize)
+        parametrize, sessionparams = (
+            func.parametrize,  # type: ignore
+            func.sessionparams,  # type: ignore
+        )
+        calls = Call.generate_calls(func, parametrize, sessionparams)
         for call in calls:
             long_names = []
             if not multi:

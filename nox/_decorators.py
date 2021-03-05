@@ -1,7 +1,7 @@
 import copy
 import functools
 import types
-from typing import Any, Callable, Dict, Iterable, List, Optional, cast
+from typing import AbstractSet, Any, Callable, Dict, Iterable, List, Optional, cast
 
 from . import _typing
 
@@ -65,10 +65,20 @@ class Func(FunctionDecorator):
 
 
 class Call(Func):
-    def __init__(self, func: Func, param_spec: "Param") -> None:
+    def __init__(
+        self, func: Func, param_spec: "Param", sessionparams: AbstractSet[str]
+    ) -> None:
+        call_spec = param_spec.call_spec
+
+        for sessionparam in sessionparams & call_spec.keys() & {"python", "py"}:
+            python = call_spec[sessionparam]
+            break
+        else:
+            python = func.python
+
         super().__init__(
             func,
-            func.python,
+            python,
             func.reuse_venv,
             None,
             func.venv_backend,
@@ -76,12 +86,19 @@ class Call(Func):
             func.should_warn,
         )
         self.param_spec = param_spec
+        self.sessionparams = sessionparams
         self.session_signature = "({})".format(param_spec)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        kwargs.update(self.param_spec.call_spec)
+        kwargs.update(
+            (key, value)
+            for key, value in self.param_spec.call_spec.items()
+            if key not in self.sessionparams
+        )
         return super().__call__(*args, **kwargs)
 
     @classmethod
-    def generate_calls(cls, func: Func, param_specs: "Iterable[Param]") -> "List[Call]":
-        return [cls(func, param_spec) for param_spec in param_specs]
+    def generate_calls(
+        cls, func: Func, param_specs: "Iterable[Param]", sessionparams: AbstractSet[str]
+    ) -> "List[Call]":
+        return [cls(func, param_spec, sessionparams) for param_spec in param_specs]
