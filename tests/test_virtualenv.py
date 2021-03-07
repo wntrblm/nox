@@ -301,16 +301,12 @@ def test_create_venv_backend(make_one):
     venv.create()
 
 
+@pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
 def test_create_interpreter(make_one):
-    interpreter = "3.7" if IS_WINDOWS else "python3"
-    venv, dir_ = make_one(interpreter=interpreter)
+    venv, dir_ = make_one(interpreter="python3")
     venv.create()
-    if IS_WINDOWS:
-        assert dir_.join("Scripts", "python.exe").check()
-        assert not dir_.join("Scripts", "python37.exe").check()
-    else:
-        assert dir_.join("bin", "python").check()
-        assert dir_.join("bin", "python3").check()
+    assert dir_.join("bin", "python").check()
+    assert dir_.join("bin", "python3").check()
 
 
 def test__resolved_interpreter_none(make_one):
