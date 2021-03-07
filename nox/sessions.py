@@ -151,7 +151,7 @@ class Session:
     def posargs(self) -> List[str]:
         """This is set to any extra arguments
         passed to ``nox`` on the commandline."""
-        return self._runner.global_config.posargs
+        return self._runner.posargs
 
     @property
     def virtualenv(self) -> ProcessEnv:
@@ -432,7 +432,9 @@ class Session:
 
         self._run("python", "-m", "pip", "install", *args, external="error", **kwargs)
 
-    def notify(self, target: "Union[str, SessionRunner]") -> None:
+    def notify(
+        self, target: "Union[str, SessionRunner]", posargs: Optional[List[str]] = None
+    ) -> None:
         """Place the given session at the end of the queue.
 
         This method is idempotent; multiple notifications to the same session
@@ -443,7 +445,7 @@ class Session:
                 may be specified as the appropriate string (same as used for
                 ``nox -s``) or using the function object.
         """
-        self._runner.manifest.notify(target)
+        self._runner.manifest.notify(target, posargs)
 
     def log(self, *args: Any, **kwargs: Any) -> None:
         """Outputs a log during the session."""
@@ -466,6 +468,7 @@ class SessionRunner:
         func: Func,
         global_config: argparse.Namespace,
         manifest: "Manifest",
+        posargs: Optional[List[str]] = None,
     ) -> None:
         self.name = name
         self.signatures = signatures
@@ -473,6 +476,18 @@ class SessionRunner:
         self.global_config = global_config
         self.manifest = manifest
         self.venv = None  # type: Optional[ProcessEnv]
+        self._posargs = posargs
+
+    @property
+    def posargs(self) -> List[str]:
+        if self._posargs is not None:
+            return self._posargs
+        else:
+            return self.global_config.posargs
+
+    @posargs.setter
+    def posargs(self, value: Optional[List[str]]) -> None:
+        self._posargs = value
 
     @property
     def description(self) -> Optional[str]:

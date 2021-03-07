@@ -16,7 +16,18 @@ import argparse
 import collections.abc
 import itertools
 from collections import OrderedDict
-from typing import Any, Iterable, Iterator, List, Mapping, Sequence, Set, Tuple, Union
+from typing import (
+    Any,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 from nox._decorators import Call, Func
 from nox.sessions import Session, SessionRunner
@@ -257,7 +268,9 @@ class Manifest:
     def next(self) -> SessionRunner:
         return self.__next__()
 
-    def notify(self, session: Union[str, SessionRunner]) -> bool:
+    def notify(
+        self, session: Union[str, SessionRunner], posargs: Optional[List[str]] = None
+    ) -> bool:
         """Enqueue the specified session in the queue.
 
         If the session is already in the queue, or has been run already,
@@ -282,6 +295,8 @@ class Manifest:
         # the end of the queue.
         for s in self._all_sessions:
             if s == session or s.name == session or session in s.signatures:
+                if posargs is not None:
+                    s.posargs = posargs
                 self._queue.append(s)
                 return True
 
