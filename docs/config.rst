@@ -88,13 +88,22 @@ Configuring a session's virtualenv
 
 By default, Nox will create a new virtualenv for each session using the same interpreter that Nox uses. If you installed Nox using Python 3.6, Nox will use Python 3.6 by default for all of your sessions.
 
-You can tell Nox to use a different Python interpreter/version by specifying the ``python``  argument (or its alias ``py``) to ``@nox.session``:
+You can tell Nox to use a different Python interpreter/version by specifying the ``python`` argument (or its alias ``py``) to ``@nox.session``:
 
 .. code-block:: python
 
     @nox.session(python='2.7')
     def tests(session):
         pass
+
+.. note::
+
+    The Python binaries on Windows are found via the Python `Launcher`_ for
+    Windows (``py``). For example, Python 3.9 can be found by determining which
+    executable is invoked by ``py -3.9``. If a given test needs to use the 32-bit
+    version of a given Python, then ``X.Y-32`` should be used as the version.
+
+    .. _Launcher: https://docs.python.org/3/using/windows.html#python-launcher-for-windows
 
 You can also tell Nox to run your session against multiple Python interpreters. Nox will create a separate virtualenv and run the session for each interpreter you specify. For example, this session will run twice - once for Python 2.7 and once for Python 3.6:
 
@@ -116,7 +125,7 @@ When collecting your sessions, Nox will create a separate session for each inter
 
 .. code-block:: python
 
-    @nox.session(python=['2.7', '3.5', '3.6', '3.7', '3.8'])
+    @nox.session(python=['2.7', '3.6', '3.7', '3.8', '3.9'])
     def tests(session):
         pass
 
@@ -125,14 +134,14 @@ Will produce these sessions:
 .. code-block:: console
 
     * tests-2.7
-    * tests-3.5
     * tests-3.6
     * tests-3.7
     * tests-3.8
+    * tests-3.9
 
 Note that this expansion happens *before* parameterization occurs, so you can still parametrize sessions with multiple interpreters.
 
-If you want to disable virtualenv creation altogether, you can set ``python`` to ``False``:
+If you want to disable virtualenv creation altogether, you can set ``python`` to ``False``, or set ``venv_backend`` to ``"none"``, both are equivalent. Note that this can be done temporarily through the :ref:`--no-venv <opt-force-venv-backend>` commandline flag, too.
 
 .. code-block:: python
 
@@ -237,10 +246,10 @@ When you run ``nox``, it will create a two distinct sessions:
 
     $ nox
     nox > Running session tests(django='1.9')
-    nox > pip install django==1.9
+    nox > python -m pip install django==1.9
     ...
     nox > Running session tests(django='2.0')
-    nox > pip install django==2.0
+    nox > python -m pip install django==2.0
 
 
 :func:`nox.parametrize` has an interface and usage intentionally similar to `pytest's parametrize <https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize>`_.
@@ -274,7 +283,7 @@ If you only want to run one of the parametrized sessions, see :ref:`running_para
 Giving friendly names to parametrized sessions
 ----------------------------------------------
 
-The automatically generated names for parametrized sessions, such as ``tests(django='1.9', database='postgres')``, can be long and unwieldy to work with even with using :ref:`keyword filtering <opt-sessions-and-keywords>`. You can give parametrized sessions custom IDs to help in this scenario. These two examples are equivalent:
+The automatically generated names for parametrized sessions, such as ``tests(django='1.9', database='postgres')``, can be long and unwieldy to work with even with using :ref:`keyword filtering <opt-sessions-pythons-and-keywords>`. You can give parametrized sessions custom IDs to help in this scenario. These two examples are equivalent:
 
 .. code-block:: python
 
@@ -330,7 +339,6 @@ Produces these sessions when running ``nox --list``:
     * tests(mysql, new)
 
 
-
 The session object
 ------------------
 
@@ -372,8 +380,11 @@ Or, if you wanted to provide a set of sessions that are run by default:
 The following options can be specified in the Noxfile:
 
 * ``nox.options.envdir`` is equivalent to specifying :ref:`--envdir <opt-envdir>`.
-* ``nox.options.sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-and-keywords>`.
-* ``nox.options.keywords`` is equivalent to specifying :ref:`-k or --keywords <opt-sessions-and-keywords>`.
+* ``nox.options.sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-pythons-and-keywords>`.
+* ``nox.options.pythons`` is equivalent to specifying :ref:`-p or --pythons <opt-sessions-pythons-and-keywords>`.
+* ``nox.options.keywords`` is equivalent to specifying :ref:`-k or --keywords <opt-sessions-pythons-and-keywords>`.
+* ``nox.options.default_venv_backend`` is equivalent to specifying :ref:`-db or --default-venv-backend <opt-default-venv-backend>`.
+* ``nox.options.force_venv_backend`` is equivalent to specifying :ref:`-fb or --force-venv-backend <opt-force-venv-backend>`.
 * ``nox.options.reuse_existing_virtualenvs`` is equivalent to specifying :ref:`--reuse-existing-virtualenvs <opt-reuse-existing-virtualenvs>`. You can force this off by specifying ``--no-reuse-existing-virtualenvs`` during invocation.
 * ``nox.options.stop_on_first_error`` is equivalent to specifying :ref:`--stop-on-first-error <opt-stop-on-first-error>`. You can force this off by specifying ``--no-stop-on-first-error`` during invocation.
 * ``nox.options.error_on_missing_interpreters`` is equivalent to specifying :ref:`--error-on-missing-interpreters <opt-error-on-missing-interpreters>`. You can force this off by specifying ``--no-error-on-missing-interpreters`` during invocation.
@@ -382,3 +393,29 @@ The following options can be specified in the Noxfile:
 
 
 When invoking ``nox``, any options specified on the command line take precedence over the options specified in the Noxfile. If either ``--sessions`` or ``--keywords`` is specified on the command line, *both* options specified in the Noxfile will be ignored.
+
+
+Nox version requirements
+------------------------
+
+Nox version requirements can be specified in your Noxfile by setting
+``nox.needs_version``. If the Nox version does not satisfy the requirements, Nox
+exits with a friendly error message. For example:
+
+.. code-block:: python
+
+    import nox
+
+    nox.needs_version = ">=2019.5.30"
+
+    @nox.session(name="test")  # name argument was added in 2019.5.30
+    def pytest(session):
+        session.run("pytest")
+
+Any of the version specifiers defined in `PEP 440`_ can be used.
+
+.. warning:: Version requirements *must* be specified as a string literal,
+    using a simple assignment to ``nox.needs_version`` at the module level. This
+    allows Nox to check the version without importing the Noxfile.
+
+.. _PEP 440: https://www.python.org/dev/peps/pep-0440/

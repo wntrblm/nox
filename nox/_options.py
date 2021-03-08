@@ -27,15 +27,17 @@ options = _option_set.OptionSet(
     description="Nox is a Python automation toolkit.", add_help=False
 )
 
-options.add_group(
-    "primary",
-    "Primary arguments",
-    "These are the most common arguments used when invoking Nox.",
-)
-options.add_group(
-    "secondary",
-    "Additional arguments & flags",
-    "These arguments are used to control Nox's behavior or control advanced features.",
+options.add_groups(
+    _option_set.OptionGroup(
+        "primary",
+        "Primary arguments",
+        "These are the most common arguments used when invoking Nox.",
+    ),
+    _option_set.OptionGroup(
+        "secondary",
+        "Additional arguments & flags",
+        "These arguments are used to control Nox's behavior or control advanced features.",
+    ),
 )
 
 
@@ -56,6 +58,49 @@ def _sessions_and_keywords_merge_func(
     if not command_args.sessions and not command_args.keywords:
         return getattr(noxfile_args, key)
     return getattr(command_args, key)
+
+
+def _default_venv_backend_merge_func(
+    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+) -> str:
+    """Merge default_venv_backend from command args and nox file. Default is "virtualenv".
+
+    Args:
+        command_args (_option_set.Namespace): The options specified on the
+            command-line.
+        noxfile_Args (_option_set.Namespace): The options specified in the
+            Noxfile.
+    """
+    return (
+        command_args.default_venv_backend
+        or noxfile_args.default_venv_backend
+        or "virtualenv"
+    )
+
+
+def _force_venv_backend_merge_func(
+    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+) -> str:
+    """Merge force_venv_backend from command args and nox file. Default is None.
+
+    Args:
+        command_args (_option_set.Namespace): The options specified on the
+            command-line.
+        noxfile_Args (_option_set.Namespace): The options specified in the
+            Noxfile.
+    """
+    if command_args.no_venv:
+        if (
+            command_args.force_venv_backend is not None
+            and command_args.force_venv_backend != "none"
+        ):
+            raise ValueError(
+                "You can not use `--no-venv` with a non-none `--force-venv-backend`"
+            )
+        else:
+            return "none"
+    else:
+        return command_args.force_venv_backend or noxfile_args.force_venv_backend
 
 
 def _envdir_merge_func(
@@ -148,14 +193,14 @@ options.add_options(
         "help",
         "-h",
         "--help",
-        group="primary",
+        group=options.groups["primary"],
         action="store_true",
         help="Show this help message and exit.",
     ),
     _option_set.Option(
         "version",
         "--version",
-        group="primary",
+        group=options.groups["primary"],
         action="store_true",
         help="Show the Nox version and exit.",
     ),
@@ -164,7 +209,7 @@ options.add_options(
         "-l",
         "--list-sessions",
         "--list",
-        group="primary",
+        group=options.groups["primary"],
         action="store_true",
         help="List all available sessions and exit.",
     ),
@@ -174,7 +219,7 @@ options.add_options(
         "-e",
         "--sessions",
         "--session",
-        group="primary",
+        group=options.groups["primary"],
         noxfile=True,
         merge_func=functools.partial(_sessions_and_keywords_merge_func, "sessions"),
         nargs="*",
@@ -183,9 +228,20 @@ options.add_options(
         completer=_session_completer,
     ),
     _option_set.Option(
+        "pythons",
+        "-p",
+        "--pythons",
+        "--python",
+        group=options.groups["primary"],
+        noxfile=True,
+        nargs="*",
+        help="Only run sessions that use the given python interpreter versions.",
+    ),
+    _option_set.Option(
         "keywords",
         "-k",
         "--keywords",
+        group=options.groups["primary"],
         noxfile=True,
         merge_func=functools.partial(_sessions_and_keywords_merge_func, "keywords"),
         help="Only run sessions that match the given expression.",
@@ -193,7 +249,7 @@ options.add_options(
     _option_set.Option(
         "posargs",
         "posargs",
-        group="primary",
+        group=options.groups["primary"],
         nargs=argparse.REMAINDER,
         help="Arguments following ``--`` that are passed through to the session(s).",
         finalizer_func=_posargs_finalizer,
@@ -202,23 +258,64 @@ options.add_options(
         "verbose",
         "-v",
         "--verbose",
-        group="secondary",
+        group=options.groups["secondary"],
         action="store_true",
         help="Logs the output of all commands run including commands marked silent.",
         noxfile=True,
+    ),
+    _option_set.Option(
+        "add_timestamp",
+        "-ts",
+        "--add-timestamp",
+        group=options.groups["secondary"],
+        action="store_true",
+        help="Adds a timestamp to logged output.",
+        noxfile=True,
+    ),
+    _option_set.Option(
+        "default_venv_backend",
+        "-db",
+        "--default-venv-backend",
+        group=options.groups["secondary"],
+        noxfile=True,
+        merge_func=_default_venv_backend_merge_func,
+        help="Virtual environment backend to use by default for nox sessions, this is ``'virtualenv'`` by default but "
+        "any of ``('virtualenv', 'conda', 'venv')`` are accepted.",
+        choices=["none", "virtualenv", "conda", "venv"],
+    ),
+    _option_set.Option(
+        "force_venv_backend",
+        "-fb",
+        "--force-venv-backend",
+        group=options.groups["secondary"],
+        noxfile=True,
+        merge_func=_force_venv_backend_merge_func,
+        help="Virtual environment backend to force-use for all nox sessions in this run, overriding any other venv "
+        "backend declared in the nox file and ignoring the default backend. Any of ``('virtualenv', 'conda', 'venv')`` "
+        "are accepted.",
+        choices=["none", "virtualenv", "conda", "venv"],
+    ),
+    _option_set.Option(
+        "no_venv",
+        "--no-venv",
+        group=options.groups["secondary"],
+        default=False,
+        action="store_true",
+        help="Runs the selected sessions directly on the current interpreter, without creating a venv. This is an alias "
+        "for '--force-venv-backend none'.",
     ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
         ("-r", "--reuse-existing-virtualenvs"),
         ("--no-reuse-existing-virtualenvs",),
-        group="secondary",
+        group=options.groups["secondary"],
         help="Re-use existing virtualenvs instead of recreating them.",
     ),
     _option_set.Option(
         "noxfile",
         "-f",
         "--noxfile",
-        group="secondary",
+        group=options.groups["secondary"],
         default="noxfile.py",
         help="Location of the Python file containing nox sessions.",
     ),
@@ -227,48 +324,56 @@ options.add_options(
         "--envdir",
         noxfile=True,
         merge_func=_envdir_merge_func,
-        group="secondary",
+        group=options.groups["secondary"],
         help="Directory where nox will store virtualenvs, this is ``.nox`` by default.",
+    ),
+    _option_set.Option(
+        "extra_pythons",
+        "--extra-pythons",
+        "--extra-python",
+        group=options.groups["secondary"],
+        nargs="*",
+        help="Additionally, run sessions using the given python interpreter versions.",
     ),
     *_option_set.make_flag_pair(
         "stop_on_first_error",
         ("-x", "--stop-on-first-error"),
         ("--no-stop-on-first-error",),
-        group="secondary",
+        group=options.groups["secondary"],
         help="Stop after the first error.",
     ),
     *_option_set.make_flag_pair(
         "error_on_missing_interpreters",
         ("--error-on-missing-interpreters",),
         ("--no-error-on-missing-interpreters",),
-        group="secondary",
+        group=options.groups["secondary"],
         help="Error instead of skipping sessions if an interpreter can not be located.",
     ),
     *_option_set.make_flag_pair(
         "error_on_external_run",
         ("--error-on-external-run",),
         ("--no-error-on-external-run",),
-        group="secondary",
+        group=options.groups["secondary"],
         help="Error if run() is used to execute a program that isn't installed in a session's virtualenv.",
     ),
     _option_set.Option(
         "install_only",
         "--install-only",
-        group="secondary",
+        group=options.groups["secondary"],
         action="store_true",
         help="Skip session.run invocations in the Noxfile.",
     ),
     _option_set.Option(
         "report",
         "--report",
-        group="secondary",
+        group=options.groups["secondary"],
         noxfile=True,
         help="Output a report of all sessions to the given filename.",
     ),
     _option_set.Option(
         "non_interactive",
         "--non-interactive",
-        group="secondary",
+        group=options.groups["secondary"],
         action="store_true",
         help="Force session.interactive to always be False, even in interactive sessions.",
     ),
@@ -276,7 +381,7 @@ options.add_options(
         "nocolor",
         "--nocolor",
         "--no-color",
-        group="secondary",
+        group=options.groups["secondary"],
         default=lambda: "NO_COLOR" in os.environ,
         action="store_true",
         help="Disable all color output.",
@@ -285,13 +390,17 @@ options.add_options(
         "forcecolor",
         "--forcecolor",
         "--force-color",
-        group="secondary",
+        group=options.groups["secondary"],
         default=False,
         action="store_true",
         help="Force color output, even if stdout is not an interactive terminal.",
     ),
     _option_set.Option(
-        "color", "--color", hidden=True, finalizer_func=_color_finalizer
+        "color",
+        "--color",
+        group=options.groups["secondary"],
+        hidden=True,
+        finalizer_func=_color_finalizer,
     ),
 )
 

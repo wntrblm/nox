@@ -20,7 +20,7 @@ long_description = open("README.rst", "r", encoding="utf-8").read()
 
 setup(
     name="nox",
-    version="2019.11.9",
+    version="2020.12.31",
     description="Flexible test automation.",
     long_description=long_description,
     url="https://nox.thea.codes",
@@ -35,10 +35,10 @@ setup(
         "Environment :: Console",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Operating System :: POSIX",
         "Operating System :: MacOS",
         "Operating System :: Unix",
@@ -52,6 +52,7 @@ setup(
     install_requires=[
         "argcomplete>=1.9.4,<2.0",
         "colorlog>=2.6.1,<5.0.0",
+        "packaging>=20.9",
         "py>=1.4.0,<2.0.0",
         "virtualenv>=14.0.0",
         "importlib_metadata; python_version < '3.8'",
@@ -68,5 +69,5 @@ setup(
         "Source Code": "https://github.com/theacodes/nox",
         "Bug Tracker": "https://github.com/theacodes/nox/issues",
     },
-    python_requires=">=3.5",
+    python_requires=">=3.6",
 )

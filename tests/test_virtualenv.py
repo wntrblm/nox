@@ -120,10 +120,17 @@ def patch_sysfind(make_mocked_interpreter_path):
 
 def test_process_env_constructor():
     penv = nox.virtualenv.ProcessEnv()
-    assert not penv.bin
+    assert not penv.bin_paths
+    with pytest.raises(
+        ValueError, match=r"^The environment does not have a bin directory\.$"
+    ):
+        penv.bin
 
     penv = nox.virtualenv.ProcessEnv(env={"SIGIL": "123"})
     assert penv.env["SIGIL"] == "123"
+
+    penv = nox.virtualenv.ProcessEnv(bin_paths=["/bin"])
+    assert penv.bin == "/bin"
 
 
 def test_process_env_create():
@@ -191,7 +198,12 @@ def test_condaenv_create_interpreter(make_conda):
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 def test_condaenv_bin_windows(make_conda):
     venv, dir_ = make_conda()
-    assert dir_.join("Scripts").strpath == venv.bin
+    assert [dir_.strpath, dir_.join("Scripts").strpath] == venv.bin_paths
+
+
+def test_condaenv_(make_conda):
+    venv, dir_ = make_conda()
+    assert not venv.is_offline()
 
 
 def test_constructor_defaults(make_one):
@@ -214,13 +226,16 @@ def test_env(monkeypatch, make_one):
     monkeypatch.setenv("SIGIL", "123")
     venv, _ = make_one()
     assert venv.env["SIGIL"] == "123"
-    assert venv.bin in venv.env["PATH"]
-    assert venv.bin not in os.environ["PATH"]
+    assert len(venv.bin_paths) == 1
+    assert venv.bin_paths[0] in venv.env["PATH"]
+    assert venv.bin_paths[0] not in os.environ["PATH"]
 
 
 def test_blacklisted_env(monkeypatch, make_one):
     monkeypatch.setenv("__PYVENV_LAUNCHER__", "meep")
     venv, _ = make_one()
+    assert len(venv.bin_paths) == 1
+    assert venv.bin_paths[0] == venv.bin
     assert "__PYVENV_LAUNCHER__" not in venv.bin
 
 
@@ -254,8 +269,11 @@ def test__clean_location(monkeypatch, make_one):
     assert venv._clean_location()
 
 
-def test_bin(make_one):
+def test_bin_paths(make_one):
     venv, dir_ = make_one()
+
+    assert len(venv.bin_paths) == 1
+    assert venv.bin_paths[0] == venv.bin
 
     if IS_WINDOWS:
         assert dir_.join("Scripts").strpath == venv.bin
@@ -266,6 +284,8 @@ def test_bin(make_one):
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 def test_bin_windows(make_one):
     venv, dir_ = make_one()
+    assert len(venv.bin_paths) == 1
+    assert venv.bin_paths[0] == venv.bin
     assert dir_.join("Scripts").strpath == venv.bin
 
 
@@ -322,6 +342,7 @@ def test__resolved_interpreter_none(make_one):
         ("3", "python3"),
         ("3.6", "python3.6"),
         ("3.6.2", "python3.6"),
+        ("3.10", "python3.10"),
         ("2.7.15", "python2.7"),
     ],
 )

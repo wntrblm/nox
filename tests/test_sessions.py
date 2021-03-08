@@ -14,8 +14,11 @@
 
 import argparse
 import logging
+import operator
 import os
 import sys
+import tempfile
+from pathlib import Path
 from unittest import mock
 
 import nox.command
@@ -71,17 +74,47 @@ class TestSession:
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         runner.venv.env = {}
-        runner.venv.bin = "/no/bin/for/you"
+        runner.venv.bin_paths = ["/no/bin/for/you"]
         return nox.sessions.Session(runner=runner), runner
+
+    def test_create_tmp(self):
+        session, runner = self.make_session_and_runner()
+        with tempfile.TemporaryDirectory() as root:
+            runner.global_config.envdir = root
+            tmpdir = session.create_tmp()
+            assert session.env["TMPDIR"] == tmpdir
+            assert tmpdir.startswith(root)
+
+    def test_create_tmp_twice(self):
+        session, runner = self.make_session_and_runner()
+        with tempfile.TemporaryDirectory() as root:
+            runner.global_config.envdir = root
+            runner.venv.bin = bin
+            session.create_tmp()
+            tmpdir = session.create_tmp()
+            assert session.env["TMPDIR"] == tmpdir
+            assert tmpdir.startswith(root)
 
     def test_properties(self):
         session, runner = self.make_session_and_runner()
 
+        assert session.name is runner.friendly_name
         assert session.env is runner.venv.env
         assert session.posargs is runner.global_config.posargs
         assert session.virtualenv is runner.venv
-        assert session.bin is runner.venv.bin
+        assert session.bin_paths is runner.venv.bin_paths
+        assert session.bin is runner.venv.bin_paths[0]
         assert session.python is runner.func.python
+
+    def test_no_bin_paths(self):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv.bin_paths = None
+        with pytest.raises(
+            ValueError, match=r"^The environment does not have a bin directory\.$"
+        ):
+            session.bin
+        assert session.bin_paths is None
 
     def test_virtualenv_as_none(self):
         session, runner = self.make_session_and_runner()
@@ -123,6 +156,17 @@ class TestSession:
         assert os.getcwd() == cdto
         os.chdir(current_cwd)
 
+    def test_chdir_pathlib(self, tmpdir):
+        cdto = str(tmpdir.join("cdbby").ensure(dir=True))
+        current_cwd = os.getcwd()
+
+        session, _ = self.make_session_and_runner()
+
+        session.chdir(Path(cdto))
+
+        assert os.getcwd() == cdto
+        os.chdir(current_cwd)
+
     def test_run_bad_args(self):
         session, _ = self.make_session_and_runner()
 
@@ -132,7 +176,7 @@ class TestSession:
     def test_run_with_func(self):
         session, _ = self.make_session_and_runner()
 
-        assert session.run(lambda a, b: a + b, 1, 2) == 3
+        assert session.run(operator.add, 1, 2) == 3
 
     def test_run_with_func_error(self):
         session, _ = self.make_session_and_runner()
@@ -149,7 +193,7 @@ class TestSession:
         runner.global_config.install_only = True
 
         with mock.patch.object(nox.command, "run") as run:
-            session.run("spam", "eggs")
+            assert session.run("spam", "eggs") is None
 
         run.assert_not_called()
 
@@ -164,10 +208,10 @@ class TestSession:
             session.run("spam", "eggs")
 
         run.assert_called_once_with(
-            ("pip", "install", "spam"),
+            ("python", "-m", "pip", "install", "spam"),
             env=mock.ANY,
             external=mock.ANY,
-            path=mock.ANY,
+            paths=mock.ANY,
             silent=mock.ANY,
         )
 
@@ -205,7 +249,7 @@ class TestSession:
             session.run(sys.executable, "--version")
 
         run.assert_called_once_with(
-            (sys.executable, "--version"), external=True, env=mock.ANY, path=None
+            (sys.executable, "--version"), external=True, env=mock.ANY, paths=None
         )
 
     def test_run_external_condaenv(self):
@@ -214,14 +258,17 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.allowed_globals = ("conda",)
         runner.venv.env = {}
-        runner.venv.bin = "/path/to/env/bin"
+        runner.venv.bin_paths = ["/path/to/env/bin"]
         runner.venv.create.return_value = True
 
         with mock.patch("nox.command.run", autospec=True) as run:
             session.run("conda", "--version")
 
         run.assert_called_once_with(
-            ("conda", "--version"), external=True, env=mock.ANY, path="/path/to/env/bin"
+            ("conda", "--version"),
+            external=True,
+            env=mock.ANY,
+            paths=["/path/to/env/bin"],
         )
 
     def test_run_external_with_error_on_external_run(self):
@@ -236,19 +283,56 @@ class TestSession:
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.env = {}
-        runner.venv.bin = "/path/to/env/bin"
+        runner.venv.bin_paths = ["/path/to/env/bin"]
 
         runner.global_config.error_on_external_run = True
 
         with pytest.raises(nox.command.CommandFailed, match="External"):
             session.run(sys.executable, "--version")
 
+    def test_run_always_bad_args(self):
+        session, _ = self.make_session_and_runner()
+
+        with pytest.raises(ValueError) as exc_info:
+            session.run_always()
+
+        exc_args = exc_info.value.args
+        assert exc_args == ("At least one argument required to run_always().",)
+
+    def test_run_always_success(self):
+        session, _ = self.make_session_and_runner()
+
+        assert session.run_always(operator.add, 1300, 37) == 1337
+
+    def test_run_always_install_only(self, caplog):
+        session, runner = self.make_session_and_runner()
+        runner.global_config.install_only = True
+
+        assert session.run_always(operator.add, 23, 19) == 42
+
     def test_conda_install_bad_args(self):
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "dummy"
 
         with pytest.raises(ValueError, match="arg"):
             session.conda_install()
+
+    def test_conda_install_bad_args_odd_nb_double_quotes(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "./not/a/location"
+
+        with pytest.raises(ValueError, match="odd number of quotes"):
+            session.conda_install('a"a')
+
+    def test_conda_install_bad_args_cannot_escape(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "./not/a/location"
+
+        with pytest.raises(ValueError, match="Cannot escape"):
+            session.conda_install('a"o"<a')
 
     def test_conda_install_not_a_condaenv(self):
         session, runner = self.make_session_and_runner()
@@ -258,7 +342,11 @@ class TestSession:
         with pytest.raises(ValueError, match="conda environment"):
             session.conda_install()
 
-    def test_conda_install(self):
+    @pytest.mark.parametrize(
+        "auto_offline", [False, True], ids="auto_offline={}".format
+    )
+    @pytest.mark.parametrize("offline", [False, True], ids="offline={}".format)
+    def test_conda_install(self, auto_offline, offline):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -269,6 +357,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
+        runner.venv.is_offline = lambda: offline
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -276,11 +365,13 @@ class TestSession:
         session = SessionNoSlots(runner=runner)
 
         with mock.patch.object(session, "_run", autospec=True) as run:
-            session.conda_install("requests", "urllib3")
+            args = ("--offline",) if auto_offline and offline else ()
+            session.conda_install("requests", "urllib3", auto_offline=auto_offline)
             run.assert_called_once_with(
                 "conda",
                 "install",
                 "--yes",
+                *args,
                 "--prefix",
                 "/path/to/conda/env",
                 "requests",
@@ -289,7 +380,12 @@ class TestSession:
                 external="error",
             )
 
-    def test_conda_install_non_default_kwargs(self):
+    @pytest.mark.parametrize(
+        "version_constraint",
+        ["no", "yes", "already_dbl_quoted"],
+        ids="version_constraint={}".format,
+    )
+    def test_conda_install_non_default_kwargs(self, version_constraint):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -300,14 +396,25 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
+        runner.venv.is_offline = lambda: False
 
         class SessionNoSlots(nox.sessions.Session):
             pass
 
         session = SessionNoSlots(runner=runner)
 
+        if version_constraint == "no":
+            pkg_requirement = passed_arg = "urllib3"
+        elif version_constraint == "yes":
+            pkg_requirement = "urllib3<1.25"
+            passed_arg = '"%s"' % pkg_requirement
+        elif version_constraint == "already_dbl_quoted":
+            pkg_requirement = passed_arg = '"urllib3<1.25"'
+        else:
+            raise ValueError(version_constraint)
+
         with mock.patch.object(session, "_run", autospec=True) as run:
-            session.conda_install("requests", "urllib3", silent=False)
+            session.conda_install("requests", pkg_requirement, silent=False)
             run.assert_called_once_with(
                 "conda",
                 "install",
@@ -315,12 +422,13 @@ class TestSession:
                 "--prefix",
                 "/path/to/conda/env",
                 "requests",
-                "urllib3",
+                # this will be double quoted if unquoted constraint is present
+                passed_arg,
                 silent=False,
                 external="error",
             )
 
-    def test_install_bad_args(self):
+    def test_install_bad_args_no_arg(self):
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError, match="arg"):
@@ -353,7 +461,14 @@ class TestSession:
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3")
             run.assert_called_once_with(
-                "pip", "install", "requests", "urllib3", silent=True, external="error"
+                "python",
+                "-m",
+                "pip",
+                "install",
+                "requests",
+                "urllib3",
+                silent=True,
+                external="error",
             )
 
     def test_install_non_default_kwargs(self):
@@ -375,7 +490,14 @@ class TestSession:
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3", silent=False)
             run.assert_called_once_with(
-                "pip", "install", "requests", "urllib3", silent=False, external="error"
+                "python",
+                "-m",
+                "pip",
+                "install",
+                "requests",
+                "urllib3",
+                silent=False,
+                external="error",
             )
 
     def test_notify(self):

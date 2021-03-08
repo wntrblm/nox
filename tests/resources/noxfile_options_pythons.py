@@ -1,4 +1,4 @@
-# Copyright 2016 Alethea Katherine Flowers
+# Copyright 2020 Alethea Katherine Flowers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
+import nox
 
-from nox._options import noxfile_options as options
-from nox._parametrize import Param as param
-from nox._parametrize import parametrize_decorator as parametrize
-from nox.registry import session_decorator as session
-from nox.sessions import Session
+nox.options.sessions = ["{default_session}"]
+nox.options.pythons = ["{default_python}"]
 
-needs_version: Optional[str] = None
 
-__all__ = ["needs_version", "parametrize", "param", "session", "options", "Session"]
+@nox.session(python=["{default_python}", "{alternate_python}"])
+def test(session):
+    pass
+
+
+@nox.session(python=["{default_python}", "{alternate_python}"])
+def launch_rocket(session):
+    pass

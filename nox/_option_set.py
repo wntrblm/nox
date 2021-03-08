@@ -20,10 +20,25 @@ and surfaced in documentation."""
 import argparse
 import collections
 import functools
-from argparse import ArgumentError, ArgumentParser, Namespace, _ArgumentGroup
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from argparse import ArgumentError, ArgumentParser, Namespace
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 import argcomplete
+
+
+class OptionGroup:
+    """A single group for command-line options.
+
+    Args:
+        name (str): The name used to refer to the group.
+        args: Passed through to``ArgumentParser.add_argument_group``.
+        kwargs: Passed through to``ArgumentParser.add_argument_group``.
+    """
+
+    def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
 
 
 class Option:
@@ -35,8 +50,8 @@ class Option:
             object.
         flags (Sequence[str]): The list of flags used by argparse. Effectively
             the ``*args`` for ``ArgumentParser.add_argument``.
+        group (OptionGroup): The argument group this option belongs to.
         help (str): The help string pass to argparse.
-        group (str): The argument group this option belongs to, if any.
         noxfile (bool): Whether or not this option can be set in the
             configuration file.
         merge_func (Callable[[Namespace, Namespace], Any]): A function that
@@ -61,8 +76,8 @@ class Option:
         self,
         name: str,
         *flags: str,
+        group: OptionGroup,
         help: Optional[str] = None,
-        group: Optional[str] = None,
         noxfile: bool = False,
         merge_func: Optional[Callable[[Namespace, Namespace], Any]] = None,
         finalizer_func: Optional[Callable[[Any, Namespace], Any]] = None,
@@ -73,8 +88,8 @@ class Option:
     ) -> None:
         self.name = name
         self.flags = flags
-        self.help = help
         self.group = group
+        self.help = help
         self.noxfile = noxfile
         self.merge_func = merge_func
         self.finalizer_func = finalizer_func
@@ -182,7 +197,7 @@ class OptionSet:
         )  # type: collections.OrderedDict[str, Option]
         self.groups = (
             collections.OrderedDict()
-        )  # type: collections.OrderedDict[str, Tuple[Tuple[Any, ...], Dict[str, Any]]]
+        )  # type: collections.OrderedDict[str, OptionGroup]
 
     def add_options(self, *args: Option) -> None:
         """Adds a sequence of Options to the OptionSet.
@@ -193,23 +208,14 @@ class OptionSet:
         for option in args:
             self.options[option.name] = option
 
-    def add_group(self, name: str, *args: Any, **kwargs: Any) -> None:
-        """Adds a new argument group.
+    def add_groups(self, *args: OptionGroup) -> None:
+        """Adds a sequence of OptionGroups to the OptionSet.
 
-        When :func:`parser` is invoked, the OptionSet will turn all distinct
-        argument groups into separate sections in the ``--help`` output using
-        ``ArgumentParser.add_argument_group``.
+        Args:
+            args (Sequence[OptionGroup])
         """
-        self.groups[name] = (args, kwargs)
-
-    def _add_to_parser(
-        self, parser: Union[_ArgumentGroup, ArgumentParser], option: Option
-    ) -> None:
-        argument = parser.add_argument(
-            *option.flags, help=option.help, default=option.default, **option.kwargs
-        )
-        if getattr(option, "completer"):
-            setattr(argument, "completer", option.completer)
+        for option_group in args:
+            self.groups[option_group.name] = option_group
 
     def parser(self) -> ArgumentParser:
         """Returns an ``ArgumentParser`` for this option set.
@@ -220,18 +226,19 @@ class OptionSet:
         parser = argparse.ArgumentParser(*self.parser_args, **self.parser_kwargs)
 
         groups = {
-            name: parser.add_argument_group(*args, **kwargs)
-            for name, (args, kwargs) in self.groups.items()
+            name: parser.add_argument_group(*option_group.args, **option_group.kwargs)
+            for name, option_group in self.groups.items()
         }
 
         for option in self.options.values():
             if option.hidden:
                 continue
 
-            if option.group is not None:
-                self._add_to_parser(groups[option.group], option)
-            else:
-                self._add_to_parser(parser, option)
+            argument = groups[option.group.name].add_argument(
+                *option.flags, help=option.help, default=option.default, **option.kwargs
+            )
+            if getattr(option, "completer"):
+                setattr(argument, "completer", option.completer)
 
         return parser
 
@@ -297,13 +304,16 @@ class OptionSet:
         self, command_args: Namespace, noxfile_args: Namespace
     ) -> None:
         """Merges the command-line options with the noxfile options."""
+        command_args_copy = Namespace(**vars(command_args))
         for name, option in self.options.items():
             if option.merge_func:
                 setattr(
-                    command_args, name, option.merge_func(command_args, noxfile_args)
+                    command_args,
+                    name,
+                    option.merge_func(command_args_copy, noxfile_args),
                 )
             elif option.noxfile:
-                value = getattr(command_args, name, None) or getattr(
+                value = getattr(command_args_copy, name, None) or getattr(
                     noxfile_args, name, None
                 )
                 setattr(command_args, name, value)

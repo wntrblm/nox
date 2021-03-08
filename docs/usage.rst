@@ -45,7 +45,7 @@ You can run every session by just executing ``nox`` without any arguments:
 The order that sessions are executed is the order that they appear in the Noxfile.
 
 
-.. _opt-sessions-and-keywords:
+.. _opt-sessions-pythons-and-keywords:
 
 Specifying one or more sessions
 -------------------------------
@@ -66,6 +66,13 @@ You can also use the ``NOXSESSION`` environment variable:
     NOXSESSION=lint,tests nox
 
 Nox will run these sessions in the same order they are specified.
+
+If you have a :ref:`configured session's virtualenv <virtualenv config>`, you can choose to run only sessions with given Python versions:
+
+.. code-block:: console
+
+    nox --python 3.8
+    nox -p 3.7 3.8
 
 You can also use `pytest-style keywords`_ to filter test sessions:
 
@@ -98,12 +105,51 @@ Then running ``nox --session tests`` will actually run all parametrized versions
     nox --session "tests(django='2.0')"
 
 
+.. _opt-default-venv-backend:
+
+Changing the sessions default backend
+-------------------------------------
+
+By default nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``conda`` and ``venv`` as well as no backend (passthrough to whatever python environment nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
+
+.. code-block:: console
+
+    nox -db conda
+    nox --default-venv-backend conda
+
+
+You can also set this option in the Noxfile with ``nox.options.default_venv_backend``. In case both are provided, the commandline argument takes precedence.
+
+Note that using this option does not change the backend for sessions where ``venv_backend`` is explicitly set.
+
+
+.. _opt-force-venv-backend:
+
+Forcing the sessions backend
+----------------------------
+
+You might work in a different environment than a project's default continuous integration setttings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and nox file configuration. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
+
+.. code-block:: console
+
+    nox -fb conda
+    nox --force-venv-backend conda
+
+
+You can also set this option in the Noxfile with ``nox.options.force_venv_backend``. In case both are provided, the commandline argument takes precedence.
+
+Finally note that the ``--no-venv`` flag is a shortcut for ``--force-venv-backend none`` and allows to temporarily run all selected sessions on the current python interpreter (the one running nox).
+
+.. code-block:: console
+
+    nox --no-venv
+
 .. _opt-reuse-existing-virtualenvs:
 
 Re-using virtualenvs
 --------------------
 
-By default nox deletes and recreates virtualenvs every time it is run. This is usually fine for most projects and continuous integration environments as `pip's caching <https://pip.pypa.io/en/stable/reference/pip_install/#caching>`_ makes re-install rather quick. However, there are some situations where it is advantageous to re-use the virtualenvs between runs. Use ``-r`` or ``--reuse-existing-virtualenvs``:
+By default, Nox deletes and recreates virtualenvs every time it is run. This is usually fine for most projects and continuous integration environments as `pip's caching <https://pip.pypa.io/en/stable/reference/pip_install/#caching>`_ makes re-install rather quick. However, there are some situations where it is advantageous to re-use the virtualenvs between runs. Use ``-r`` or ``--reuse-existing-virtualenvs``:
 
 .. code-block:: console
 
@@ -112,6 +158,28 @@ By default nox deletes and recreates virtualenvs every time it is run. This is u
 
 
 If the Noxfile sets ``nox.options.reuse_existing_virtualenvs``, you can override the Noxfile setting from the command line by using ``--no-reuse-existing-virtualenvs``.
+
+.. _opt-running-extra-pythons:
+
+Running additional Python versions
+----------------------------------
+In addition to Nox supporting executing single sessions, it also supports runnings python versions that aren't specified using ``--extra-pythons``.
+
+.. code-block:: console
+
+    nox --extra-pythons 3.8 3.9
+
+This will, in addition to specified python versions in the Noxfile, also create sessions for the specified versions.
+
+This option can be combined with ``--python`` to replace, instead of appending, the Python interpreter for a given session::
+
+    nox --python 3.10 --extra-python 3.10 -s lint
+
+Also, you can specify ``python`` in place of a specific version. This will run the session
+using the ``python`` specified for the current ``PATH``::
+
+    nox --python python --extra-python python -s lint
+
 
 .. _opt-stop-on-first-error:
 
@@ -203,8 +271,8 @@ Would run both ``install`` commands, but skip the ``run`` command:
 
     nox > Running session tests
     nox > Creating virtualenv using python3.7 in ./.nox/tests
-    nox > pip install pytest
-    nox > pip install .
+    nox > python -m pip install pytest
+    nox > python -m pip install .
     nox > Skipping pytest run, as --install-only is set.
     nox > Session tests was successful.
 
@@ -261,8 +329,8 @@ However, this will never output colorful logs:
 .. _opt-report:
 
 
-Controling commands verbosity
------------------------------
+Controlling commands verbosity
+------------------------------
 
 By default, Nox will only show output of commands that fail, or, when the commands get passed ``silent=False``.
 By passing ``--verbose`` to Nox, all output of all commands run is shown, regardless of the silent argument.
@@ -276,23 +344,6 @@ You can output a report in ``json`` format by specifying ``--report``:
 .. code-block:: console
 
     nox --report status.json
-
-
-Windows
--------
-
-Nox has provisional support for running on Windows. However, depending on your Windows, Python, and virtualenv versions there may be issues. See the following threads for more info:
-
-* `tox issue 260 <https://github.com/tox-dev/tox/issues/260>`_
-* `Python issue 24493 <http://bugs.python.org/issue24493>`_
-* `Virtualenv issue 774 <https://github.com/pypa/virtualenv/issues/774>`_
-
-The Python binaries on Windows are found via the Python `Launcher`_ for
-Windows (``py``). For example, Python 3.5 can be found by determining which
-executable is invoked by ``py -3.5``. If a given test needs to use the 32-bit
-version of a given Python, then ``X.Y-32`` should be used as the version.
-
-.. _Launcher: https://docs.python.org/3/using/windows.html#python-launcher-for-windows
 
 
 Converting from tox

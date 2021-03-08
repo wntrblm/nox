@@ -14,6 +14,7 @@
 
 import os
 import sys
+from pathlib import Path
 from unittest import mock
 
 import contexter
@@ -55,6 +56,7 @@ def test_main_no_args(monkeypatch):
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
         assert config.sessions is None
+        assert not config.no_venv
         assert not config.reuse_existing_virtualenvs
         assert not config.stop_on_first_error
         assert config.posargs == []
@@ -70,6 +72,11 @@ def test_main_long_form_args():
         "--sessions",
         "1",
         "2",
+        "--default-venv-backend",
+        "venv",
+        "--force-venv-backend",
+        "none",
+        "--no-venv",
         "--reuse-existing-virtualenvs",
         "--stop-on-first-error",
     ]
@@ -87,14 +94,72 @@ def test_main_long_form_args():
         assert config.noxfile == "noxfile.py"
         assert config.envdir.endswith(".other")
         assert config.sessions == ["1", "2"]
+        assert config.default_venv_backend == "venv"
+        assert config.force_venv_backend == "none"
+        assert config.no_venv is True
         assert config.reuse_existing_virtualenvs is True
         assert config.stop_on_first_error is True
         assert config.posargs == []
 
 
+def test_main_no_venv(monkeypatch, capsys):
+    # Check that --no-venv overrides force_venv_backend
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "nox",
+            "--noxfile",
+            os.path.join(RESOURCES, "noxfile_pythons.py"),
+            "--no-venv",
+            "-s",
+            "snack(cheese='cheddar')",
+        ],
+    )
+
+    with mock.patch("sys.exit") as sys_exit:
+        nox.__main__.main()
+        stdout, stderr = capsys.readouterr()
+        assert stdout == "Noms, cheddar so good!\n"
+        assert (
+            "Session snack is set to run with venv_backend='none', IGNORING its python"
+            in stderr
+        )
+        assert "Session snack(cheese='cheddar') was successful." in stderr
+        sys_exit.assert_called_once_with(0)
+
+
+def test_main_no_venv_error():
+    # Check that --no-venv can not be set together with a non-none --force-venv-backend
+    sys.argv = [
+        sys.executable,
+        "--noxfile",
+        "noxfile.py",
+        "--force-venv-backend",
+        "conda",
+        "--no-venv",
+    ]
+    with pytest.raises(ValueError, match="You can not use"):
+        nox.__main__.main()
+
+
 def test_main_short_form_args(monkeypatch):
     monkeypatch.setattr(
-        sys, "argv", [sys.executable, "-f", "noxfile.py", "-s", "1", "2", "-r"]
+        sys,
+        "argv",
+        [
+            sys.executable,
+            "-f",
+            "noxfile.py",
+            "-s",
+            "1",
+            "2",
+            "-db",
+            "venv",
+            "-fb",
+            "conda",
+            "-r",
+        ],
     )
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
@@ -109,6 +174,8 @@ def test_main_short_form_args(monkeypatch):
         config = execute.call_args[1]["global_config"]
         assert config.noxfile == "noxfile.py"
         assert config.sessions == ["1", "2"]
+        assert config.default_venv_backend == "venv"
+        assert config.force_venv_backend == "conda"
         assert config.reuse_existing_virtualenvs is True
 
 
@@ -376,6 +443,88 @@ def test_main_noxfile_options_sessions(monkeypatch):
         # Verify that the config looks correct.
         config = honor_list_request.call_args[1]["global_config"]
         assert config.sessions == ["test"]
+
+
+@pytest.fixture
+def generate_noxfile_options_pythons(tmp_path):
+    """Generate noxfile.py with test and launch_rocket sessions.
+
+    The sessions are defined for both the default and alternate Python versions.
+    The ``default_session`` and ``default_python`` parameters determine what
+    goes into ``nox.options.sessions`` and ``nox.options.pythons``, respectively.
+    """
+
+    def generate_noxfile(default_session, default_python, alternate_python):
+        path = Path(RESOURCES) / "noxfile_options_pythons.py"
+        text = path.read_text()
+        text = text.format(
+            default_session=default_session,
+            default_python=default_python,
+            alternate_python=alternate_python,
+        )
+        path = tmp_path / "noxfile.py"
+        path.write_text(text)
+        return str(path)
+
+    return generate_noxfile
+
+
+python_current_version = "{}.{}".format(sys.version_info.major, sys.version_info.minor)
+python_next_version = "{}.{}".format(sys.version_info.major, sys.version_info.minor + 1)
+
+
+def test_main_noxfile_options_with_pythons_override(
+    capsys, monkeypatch, generate_noxfile_options_pythons
+):
+    noxfile = generate_noxfile_options_pythons(
+        default_session="test",
+        default_python=python_next_version,
+        alternate_python=python_current_version,
+    )
+
+    monkeypatch.setattr(
+        sys, "argv", ["nox", "--noxfile", noxfile, "--python", python_current_version]
+    )
+
+    with mock.patch("sys.exit") as sys_exit:
+        nox.__main__.main()
+        _, stderr = capsys.readouterr()
+        sys_exit.assert_called_once_with(0)
+
+    for python_version in [python_current_version, python_next_version]:
+        for session in ["test", "launch_rocket"]:
+            line = "Running session {}-{}".format(session, python_version)
+            if session == "test" and python_version == python_current_version:
+                assert line in stderr
+            else:
+                assert line not in stderr
+
+
+def test_main_noxfile_options_with_sessions_override(
+    capsys, monkeypatch, generate_noxfile_options_pythons
+):
+    noxfile = generate_noxfile_options_pythons(
+        default_session="test",
+        default_python=python_current_version,
+        alternate_python=python_next_version,
+    )
+
+    monkeypatch.setattr(
+        sys, "argv", ["nox", "--noxfile", noxfile, "--session", "launch_rocket"]
+    )
+
+    with mock.patch("sys.exit") as sys_exit:
+        nox.__main__.main()
+        _, stderr = capsys.readouterr()
+        sys_exit.assert_called_once_with(0)
+
+    for python_version in [python_current_version, python_next_version]:
+        for session in ["test", "launch_rocket"]:
+            line = "Running session {}-{}".format(session, python_version)
+            if session == "launch_rocket" and python_version == python_current_version:
+                assert line in stderr
+            else:
+                assert line not in stderr
 
 
 @pytest.mark.parametrize(("isatty_value", "expected"), [(True, True), (False, False)])

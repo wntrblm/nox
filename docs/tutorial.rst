@@ -110,7 +110,7 @@ To install a ``requirements.txt`` file:
 
     @nox.session
     def tests(session):
-        # same as pip install -r -requirements.txt
+        # same as pip install -r requirements.txt
         session.install("-r", "requirements.txt")
         ...
 
@@ -124,6 +124,30 @@ If your project is a Python package and you want to install it:
         session.install(".")
         ...
 
+In some cases such as Python binary extensions, your package may depend on
+code compiled outside of the Python ecosystem. To make sure a low-level
+dependency (e.g. ``libfoo``) is available during installation
+
+.. code-block:: python
+
+    @nox.session
+    def tests(session):
+        ...
+        session.run_always(
+            "cmake", "-DCMAKE_BUILD_TYPE=Debug",
+            "-S", libfoo_src_dir,
+            "-B", build_dir,
+            external=True,
+        )
+        session.run_always(
+            "cmake",
+            "--build", build_dir,
+            "--config", "Debug",
+            "--target", "install",
+            external=True,
+        )
+        session.install(".")
+        ...
 
 Running commands
 ----------------
@@ -258,7 +282,7 @@ If you want your session to run against multiple versions of Python:
 
 .. code-block:: python
 
-    @nox.session(python=["2.7", "3.5", "3.7"])
+    @nox.session(python=["2.7", "3.6", "3.7"])
     def test(session):
         ...
 
@@ -270,7 +294,7 @@ been expanded into three distinct sessions:
     Sessions defined in noxfile.py:
 
     * test-2.7
-    * test-3.5
+    * test-3.6
     * test-3.7
 
 You can run all of the ``test`` sessions using ``nox --sessions test`` or run

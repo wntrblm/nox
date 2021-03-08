@@ -23,8 +23,9 @@ from typing import List, Union
 import nox
 from colorlog.escape_codes import parse_colors
 from nox import _options, registry
+from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
 from nox.logger import logger
-from nox.manifest import Manifest
+from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 from nox.sessions import Result
 
 
@@ -51,6 +52,9 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
             os.path.expandvars(global_config.noxfile)
         )
 
+        # Check ``nox.needs_version`` by parsing the AST.
+        check_nox_version(global_config.noxfile)
+
         # Move to the path where the Noxfile is.
         # This will ensure that the Noxfile's path is on sys.path, and that
         # import-time path resolutions work the way the Noxfile author would
@@ -60,6 +64,9 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
             "user_nox_module", global_config.noxfile
         ).load_module()  # type: ignore
 
+    except (VersionCheckFailed, InvalidVersionSpecifier) as error:
+        logger.error(str(error))
+        return 2
     except (IOError, OSError):
         logger.exception("Failed to load Noxfile {}".format(global_config.noxfile))
         return 2
@@ -124,6 +131,12 @@ def filter_manifest(
             logger.error("Error while collecting sessions.")
             logger.error(exc.args[0])
             return 3
+
+    # Filter by python interpreter versions.
+    # This function never errors, but may cause an empty list of sessions
+    # (which is an error condition later).
+    if global_config.pythons:
+        manifest.filter_by_python_interpreter(global_config.pythons)
 
     # Filter by keywords.
     # This function never errors, but may cause an empty list of sessions
@@ -227,6 +240,14 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
     # Note that it is possible for the manifest to be altered in any given
     # iteration.
     for session in manifest:
+        # possibly raise warnings associated with this session
+        if WARN_PYTHONS_IGNORED in session.func.should_warn:
+            logger.warning(
+                "Session {} is set to run with venv_backend='none', IGNORING its python={} parametrization. ".format(
+                    session.name, session.func.should_warn[WARN_PYTHONS_IGNORED]
+                )
+            )
+
         result = session.execute()
         result.log(
             "Session {name} {status}.".format(

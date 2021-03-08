@@ -17,7 +17,8 @@ import platform
 import re
 import shutil
 import sys
-from typing import Any, Mapping, Optional, Tuple, Union
+from socket import gethostbyname
+from typing import Any, List, Mapping, Optional, Tuple, Union
 
 import nox.command
 import py
@@ -42,14 +43,16 @@ class InterpreterNotFound(OSError):
 class ProcessEnv:
     """A environment with a 'bin' directory and a set of 'env' vars."""
 
+    location: str
+
     # Does this environment provide any process isolation?
     is_sandboxed = False
 
     # Special programs that aren't included in the environment.
     allowed_globals = ()  # type: _typing.ClassVar[Tuple[Any, ...]]
 
-    def __init__(self, bin: None = None, env: Mapping[str, str] = None) -> None:
-        self._bin = bin
+    def __init__(self, bin_paths: None = None, env: Mapping[str, str] = None) -> None:
+        self._bin_paths = bin_paths
         self.env = os.environ.copy()
 
         if env is not None:
@@ -58,15 +61,25 @@ class ProcessEnv:
         for key in _BLACKLISTED_ENV_VARS:
             self.env.pop(key, None)
 
-        if self.bin:
-            self.env["PATH"] = os.pathsep.join([self.bin, self.env.get("PATH", "")])
+        if self.bin_paths:
+            self.env["PATH"] = os.pathsep.join(
+                self.bin_paths + [self.env.get("PATH", "")]
+            )
 
     @property
-    def bin(self) -> Optional[str]:
-        return self._bin
+    def bin_paths(self) -> Optional[List[str]]:
+        return self._bin_paths
+
+    @property
+    def bin(self) -> str:
+        """The first bin directory for the virtualenv."""
+        paths = self.bin_paths
+        if paths is None:
+            raise ValueError("The environment does not have a bin directory.")
+        return paths[0]
 
     def create(self) -> bool:
-        raise NotImplementedError("ProcessEnv.create should be overwitten in subclass")
+        raise NotImplementedError("ProcessEnv.create should be overwritten in subclass")
 
 
 def locate_via_py(version: str) -> Optional[str]:
@@ -130,19 +143,21 @@ def locate_using_path_and_version(version: str) -> Optional[str]:
     return None
 
 
-def _clean_location(self: "Union[CondaEnv, VirtualEnv]") -> bool:
-    """Deletes any existing path-based environment"""
-    if os.path.exists(self.location):
-        if self.reuse_existing:
-            return False
-        else:
-            shutil.rmtree(self.location)
+class PassthroughEnv(ProcessEnv):
+    """Represents the environment used to run nox itself
 
-    return True
+    For now, this class is empty but it might contain tools to grasp some
+    hints about the actual env.
+    """
+
+    @staticmethod
+    def is_offline() -> bool:
+        """As of now this is only used in conda_install"""
+        return CondaEnv.is_offline()  # pragma: no cover
 
 
 class CondaEnv(ProcessEnv):
-    """Conda environemnt management class.
+    """Conda environment management class.
 
     Args:
         location (str): The location on the filesystem where the conda environment
@@ -178,13 +193,30 @@ class CondaEnv(ProcessEnv):
         self.venv_params = venv_params if venv_params else []
         super(CondaEnv, self).__init__()
 
-    _clean_location = _clean_location
+    def _clean_location(self) -> bool:
+        """Deletes existing conda environment"""
+        if os.path.exists(self.location):
+            if self.reuse_existing:
+                return False
+            else:
+                cmd = ["conda", "remove", "--yes", "--prefix", self.location, "--all"]
+                nox.command.run(cmd, silent=True, log=False)
+                # Make sure that location is clean
+                try:
+                    shutil.rmtree(self.location)
+                except FileNotFoundError:
+                    pass
+
+        return True
 
     @property
-    def bin(self) -> str:
+    def bin_paths(self) -> List[str]:
         """Returns the location of the conda env's bin folder."""
-        bin_folder = "Scripts" if _SYSTEM == "Windows" else "bin"
-        return os.path.join(self.location, bin_folder)
+        # see https://docs.anaconda.com/anaconda/user-guide/tasks/integration/python-path/#examples
+        if _SYSTEM == "Windows":
+            return [self.location, os.path.join(self.location, "Scripts")]
+        else:
+            return [os.path.join(self.location, "bin")]
 
     def create(self) -> bool:
         """Create the conda env."""
@@ -218,6 +250,23 @@ class CondaEnv(ProcessEnv):
         nox.command.run(cmd, silent=True, log=False)
 
         return True
+
+    @staticmethod
+    def is_offline() -> bool:
+        """Return `True` if we are sure that the user is not able to connect to https://repo.anaconda.com.
+
+        Since an HTTP proxy might be correctly configured for `conda` using the `.condarc` `proxy_servers` section,
+        while not being correctly configured in the OS environment variables used by all other tools including python
+        `urllib` or `requests`, we are basically not able to do much more than testing the DNS resolution.
+
+        See details in this explanation: https://stackoverflow.com/a/62486343/7262247
+        """
+        try:
+            # DNS resolution to detect situation (1) or (2).
+            host = gethostbyname("repo.anaconda.com")
+            return host is None
+        except:  # pragma: no cover # noqa E722
+            return True
 
 
 class VirtualEnv(ProcessEnv):
@@ -260,7 +309,15 @@ class VirtualEnv(ProcessEnv):
         self.venv_params = venv_params if venv_params else []
         super(VirtualEnv, self).__init__(env={"VIRTUAL_ENV": self.location})
 
-    _clean_location = _clean_location
+    def _clean_location(self) -> bool:
+        """Deletes any existing virtual environment"""
+        if os.path.exists(self.location):
+            if self.reuse_existing:
+                return False
+            else:
+                shutil.rmtree(self.location)
+
+        return True
 
     @property
     def _resolved_interpreter(self) -> str:
@@ -288,7 +345,7 @@ class VirtualEnv(ProcessEnv):
 
         # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
         # part and add Python to the front of it.
-        match = re.match(r"^(?P<xy_ver>\d(\.\d)?)(\.\d+)?$", self.interpreter)
+        match = re.match(r"^(?P<xy_ver>\d(\.\d+)?)(\.\d+)?$", self.interpreter)
         if match:
             xy_version = match.group("xy_ver")
             cleaned_interpreter = "python{}".format(xy_version)
@@ -305,7 +362,7 @@ class VirtualEnv(ProcessEnv):
             raise self._resolved
 
         # Allow versions of the form ``X.Y-32`` for Windows.
-        match = re.match(r"^\d\.\d-32?$", cleaned_interpreter)
+        match = re.match(r"^\d\.\d+-32?$", cleaned_interpreter)
         if match:
             # preserve the "-32" suffix, as the Python launcher expects
             # it.
@@ -327,12 +384,12 @@ class VirtualEnv(ProcessEnv):
         raise self._resolved
 
     @property
-    def bin(self) -> str:
+    def bin_paths(self) -> List[str]:
         """Returns the location of the virtualenv's bin folder."""
         if _SYSTEM == "Windows":
-            return os.path.join(self.location, "Scripts")
+            return [os.path.join(self.location, "Scripts")]
         else:
-            return os.path.join(self.location, "bin")
+            return [os.path.join(self.location, "bin")]
 
     def create(self) -> bool:
         """Create the virtualenv or venv."""

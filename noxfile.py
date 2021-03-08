@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import os
 import shutil
+import platform
 
 import nox
 
-ON_APPVEYOR = os.environ.get("APPVEYOR") == "True"
+ON_WINDOWS_CI = "CI" in os.environ and platform.system() == "Windows"
 
 
 def is_python_version(session, version):
@@ -28,9 +30,10 @@ def is_python_version(session, version):
     return py_version.startswith(version)
 
 
-@nox.session(python=["3.5", "3.6", "3.7", "3.8"])
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
 def tests(session):
     """Run test suite with pytest."""
+    session.create_tmp()
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
     tests = session.posargs or ["tests/"]
@@ -49,9 +52,10 @@ def tests(session):
     session.notify("cover")
 
 
-@nox.session(python=["3.5", "3.6", "3.7", "3.8"], venv_backend="conda")
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"], venv_backend="conda")
 def conda_tests(session):
     """Run test suite with pytest."""
+    session.create_tmp()
     session.conda_install(
         "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
     )
@@ -64,19 +68,18 @@ def conda_tests(session):
 @nox.session
 def cover(session):
     """Coverage analysis."""
+    if ON_WINDOWS_CI:
+        return
+
     session.install("coverage")
-    if ON_APPVEYOR:
-        fail_under = "--fail-under=99"
-    else:
-        fail_under = "--fail-under=100"
     session.run("coverage", "combine")
-    session.run("coverage", "report", fail_under, "--show-missing")
+    session.run("coverage", "report", "--fail-under=100", "--show-missing")
     session.run("coverage", "erase")
 
 
 @nox.session(python="3.8")
 def blacken(session):
-    """Run black code formater."""
+    """Run black code formatter."""
     session.install("black==19.3b0", "isort==4.3.21")
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", *files)
@@ -85,7 +88,7 @@ def blacken(session):
 
 @nox.session(python="3.8")
 def lint(session):
-    session.install("flake8==3.7.8", "black==19.3b0", "mypy==0.720")
+    session.install("flake8==3.7.8", "black==19.3b0", "isort==4.3.21", "mypy==0.720")
     session.run(
         "mypy",
         "--disallow-untyped-defs",
@@ -95,17 +98,22 @@ def lint(session):
     )
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", "--check", *files)
+    session.run("isort", "--check", "--recursive", *files)
     session.run("flake8", "nox", *files)
 
 
 @nox.session(python="3.7")
 def docs(session):
     """Build the documentation."""
-    shutil.rmtree("docs/_build", ignore_errors=True)
+    output_dir = os.path.join(session.create_tmp(), "output")
+    doctrees, html = map(
+        functools.partial(os.path.join, output_dir), ["doctrees", "html"]
+    )
+    session.run("rm", "-rf", output_dir, external=True)
     session.install("-r", "requirements-test.txt")
     session.install(".")
     session.cd("docs")
-    sphinx_args = ["-b", "html", "-W", "-d", "_build/doctrees", ".", "_build/html"]
+    sphinx_args = ["-b", "html", "-W", "-d", doctrees, ".", html]
 
     if not session.interactive:
         sphinx_cmd = "sphinx-build"

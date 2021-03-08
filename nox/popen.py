@@ -12,9 +12,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
+import locale
 import subprocess
 import sys
-from typing import IO, Mapping, Sequence, Tuple, Union
+from typing import IO, Mapping, Optional, Sequence, Tuple, Union
+
+
+def shutdown_process(proc: subprocess.Popen) -> Tuple[Optional[bytes], Optional[bytes]]:
+    """Gracefully shutdown a child process."""
+
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        return proc.communicate(timeout=0.3)
+
+    proc.terminate()
+
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        return proc.communicate(timeout=0.2)
+
+    proc.kill()
+
+    return proc.communicate()
+
+
+def decode_output(output: bytes) -> str:
+    """Try to decode the given bytes with encodings from the system.
+
+    :param output: output to decode
+    :raises UnicodeDecodeError: if all encodings fail
+    :return: decoded string
+    """
+    try:
+        return output.decode("utf-8")
+    except UnicodeDecodeError:
+        second_encoding = locale.getpreferredencoding()
+        if second_encoding.casefold() in ("utf8", "utf-8"):
+            raise
+
+        return output.decode(second_encoding)
 
 
 def popen(
@@ -39,10 +74,10 @@ def popen(
         sys.stdout.flush()
 
     except KeyboardInterrupt:
-        proc.terminate()
-        proc.wait()
-        raise
+        out, err = shutdown_process(proc)
+        if proc.returncode != 0:
+            raise
 
     return_code = proc.wait()
 
-    return return_code, out.decode("utf-8") if out else ""
+    return return_code, decode_output(out) if out else ""

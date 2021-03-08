@@ -1,5 +1,40 @@
 # Changelog
 
+## 2020.12.31
+- Fix `NoxColoredFormatter.format`(#374)
+- Use conda remove to clean up existing conda environments (#373)
+- Support users specifying an undeclared parametrization of python via `--extra-python` (#361)
+- Support double-digit minor version in `python` keyword (#367)
+- Add `py.typed` to `manifest.in` (#360)
+- Update nox to latest supported python versions. (#362)
+- Decouple merging of `--python` with `nox.options` from `--sessions` and `--keywords` (#359)
+- Do not merge command-line options in place (#357)
+
+## 2020.8.22
+
+- `conda_install` and `install` args are now automatically double-quoted when needed. (#312)
+- Offline mode is now auto-detected by default by `conda_install`. This allows users to continue executing Nox sessions on already installed environments. (#314)
+- Fix the default paths for Conda on Windows where the `python.exe` found was not the correct one. (#310)
+- Add the `--add-timestamp` option (#323)
+- Add `Session.run_always()`. (#331)
+
+## 2020.5.24
+
+- Add new options for `venv_backend`, including the ability to set the backend globally. (#326)
+- Fix various typos in the documentation. (#325, #326, #281)
+- Add `session.create_tmp`. (#320)
+- Place all of Nox's command-line options into argparse groups. (#306)
+- Add the `--pythons` command-line option to allow specifying which versions of Python to run. (#304)
+- Add a significant amount of type annotations. (#297, #294, #290, #282, #274)
+- Stop building universal wheels since we don't support Python 2. (#293)
+- Add the ability to specify additional options for the virtualenv backend using `venv_params`. (#280)
+- Prefer `importlib.metadata` for metadata loading, removing our dependency on `pkg_resources`. (#277)
+- Add OmegaConf and Hydra to list of projects that use Nox. (#279)
+- Use a more accurate error message, along with the cause, if loading of noxfile runs into error. (#272)
+- Test against Python 3.8. (#270)
+- Fix a syntax highlighting mistake in configuration docs. (#268)
+- Use `stdout.isatty` to finalize color instead of `stdin.isatty`. (#267)
+
 ## 2019.11.9
 
 - Fix example installation call for pip. (#259)

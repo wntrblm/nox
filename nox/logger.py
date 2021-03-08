@@ -21,20 +21,59 @@ SUCCESS = 25
 OUTPUT = logging.DEBUG - 1
 
 
-class NoxFormatter(ColoredFormatter):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super(NoxFormatter, self).__init__(*args, **kwargs)
+def _get_format(colorlog: bool, add_timestamp: bool) -> str:
+    if colorlog:
+        if add_timestamp:
+            return "%(cyan)s%(name)s > [%(asctime)s] %(log_color)s%(message)s"
+        else:
+            return "%(cyan)s%(name)s > %(log_color)s%(message)s"
+    else:
+        if add_timestamp:
+            return "%(name)s > [%(asctime)s] %(message)s"
+        else:
+            return "%(name)s > %(message)s"
+
+
+class NoxFormatter(logging.Formatter):
+    def __init__(self, add_timestamp: bool = False) -> None:
+        super().__init__(fmt=_get_format(colorlog=False, add_timestamp=add_timestamp))
         self._simple_fmt = logging.Formatter("%(message)s")
 
     def format(self, record: Any) -> str:
         if record.levelname == "OUTPUT":
             return self._simple_fmt.format(record)
-        return super(NoxFormatter, self).format(record)
+        return super().format(record)
+
+
+class NoxColoredFormatter(ColoredFormatter):
+    def __init__(
+        self,
+        datefmt: Any = None,
+        style: Any = None,
+        log_colors: Any = None,
+        reset: bool = True,
+        secondary_log_colors: Any = None,
+        add_timestamp: bool = False,
+    ) -> None:
+        super().__init__(
+            fmt=_get_format(colorlog=True, add_timestamp=add_timestamp),
+            datefmt=datefmt,
+            style=style,
+            log_colors=log_colors,
+            reset=reset,
+            secondary_log_colors=secondary_log_colors,
+        )
+        self._simple_fmt = logging.Formatter("%(message)s")
+
+    def format(self, record: Any) -> str:
+        if record.levelname == "OUTPUT":
+            return self._simple_fmt.format(record)
+        return super().format(record)
 
 
 class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore
     def __init__(self, name: str, level: int = logging.NOTSET):
-        super(LoggerWithSuccessAndOutput, self).__init__(name, level)
+        super().__init__(name, level)
         logging.addLevelName(SUCCESS, "SUCCESS")
         logging.addLevelName(OUTPUT, "OUTPUT")
 
@@ -55,7 +94,29 @@ logging.setLoggerClass(LoggerWithSuccessAndOutput)
 logger = cast(LoggerWithSuccessAndOutput, logging.getLogger("nox"))
 
 
-def setup_logging(color: bool, verbose: bool = False) -> None:  # pragma: no cover
+def _get_formatter(color: bool, add_timestamp: bool) -> logging.Formatter:
+    if color is True:
+        return NoxColoredFormatter(
+            reset=True,
+            log_colors={
+                "DEBUG": "cyan",
+                "INFO": "blue",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red,bg_white",
+                "SUCCESS": "green",
+            },
+            style="%",
+            secondary_log_colors=None,
+            add_timestamp=add_timestamp,
+        )
+    else:
+        return NoxFormatter(add_timestamp=add_timestamp)
+
+
+def setup_logging(
+    color: bool, verbose: bool = False, add_timestamp: bool = False
+) -> None:  # pragma: no cover
     """Setup logging.
 
     Args:
@@ -69,22 +130,7 @@ def setup_logging(color: bool, verbose: bool = False) -> None:  # pragma: no cov
         root_logger.setLevel(logging.DEBUG)
     handler = logging.StreamHandler()
 
-    if color is True:
-        formatter = NoxFormatter(
-            "%(cyan)s%(name)s > %(log_color)s%(message)s",
-            reset=True,
-            log_colors={
-                "DEBUG": "cyan",
-                "INFO": "blue",
-                "WARNING": "yellow",
-                "ERROR": "red",
-                "CRITICAL": "red,bg_white",
-                "SUCCESS": "green",
-            },
-        )
-
-        handler.setFormatter(formatter)
-
+    handler.setFormatter(_get_formatter(color, add_timestamp))
     root_logger.addHandler(handler)
 
     # Silence noisy loggers

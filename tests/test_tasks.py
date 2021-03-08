@@ -18,12 +18,13 @@ import io
 import json
 import os
 import platform
+from textwrap import dedent
 from unittest import mock
 
 import nox
 import pytest
 from nox import _options, sessions, tasks
-from nox.manifest import Manifest
+from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 
@@ -33,6 +34,25 @@ def session_func():
 
 
 session_func.python = None
+session_func.venv_backend = None
+session_func.should_warn = dict()
+
+
+def session_func_with_python():
+    pass
+
+
+session_func_with_python.python = "3.8"
+session_func_with_python.venv_backend = None
+
+
+def session_func_venv_pythons_warning():
+    pass
+
+
+session_func_venv_pythons_warning.python = ["3.7"]
+session_func_venv_pythons_warning.venv_backend = "none"
+session_func_venv_pythons_warning.should_warn = {WARN_PYTHONS_IGNORED: ["3.7"]}
 
 
 def test_load_nox_module():
@@ -58,6 +78,44 @@ def test_load_nox_module_expandvars():
 def test_load_nox_module_not_found():
     config = _options.options.namespace(noxfile="bogus.py")
     assert tasks.load_nox_module(config) == 2
+
+
+@pytest.fixture
+def reset_needs_version():
+    """Do not leak ``nox.needs_version`` between tests."""
+    try:
+        yield
+    finally:
+        nox.needs_version = None
+
+
+def test_load_nox_module_needs_version_static(reset_needs_version, tmp_path):
+    text = dedent(
+        """
+        import nox
+        nox.needs_version = ">=9999.99.99"
+        """
+    )
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(text)
+    config = _options.options.namespace(noxfile=str(noxfile))
+    assert tasks.load_nox_module(config) == 2
+
+
+def test_load_nox_module_needs_version_dynamic(reset_needs_version, tmp_path):
+    text = dedent(
+        """
+        import nox
+        NOX_NEEDS_VERSION = ">=9999.99.99"
+        nox.needs_version = NOX_NEEDS_VERSION
+        """
+    )
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(text)
+    config = _options.options.namespace(noxfile=str(noxfile))
+    tasks.load_nox_module(config)
+    # Dynamic version requirements are not checked.
+    assert nox.needs_version == ">=9999.99.99"
 
 
 def test_discover_session_functions_decorator():
@@ -91,7 +149,7 @@ def test_discover_session_functions_decorator():
 
 
 def test_filter_manifest():
-    config = _options.options.namespace(sessions=(), keywords=())
+    config = _options.options.namespace(sessions=(), pythons=(), keywords=())
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
@@ -99,14 +157,25 @@ def test_filter_manifest():
 
 
 def test_filter_manifest_not_found():
-    config = _options.options.namespace(sessions=("baz",), keywords=())
+    config = _options.options.namespace(sessions=("baz",), pythons=(), keywords=())
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value == 3
 
 
+def test_filter_manifest_pythons():
+    config = _options.options.namespace(sessions=(), pythons=("3.8",), keywords=())
+    manifest = Manifest(
+        {"foo": session_func_with_python, "bar": session_func, "baz": session_func},
+        config,
+    )
+    return_value = tasks.filter_manifest(manifest, config)
+    assert return_value is manifest
+    assert len(manifest) == 1
+
+
 def test_filter_manifest_keywords():
-    config = _options.options.namespace(sessions=(), keywords="foo or bar")
+    config = _options.options.namespace(sessions=(), pythons=(), keywords="foo or bar")
     manifest = Manifest(
         {"foo": session_func, "bar": session_func, "baz": session_func}, config
     )
@@ -167,7 +236,8 @@ def test_verify_manifest_nonempty():
     assert return_value == manifest
 
 
-def test_run_manifest():
+@pytest.mark.parametrize("with_warnings", [False, True], ids="with_warnings={}".format)
+def test_run_manifest(with_warnings):
     # Set up a valid manifest.
     config = _options.options.namespace(stop_on_first_error=False)
     sessions_ = [
@@ -182,6 +252,12 @@ def test_run_manifest():
         mock_session.execute.return_value = sessions.Result(
             session=mock_session, status=sessions.Status.SUCCESS
         )
+        # we need the should_warn attribute, add some func
+        if with_warnings:
+            mock_session.name = "hello"
+            mock_session.func = session_func_venv_pythons_warning
+        else:
+            mock_session.func = session_func
 
     # Run the manifest.
     results = tasks.run_manifest(manifest, global_config=config)
@@ -210,6 +286,8 @@ def test_run_manifest_abort_on_first_failure():
         mock_session.execute.return_value = sessions.Result(
             session=mock_session, status=sessions.Status.FAILED
         )
+        # we need the should_warn attribute, add some func
+        mock_session.func = session_func
 
     # Run the manifest.
     results = tasks.run_manifest(manifest, global_config=config)
