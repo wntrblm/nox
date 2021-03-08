@@ -181,13 +181,18 @@ def test_condaenv_create(make_conda):
     assert dir_.join("test.txt").check()
 
 
-@pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
 @pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
 def test_condaenv_create_interpreter(make_conda):
     venv, dir_ = make_conda(interpreter="3.7")
     venv.create()
-    assert dir_.join("bin", "python").check()
-    assert dir_.join("bin", "python3.7").check()
+    if IS_WINDOWS:
+        assert dir_.join("python.exe").check()
+        assert dir_.join("python37.dll").check()
+        assert dir_.join("python37.pdb").check()
+        assert not dir_.join("python37.exe").check()
+    else:
+        assert dir_.join("bin", "python").check()
+        assert dir_.join("bin", "python3.7").check()
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")

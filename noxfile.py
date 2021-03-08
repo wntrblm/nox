@@ -40,7 +40,13 @@ def tests(session):
         session.run("pytest", *tests)
         return
     session.run(
-        "pytest", "--cov=nox", "--cov-config", ".coveragerc", "--cov-report=", *tests
+        "pytest",
+        "--cov=nox",
+        "--cov-config",
+        ".coveragerc",
+        "--cov-report=",
+        *tests,
+        env={"COVERAGE_FILE": ".coverage.{}".format(session.python)}
     )
     session.notify("cover")
 
@@ -65,6 +71,7 @@ def cover(session):
         return
 
     session.install("coverage")
+    session.run("coverage", "combine")
     session.run("coverage", "report", "--fail-under=100", "--show-missing")
     session.run("coverage", "erase")
 
@@ -94,7 +101,7 @@ def lint(session):
     session.run("flake8", "nox", *files)
 
 
-@nox.session(python="3.8")
+@nox.session(python="3.7")
 def docs(session):
     """Build the documentation."""
     output_dir = os.path.join(session.create_tmp(), "output")
