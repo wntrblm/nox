@@ -149,8 +149,7 @@ class Session:
 
     @property
     def posargs(self) -> List[str]:
-        """This is set to any extra arguments
-        passed to ``nox`` on the commandline."""
+        """Any extra arguments from the ``nox`` commandline or :class:`Session.notify`"""
         return self._runner.posargs
 
     @property
