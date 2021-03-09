@@ -433,7 +433,9 @@ class Session:
         self._run("python", "-m", "pip", "install", *args, external="error", **kwargs)
 
     def notify(
-        self, target: "Union[str, SessionRunner]", posargs: Optional[List[str]] = None
+        self,
+        target: "Union[str, SessionRunner]",
+        posargs: Optional[Iterable[str]] = None,
     ) -> None:
         """Place the given session at the end of the queue.
 
@@ -444,7 +446,13 @@ class Session:
             target (Union[str, Callable]): The session to be notified. This
                 may be specified as the appropriate string (same as used for
                 ``nox -s``) or using the function object.
+            posargs (Optional[Iterable[str]]): If given, sets the positional
+                arguments *only* for the queued session. Otherwise, the
+                standard globally available positional arguments will be
+                used instead.
         """
+        if posargs is not None:
+            posargs = list(posargs)
         self._runner.manifest.notify(target, posargs)
 
     def log(self, *args: Any, **kwargs: Any) -> None:
@@ -468,26 +476,14 @@ class SessionRunner:
         func: Func,
         global_config: argparse.Namespace,
         manifest: "Manifest",
-        posargs: Optional[List[str]] = None,
     ) -> None:
         self.name = name
         self.signatures = signatures
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
-        self.venv = None  # type: Optional[ProcessEnv]
-        self._posargs = posargs
-
-    @property
-    def posargs(self) -> List[str]:
-        if self._posargs is not None:
-            return self._posargs
-        else:
-            return self.global_config.posargs
-
-    @posargs.setter
-    def posargs(self, value: Optional[List[str]]) -> None:
-        self._posargs = value
+        self.venv: Optional[ProcessEnv] = None
+        self.posargs: List[str] = global_config.posargs
 
     @property
     def description(self) -> Optional[str]:
