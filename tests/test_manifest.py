@@ -345,23 +345,18 @@ def test_notify_noop():
 
 
 def test_notify_with_posargs():
-    manifest = Manifest({}, create_mock_config())
+    cfg = create_mock_config()
+    manifest = Manifest({}, cfg)
 
-    # Define a session and add it to the manifest.
-    def my_session(session):
-        pass
+    session = manifest.make_session("my_session", Func(lambda session: None))[0]
+    manifest.add_session(session)
 
-    my_session.python = None
-    my_session.venv_backend = None
+    # delete my_session from the queue
+    manifest.filter_by_name(())
 
-    for session in manifest.make_session("my_session", my_session):
-        manifest.add_session(session)
-
-    assert len(manifest) == 1
-
-    # Establish idempotency; notifying a session already in the queue no-ops.
-    manifest.notify("my_session")
-    assert len(manifest) == 1
+    assert session.posargs is cfg.posargs
+    assert manifest.notify("my_session", posargs=["--an-arg"])
+    assert session.posargs == ["--an-arg"]
 
 
 def test_notify_error():

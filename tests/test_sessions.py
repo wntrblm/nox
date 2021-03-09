@@ -507,6 +507,10 @@ class TestSession:
 
         runner.manifest.notify.assert_called_once_with("other", None)
 
+        session.notify("other", posargs=["--an-arg"])
+
+        runner.manifest.notify.assert_called_with("other", ["--an-arg"])
+
     def test_log(self, caplog):
         caplog.set_level(logging.INFO)
         session, _ = self.make_session_and_runner()
