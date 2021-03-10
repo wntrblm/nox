@@ -279,6 +279,10 @@ class Manifest:
         Args:
             session (Union[str, ~nox.session.Session]): The session to be
                 enqueued.
+            posargs (Optional[List[str]]): If given, sets the positional
+                arguments *only* for the queued session. Otherwise, the
+                standard globally available positional arguments will be
+                used instead.
 
         Returns:
             bool: Whether the session was added to the queue.
