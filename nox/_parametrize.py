@@ -51,8 +51,7 @@ class Param:
             return self.id
         else:
             call_spec = self.call_spec
-            keys = sorted(call_spec.keys(), key=str)
-            args = ["{}={}".format(k, repr(call_spec[k])) for k in keys]
+            args = ["{}={}".format(k, repr(call_spec[k])) for k in call_spec.keys()]
             return ", ".join(args)
 
     __repr__ = __str__
