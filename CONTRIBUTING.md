@@ -45,7 +45,7 @@ To run against a particular Python version:
     nox --session tests-3.9
 
 
-When you send a pull request Travis will handle running everything, but it is
+When you send a pull request the CI will handle running everything, but it is
 recommended to test as much as possible locally before pushing.
 
 ## Getting a sticker
