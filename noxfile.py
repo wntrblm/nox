@@ -90,6 +90,7 @@ def lint(session):
     session.install("flake8==3.7.8", "black==19.3b0", "isort==4.3.21", "mypy==0.720")
     session.run(
         "mypy",
+        "--config-file=",
         "--disallow-untyped-defs",
         "--warn-unused-ignores",
         "--ignore-missing-imports",
