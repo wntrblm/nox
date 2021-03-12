@@ -200,19 +200,19 @@ def test_generate_calls_multiple_args():
     f = mock.Mock()
     f.__name__ = "f"
 
-    arg_names = ("abc", "foo")
+    arg_names = ("foo", "abc")
     call_specs = [
-        _parametrize.Param(1, "a", arg_names=arg_names),
-        _parametrize.Param(2, "b", arg_names=arg_names),
-        _parametrize.Param(3, "c", arg_names=arg_names),
+        _parametrize.Param("a", 1, arg_names=arg_names),
+        _parametrize.Param("b", 2, arg_names=arg_names),
+        _parametrize.Param("c", 3, arg_names=arg_names),
     ]
 
     calls = _decorators.Call.generate_calls(f, call_specs)
 
     assert len(calls) == 3
-    assert calls[0].session_signature == "(abc=1, foo='a')"
-    assert calls[1].session_signature == "(abc=2, foo='b')"
-    assert calls[2].session_signature == "(abc=3, foo='c')"
+    assert calls[0].session_signature == "(foo='a', abc=1)"
+    assert calls[1].session_signature == "(foo='b', abc=2)"
+    assert calls[2].session_signature == "(foo='c', abc=3)"
 
     calls[0]()
     f.assert_called_with(abc=1, foo="a")
