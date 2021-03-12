@@ -34,10 +34,11 @@ def create_mock_sessions():
 
 
 def create_mock_config():
-    cfg = mock.sentinel.CONFIG
+    cfg = mock.sentinel.MOCKED_CONFIG
     cfg.force_venv_backend = None
     cfg.default_venv_backend = None
     cfg.extra_pythons = None
+    cfg.posargs = []
     return cfg
 
 
@@ -223,9 +224,7 @@ def test_add_session_multiple_pythons():
     ],
 )
 def test_extra_pythons(python, extra_pythons, expected):
-    cfg = mock.sentinel.CONFIG
-    cfg.force_venv_backend = None
-    cfg.default_venv_backend = None
+    cfg = create_mock_config()
     cfg.extra_pythons = extra_pythons
 
     manifest = Manifest({}, cfg)
@@ -343,6 +342,21 @@ def test_notify_noop():
     # Establish idempotency; notifying a session already in the queue no-ops.
     manifest.notify("my_session")
     assert len(manifest) == 1
+
+
+def test_notify_with_posargs():
+    cfg = create_mock_config()
+    manifest = Manifest({}, cfg)
+
+    session = manifest.make_session("my_session", Func(lambda session: None))[0]
+    manifest.add_session(session)
+
+    # delete my_session from the queue
+    manifest.filter_by_name(())
+
+    assert session.posargs is cfg.posargs
+    assert manifest.notify("my_session", posargs=["--an-arg"])
+    assert session.posargs == ["--an-arg"]
 
 
 def test_notify_error():

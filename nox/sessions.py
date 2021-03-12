@@ -149,9 +149,8 @@ class Session:
 
     @property
     def posargs(self) -> List[str]:
-        """This is set to any extra arguments
-        passed to ``nox`` on the commandline."""
-        return self._runner.global_config.posargs
+        """Any extra arguments from the ``nox`` commandline or :class:`Session.notify`."""
+        return self._runner.posargs
 
     @property
     def virtualenv(self) -> ProcessEnv:
@@ -432,7 +431,11 @@ class Session:
 
         self._run("python", "-m", "pip", "install", *args, external="error", **kwargs)
 
-    def notify(self, target: "Union[str, SessionRunner]") -> None:
+    def notify(
+        self,
+        target: "Union[str, SessionRunner]",
+        posargs: Optional[Iterable[str]] = None,
+    ) -> None:
         """Place the given session at the end of the queue.
 
         This method is idempotent; multiple notifications to the same session
@@ -442,8 +445,14 @@ class Session:
             target (Union[str, Callable]): The session to be notified. This
                 may be specified as the appropriate string (same as used for
                 ``nox -s``) or using the function object.
+            posargs (Optional[Iterable[str]]): If given, sets the positional
+                arguments *only* for the queued session. Otherwise, the
+                standard globally available positional arguments will be
+                used instead.
         """
-        self._runner.manifest.notify(target)
+        if posargs is not None:
+            posargs = list(posargs)
+        self._runner.manifest.notify(target, posargs)
 
     def log(self, *args: Any, **kwargs: Any) -> None:
         """Outputs a log during the session."""
@@ -472,7 +481,8 @@ class SessionRunner:
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
-        self.venv = None  # type: Optional[ProcessEnv]
+        self.venv: Optional[ProcessEnv] = None
+        self.posargs: List[str] = global_config.posargs
 
     @property
     def description(self) -> Optional[str]:
