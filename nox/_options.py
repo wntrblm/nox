@@ -402,6 +402,14 @@ options.add_options(
         hidden=True,
         finalizer_func=_color_finalizer,
     ),
+    _option_set.Option(
+        "no_install",
+        "--no-install",
+        default=False,
+        group=options.groups["secondary"],
+        action="store_true",
+        help="Skip invocations of session methods for installing packages.",
+    ),
 )
 
 
