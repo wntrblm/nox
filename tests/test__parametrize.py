@@ -175,7 +175,7 @@ def test_generate_calls_simple():
         _parametrize.Param(3, arg_names=arg_names),
     ]
 
-    calls = _decorators.Call.generate_calls(f, call_specs)
+    calls = _decorators.Call.generate_calls(f, call_specs, frozenset())
 
     assert len(calls) == 3
     assert calls[0].session_signature == "(abc=1)"
@@ -207,7 +207,7 @@ def test_generate_calls_multiple_args():
         _parametrize.Param("c", 3, arg_names=arg_names),
     ]
 
-    calls = _decorators.Call.generate_calls(f, call_specs)
+    calls = _decorators.Call.generate_calls(f, call_specs, frozenset())
 
     assert len(calls) == 3
     assert calls[0].session_signature == "(foo='a', abc=1)"
@@ -232,7 +232,7 @@ def test_generate_calls_ids():
         _parametrize.Param(2, arg_names=arg_names, id="b"),
     ]
 
-    calls = _decorators.Call.generate_calls(f, call_specs)
+    calls = _decorators.Call.generate_calls(f, call_specs, frozenset())
 
     assert len(calls) == 2
     assert calls[0].session_signature == "(a)"
@@ -242,3 +242,40 @@ def test_generate_calls_ids():
     f.assert_called_with(foo=1)
     calls[1]()
     f.assert_called_with(foo=2)
+
+
+def test_generate_calls_sessionparams():
+    f = mock.Mock()
+    f.__name__ = "f"
+
+    arg_names = ("python", "dependency")
+    call_specs = [
+        _parametrize.Param("3.9", "1.0", arg_names=arg_names),
+        _parametrize.Param("3.9", "0.9", arg_names=arg_names),
+        _parametrize.Param("3.8", "0.9", arg_names=arg_names),
+    ]
+
+    calls = _decorators.Call.generate_calls(f, call_specs, {"python"})
+
+    assert len(calls) == 3
+    assert calls[0].python == "3.9"
+    assert calls[1].python == "3.9"
+    assert calls[2].python == "3.8"
+    assert calls[0].session_signature == "(python='3.9', dependency='1.0')"
+    assert calls[1].session_signature == "(python='3.9', dependency='0.9')"
+    assert calls[2].session_signature == "(python='3.8', dependency='0.9')"
+
+    calls[0]()
+    f.assert_called_with(dependency="1.0")
+    calls[1]()
+    f.assert_called_with(dependency="0.9")
+    calls[2]()
+    f.assert_called_with(dependency="0.9")
+
+
+def test_parametrize_sessionparams_validation():
+    def f():
+        pass
+
+    with pytest.raises(ValueError):
+        _parametrize.parametrize_decorator("Python", "3.9", sessionparams=["Python"])(f)
