@@ -339,6 +339,48 @@ Produces these sessions when running ``nox --list``:
     * tests(mysql, new)
 
 
+Parametrizing the session Python
+--------------------------------
+
+You can use parametrization to select the Python interpreter for a session.
+The ``python`` parameter must be declared using the ``sessionparams`` keyword,
+to ensure that it is passed to ``@nox.session`` instead of the session function.
+
+These two examples are equivalent:
+
+.. code-block:: python
+
+    @nox.session(python=["3.6", "3.7", "3.8"])
+    def tests(session):
+        ...
+
+    @nox.session
+    @nox.parametrize("python", ["3.6", "3.7", "3.8"], sessionparams=["python"])
+    def tests(session):
+        ...
+
+The second form can be useful if you need to exclude some combinations of Python
+versions with other parameters. For example, you may want to test against
+multiple versions of a dependency, but the latest version doesn't run on older
+Pythons:
+
+.. code-block:: python
+
+    @nox.session
+    @nox.parametrize(
+        "python,dependency",
+        [
+            (python, dependency)
+            for python in ("3.6", "3.7", "3.8")
+            for dependency in ("1.0", "2.0")
+            if (python, dependency) != ("3.6", "2.0")
+        ],
+        sessionparams=["python"],
+    )
+    def tests(session, dependency):
+        ...
+
+
 The session object
 ------------------
 
