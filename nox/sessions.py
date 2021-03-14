@@ -290,6 +290,10 @@ class Session:
             do not have a virtualenv.
         :type external: bool
         """
+        if self._runner.global_config.no_install:
+            logger.info("Skipping run_always, as --no-install is set.")
+            return None
+
         if not args:
             raise ValueError("At least one argument required to run_always().")
 
@@ -355,6 +359,15 @@ class Session:
 
         .. _conda install:
         """
+
+        if self._runner.global_config.no_install:
+            logger.info(
+                "Skipping {} conda installation, as --no-install is set.".format(
+                    args[0]
+                )
+            )
+            return None
+
         venv = self._runner.venv
 
         prefix_args = ()  # type: Tuple[str, ...]
@@ -417,6 +430,13 @@ class Session:
 
         .. _pip: https://pip.readthedocs.org
         """
+
+        if self._runner.global_config.no_install:
+            logger.info(
+                "Skipping {} installation, as --no-install is set.".format(args[0])
+            )
+            return None
+
         if not isinstance(
             self._runner.venv, (CondaEnv, VirtualEnv, PassthroughEnv)
         ):  # pragma: no cover
