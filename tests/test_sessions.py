@@ -742,6 +742,14 @@ class TestSessionRunner:
 
         assert result.status == nox.sessions.Status.SKIPPED
 
+    def test__create_venv_no_install(self, caplog):
+        runner = self.make_runner()
+
+        runner.global_config.no_install = True
+        runner._create_venv()
+
+        assert "Skipping _create_venv" in caplog.text
+
     def test_execute_with_manifest_null_session_func(self):
         runner = self.make_runner()
         runner.func = nox.manifest._null_session_func

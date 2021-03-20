@@ -525,6 +525,10 @@ class SessionRunner:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def _create_venv(self) -> None:
+        if self.global_config.no_install:
+            logger.info("Skipping _create_venv, as --no-install is set.")
+            return None
+
         backend = (
             self.global_config.force_venv_backend
             or self.func.venv_backend
