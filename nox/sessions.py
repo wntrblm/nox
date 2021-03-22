@@ -536,7 +536,7 @@ class SessionRunner:
             return
 
         reuse_existing = (
-            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
+            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs or self.global_config.no_install
         )
 
         if backend is None or backend == "virtualenv":
