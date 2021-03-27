@@ -362,6 +362,17 @@ class Session:
 
         venv = self._runner.venv
 
+        prefix_args = ()  # type: Tuple[str, ...]
+        if isinstance(venv, CondaEnv):
+            prefix_args = ("--prefix", venv.location)
+        elif not isinstance(venv, PassthroughEnv):  # pragma: no cover
+            raise ValueError(
+                "A session without a conda environment can not install dependencies from conda."
+            )
+
+        if not args:
+            raise ValueError("At least one argument required to install().")
+
         if self._runner.global_config.no_install:
             if (venv.venv_created):
                 logger.info(
@@ -376,17 +387,6 @@ class Session:
                         args[0]
                     )
                 )
-
-        prefix_args = ()  # type: Tuple[str, ...]
-        if isinstance(venv, CondaEnv):
-            prefix_args = ("--prefix", venv.location)
-        elif not isinstance(venv, PassthroughEnv):  # pragma: no cover
-            raise ValueError(
-                "A session without a conda environment can not install dependencies from conda."
-            )
-
-        if not args:
-            raise ValueError("At least one argument required to install().")
 
         # Escape args that should be (conda-specific; pip install does not need this)
         args = _dblquote_pkg_install_args(args)
@@ -439,10 +439,18 @@ class Session:
         """
 
         if self._runner.global_config.no_install:
-            logger.info(
-                "Skipping {} installation, as --no-install is set.".format(args[0])
-            )
-            return None
+            if(self._runner.venv.venv_created):
+                logger.info(
+                    "Skipping {} installation, as --no-install is set.".format(args[0])
+                )
+                return None
+            else:
+                logger.info(
+                    "Venv not created yet. Ignoring --no-install and installing {}.".format(
+                        args[0]
+                    )
+                )
+            
 
         if not isinstance(
             self._runner.venv, (CondaEnv, VirtualEnv, PassthroughEnv)
