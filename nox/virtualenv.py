@@ -438,5 +438,5 @@ class VirtualEnv(ProcessEnv):
         nox.command.run(cmd, silent=True, log=False)
 
         self.venv_created = True
-        
+
         return True

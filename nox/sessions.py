@@ -375,7 +375,7 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install:
-            if (venv.venv_created):
+            if venv.venv_created:
                 logger.info(
                     "Skipping {} conda installation, as --no-install is set.".format(
                         args[0]
@@ -451,7 +451,7 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install:
-            if(venv.venv_created):
+            if venv.venv_created:
                 logger.info(
                     "Skipping {} installation, as --no-install is set.".format(args[0])
                 )
@@ -554,7 +554,9 @@ class SessionRunner:
             return
 
         reuse_existing = (
-            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs or self.global_config.no_install
+            self.func.reuse_venv
+            or self.global_config.reuse_existing_virtualenvs
+            or self.global_config.no_install
         )
 
         if backend is None or backend == "virtualenv":

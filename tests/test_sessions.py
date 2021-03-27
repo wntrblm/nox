@@ -57,14 +57,17 @@ def test__normalize_path_give_up():
     norm_path = nox.sessions._normalize_path(envdir, "any-path")
     assert "any-path" in norm_path
 
+
 class MockableSession(nox.sessions.Session):
     """
-    Defining __slots__ on a session prevents you from overriding the 
-    run method in a mock. 
+    Defining __slots__ on a session prevents you from overriding the
+    run method in a mock.
     Inherit session, but without __slots__ defined, and do nothing else
     to enable testing of Session with mocks.
     """
+
     pass
+
 
 class TestSession:
     def make_session_and_runner(self):
@@ -328,7 +331,6 @@ class TestSession:
 
             assert "Skipping run_always" in caplog.text
 
-
     def test_conda_install_bad_args(self):
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
@@ -396,13 +398,18 @@ class TestSession:
                 external="error",
             )
 
-    @pytest.mark.parametrize("no_install,venv_is_created,desired_result", 
-        [(False, False,"Ignoring --no-install"), 
-         (True,False,"Ignoring --no-install"),
-         (False,True,"Skipping"),
-         (True,True,"Skipping"),
-        ])
-    def test_conda_no_install_with_venv(self, no_install, venv_is_created, desired_result, caplog):
+    @pytest.mark.parametrize(
+        "no_install,venv_is_created,desired_result",
+        [
+            (False, False, "Ignoring --no-install"),
+            (True, False, "Ignoring --no-install"),
+            (False, True, "Skipping"),
+            (True, True, "Skipping"),
+        ],
+    )
+    def test_conda_no_install_with_venv(
+        self, no_install, venv_is_created, desired_result, caplog
+    ):
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
 
@@ -410,15 +417,14 @@ class TestSession:
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
         runner.venv.is_offline = lambda: True
-        
+
         runner.global_config.no_install = True
         runner.venv.venv_created = venv_is_created
 
-        with mock.patch.object(nox.command, "run") as run:
+        with mock.patch.object(nox.command, "run"):
             assert session.conda_install("baked beans", "eggs", "spam") is None
 
         assert desired_result in caplog.text
-
 
     @pytest.mark.parametrize(
         "version_constraint",
@@ -569,22 +575,22 @@ class TestSession:
         with pytest.raises(nox.sessions._SessionSkip):
             session.skip()
 
-
-    @pytest.mark.parametrize("no_install,venv_is_created,desired_result", 
-        [
-         (True,False,"Venv not created yet"),
-         (True,True,"Skipping"),
-        ])
-    def test_session_no_install(self, no_install, venv_is_created, desired_result, caplog):
+    @pytest.mark.parametrize(
+        "no_install,venv_is_created,desired_result",
+        [(True, False, "Venv not created yet"), (True, True, "Skipping")],
+    )
+    def test_session_no_install(
+        self, no_install, venv_is_created, desired_result, caplog
+    ):
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
-        
+
         runner.global_config.no_install = no_install
         runner.venv.venv_created = venv_is_created
 
-        with mock.patch.object(nox.command, "run") as run:
+        with mock.patch.object(nox.command, "run"):
             assert session.install("eggs", "spam") is None
-        
+
         assert desired_result in caplog.text
 
     def test___slots__(self):

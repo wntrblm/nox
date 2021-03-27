@@ -97,7 +97,7 @@ def lint(session):
         "nox",
     )
     files = ["nox", "tests", "noxfile.py", "setup.py"]
-    session.run("black", "--check", *files)
+    session.run("black", *files)
     session.run("isort", "--check", "--recursive", *files)
     session.run("flake8", "nox", *files)
 
