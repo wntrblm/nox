@@ -85,23 +85,6 @@ class TestSession:
         runner.venv.bin_paths = ["/no/bin/for/you"]
         return nox.sessions.Session(runner=runner), runner
 
-    def make_session_without_venv(self):
-        func = mock.Mock(spec=["python"], python="3.7")
-        runner = nox.sessions.SessionRunner(
-            name="test",
-            signatures=["test"],
-            func=func,
-            global_config=_options.options.namespace(
-                posargs=mock.sentinel.posargs,
-                error_on_external_run=False,
-                install_only=False,
-            ),
-            manifest=mock.create_autospec(nox.manifest.Manifest),
-        )
-        runner.venv = "none"
-
-        return nox.sessions.Session(runner=runner), runner
-
     def test_create_tmp(self):
         session, runner = self.make_session_and_runner()
         with tempfile.TemporaryDirectory() as root:
@@ -343,18 +326,8 @@ class TestSession:
             assert session.run_always(operator.add, 23, 19) is None
             run.assert_not_called()
 
-        assert "no-install" in caplog.text
+            assert "Skipping run_always" in caplog.text
 
-    def test_no_install_with_no_venv(self, caplog):
-        caplog.set_level(logging.INFO)
-        session, runner = self.make_session_without_venv()
-        runner.global_config.no_install = True
-
-        with mock.patch.object(nox.command, "run") as run:
-            assert session.install("baked beans", "eggs", "spam") is None
-
-        run.assert_not_called()
-        assert "no-install" in caplog.text
 
     def test_conda_install_bad_args(self):
         session, runner = self.make_session_and_runner()
@@ -387,17 +360,6 @@ class TestSession:
 
         with pytest.raises(ValueError, match="conda environment"):
             session.conda_install()
-
-    def test_conda_no_install_with_venv(self, caplog):
-        caplog.set_level(logging.INFO)
-        session, runner = self.make_session_and_runner()
-        runner.global_config.no_install = True
-
-        with mock.patch.object(nox.command, "run") as run:
-            assert session.conda_install("baked beans", "eggs", "spam") is None
-
-        run.assert_not_called()
-        assert "no-install" in caplog.text
 
     @pytest.mark.parametrize(
         "auto_offline", [False, True], ids="auto_offline={}".format
@@ -434,37 +396,29 @@ class TestSession:
                 external="error",
             )
 
-
-    @pytest.mark.parametrize(
-        "auto_offline", [False, True], ids="auto_offline={}".format
-    )
-    @pytest.mark.parametrize("offline", [False, True], ids="offline={}".format)
-    def test_conda_installs_first_time_with_no_install(self, auto_offline, offline, caplog):
-        runner = nox.sessions.SessionRunner(
-            name="test",
-            signatures=["test"],
-            func=mock.sentinel.func,
-            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
-            manifest=mock.create_autospec(nox.manifest.Manifest),
-        )
-
+    @pytest.mark.parametrize("no_install,venv_is_created,desired_result", 
+        [(False, False,"Ignoring --no-install"), 
+         (True,False,"Ignoring --no-install"),
+         (False,True,"Skipping"),
+         (True,True,"Skipping"),
+        ])
+    def test_conda_no_install_with_venv(self, no_install, venv_is_created, desired_result, caplog):
         caplog.set_level(logging.INFO)
-
-        runner.global_config.no_install = True
+        session, runner = self.make_session_and_runner()
 
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
-        runner.venv.env = {}
         runner.venv.location = "/path/to/conda/env"
-        runner.venv.is_offline = lambda: offline
-        runner.venv.venv_created = False
+        runner.venv.env = {}
+        runner.venv.is_offline = lambda: True
         
-        session = MockableSession(runner=runner)
+        runner.global_config.no_install = True
+        runner.venv.venv_created = venv_is_created
 
-        with mock.patch.object(session, "_run", autospec=True) as run:
-            args = ("--offline",) if auto_offline and offline else ()
-            session.conda_install("requests", "urllib3", auto_offline=auto_offline)
+        with mock.patch.object(nox.command, "run") as run:
+            assert session.conda_install("baked beans", "eggs", "spam") is None
 
-            assert "Ignoring --no-install" in caplog.text
+        assert desired_result in caplog.text
+
 
     @pytest.mark.parametrize(
         "version_constraint",
@@ -615,14 +569,23 @@ class TestSession:
         with pytest.raises(nox.sessions._SessionSkip):
             session.skip()
 
-    def test_session_no_install(self, caplog):
+
+    @pytest.mark.parametrize("no_install,venv_is_created,desired_result", 
+        [
+         (True,False,"Venv not created yet"),
+         (True,True,"Skipping"),
+        ])
+    def test_session_no_install(self, no_install, venv_is_created, desired_result, caplog):
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
-        runner.global_config.no_install = True
+        
+        runner.global_config.no_install = no_install
+        runner.venv.venv_created = venv_is_created
+
         with mock.patch.object(nox.command, "run") as run:
             assert session.install("eggs", "spam") is None
-        run.assert_not_called()
-        assert "no-install" in caplog.text
+        
+        assert desired_result in caplog.text
 
     def test___slots__(self):
         session, _ = self.make_session_and_runner()

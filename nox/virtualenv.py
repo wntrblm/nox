@@ -55,7 +55,7 @@ class ProcessEnv:
         self._bin_paths = bin_paths
         self.env = os.environ.copy()
 
-        self._venv_created = False
+        self.venv_created = False
 
         if env is not None:
             self.env.update(env)
@@ -79,11 +79,6 @@ class ProcessEnv:
         if paths is None:
             raise ValueError("The environment does not have a bin directory.")
         return paths[0]
-
-    @property
-    def venv_created(self):
-        return self._venv_created
-    
 
     def create(self) -> bool:
         raise NotImplementedError("ProcessEnv.create should be overwritten in subclass")
@@ -442,6 +437,6 @@ class VirtualEnv(ProcessEnv):
         )
         nox.command.run(cmd, silent=True, log=False)
 
-        self._venv_created = True
+        self.venv_created = True
         
         return True
