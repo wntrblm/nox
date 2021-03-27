@@ -360,15 +360,22 @@ class Session:
         .. _conda install:
         """
 
-        if self._runner.global_config.no_install:
-            logger.info(
-                "Skipping {} conda installation, as --no-install is set.".format(
-                    args[0]
-                )
-            )
-            return None
-
         venv = self._runner.venv
+
+        if self._runner.global_config.no_install:
+            if (venv.venv_created):
+                logger.info(
+                    "Skipping {} conda installation, as --no-install is set.".format(
+                        args[0]
+                    )
+                )
+                return None
+            else:
+                logger.info(
+                    "Venv not created yet. Ignoring --no-install and installing {} via conda.".format(
+                        args[0]
+                    )
+                )
 
         prefix_args = ()  # type: Tuple[str, ...]
         if isinstance(venv, CondaEnv):
@@ -525,6 +532,7 @@ class SessionRunner:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def _create_venv(self) -> None:
+
         backend = (
             self.global_config.force_venv_backend
             or self.func.venv_backend
