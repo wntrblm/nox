@@ -55,7 +55,7 @@ class ProcessEnv:
         self._bin_paths = bin_paths
         self.env = os.environ.copy()
 
-        self.venv_created = False
+        self._venv_created = False
 
         if env is not None:
             self.env.update(env)
@@ -246,7 +246,7 @@ class CondaEnv(ProcessEnv):
         )
         nox.command.run(cmd, silent=True, log=False)
 
-        self.venv_created = True
+        self._venv_created = True
 
         return True
 
@@ -437,6 +437,6 @@ class VirtualEnv(ProcessEnv):
         )
         nox.command.run(cmd, silent=True, log=False)
 
-        self.venv_created = True
+        self._venv_created = True
 
         return True

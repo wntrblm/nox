@@ -375,18 +375,12 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install:
-            if venv.venv_created:
-                logger.info(
-                    "Skipping {} conda installation, as --no-install is set.".format(
-                        args[0]
-                    )
-                )
+            if venv._venv_created:
+                logger.info("Skipping conda installation, as --no-install is set.")
                 return None
             else:
                 logger.info(
-                    "Venv not created yet. Ignoring --no-install and installing {} via conda.".format(
-                        args[0]
-                    )
+                    "Venv not created yet. Ignoring --no-install and installing from conda."
                 )
 
         # Escape args that should be (conda-specific; pip install does not need this)
@@ -451,16 +445,12 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install:
-            if venv.venv_created:
-                logger.info(
-                    "Skipping {} installation, as --no-install is set.".format(args[0])
-                )
+            if venv._venv_created:
+                logger.info("Skipping installation, as --no-install is set.")
                 return None
             else:
                 logger.info(
-                    "Venv not created yet. Ignoring --no-install and installing {}.".format(
-                        args[0]
-                    )
+                    "Venv not created yet. Ignoring --no-install and installing."
                 )
 
         if "silent" not in kwargs:

@@ -419,7 +419,7 @@ class TestSession:
         runner.venv.is_offline = lambda: True
 
         runner.global_config.no_install = True
-        runner.venv.venv_created = venv_is_created
+        runner.venv._venv_created = venv_is_created
 
         with mock.patch.object(nox.command, "run"):
             assert session.conda_install("baked beans", "eggs", "spam") is None
@@ -586,7 +586,7 @@ class TestSession:
         session, runner = self.make_session_and_runner()
 
         runner.global_config.no_install = no_install
-        runner.venv.venv_created = venv_is_created
+        runner.venv._venv_created = venv_is_created
 
         with mock.patch.object(nox.command, "run"):
             assert session.install("eggs", "spam") is None
