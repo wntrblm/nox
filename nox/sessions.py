@@ -290,7 +290,6 @@ class Session:
             do not have a virtualenv.
         :type external: bool
         """
-
         if self._runner.global_config.no_install:
             logger.info("Skipping run_always, as --no-install is set.")
             return None
@@ -360,7 +359,6 @@ class Session:
 
         .. _conda install:
         """
-
         venv = self._runner.venv
 
         prefix_args = ()  # type: Tuple[str, ...]
@@ -432,7 +430,6 @@ class Session:
 
         .. _pip: https://pip.readthedocs.org
         """
-
         venv = self._runner.venv
 
         if not isinstance(
@@ -532,7 +529,6 @@ class SessionRunner:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def _create_venv(self) -> None:
-
         backend = (
             self.global_config.force_venv_backend
             or self.func.venv_backend

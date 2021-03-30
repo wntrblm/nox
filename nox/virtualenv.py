@@ -54,7 +54,6 @@ class ProcessEnv:
     def __init__(self, bin_paths: None = None, env: Mapping[str, str] = None) -> None:
         self._bin_paths = bin_paths
         self.env = os.environ.copy()
-
         self._venv_created = False
 
         if env is not None:

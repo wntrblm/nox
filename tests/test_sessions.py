@@ -65,7 +65,6 @@ class MockableSession(nox.sessions.Session):
     Inherit session, but without __slots__ defined, and do nothing else
     to enable testing of Session with mocks.
     """
-
     pass
 
 
@@ -584,7 +583,6 @@ class TestSession:
     ):
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
-
         runner.global_config.no_install = no_install
         runner.venv._venv_created = venv_is_created
 
