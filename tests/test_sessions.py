@@ -65,6 +65,7 @@ class MockableSession(nox.sessions.Session):
     Inherit session, but without __slots__ defined, and do nothing else
     to enable testing of Session with mocks.
     """
+
     pass
 
 
@@ -398,7 +399,7 @@ class TestSession:
             )
 
     @pytest.mark.parametrize(
-        "no_install,venv_is_created,desired_result",
+        "no_install,venv_reused,desired_result",
         [
             (False, False, "Ignoring --no-install"),
             (True, False, "Ignoring --no-install"),
@@ -407,7 +408,7 @@ class TestSession:
         ],
     )
     def test_conda_no_install_with_venv(
-        self, no_install, venv_is_created, desired_result, caplog
+        self, no_install, venv_reused, desired_result, caplog
     ):
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
@@ -418,7 +419,7 @@ class TestSession:
         runner.venv.is_offline = lambda: True
 
         runner.global_config.no_install = True
-        runner.venv._venv_created = venv_is_created
+        runner.venv._reused = venv_reused
 
         with mock.patch.object(nox.command, "run"):
             assert session.conda_install("baked beans", "eggs", "spam") is None
@@ -575,16 +576,14 @@ class TestSession:
             session.skip()
 
     @pytest.mark.parametrize(
-        "no_install,venv_is_created,desired_result",
+        "no_install,venv_reused,desired_result",
         [(True, False, "Venv not created yet"), (True, True, "Skipping")],
     )
-    def test_session_no_install(
-        self, no_install, venv_is_created, desired_result, caplog
-    ):
+    def test_session_no_install(self, no_install, venv_reused, desired_result, caplog):
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
         runner.global_config.no_install = no_install
-        runner.venv._venv_created = venv_is_created
+        runner.venv._reused = venv_reused
 
         with mock.patch.object(nox.command, "run"):
             assert session.install("eggs", "spam") is None

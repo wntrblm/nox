@@ -373,7 +373,7 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install:
-            if venv._venv_created:
+            if venv._reused:
                 logger.info("Skipping conda installation, as --no-install is set.")
                 return None
             else:
@@ -442,7 +442,7 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install:
-            if venv._venv_created:
+            if venv._reused:
                 logger.info("Skipping installation, as --no-install is set.")
                 return None
             else:

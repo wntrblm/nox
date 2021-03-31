@@ -54,7 +54,7 @@ class ProcessEnv:
     def __init__(self, bin_paths: None = None, env: Mapping[str, str] = None) -> None:
         self._bin_paths = bin_paths
         self.env = os.environ.copy()
-        self._venv_created = False
+        self._reused = False
 
         if env is not None:
             self.env.update(env)
@@ -245,7 +245,7 @@ class CondaEnv(ProcessEnv):
         )
         nox.command.run(cmd, silent=True, log=False)
 
-        self._venv_created = True
+        self._reused = True
 
         return True
 
@@ -436,6 +436,6 @@ class VirtualEnv(ProcessEnv):
         )
         nox.command.run(cmd, silent=True, log=False)
 
-        self._venv_created = True
+        self._reused = True
 
         return True
