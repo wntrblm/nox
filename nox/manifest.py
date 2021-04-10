@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import ast
 import collections.abc
 import itertools
 from collections import OrderedDict
@@ -133,21 +134,26 @@ class Manifest:
         queue = []
         for session_name in specified_sessions:
             for session in self._queue:
-                if session_name == session.name or session_name in set(
-                    session.signatures
-                ):
+                if _normalized_session_match(session_name, session):
                     queue.append(session)
-
         self._queue = queue
 
         # If a session was requested and was not found, complain loudly.
         all_sessions = set(
-            itertools.chain(
-                [x.name for x in self._all_sessions if x.name],
-                *[x.signatures for x in self._all_sessions],
+            map(
+                _normalize_arg,
+                (
+                    itertools.chain(
+                        [x.name for x in self._all_sessions if x.name],
+                        *[x.signatures for x in self._all_sessions],
+                    )
+                ),
             )
         )
-        missing_sessions = set(specified_sessions) - all_sessions
+        normalized_specified_sessions = [
+            _normalize_arg(session_name) for session_name in specified_sessions
+        ]
+        missing_sessions = set(normalized_specified_sessions) - all_sessions
         if missing_sessions:
             raise KeyError("Sessions not found: {}".format(", ".join(missing_sessions)))
 
@@ -342,6 +348,26 @@ def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
 def _null_session_func_(session: Session) -> None:
     """A no-op session for patemetrized sessions with no available params."""
     session.skip("This session had no parameters available.")
+
+
+def _normalized_session_match(session_name: str, session: SessionRunner) -> bool:
+    """Checks if session_name matches session."""
+    if session_name == session.name or session_name in session.signatures:
+        return True
+    for name in session.signatures:
+        equal_rep = _normalize_arg(session_name) == _normalize_arg(name)
+        if equal_rep:
+            return True
+    # Exhausted
+    return False
+
+
+def _normalize_arg(arg: str) -> Union[str]:
+    """Normalize arg for comparison."""
+    try:
+        return str(ast.dump(ast.parse(arg)))
+    except (TypeError, SyntaxError):
+        return arg
 
 
 _null_session_func = Func(_null_session_func_, python=False)

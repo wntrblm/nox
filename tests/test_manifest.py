@@ -22,6 +22,8 @@ from nox.manifest import (
     WARN_PYTHONS_IGNORED,
     KeywordLocals,
     Manifest,
+    _normalize_arg,
+    _normalized_session_match,
     _null_session_func,
 )
 
@@ -40,6 +42,22 @@ def create_mock_config():
     cfg.extra_pythons = None
     cfg.posargs = []
     return cfg
+
+
+def test__normalize_arg():
+    assert _normalize_arg('test(foo="bar")') == _normalize_arg('test(foo="bar")')
+
+    # In the case of SyntaxError it should fallback to strng
+    assert (
+        _normalize_arg("datetime.datetime(1990; 2, 18),")
+        == "datetime.datetime(1990; 2, 18),"
+    )
+
+
+def test__normalized_session_match():
+    session_mock = mock.MagicMock()
+    session_mock.signatures = ['test(foo="bar")']
+    assert _normalized_session_match("test(foo='bar')", session_mock)
 
 
 def test_init():
