@@ -244,6 +244,9 @@ def test__clean_location(monkeypatch, make_one):
 
     # Don't re-use existing, but doesn't currently exist.
     # Should return True indicating that the venv needs to be created.
+    monkeypatch.setattr(
+        nox.virtualenv.VirtualEnv, "_check_reused_environment", mock.MagicMock()
+    )
     monkeypatch.delattr(nox.virtualenv.shutil, "rmtree")
     assert not dir_.check()
     assert venv._clean_location()
@@ -289,7 +292,7 @@ def test_bin_windows(make_one):
     assert dir_.join("Scripts").strpath == venv.bin
 
 
-def test_create(make_one):
+def test_create(monkeypatch, make_one):
     venv, dir_ = make_one()
     venv.create()
 
@@ -312,8 +315,24 @@ def test_create(make_one):
     dir_.ensure("test.txt")
     assert dir_.join("test.txt").check()
     venv.reuse_existing = True
+    monkeypatch.setattr(nox.virtualenv.nox.command, "run", mock.MagicMock())
     venv.create()
     assert dir_.join("test.txt").check()
+
+
+def test_create_check_interpreter(make_one, monkeypatch, tmpdir):
+    cmd_mock = mock.MagicMock(
+        side_effect=["python-1", "python-1", "python-2", "python-3", "python-4"]
+    )
+    monkeypatch.setattr(nox.virtualenv.nox.command, "run", cmd_mock)
+    test_dir = tmpdir.mkdir("pytest")
+    fp = test_dir.join("pyvenv.cfg")
+    fp.write("virtualenv")
+    venv, dir_ = make_one()
+    venv.reuse_existing = True
+    venv.location = test_dir.strpath
+    assert not venv.create()
+    assert venv.create()
 
 
 def test_create_venv_backend(make_one):
