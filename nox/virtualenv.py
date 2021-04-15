@@ -226,17 +226,12 @@ class CondaEnv(ProcessEnv):
             )
             return False
 
-        cmd = [
-            "conda",
-            "create",
-            "--yes",
-            "--prefix",
-            self.location,
-            # Ensure the pip package is installed.
-            "pip",
-        ]
+        cmd = ["conda", "create", "--yes", "--prefix", self.location]
 
         cmd.extend(self.venv_params)
+
+        # Ensure the pip package is installed.
+        cmd.append("pip")
 
         if self.interpreter:
             python_dep = "python={}".format(self.interpreter)
