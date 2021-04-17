@@ -379,9 +379,10 @@ class Session:
                 )
                 return None
             else:
-                logger.info(
-                    "Venv not created yet: ignoring --no-install and installing from conda."
-                )
+                if not self._runner.global_config.reuse_existing_virtualenvs:
+                    logger.info(
+                        "Venv not created yet: ignoring --no-install and installing from conda."
+                    )
 
         # Escape args that should be (conda-specific; pip install does not need this)
         args = _dblquote_pkg_install_args(args)
@@ -450,9 +451,10 @@ class Session:
                 )
                 return None
             else:
-                logger.info(
-                    "Venv not created yet: ignoring --no-install and installing."
-                )
+                if not self._runner.global_config.reuse_existing_virtualenvs:
+                    logger.info(
+                        "Venv not created yet: ignoring --no-install and installing."
+                    )
 
         if "silent" not in kwargs:
             kwargs["silent"] = True
@@ -544,9 +546,7 @@ class SessionRunner:
             return
 
         reuse_existing = (
-            self.func.reuse_venv
-            or self.global_config.reuse_existing_virtualenvs
-            or self.global_config.no_install
+            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
         if backend is None or backend == "virtualenv":
