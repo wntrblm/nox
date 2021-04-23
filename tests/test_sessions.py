@@ -401,13 +401,7 @@ class TestSession:
                 external="error",
             )
 
-    @pytest.mark.parametrize(
-        "venv_reused,desired_result",
-        [(False, "Venv not created yet:"), (True, "Venv exists: skipping")],
-    )
-    def test_conda_venv_reused_with_no_install(
-        self, venv_reused, desired_result, caplog
-    ):
+    def test_conda_venv_reused_with_no_install(self, caplog):
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
 
@@ -417,12 +411,12 @@ class TestSession:
         runner.venv.is_offline = lambda: True
 
         runner.global_config.no_install = True
-        runner.venv._reused = venv_reused
+        runner.venv._reused = True
 
         with mock.patch.object(nox.command, "run"):
             assert session.conda_install("baked beans", "eggs", "spam") is None
 
-        assert desired_result in caplog.text
+        assert "Venv exists: skipping" in caplog.text
 
     @pytest.mark.parametrize(
         "version_constraint",
@@ -573,23 +567,17 @@ class TestSession:
         with pytest.raises(nox.sessions._SessionSkip):
             session.skip()
 
-    @pytest.mark.parametrize(
-        "venv_reused,desired_result",
-        [(False, "Venv not created yet:"), (True, "Venv exists: skipping")],
-    )
-    def test_session_venv_reused_with_no_install(
-        self, venv_reused, desired_result, caplog
-    ):
+    def test_session_venv_reused_with_no_install(self, caplog):
         caplog.clear()
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
         runner.global_config.no_install = True
-        runner.venv._reused = venv_reused
+        runner.venv._reused = True
 
         with mock.patch.object(nox.command, "run"):
             assert session.install("eggs", "spam") is None
 
-        assert desired_result in caplog.text
+        assert "Venv exists: skipping" in caplog.text
 
     def test___slots__(self):
         session, _ = self.make_session_and_runner()

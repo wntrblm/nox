@@ -372,17 +372,12 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to install().")
 
-        if self._runner.global_config.no_install:
-            if venv._reused:
-                logger.info(
-                    "Venv exists: skipping conda installation, as --no-install is set."
-                )
-                return None
-            else:
-                if not self._runner.global_config.reuse_existing_virtualenvs:
-                    logger.info(
-                        "Venv not created yet: ignoring --no-install and installing from conda."
-                    )
+        if self._runner.global_config.no_install and venv._reused:
+            logger.info(
+                "Venv exists: skipping conda installation, as --no-install is set."
+            )
+
+            return None
 
         # Escape args that should be (conda-specific; pip install does not need this)
         args = _dblquote_pkg_install_args(args)
@@ -444,17 +439,9 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to install().")
 
-        if self._runner.global_config.no_install:
-            if venv._reused:
-                logger.info(
-                    "Venv exists: skipping installation, as --no-install is set."
-                )
-                return None
-            else:
-                if not self._runner.global_config.reuse_existing_virtualenvs:
-                    logger.info(
-                        "Venv not created yet: ignoring --no-install and installing."
-                    )
+        if self._runner.global_config.no_install and venv._reused:
+            logger.info("Venv exists: skipping installation, as --no-install is set.")
+            return None
 
         if "silent" not in kwargs:
             kwargs["silent"] = True
