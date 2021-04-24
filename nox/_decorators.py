@@ -1,5 +1,6 @@
 import copy
 import functools
+import inspect
 import types
 from typing import Any, Callable, Dict, Iterable, List, Optional, cast
 
@@ -66,20 +67,35 @@ class Func(FunctionDecorator):
 
 class Call(Func):
     def __init__(self, func: Func, param_spec: "Param") -> None:
+        call_spec = param_spec.call_spec
+        session_signature = "({})".format(param_spec)
+
+        # Determine the Python interpreter for the session using either @session
+        # or @parametrize. For backwards compatibility, we only use a "python"
+        # parameter in @parametrize if the session function does not expect it
+        # as a normal argument, and if the @session decorator does not already
+        # specify `python`.
+
+        python = func.python
+        if python is None and "python" in call_spec:
+            signature = inspect.signature(func.func)
+            if "python" not in signature.parameters:
+                python = call_spec.pop("python")
+
         super().__init__(
             func,
-            func.python,
+            python,
             func.reuse_venv,
             None,
             func.venv_backend,
             func.venv_params,
             func.should_warn,
         )
-        self.param_spec = param_spec
-        self.session_signature = "({})".format(param_spec)
+        self.call_spec = call_spec
+        self.session_signature = session_signature
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        kwargs.update(self.param_spec.call_spec)
+        kwargs.update(self.call_spec)
         return super().__call__(*args, **kwargs)
 
     @classmethod

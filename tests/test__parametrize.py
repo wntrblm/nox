@@ -15,7 +15,7 @@
 from unittest import mock
 
 import pytest
-from nox import _decorators, _parametrize
+from nox import _decorators, _parametrize, parametrize, session
 
 
 @pytest.mark.parametrize(
@@ -242,3 +242,69 @@ def test_generate_calls_ids():
     f.assert_called_with(foo=1)
     calls[1]()
     f.assert_called_with(foo=2)
+
+
+def test_generate_calls_session_python():
+    called_with = []
+
+    @session
+    @parametrize("python,dependency", [("3.8", "0.9"), ("3.9", "0.9"), ("3.9", "1.0")])
+    def f(session, dependency):
+        called_with.append((session, dependency))
+
+    calls = _decorators.Call.generate_calls(f, f.parametrize)
+
+    assert len(calls) == 3
+
+    assert calls[0].python == "3.8"
+    assert calls[1].python == "3.9"
+    assert calls[2].python == "3.9"
+
+    assert calls[0].session_signature == "(python='3.8', dependency='0.9')"
+    assert calls[1].session_signature == "(python='3.9', dependency='0.9')"
+    assert calls[2].session_signature == "(python='3.9', dependency='1.0')"
+
+    session_ = ()
+
+    calls[0](session_)
+    calls[1](session_)
+    calls[2](session_)
+
+    assert len(called_with) == 3
+
+    assert called_with[0] == (session_, "0.9")
+    assert called_with[1] == (session_, "0.9")
+    assert called_with[2] == (session_, "1.0")
+
+
+def test_generate_calls_python_compatibility():
+    called_with = []
+
+    @session
+    @parametrize("python,dependency", [("3.8", "0.9"), ("3.9", "0.9"), ("3.9", "1.0")])
+    def f(session, python, dependency):
+        called_with.append((session, python, dependency))
+
+    calls = _decorators.Call.generate_calls(f, f.parametrize)
+
+    assert len(calls) == 3
+
+    assert calls[0].python is None
+    assert calls[1].python is None
+    assert calls[2].python is None
+
+    assert calls[0].session_signature == "(python='3.8', dependency='0.9')"
+    assert calls[1].session_signature == "(python='3.9', dependency='0.9')"
+    assert calls[2].session_signature == "(python='3.9', dependency='1.0')"
+
+    session_ = ()
+
+    calls[0](session_)
+    calls[1](session_)
+    calls[2](session_)
+
+    assert len(called_with) == 3
+
+    assert called_with[0] == (session_, "3.8", "0.9")
+    assert called_with[1] == (session_, "3.9", "0.9")
+    assert called_with[2] == (session_, "3.9", "1.0")
