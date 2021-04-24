@@ -182,6 +182,18 @@ def test_condaenv_create(make_conda):
 
 
 @pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+def test_condaenv_create_with_params(make_conda):
+    venv, dir_ = make_conda(venv_params=["--verbose"])
+    venv.create()
+    if IS_WINDOWS:
+        assert dir_.join("python.exe").check()
+        assert dir_.join("Scripts", "pip.exe").check()
+    else:
+        assert dir_.join("bin", "python").check()
+        assert dir_.join("bin", "pip").check()
+
+
+@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
 def test_condaenv_create_interpreter(make_conda):
     venv, dir_ = make_conda(interpreter="3.7")
     venv.create()
