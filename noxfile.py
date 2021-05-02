@@ -58,7 +58,7 @@ def conda_tests(session):
     session.conda_install(
         "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
     )
-    session.install("contexter", "--no-deps")
+    session.install("contextlib", "--no-deps")
     session.install("-e", ".", "--no-deps")
     tests = session.posargs or ["tests/"]
     session.run("pytest", *tests)

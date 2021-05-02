@@ -332,7 +332,7 @@ incompatible versions of packages already installed with conda.
 
 .. code-block:: python
 
-    session.install("contexter", "--no-deps")
+    session.install("contextlib", "--no-deps")
     session.install("-e", ".", "--no-deps")
 
 

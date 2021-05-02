@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from unittest import mock
 
-import contexter
+import contextlib
 import nox
 import nox.__main__
 import nox._options
@@ -296,7 +296,7 @@ def test_main_positional_flag_like_with_double_hyphen(monkeypatch):
 def test_main_version(capsys, monkeypatch):
     monkeypatch.setattr(sys, "argv", [sys.executable, "--version"])
 
-    with contexter.ExitStack() as stack:
+    with contextlib.ExitStack() as stack:
         execute = stack.enter_context(mock.patch("nox.workflow.execute"))
         exit_mock = stack.enter_context(mock.patch("sys.exit"))
         nox.__main__.main()
@@ -309,7 +309,7 @@ def test_main_version(capsys, monkeypatch):
 def test_main_help(capsys, monkeypatch):
     monkeypatch.setattr(sys, "argv", [sys.executable, "--help"])
 
-    with contexter.ExitStack() as stack:
+    with contextlib.ExitStack() as stack:
         execute = stack.enter_context(mock.patch("nox.workflow.execute"))
         exit_mock = stack.enter_context(mock.patch("sys.exit"))
         nox.__main__.main()
