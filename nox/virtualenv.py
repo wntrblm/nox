@@ -225,6 +225,8 @@ class CondaEnv(ProcessEnv):
             logger.debug(
                 "Re-using existing conda env at {}.".format(self.location_name)
             )
+            self._reused = True
+
             return False
 
         cmd = ["conda", "create", "--yes", "--prefix", self.location]
@@ -244,8 +246,6 @@ class CondaEnv(ProcessEnv):
             "Creating conda env in {} with {}".format(self.location_name, python_dep)
         )
         nox.command.run(cmd, silent=True, log=False)
-
-        self._reused = True
 
         return True
 
@@ -403,6 +403,7 @@ class VirtualEnv(ProcessEnv):
                 [self._resolved_interpreter, "-c", "import sys; print(sys.prefix)"],
                 silent=True,
             )
+
             created = nox.command.run(
                 [
                     os.path.join(self.location, "bin", "python"),
@@ -418,6 +419,9 @@ class VirtualEnv(ProcessEnv):
                     )
                 )
                 return False
+
+            self._reused = False
+
 
         if self.venv_or_virtualenv == "virtualenv":
             cmd = [sys.executable, "-m", "virtualenv", self.location]
@@ -435,7 +439,5 @@ class VirtualEnv(ProcessEnv):
             )
         )
         nox.command.run(cmd, silent=True, log=False)
-
-        self._reused = True
 
         return True

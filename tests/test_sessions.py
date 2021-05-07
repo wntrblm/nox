@@ -322,6 +322,9 @@ class TestSession:
         assert session.run_always(operator.add, 23, 19) == 42
 
     def test_run_always_no_install(self, caplog):
+        caplog.clear()
+        caplog.set_level(logging.INFO)
+
         session, runner = self.make_session_and_runner()
         runner.global_config.no_install = True
 
@@ -399,16 +402,11 @@ class TestSession:
             )
 
     @pytest.mark.parametrize(
-        "no_install,venv_reused,desired_result",
-        [
-            (False, False, "Ignoring --no-install"),
-            (True, False, "Ignoring --no-install"),
-            (False, True, "Skipping"),
-            (True, True, "Skipping"),
-        ],
+        "venv_reused,desired_result",
+        [(False, "Venv not created yet:"), (True, "Venv exists: skipping")],
     )
-    def test_conda_no_install_with_venv(
-        self, no_install, venv_reused, desired_result, caplog
+    def test_conda_venv_reused_with_no_install(
+        self, venv_reused, desired_result, caplog
     ):
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
@@ -576,13 +574,16 @@ class TestSession:
             session.skip()
 
     @pytest.mark.parametrize(
-        "no_install,venv_reused,desired_result",
-        [(True, False, "Venv not created yet"), (True, True, "Skipping")],
+        "venv_reused,desired_result",
+        [(False, "Venv not created yet:"), (True, "Venv exists: skipping")],
     )
-    def test_session_no_install(self, no_install, venv_reused, desired_result, caplog):
+    def test_session_venv_reused_with_no_install(
+        self, venv_reused, desired_result, caplog
+    ):
+        caplog.clear()
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
-        runner.global_config.no_install = no_install
+        runner.global_config.no_install = True
         runner.venv._reused = venv_reused
 
         with mock.patch.object(nox.command, "run"):

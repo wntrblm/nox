@@ -374,11 +374,13 @@ class Session:
 
         if self._runner.global_config.no_install:
             if venv._reused:
-                logger.info("Skipping conda installation, as --no-install is set.")
+                logger.info(
+                    "Venv exists: skipping conda installation, as --no-install is set."
+                )
                 return None
             else:
                 logger.info(
-                    "Venv not created yet. Ignoring --no-install and installing from conda."
+                    "Venv not created yet: ignoring --no-install and installing from conda."
                 )
 
         # Escape args that should be (conda-specific; pip install does not need this)
@@ -443,11 +445,13 @@ class Session:
 
         if self._runner.global_config.no_install:
             if venv._reused:
-                logger.info("Skipping installation, as --no-install is set.")
+                logger.info(
+                    "Venv exists: skipping installation, as --no-install is set."
+                )
                 return None
             else:
                 logger.info(
-                    "Venv not created yet. Ignoring --no-install and installing."
+                    "Venv not created yet: ignoring --no-install and installing."
                 )
 
         if "silent" not in kwargs:
