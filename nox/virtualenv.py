@@ -225,6 +225,7 @@ class CondaEnv(ProcessEnv):
             logger.debug(
                 "Re-using existing conda env at {}.".format(self.location_name)
             )
+
             self._reused = True
 
             return False
@@ -418,10 +419,10 @@ class VirtualEnv(ProcessEnv):
                         self.location_name
                     )
                 )
+
+                self._reused = True
+
                 return False
-
-            self._reused = False
-
 
         if self.venv_or_virtualenv == "virtualenv":
             cmd = [sys.executable, "-m", "virtualenv", self.location]

@@ -291,7 +291,6 @@ class Session:
         :type external: bool
         """
         if self._runner.global_config.no_install:
-            logger.info("Skipping run_always, as --no-install is set.")
             return None
 
         if not args:
@@ -373,10 +372,6 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install and venv._reused:
-            logger.info(
-                "Venv exists: skipping conda installation, as --no-install is set."
-            )
-
             return None
 
         # Escape args that should be (conda-specific; pip install does not need this)
@@ -440,7 +435,6 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install and venv._reused:
-            logger.info("Venv exists: skipping installation, as --no-install is set.")
             return None
 
         if "silent" not in kwargs:
