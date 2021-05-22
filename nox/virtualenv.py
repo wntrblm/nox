@@ -404,7 +404,7 @@ class VirtualEnv(ProcessEnv):
                 [
                     os.path.join(self.location, "bin", "python"),
                     "-c",
-                    "import sys; print(sys.real_prefix)",
+                    "import sys; print(getattr(sys, 'real_prefix', sys.base_prefix))",
                 ],
                 silent=True,
             )
