@@ -307,19 +307,18 @@ class VirtualEnv(ProcessEnv):
     def _clean_location(self) -> bool:
         """Deletes any existing virtual environment"""
         if os.path.exists(self.location):
-            if self.reuse_existing:
-                self._check_reused_environment()
+            if self.reuse_existing and self._check_reused_environment():
                 return False
             else:
                 shutil.rmtree(self.location)
 
         return True
 
-    def _check_reused_environment(self) -> None:
+    def _check_reused_environment(self) -> bool:
         """Check if reused environment type is the same."""
         with open(os.path.join(self.location, "pyvenv.cfg")) as fp:
             old_env = "virtualenv" if "virtualenv" in fp.read() else "venv"
-        assert old_env == self.venv_or_virtualenv
+        return old_env == self.venv_or_virtualenv
 
     @property
     def _resolved_interpreter(self) -> str:
