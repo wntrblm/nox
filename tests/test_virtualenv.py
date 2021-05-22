@@ -258,7 +258,7 @@ def test__clean_location(monkeypatch, make_one):
     # Don't re-use existing, but doesn't currently exist.
     # Should return True indicating that the venv needs to be created.
     monkeypatch.setattr(
-        nox.virtualenv.VirtualEnv, "_check_reused_environment", mock.MagicMock()
+        nox.virtualenv.VirtualEnv, "_check_reused_environment_type", mock.MagicMock()
     )
     monkeypatch.delattr(nox.virtualenv.shutil, "rmtree")
     assert not dir_.check()
