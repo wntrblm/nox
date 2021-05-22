@@ -307,7 +307,11 @@ class VirtualEnv(ProcessEnv):
     def _clean_location(self) -> bool:
         """Deletes any existing virtual environment"""
         if os.path.exists(self.location):
-            if self.reuse_existing and self._check_reused_environment_type():
+            if (
+                self.reuse_existing
+                and self._check_reused_environment_type()
+                and self._check_reused_environment_interpreter()
+            ):
                 return False
             else:
                 shutil.rmtree(self.location)
@@ -412,13 +416,12 @@ class VirtualEnv(ProcessEnv):
     def create(self) -> bool:
         """Create the virtualenv or venv."""
         if not self._clean_location():
-            if self._check_reused_environment_interpreter():
-                logger.debug(
-                    "Re-using existing virtual environment at {}.".format(
-                        self.location_name
-                    )
+            logger.debug(
+                "Re-using existing virtual environment at {}.".format(
+                    self.location_name
                 )
-                return False
+            )
+            return False
 
         if self.venv_or_virtualenv == "virtualenv":
             cmd = [sys.executable, "-m", "virtualenv", self.location]

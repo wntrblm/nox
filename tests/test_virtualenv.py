@@ -260,6 +260,11 @@ def test__clean_location(monkeypatch, make_one):
     monkeypatch.setattr(
         nox.virtualenv.VirtualEnv, "_check_reused_environment_type", mock.MagicMock()
     )
+    monkeypatch.setattr(
+        nox.virtualenv.VirtualEnv,
+        "_check_reused_environment_interpreter",
+        mock.MagicMock(),
+    )
     monkeypatch.delattr(nox.virtualenv.shutil, "rmtree")
     assert not dir_.check()
     assert venv._clean_location()
