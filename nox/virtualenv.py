@@ -328,6 +328,15 @@ class VirtualEnv(ProcessEnv):
                 )
         return old_env == self.venv_or_virtualenv
 
+    def _check_reused_environment_interpreter(self) -> bool:
+        """Check if reused environment interpreter is the same."""
+        program = "import sys; print(getattr(sys, 'real_prefix', sys.base_prefix))"
+        original = nox.command.run(
+            [self._resolved_interpreter, "-c", program], silent=True
+        )
+        created = nox.command.run(["python", "-c", program], silent=True)
+        return original == created
+
     @property
     def _resolved_interpreter(self) -> str:
         """Return the interpreter, appropriately resolved for the platform.
@@ -403,13 +412,7 @@ class VirtualEnv(ProcessEnv):
     def create(self) -> bool:
         """Create the virtualenv or venv."""
         if not self._clean_location():
-            program = "import sys; print(getattr(sys, 'real_prefix', sys.base_prefix))"
-            original = nox.command.run(
-                [self._resolved_interpreter, "-c", program],
-                silent=True,
-            )
-            created = nox.command.run(["python", "-c", program], silent=True)
-            if original == created:
+            if self._check_reused_environment_interpreter():
                 logger.debug(
                     "Re-using existing virtual environment at {}.".format(
                         self.location_name
