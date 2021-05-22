@@ -316,8 +316,11 @@ class VirtualEnv(ProcessEnv):
 
     def _check_reused_environment(self) -> bool:
         """Check if reused environment type is the same."""
+        pattern = re.compile(f"virtualenv[ \t]*=")
         with open(os.path.join(self.location, "pyvenv.cfg")) as fp:
-            old_env = "virtualenv" if "virtualenv" in fp.read() else "venv"
+            old_env = (
+                "virtualenv" if any(pattern.match(line) for line in fp) else "venv"
+            )
         return old_env == self.venv_or_virtualenv
 
     @property
