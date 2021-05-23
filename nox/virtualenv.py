@@ -396,16 +396,13 @@ class VirtualEnv(ProcessEnv):
     def create(self) -> bool:
         """Create the virtualenv or venv."""
         if not self._clean_location():
+            program = "import sys; print(getattr(sys, 'real_prefix', sys.base_prefix))"
             original = nox.command.run(
-                [self._resolved_interpreter, "-c", "import sys; print(sys.prefix)"],
+                [self._resolved_interpreter, "-c", program],
                 silent=True,
             )
             created = nox.command.run(
-                [
-                    os.path.join(self.location, "bin", "python"),
-                    "-c",
-                    "import sys; print(getattr(sys, 'real_prefix', sys.base_prefix))",
-                ],
+                [os.path.join(self.location, "bin", "python"), "-c", program],
                 silent=True,
             )
             if original == created:
