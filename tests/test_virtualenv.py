@@ -347,6 +347,15 @@ def test_create_check_interpreter(make_one, monkeypatch, tmpdir):
     assert venv.create()
 
 
+def test_create_reuse_environment(make_one):
+    venv, location = make_one(reuse_existing=True)
+    venv.create()
+
+    reused = not venv.create()
+
+    assert reused
+
+
 def test_create_venv_backend(make_one):
     venv, dir_ = make_one(venv=True)
     venv.create()
