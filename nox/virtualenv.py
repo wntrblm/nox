@@ -293,7 +293,7 @@ class VirtualEnv(ProcessEnv):
         reuse_existing: bool = False,
         *,
         venv: bool = False,
-        venv_params: Any = None
+        venv_params: Any = None,
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
@@ -307,19 +307,39 @@ class VirtualEnv(ProcessEnv):
     def _clean_location(self) -> bool:
         """Deletes any existing virtual environment"""
         if os.path.exists(self.location):
-            if self.reuse_existing:
-                self._check_reused_environment()
+            if (
+                self.reuse_existing
+                and self._check_reused_environment_type()
+                and self._check_reused_environment_interpreter()
+            ):
                 return False
             else:
                 shutil.rmtree(self.location)
 
         return True
 
-    def _check_reused_environment(self) -> None:
+    def _check_reused_environment_type(self) -> bool:
         """Check if reused environment type is the same."""
-        with open(os.path.join(self.location, "pyvenv.cfg")) as fp:
-            old_env = "virtualenv" if "virtualenv" in fp.read() else "venv"
-        assert old_env == self.venv_or_virtualenv
+        path = os.path.join(self.location, "pyvenv.cfg")
+        if not os.path.isfile(path):
+            # virtualenv < 20.0 does not create pyvenv.cfg
+            old_env = "virtualenv"
+        else:
+            pattern = re.compile(f"virtualenv[ \t]*=")
+            with open(path) as fp:
+                old_env = (
+                    "virtualenv" if any(pattern.match(line) for line in fp) else "venv"
+                )
+        return old_env == self.venv_or_virtualenv
+
+    def _check_reused_environment_interpreter(self) -> bool:
+        """Check if reused environment interpreter is the same."""
+        program = "import sys; print(getattr(sys, 'real_prefix', sys.base_prefix))"
+        original = nox.command.run(
+            [self._resolved_interpreter, "-c", program], silent=True
+        )
+        created = nox.command.run(["python", "-c", program], silent=True)
+        return original == created
 
     @property
     def _resolved_interpreter(self) -> str:
@@ -396,25 +416,12 @@ class VirtualEnv(ProcessEnv):
     def create(self) -> bool:
         """Create the virtualenv or venv."""
         if not self._clean_location():
-            original = nox.command.run(
-                [self._resolved_interpreter, "-c", "import sys; print(sys.prefix)"],
-                silent=True,
-            )
-            created = nox.command.run(
-                [
-                    os.path.join(self.location, "bin", "python"),
-                    "-c",
-                    "import sys; print(sys.real_prefix)",
-                ],
-                silent=True,
-            )
-            if original == created:
-                logger.debug(
-                    "Re-using existing virtual environment at {}.".format(
-                        self.location_name
-                    )
+            logger.debug(
+                "Re-using existing virtual environment at {}.".format(
+                    self.location_name
                 )
-                return False
+            )
+            return False
 
         if self.venv_or_virtualenv == "virtualenv":
             cmd = [sys.executable, "-m", "virtualenv", self.location]

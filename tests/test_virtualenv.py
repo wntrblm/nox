@@ -15,6 +15,7 @@
 import os
 import shutil
 import sys
+from textwrap import dedent
 from unittest import mock
 
 import nox.virtualenv
@@ -257,7 +258,12 @@ def test__clean_location(monkeypatch, make_one):
     # Don't re-use existing, but doesn't currently exist.
     # Should return True indicating that the venv needs to be created.
     monkeypatch.setattr(
-        nox.virtualenv.VirtualEnv, "_check_reused_environment", mock.MagicMock()
+        nox.virtualenv.VirtualEnv, "_check_reused_environment_type", mock.MagicMock()
+    )
+    monkeypatch.setattr(
+        nox.virtualenv.VirtualEnv,
+        "_check_reused_environment_interpreter",
+        mock.MagicMock(),
     )
     monkeypatch.delattr(nox.virtualenv.shutil, "rmtree")
     assert not dir_.check()
@@ -332,19 +338,107 @@ def test_create(monkeypatch, make_one):
     assert dir_.join("test.txt").check()
 
 
-def test_create_check_interpreter(make_one, monkeypatch, tmpdir):
-    cmd_mock = mock.MagicMock(
-        side_effect=["python-1", "python-1", "python-2", "python-3", "python-4"]
-    )
-    monkeypatch.setattr(nox.virtualenv.nox.command, "run", cmd_mock)
-    test_dir = tmpdir.mkdir("pytest")
-    fp = test_dir.join("pyvenv.cfg")
-    fp.write("virtualenv")
-    venv, dir_ = make_one()
-    venv.reuse_existing = True
-    venv.location = test_dir.strpath
-    assert not venv.create()
-    assert venv.create()
+def test_create_reuse_environment(make_one):
+    venv, location = make_one(reuse_existing=True)
+    venv.create()
+
+    reused = not venv.create()
+
+    assert reused
+
+
+def test_create_reuse_environment_with_different_interpreter(make_one, monkeypatch):
+    venv, location = make_one(reuse_existing=True)
+    venv.create()
+
+    # Pretend that the environment was created with a different interpreter.
+    monkeypatch.setattr(venv, "_check_reused_environment_interpreter", lambda: False)
+
+    # Create a marker file. It should be gone after the environment is re-created.
+    location.join("marker").ensure()
+
+    reused = not venv.create()
+
+    assert not reused
+    assert not location.join("marker").check()
+
+
+def test_create_reuse_stale_venv_environment(make_one):
+    venv, location = make_one(reuse_existing=True)
+    venv.create()
+
+    # Drop a venv-style pyvenv.cfg into the environment.
+    pyvenv_cfg = """\
+    home = /usr/bin
+    include-system-site-packages = false
+    version = 3.9.6
+    """
+    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+
+    reused = not venv.create()
+
+    # The environment is not reused because it does not look like a
+    # virtualenv-style environment.
+    assert not reused
+
+
+def test_create_reuse_stale_virtualenv_environment(make_one):
+    venv, location = make_one(reuse_existing=True, venv=True)
+    venv.create()
+
+    # Drop a virtualenv-style pyvenv.cfg into the environment.
+    pyvenv_cfg = """\
+    home = /usr
+    implementation = CPython
+    version_info = 3.9.6.final.0
+    virtualenv = 20.4.6
+    include-system-site-packages = false
+    base-prefix = /usr
+    base-exec-prefix = /usr
+    base-executable = /usr/bin/python3.9
+    """
+    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+
+    reused = not venv.create()
+
+    # The environment is not reused because it does not look like a
+    # venv-style environment.
+    assert not reused
+
+
+def test_create_reuse_venv_environment(make_one):
+    venv, location = make_one(reuse_existing=True, venv=True)
+    venv.create()
+
+    # Use a spurious occurrence of "virtualenv" in the pyvenv.cfg.
+    pyvenv_cfg = """\
+    home = /opt/virtualenv/bin
+    include-system-site-packages = false
+    version = 3.9.6
+    """
+    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+
+    reused = not venv.create()
+
+    # The environment should be detected as venv-style and reused.
+    assert reused
+
+
+def test_create_reuse_oldstyle_virtualenv_environment(make_one):
+    venv, location = make_one(reuse_existing=True)
+    venv.create()
+
+    pyvenv_cfg = location.join("pyvenv.cfg")
+    if not pyvenv_cfg.check():
+        pytest.skip("Requires virtualenv >= 20.0.0.")
+
+    # virtualenv < 20.0.0 does not create a pyvenv.cfg file.
+    pyvenv_cfg.remove()
+
+    reused = not venv.create()
+
+    # The environment is detected as virtualenv-style and reused.
+    assert reused
 
 
 def test_create_venv_backend(make_one):
