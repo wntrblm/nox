@@ -376,6 +376,30 @@ def test_create_reuse_stale_venv_environment(make_one):
     assert not reused
 
 
+def test_create_reuse_stale_virtualenv_environment(make_one):
+    venv, location = make_one(reuse_existing=True, venv=True)
+    venv.create()
+
+    # Drop a virtualenv-style pyvenv.cfg into the environment.
+    pyvenv_cfg = """\
+    home = /usr
+    implementation = CPython
+    version_info = 3.9.6.final.0
+    virtualenv = 20.4.6
+    include-system-site-packages = false
+    base-prefix = /usr
+    base-exec-prefix = /usr
+    base-executable = /usr/bin/python3.9
+    """
+    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+
+    reused = not venv.create()
+
+    # The environment is not reused because it does not look like a
+    # venv-style environment.
+    assert not reused
+
+
 def test_create_venv_backend(make_one):
     venv, dir_ = make_one(venv=True)
     venv.create()
