@@ -1,7 +1,6 @@
 flask
 pytest
 pytest-cov
-contexter
 sphinx
 sphinx-autobuild
 recommonmark
