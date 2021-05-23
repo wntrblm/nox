@@ -400,6 +400,24 @@ def test_create_reuse_stale_virtualenv_environment(make_one):
     assert not reused
 
 
+def test_create_reuse_venv_environment(make_one):
+    venv, location = make_one(reuse_existing=True, venv=True)
+    venv.create()
+
+    # Use a spurious occurrence of "virtualenv" in the pyvenv.cfg.
+    pyvenv_cfg = """\
+    home = /opt/virtualenv/bin
+    include-system-site-packages = false
+    version = 3.9.6
+    """
+    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+
+    reused = not venv.create()
+
+    # The environment should be detected as venv-style and reused.
+    assert reused
+
+
 def test_create_venv_backend(make_one):
     venv, dir_ = make_one(venv=True)
     venv.create()
