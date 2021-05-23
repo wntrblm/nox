@@ -349,9 +349,13 @@ def test_create_reuse_environment_with_different_interpreter(make_one, monkeypat
     # Pretend that the environment was created with a different interpreter.
     monkeypatch.setattr(venv, "_check_reused_environment_interpreter", lambda: False)
 
+    # Create a marker file. It should be gone after the environment is re-created.
+    location.join("marker").ensure()
+
     reused = not venv.create()
 
     assert not reused
+    assert not location.join("marker").check()
 
 
 def test_create_reuse_stale_venv_environment(make_one):
