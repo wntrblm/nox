@@ -403,10 +403,7 @@ class VirtualEnv(ProcessEnv):
                 [self._resolved_interpreter, "-c", program],
                 silent=True,
             )
-            created = nox.command.run(
-                [os.path.join(self.location, "bin", "python"), "-c", program],
-                silent=True,
-            )
+            created = nox.command.run(["python", "-c", program], silent=True)
             if original == created:
                 logger.debug(
                     "Re-using existing virtual environment at {}.".format(
