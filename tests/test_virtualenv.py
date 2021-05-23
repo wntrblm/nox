@@ -15,6 +15,7 @@
 import os
 import shutil
 import sys
+from textwrap import dedent
 from unittest import mock
 
 import nox.virtualenv
@@ -354,6 +355,25 @@ def test_create_reuse_environment(make_one):
     reused = not venv.create()
 
     assert reused
+
+
+def test_create_reuse_stale_venv_environment(make_one):
+    venv, location = make_one(reuse_existing=True)
+    venv.create()
+
+    # Drop a venv-style pyvenv.cfg into the environment.
+    pyvenv_cfg = """\
+    home = /usr/bin
+    include-system-site-packages = false
+    version = 3.9.6
+    """
+    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+
+    reused = not venv.create()
+
+    # The environment is not reused because it does not look like a
+    # virtualenv-style environment.
+    assert not reused
 
 
 def test_create_venv_backend(make_one):
