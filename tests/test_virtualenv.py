@@ -418,6 +418,23 @@ def test_create_reuse_venv_environment(make_one):
     assert reused
 
 
+def test_create_reuse_oldstyle_virtualenv_environment(make_one):
+    venv, location = make_one(reuse_existing=True)
+    venv.create()
+
+    pyvenv_cfg = location.join("pyvenv.cfg")
+    if not pyvenv_cfg.check():
+        pytest.skip("Requires virtualenv >= 20.0.0.")
+
+    # virtualenv < 20.0.0 does not create a pyvenv.cfg file.
+    pyvenv_cfg.remove()
+
+    reused = not venv.create()
+
+    # The environment is detected as virtualenv-style and reused.
+    assert reused
+
+
 def test_create_venv_backend(make_one):
     venv, dir_ = make_one(venv=True)
     venv.create()
