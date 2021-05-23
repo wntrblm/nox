@@ -293,7 +293,7 @@ class VirtualEnv(ProcessEnv):
         reuse_existing: bool = False,
         *,
         venv: bool = False,
-        venv_params: Any = None
+        venv_params: Any = None,
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
