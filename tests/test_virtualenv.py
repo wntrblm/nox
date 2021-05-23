@@ -340,7 +340,7 @@ def test_create_check_interpreter(make_one, monkeypatch, tmpdir):
     monkeypatch.setattr(nox.virtualenv.nox.command, "run", cmd_mock)
     test_dir = tmpdir.mkdir("pytest")
     fp = test_dir.join("pyvenv.cfg")
-    fp.write("virtualenv")
+    fp.write("virtualenv = 20.4.6")
     venv, dir_ = make_one()
     venv.reuse_existing = True
     venv.location = test_dir.strpath
