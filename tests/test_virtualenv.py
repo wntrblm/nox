@@ -333,21 +333,6 @@ def test_create(monkeypatch, make_one):
     assert dir_.join("test.txt").check()
 
 
-def test_create_check_interpreter(make_one, monkeypatch, tmpdir):
-    cmd_mock = mock.MagicMock(
-        side_effect=["python-1", "python-1", "python-2", "python-3", "python-4"]
-    )
-    monkeypatch.setattr(nox.virtualenv.nox.command, "run", cmd_mock)
-    test_dir = tmpdir.mkdir("pytest")
-    fp = test_dir.join("pyvenv.cfg")
-    fp.write("virtualenv = 20.4.6")
-    venv, dir_ = make_one()
-    venv.reuse_existing = True
-    venv.location = test_dir.strpath
-    assert not venv.create()
-    assert venv.create()
-
-
 def test_create_reuse_environment(make_one):
     venv, location = make_one(reuse_existing=True)
     venv.create()
@@ -355,6 +340,18 @@ def test_create_reuse_environment(make_one):
     reused = not venv.create()
 
     assert reused
+
+
+def test_create_reuse_environment_with_different_interpreter(make_one, monkeypatch):
+    venv, location = make_one(reuse_existing=True)
+    venv.create()
+
+    # Pretend that the environment was created with a different interpreter.
+    monkeypatch.setattr(venv, "_check_reused_environment_interpreter", lambda: False)
+
+    reused = not venv.create()
+
+    assert not reused
 
 
 def test_create_reuse_stale_venv_environment(make_one):
