@@ -338,7 +338,9 @@ class VirtualEnv(ProcessEnv):
         original = nox.command.run(
             [self._resolved_interpreter, "-c", program], silent=True, log=False
         )
-        created = nox.command.run(["python", "-c", program], silent=True, log=False)
+        created = nox.command.run(
+            ["python", "-c", program], silent=True, log=False, paths=self.bin_paths
+        )
         return original == created
 
     @property
