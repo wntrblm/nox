@@ -410,13 +410,9 @@ def test_create_reuse_venv_environment(make_one):
     venv, location = make_one(reuse_existing=True, venv=True)
     venv.create()
 
-    # Use a spurious occurrence of "virtualenv" in the pyvenv.cfg.
-    pyvenv_cfg = """\
-    home = /opt/virtualenv/bin
-    include-system-site-packages = false
-    version = 3.9.6
-    """
-    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+    # Place a spurious occurrence of "virtualenv" in the pyvenv.cfg.
+    pyvenv_cfg = location.join("pyvenv.cfg")
+    pyvenv_cfg.write(pyvenv_cfg.read() + "bogus = virtualenv\n")
 
     reused = not venv.create()
 
@@ -424,6 +420,7 @@ def test_create_reuse_venv_environment(make_one):
     assert reused
 
 
+@pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
 def test_create_reuse_oldstyle_virtualenv_environment(make_one):
     venv, location = make_one(reuse_existing=True)
     venv.create()

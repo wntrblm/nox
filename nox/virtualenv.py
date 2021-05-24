@@ -336,9 +336,11 @@ class VirtualEnv(ProcessEnv):
         """Check if reused environment interpreter is the same."""
         program = "import sys; print(getattr(sys, 'real_prefix', sys.base_prefix))"
         original = nox.command.run(
-            [self._resolved_interpreter, "-c", program], silent=True
+            [self._resolved_interpreter, "-c", program], silent=True, log=False
         )
-        created = nox.command.run(["python", "-c", program], silent=True)
+        created = nox.command.run(
+            ["python", "-c", program], silent=True, log=False, paths=self.bin_paths
+        )
         return original == created
 
     @property
