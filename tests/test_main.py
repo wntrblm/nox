@@ -587,3 +587,12 @@ def test_main_force_python(monkeypatch):
             nox.__main__.main()
         config = execute.call_args[1]["global_config"]
     assert config.pythons == config.extra_pythons == ["3.10"]
+
+
+def test_main_reuse_existing_virtualenvs_no_install(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["nox", "-R"])
+    with mock.patch("nox.workflow.execute", return_value=0) as execute:
+        with mock.patch.object(sys, "exit"):
+            nox.__main__.main()
+        config = execute.call_args[1]["global_config"]
+    assert config.reuse_existing_virtualenvs and config.no_install
