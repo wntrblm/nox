@@ -385,6 +385,18 @@ options.add_options(
         help="Skip session.run invocations in the Noxfile.",
     ),
     _option_set.Option(
+        "no_install",
+        "--no-install",
+        default=False,
+        group=options.groups["secondary"],
+        action="store_true",
+        help=(
+            "Skip invocations of session methods for installing packages"
+            " (session.install, session.conda_install, session.run_always)"
+            " when a virtualenv is being reused."
+        ),
+    ),
+    _option_set.Option(
         "report",
         "--report",
         group=options.groups["secondary"],
