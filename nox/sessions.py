@@ -417,14 +417,19 @@ class Session:
 
         .. _pip: https://pip.readthedocs.org
         """
+        venv = self._runner.venv
+
         if not isinstance(
-            self._runner.venv, (CondaEnv, VirtualEnv, PassthroughEnv)
+            venv, (CondaEnv, VirtualEnv, PassthroughEnv)
         ):  # pragma: no cover
             raise ValueError(
                 "A session without a virtualenv can not install dependencies."
             )
         if not args:
             raise ValueError("At least one argument required to install().")
+
+        if self._runner.global_config.no_install and venv._reused:
+            return None
 
         if "silent" not in kwargs:
             kwargs["silent"] = True
