@@ -368,6 +368,9 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to install().")
 
+        if self._runner.global_config.no_install and venv._reused:
+            return None
+
         # Escape args that should be (conda-specific; pip install does not need this)
         args = _dblquote_pkg_install_args(args)
 
