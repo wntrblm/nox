@@ -334,7 +334,10 @@ def test_create(monkeypatch, make_one):
     assert dir_.join("test.txt").check()
     venv.reuse_existing = True
     monkeypatch.setattr(nox.virtualenv.nox.command, "run", mock.MagicMock())
+
     venv.create()
+
+    assert venv._reused
     assert dir_.join("test.txt").check()
 
 
