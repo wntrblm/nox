@@ -159,6 +159,21 @@ By default, Nox deletes and recreates virtualenvs every time it is run. This is 
 
 If the Noxfile sets ``nox.options.reuse_existing_virtualenvs``, you can override the Noxfile setting from the command line by using ``--no-reuse-existing-virtualenvs``.
 
+Additionally, you can skip the re-installation of packages when a virtualenv is reused. Use ``-R`` or ``--reuse-existing-virtualenvs --no-install``:
+
+.. code-block:: console
+
+    nox -R
+    nox --reuse-existing-virtualenvs --no-install
+
+The ``--no-install`` option causes the following session methods to return early:
+
+- :func:`session.install <nox.sessions.Session.install>`
+- :func:`session.conda_install <nox.sessions.Session.conda_install>`
+- :func:`session.run_always <nox.sessions.Session.run_always>`
+
+This option has no effect if the virtualenv is not being reused.
+
 .. _opt-running-extra-pythons:
 
 Running additional Python versions
