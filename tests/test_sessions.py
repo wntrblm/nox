@@ -538,6 +538,25 @@ class TestSession:
         with pytest.raises(nox.sessions._SessionSkip):
             session.skip()
 
+    @pytest.mark.parametrize(
+        ("no_install", "reused", "run_called"),
+        [
+            (True, True, False),
+            (True, False, True),
+            (False, True, True),
+            (False, False, True),
+        ],
+    )
+    def test_session_venv_reused_with_no_install(self, no_install, reused, run_called):
+        session, runner = self.make_session_and_runner()
+        runner.global_config.no_install = no_install
+        runner.venv._reused = reused
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.install("eggs", "spam")
+
+        assert run.called is run_called
+
     def test___slots__(self):
         session, _ = self.make_session_and_runner()
         with pytest.raises(AttributeError):
