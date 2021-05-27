@@ -310,6 +310,25 @@ class TestSession:
 
         assert session.run_always(operator.add, 23, 19) == 42
 
+    @pytest.mark.parametrize(
+        ("no_install", "reused", "run_called"),
+        [
+            (True, True, False),
+            (True, False, True),
+            (False, True, True),
+            (False, False, True),
+        ],
+    )
+    def test_run_always_no_install(self, no_install, reused, run_called):
+        session, runner = self.make_session_and_runner()
+        runner.global_config.no_install = no_install
+        runner.venv._reused = reused
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.run_always("python", "-m", "pip", "install", "requests")
+
+        assert run.called is run_called
+
     def test_conda_install_bad_args(self):
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
