@@ -381,6 +381,31 @@ class TestSession:
             )
 
     @pytest.mark.parametrize(
+        ("no_install", "reused", "run_called"),
+        [
+            (True, True, False),
+            (True, False, True),
+            (False, True, True),
+            (False, False, True),
+        ],
+    )
+    def test_conda_venv_reused_with_no_install(self, no_install, reused, run_called):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "/path/to/conda/env"
+        runner.venv.env = {}
+        runner.venv.is_offline = lambda: True
+
+        runner.global_config.no_install = no_install
+        runner.venv._reused = reused
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.conda_install("baked beans", "eggs", "spam")
+
+        assert run.called is run_called
+
+    @pytest.mark.parametrize(
         "version_constraint",
         ["no", "yes", "already_dbl_quoted"],
         ids="version_constraint={}".format,
