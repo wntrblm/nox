@@ -290,6 +290,13 @@ class Session:
             do not have a virtualenv.
         :type external: bool
         """
+        if (
+            self._runner.global_config.no_install
+            and self._runner.venv is not None
+            and self._runner.venv._reused
+        ):
+            return None
+
         if not args:
             raise ValueError("At least one argument required to run_always().")
 
