@@ -148,6 +148,15 @@ def _color_finalizer(value: bool, args: argparse.Namespace) -> bool:
     return sys.stdout.isatty()
 
 
+def _force_pythons_finalizer(
+    value: Sequence[str], args: argparse.Namespace
+) -> Sequence[str]:
+    """Propagate ``--force-python`` to ``--python`` and ``--extra-python``."""
+    if value:
+        args.pythons = args.extra_pythons = value
+    return value
+
+
 def _posargs_finalizer(
     value: Sequence[Any], args: argparse.Namespace
 ) -> Union[Sequence[Any], List[Any]]:
@@ -334,6 +343,18 @@ options.add_options(
         group=options.groups["secondary"],
         nargs="*",
         help="Additionally, run sessions using the given python interpreter versions.",
+    ),
+    _option_set.Option(
+        "force_pythons",
+        "--force-pythons",
+        "--force-python",
+        group=options.groups["secondary"],
+        nargs="*",
+        help=(
+            "Run sessions with the given interpreters instead of those listed in the Noxfile."
+            " This is a shorthand for ``--python=X.Y --extra-python=X.Y``."
+        ),
+        finalizer_func=_force_pythons_finalizer,
     ),
     *_option_set.make_flag_pair(
         "stop_on_first_error",

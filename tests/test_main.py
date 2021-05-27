@@ -578,3 +578,12 @@ def test_main_color_conflict(capsys, monkeypatch):
     _, err = capsys.readouterr()
 
     assert "color" in err
+
+
+def test_main_force_python(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["nox", "--force-python=3.10"])
+    with mock.patch("nox.workflow.execute", return_value=0) as execute:
+        with mock.patch.object(sys, "exit"):
+            nox.__main__.main()
+        config = execute.call_args[1]["global_config"]
+    assert config.pythons == config.extra_pythons == ["3.10"]
