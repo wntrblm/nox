@@ -272,8 +272,16 @@ class Session:
     ) -> Optional[Any]:
         """Run a command **always**.
 
-        This is a variant of :meth:`run` that runs in all cases, including in
-        the presence of ``--install-only``.
+        This is a variant of :meth:`run` that runs even in the presence of
+        ``--install-only``. This method returns early if ``--no-install`` is
+        specified and the virtualenv is being reused.
+
+        Here are some cases where this method is useful:
+
+        - You need to install packages using a command other than ``pip
+          install`` or ``conda install``.
+        - You need to run a command as a prerequisite of package installation,
+          such as building a package or compiling a binary extension.
 
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
