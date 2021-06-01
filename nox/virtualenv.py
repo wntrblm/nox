@@ -54,6 +54,7 @@ class ProcessEnv:
     def __init__(self, bin_paths: None = None, env: Mapping[str, str] = None) -> None:
         self._bin_paths = bin_paths
         self.env = os.environ.copy()
+        self._reused = False
 
         if env is not None:
             self.env.update(env)
@@ -224,6 +225,9 @@ class CondaEnv(ProcessEnv):
             logger.debug(
                 "Re-using existing conda env at {}.".format(self.location_name)
             )
+
+            self._reused = True
+
             return False
 
         cmd = ["conda", "create", "--yes", "--prefix", self.location]
@@ -423,6 +427,9 @@ class VirtualEnv(ProcessEnv):
                     self.location_name
                 )
             )
+
+            self._reused = True
+
             return False
 
         if self.venv_or_virtualenv == "virtualenv":

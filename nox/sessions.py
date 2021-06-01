@@ -272,8 +272,16 @@ class Session:
     ) -> Optional[Any]:
         """Run a command **always**.
 
-        This is a variant of :meth:`run` that runs in all cases, including in
-        the presence of ``--install-only``.
+        This is a variant of :meth:`run` that runs even in the presence of
+        ``--install-only``. This method returns early if ``--no-install`` is
+        specified and the virtualenv is being reused.
+
+        Here are some cases where this method is useful:
+
+        - You need to install packages using a command other than ``pip
+          install`` or ``conda install``.
+        - You need to run a command as a prerequisite of package installation,
+          such as building a package or compiling a binary extension.
 
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
@@ -290,6 +298,13 @@ class Session:
             do not have a virtualenv.
         :type external: bool
         """
+        if (
+            self._runner.global_config.no_install
+            and self._runner.venv is not None
+            and self._runner.venv._reused
+        ):
+            return None
+
         if not args:
             raise ValueError("At least one argument required to run_always().")
 
@@ -368,6 +383,9 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to install().")
 
+        if self._runner.global_config.no_install and venv._reused:
+            return None
+
         # Escape args that should be (conda-specific; pip install does not need this)
         args = _dblquote_pkg_install_args(args)
 
@@ -417,14 +435,19 @@ class Session:
 
         .. _pip: https://pip.readthedocs.org
         """
+        venv = self._runner.venv
+
         if not isinstance(
-            self._runner.venv, (CondaEnv, VirtualEnv, PassthroughEnv)
+            venv, (CondaEnv, VirtualEnv, PassthroughEnv)
         ):  # pragma: no cover
             raise ValueError(
                 "A session without a virtualenv can not install dependencies."
             )
         if not args:
             raise ValueError("At least one argument required to install().")
+
+        if self._runner.global_config.no_install and venv._reused:
+            return None
 
         if "silent" not in kwargs:
             kwargs["silent"] = True

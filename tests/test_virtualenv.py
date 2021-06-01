@@ -180,6 +180,7 @@ def test_condaenv_create(make_conda):
     venv.reuse_existing = True
     venv.create()
     assert dir_.join("test.txt").check()
+    assert venv._reused
 
 
 @pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
@@ -334,7 +335,10 @@ def test_create(monkeypatch, make_one):
     assert dir_.join("test.txt").check()
     venv.reuse_existing = True
     monkeypatch.setattr(nox.virtualenv.nox.command, "run", mock.MagicMock())
+
     venv.create()
+
+    assert venv._reused
     assert dir_.join("test.txt").check()
 
 

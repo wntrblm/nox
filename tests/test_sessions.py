@@ -310,6 +310,25 @@ class TestSession:
 
         assert session.run_always(operator.add, 23, 19) == 42
 
+    @pytest.mark.parametrize(
+        ("no_install", "reused", "run_called"),
+        [
+            (True, True, False),
+            (True, False, True),
+            (False, True, True),
+            (False, False, True),
+        ],
+    )
+    def test_run_always_no_install(self, no_install, reused, run_called):
+        session, runner = self.make_session_and_runner()
+        runner.global_config.no_install = no_install
+        runner.venv._reused = reused
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.run_always("python", "-m", "pip", "install", "requests")
+
+        assert run.called is run_called
+
     def test_conda_install_bad_args(self):
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
@@ -379,6 +398,31 @@ class TestSession:
                 silent=True,
                 external="error",
             )
+
+    @pytest.mark.parametrize(
+        ("no_install", "reused", "run_called"),
+        [
+            (True, True, False),
+            (True, False, True),
+            (False, True, True),
+            (False, False, True),
+        ],
+    )
+    def test_conda_venv_reused_with_no_install(self, no_install, reused, run_called):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        runner.venv.location = "/path/to/conda/env"
+        runner.venv.env = {}
+        runner.venv.is_offline = lambda: True
+
+        runner.global_config.no_install = no_install
+        runner.venv._reused = reused
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.conda_install("baked beans", "eggs", "spam")
+
+        assert run.called is run_called
 
     @pytest.mark.parametrize(
         "version_constraint",
@@ -537,6 +581,25 @@ class TestSession:
 
         with pytest.raises(nox.sessions._SessionSkip):
             session.skip()
+
+    @pytest.mark.parametrize(
+        ("no_install", "reused", "run_called"),
+        [
+            (True, True, False),
+            (True, False, True),
+            (False, True, True),
+            (False, False, True),
+        ],
+    )
+    def test_session_venv_reused_with_no_install(self, no_install, reused, run_called):
+        session, runner = self.make_session_and_runner()
+        runner.global_config.no_install = no_install
+        runner.venv._reused = reused
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.install("eggs", "spam")
+
+        assert run.called is run_called
 
     def test___slots__(self):
         session, _ = self.make_session_and_runner()

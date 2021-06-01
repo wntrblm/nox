@@ -157,6 +157,13 @@ def _force_pythons_finalizer(
     return value
 
 
+def _R_finalizer(value: bool, args: argparse.Namespace) -> bool:
+    """Propagate -R to --reuse-existing-virtualenvs and --no-install."""
+    if value:
+        args.reuse_existing_virtualenvs = args.no_install = value
+    return value
+
+
 def _posargs_finalizer(
     value: Sequence[Any], args: argparse.Namespace
 ) -> Union[Sequence[Any], List[Any]]:
@@ -321,6 +328,18 @@ options.add_options(
         help="Re-use existing virtualenvs instead of recreating them.",
     ),
     _option_set.Option(
+        "R",
+        "-R",
+        default=False,
+        group=options.groups["secondary"],
+        action="store_true",
+        help=(
+            "Re-use existing virtualenvs and skip package re-installation."
+            " This is an alias for '--reuse-existing-virtualenvs --no-install'."
+        ),
+        finalizer_func=_R_finalizer,
+    ),
+    _option_set.Option(
         "noxfile",
         "-f",
         "--noxfile",
@@ -383,6 +402,18 @@ options.add_options(
         group=options.groups["secondary"],
         action="store_true",
         help="Skip session.run invocations in the Noxfile.",
+    ),
+    _option_set.Option(
+        "no_install",
+        "--no-install",
+        default=False,
+        group=options.groups["secondary"],
+        action="store_true",
+        help=(
+            "Skip invocations of session methods for installing packages"
+            " (session.install, session.conda_install, session.run_always)"
+            " when a virtualenv is being reused."
+        ),
     ),
     _option_set.Option(
         "report",
