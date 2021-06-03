@@ -439,6 +439,7 @@ def test_main_with_bad_session_names(run_nox, session):
     noxfile = os.path.join(RESOURCES, "noxfile_normalization.py")
     returncode, _, stderr = run_nox(f"--noxfile={noxfile}", f"--session={session}")
     assert returncode != 0
+    assert session in stderr
 
 
 def test_main_noxfile_options(monkeypatch):
