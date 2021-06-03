@@ -20,9 +20,9 @@ from typing import Optional
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
 
-try:
+if sys.version_info >= (3, 8):  # pragma: no cover
     import importlib.metadata as metadata
-except ImportError:  # pragma: no cover
+else:  # pragma: no cover
     import importlib_metadata as metadata
 
 
