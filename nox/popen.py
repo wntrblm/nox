@@ -16,10 +16,10 @@ import contextlib
 import locale
 import subprocess
 import sys
-from typing import IO, Mapping, Optional, Sequence, Tuple, Union
+from typing import IO, Mapping, Sequence, Tuple, Union
 
 
-def shutdown_process(proc: subprocess.Popen) -> Tuple[Optional[bytes], Optional[bytes]]:
+def shutdown_process(proc: subprocess.Popen) -> Tuple[bytes, bytes]:
     """Gracefully shutdown a child process."""
 
     with contextlib.suppress(subprocess.TimeoutExpired):
