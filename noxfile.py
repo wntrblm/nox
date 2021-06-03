@@ -86,7 +86,7 @@ def blacken(session):
 
 @nox.session(python="3.8")
 def lint(session):
-    session.install("flake8==3.9.2", "black==21.5b2", "isort==5.8.0", "mypy==0.720")
+    session.install("flake8==3.9.2", "black==21.5b2", "isort==5.8.0", "mypy==0.812")
     session.run(
         "mypy",
         "--config-file=",
