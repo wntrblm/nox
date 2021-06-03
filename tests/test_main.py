@@ -370,6 +370,77 @@ def test_main_session_with_names(capsys, monkeypatch):
         sys_exit.assert_called_once_with(0)
 
 
+@pytest.fixture
+def run_nox(capsys, monkeypatch):
+    def _run_nox(*args):
+        monkeypatch.setattr(sys, "argv", ["nox", *args])
+
+        with mock.patch("sys.exit") as sys_exit:
+            nox.__main__.main()
+            stdout, stderr = capsys.readouterr()
+            returncode = sys_exit.call_args[0][0]
+
+        return returncode, stdout, stderr
+
+    return _run_nox
+
+
+@pytest.mark.parametrize(
+    ("normalized_name", "session"),
+    [
+        ("test(arg='Jane')", "test(arg='Jane')"),
+        ("test(arg='Jane')", 'test(arg="Jane")'),
+        ("test(arg='Jane')", 'test(arg = "Jane")'),
+        ("test(arg='Jane')", 'test ( arg = "Jane" )'),
+        ('test(arg="Joe\'s")', 'test(arg="Joe\'s")'),
+        ('test(arg="Joe\'s")', "test(arg='Joe\\'s')"),
+        ("test(arg='\"hello world\"')", "test(arg='\"hello world\"')"),
+        ("test(arg='\"hello world\"')", 'test(arg="\\"hello world\\"")'),
+        ("test(arg=[42])", "test(arg=[42])"),
+        ("test(arg=[42])", "test(arg=[42,])"),
+        ("test(arg=[42])", "test(arg=[ 42 ])"),
+        ("test(arg=[42])", "test(arg=[0x2a])"),
+        (
+            "test(arg=datetime.datetime(1980, 1, 1, 0, 0))",
+            "test(arg=datetime.datetime(1980, 1, 1, 0, 0))",
+        ),
+        (
+            "test(arg=datetime.datetime(1980, 1, 1, 0, 0))",
+            "test(arg=datetime.datetime(1980,1,1,0,0))",
+        ),
+        (
+            "test(arg=datetime.datetime(1980, 1, 1, 0, 0))",
+            "test(arg=datetime.datetime(1980, 1, 1, 0, 0x0))",
+        ),
+    ],
+)
+def test_main_with_normalized_session_names(run_nox, normalized_name, session):
+    noxfile = os.path.join(RESOURCES, "noxfile_normalization.py")
+    returncode, _, stderr = run_nox(f"--noxfile={noxfile}", f"--session={session}")
+    assert returncode == 0
+    assert normalized_name in stderr
+
+
+@pytest.mark.parametrize(
+    "session",
+    [
+        "syntax error",
+        "test(arg=Jane)",
+        "test(arg='Jane ')",
+        "_test(arg='Jane')",
+        "test(arg=42)",
+        "test(arg=[42.0])",
+        "test(arg=[43])",
+        "test(arg=<user_nox_module.Foo object at 0x123456789abc>)",
+        "test(arg=datetime.datetime(1980, 1, 1))",
+    ],
+)
+def test_main_with_bad_session_names(run_nox, session):
+    noxfile = os.path.join(RESOURCES, "noxfile_normalization.py")
+    returncode, _, stderr = run_nox(f"--noxfile={noxfile}", f"--session={session}")
+    assert returncode != 0
+
+
 def test_main_noxfile_options(monkeypatch):
     monkeypatch.setattr(
         sys,
