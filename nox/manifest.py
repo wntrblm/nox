@@ -150,10 +150,11 @@ class Manifest:
                 ),
             )
         )
-        normalized_specified_sessions = [
-            _normalize_arg(session_name) for session_name in specified_sessions
+        missing_sessions = [
+            session_name
+            for session_name in specified_sessions
+            if _normalize_arg(session_name) not in all_sessions
         ]
-        missing_sessions = set(normalized_specified_sessions) - all_sessions
         if missing_sessions:
             raise KeyError("Sessions not found: {}".format(", ".join(missing_sessions)))
 
