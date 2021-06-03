@@ -474,7 +474,7 @@ def test_output_decoding_utf8_only_fail(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 def test_output_decoding_utf8_fail_cp1252_success(
-    monkeypatch: pytest.MonkeyPatch
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "cp1252")
 
