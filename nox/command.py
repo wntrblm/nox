@@ -17,6 +17,7 @@ import sys
 from typing import Any, Iterable, List, Optional, Sequence, Union
 
 import py
+
 from nox.logger import logger
 from nox.popen import popen
 

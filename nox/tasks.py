@@ -20,8 +20,9 @@ import types
 from argparse import Namespace
 from typing import List, Union
 
-import nox
 from colorlog.escape_codes import parse_colors
+
+import nox
 from nox import _options, registry
 from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
 from nox.logger import logger

@@ -15,8 +15,9 @@
 import collections
 from unittest import mock
 
-import nox
 import pytest
+
+import nox
 from nox._decorators import Func
 from nox.manifest import (
     WARN_PYTHONS_IGNORED,

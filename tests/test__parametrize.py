@@ -15,6 +15,7 @@
 from unittest import mock
 
 import pytest
+
 from nox import _decorators, _parametrize, parametrize, session
 
 
