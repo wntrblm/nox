@@ -23,9 +23,10 @@ import time
 from textwrap import dedent
 from unittest import mock
 
+import pytest
+
 import nox.command
 import nox.popen
-import pytest
 
 PYTHON = sys.executable
 

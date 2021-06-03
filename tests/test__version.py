@@ -17,6 +17,7 @@ from textwrap import dedent
 from typing import Optional
 
 import pytest
+
 from nox import needs_version
 from nox._version import (
     InvalidVersionSpecifier,

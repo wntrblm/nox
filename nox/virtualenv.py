@@ -20,8 +20,9 @@ import sys
 from socket import gethostbyname
 from typing import Any, List, Mapping, Optional, Tuple, Union
 
-import nox.command
 import py
+
+import nox.command
 from nox.logger import logger
 
 from . import _typing

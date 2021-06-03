@@ -18,9 +18,10 @@ import sys
 from textwrap import dedent
 from unittest import mock
 
-import nox.virtualenv
 import py
 import pytest
+
+import nox.virtualenv
 
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 HAS_CONDA = shutil.which("conda") is not None
