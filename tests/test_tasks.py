@@ -21,8 +21,9 @@ import platform
 from textwrap import dedent
 from unittest import mock
 
-import nox
 import pytest
+
+import nox
 from nox import _options, sessions, tasks
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 

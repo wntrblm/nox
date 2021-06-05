@@ -27,7 +27,7 @@ def _copy_func(src: Callable, name: str = None) -> Callable:
         closure=src.__closure__,  # type: ignore
     )
     dst.__dict__.update(copy.deepcopy(src.__dict__))
-    dst = functools.update_wrapper(dst, src)  # type: ignore
+    dst = functools.update_wrapper(dst, src)
     dst.__kwdefaults__ = src.__kwdefaults__  # type: ignore
     return dst
 

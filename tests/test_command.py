@@ -23,9 +23,10 @@ import time
 from textwrap import dedent
 from unittest import mock
 
+import pytest
+
 import nox.command
 import nox.popen
-import pytest
 
 PYTHON = sys.executable
 
@@ -474,7 +475,7 @@ def test_output_decoding_utf8_only_fail(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 def test_output_decoding_utf8_fail_cp1252_success(
-    monkeypatch: pytest.MonkeyPatch
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "cp1252")
 

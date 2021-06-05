@@ -78,15 +78,15 @@ def cover(session):
 @nox.session(python="3.8")
 def blacken(session):
     """Run black code formatter."""
-    session.install("black==19.3b0", "isort==4.3.21")
+    session.install("black==21.5b2", "isort==5.8.0")
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", *files)
-    session.run("isort", "--recursive", *files)
+    session.run("isort", *files)
 
 
 @nox.session(python="3.8")
 def lint(session):
-    session.install("flake8==3.7.8", "black==19.3b0", "isort==4.3.21", "mypy==0.720")
+    session.install("flake8==3.9.2", "black==21.5b2", "isort==5.8.0", "mypy==0.812")
     session.run(
         "mypy",
         "--config-file=",
@@ -97,8 +97,8 @@ def lint(session):
     )
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", "--check", *files)
-    session.run("isort", "--check", "--recursive", *files)
-    session.run("flake8", "nox", *files)
+    session.run("isort", "--check", *files)
+    session.run("flake8", *files)
 
 
 @nox.session(python="3.7")

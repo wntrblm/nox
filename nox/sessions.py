@@ -32,8 +32,9 @@ from typing import (
     Union,
 )
 
-import nox.command
 import py
+
+import nox.command
 from nox import _typing
 from nox._decorators import Func
 from nox.logger import logger

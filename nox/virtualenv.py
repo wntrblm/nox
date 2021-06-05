@@ -20,8 +20,9 @@ import sys
 from socket import gethostbyname
 from typing import Any, List, Mapping, Optional, Tuple, Union
 
-import nox.command
 import py
+
+import nox.command
 from nox.logger import logger
 
 from . import _typing
@@ -329,7 +330,7 @@ class VirtualEnv(ProcessEnv):
             # virtualenv < 20.0 does not create pyvenv.cfg
             old_env = "virtualenv"
         else:
-            pattern = re.compile(f"virtualenv[ \t]*=")
+            pattern = re.compile("virtualenv[ \t]*=")
             with open(path) as fp:
                 old_env = (
                     "virtualenv" if any(pattern.match(line) for line in fp) else "venv"

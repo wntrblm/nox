@@ -18,12 +18,13 @@ import sys
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 import nox
 import nox.__main__
 import nox._options
 import nox.registry
 import nox.sessions
-import pytest
 
 try:
     import importlib.metadata as metadata

@@ -21,12 +21,13 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 import nox.command
 import nox.manifest
 import nox.registry
 import nox.sessions
 import nox.virtualenv
-import pytest
 from nox import _options
 from nox.logger import logger
 
