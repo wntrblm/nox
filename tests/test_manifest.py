@@ -373,7 +373,7 @@ def test_notify_with_posargs():
     # delete my_session from the queue
     manifest.filter_by_name(())
 
-    assert session.posargs is cfg.posargs
+    assert session.posargs == cfg.posargs
     assert manifest.notify("my_session", posargs=["--an-arg"])
     assert session.posargs == ["--an-arg"]
 

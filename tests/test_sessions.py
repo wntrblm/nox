@@ -101,7 +101,7 @@ class TestSession:
 
         assert session.name is runner.friendly_name
         assert session.env is runner.venv.env
-        assert session.posargs is runner.global_config.posargs
+        assert session.posargs == runner.global_config.posargs
         assert session.virtualenv is runner.venv
         assert session.bin_paths is runner.venv.bin_paths
         assert session.bin is runner.venv.bin_paths[0]
