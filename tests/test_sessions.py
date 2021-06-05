@@ -554,6 +554,25 @@ class TestSession:
 
         runner.manifest.notify.assert_called_with("other", ["--an-arg"])
 
+    def test_posargs_are_not_shared_between_sessions(self, monkeypatch, tmp_path):
+        registry = {}
+        monkeypatch.setattr("nox.registry._REGISTRY", registry)
+
+        @nox.session(venv_backend="none")
+        def test(session):
+            session.posargs.extend(["-x"])
+
+        @nox.session(venv_backend="none")
+        def lint(session):
+            if "-x" in session.posargs:
+                raise RuntimeError("invalid option: -x")
+
+        config = _options.options.namespace(posargs=[])
+        manifest = nox.manifest.Manifest(registry, config)
+
+        assert manifest["test"].execute()
+        assert manifest["lint"].execute()
+
     def test_log(self, caplog):
         caplog.set_level(logging.INFO)
         session, _ = self.make_session_and_runner()
