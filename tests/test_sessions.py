@@ -67,9 +67,7 @@ class TestSession:
             signatures=["test"],
             func=func,
             global_config=_options.options.namespace(
-                posargs=mock.sentinel.posargs,
-                error_on_external_run=False,
-                install_only=False,
+                posargs=[], error_on_external_run=False, install_only=False
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -371,7 +369,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
@@ -435,7 +433,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
@@ -492,7 +490,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
@@ -521,7 +519,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
@@ -628,7 +626,7 @@ class TestSessionRunner:
             global_config=_options.options.namespace(
                 noxfile=os.path.join(os.getcwd(), "noxfile.py"),
                 envdir="envdir",
-                posargs=mock.sentinel.posargs,
+                posargs=[],
                 reuse_existing_virtualenvs=False,
                 error_on_missing_interpreters=False,
             ),
@@ -644,7 +642,7 @@ class TestSessionRunner:
         assert runner.func is not None
         assert callable(runner.func)
         assert isinstance(runner.description, str)
-        assert runner.global_config.posargs == mock.sentinel.posargs
+        assert runner.global_config.posargs == []
         assert isinstance(runner.manifest, nox.manifest.Manifest)
 
     def test_str_and_friendly_name(self):
