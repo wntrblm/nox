@@ -1,7 +1,32 @@
 # Changelog
 
+## 2021.6.6
+
+- Add option `--no-install` to skip install commands in reused environments. (#432)
+- Add option `--force-python` as shorthand for `--python` and `--extra-python`. (#427)
+- Do not reuse environments if the interpreter or the environment type has changed. (#418, #425, #428)
+- Allow common variations in session names with parameters, such as double quotes instead of single quotes. Session names are considered equal if they produce the same Python AST. (#417, #434)
+- Preserve the order of parameters in session names. (#401)
+- Allow `@nox.parametrize` to select the session Python. (#413)
+- Allow passing `posargs` when scheduling another session via `session.notify`. (#397)
+- Prevent sessions from modifying each other's posargs. (#439)
+- Add `nox.needs_version` to specify Nox version requirements. (#388)
+- Add `session.name` to get the session name. (#386)
+- Gracefully shutdown child processes. (#393)
+- Decode command output using the system locale if UTF-8 decoding fails. (#380)
+- Fix creation of Conda environments when `venv_params` is used. (#420)
+- Various improvements to Nox's type annotations. (#376, #377, #378)
+- Remove outdated notes on Windows compatibility from the documentation. (#382)
+- Increase Nox's test coverage on Windows. (#300)
+- Avoid mypy searching for configuration files in other directories. (#402)
+- Replace AppVeyor and Travis CI by GitHub Actions. (#389, #390, #403)
+- Allow colorlog <7.0.0. (#431)
+- Drop contexter from test requirements. (#426)
+- Upgrade linters to the latest version. (#438)
+
 ## 2020.12.31
-- Fix `NoxColoredFormatter.format`(#374)
+
+- Fix `NoxColoredFormatter.format` (#374)
 - Use conda remove to clean up existing conda environments (#373)
 - Support users specifying an undeclared parametrization of python via `--extra-python` (#361)
 - Support double-digit minor version in `python` keyword (#367)
