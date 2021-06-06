@@ -67,9 +67,7 @@ class TestSession:
             signatures=["test"],
             func=func,
             global_config=_options.options.namespace(
-                posargs=mock.sentinel.posargs,
-                error_on_external_run=False,
-                install_only=False,
+                posargs=[], error_on_external_run=False, install_only=False
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -101,7 +99,7 @@ class TestSession:
 
         assert session.name is runner.friendly_name
         assert session.env is runner.venv.env
-        assert session.posargs is runner.global_config.posargs
+        assert session.posargs == runner.global_config.posargs
         assert session.virtualenv is runner.venv
         assert session.bin_paths is runner.venv.bin_paths
         assert session.bin is runner.venv.bin_paths[0]
@@ -371,7 +369,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
@@ -435,7 +433,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
@@ -492,7 +490,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
@@ -521,7 +519,7 @@ class TestSession:
             name="test",
             signatures=["test"],
             func=mock.sentinel.func,
-            global_config=_options.options.namespace(posargs=mock.sentinel.posargs),
+            global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
@@ -555,6 +553,25 @@ class TestSession:
         session.notify("other", posargs=["--an-arg"])
 
         runner.manifest.notify.assert_called_with("other", ["--an-arg"])
+
+    def test_posargs_are_not_shared_between_sessions(self, monkeypatch, tmp_path):
+        registry = {}
+        monkeypatch.setattr("nox.registry._REGISTRY", registry)
+
+        @nox.session(venv_backend="none")
+        def test(session):
+            session.posargs.extend(["-x"])
+
+        @nox.session(venv_backend="none")
+        def lint(session):
+            if "-x" in session.posargs:
+                raise RuntimeError("invalid option: -x")
+
+        config = _options.options.namespace(posargs=[])
+        manifest = nox.manifest.Manifest(registry, config)
+
+        assert manifest["test"].execute()
+        assert manifest["lint"].execute()
 
     def test_log(self, caplog):
         caplog.set_level(logging.INFO)
@@ -628,7 +645,7 @@ class TestSessionRunner:
             global_config=_options.options.namespace(
                 noxfile=os.path.join(os.getcwd(), "noxfile.py"),
                 envdir="envdir",
-                posargs=mock.sentinel.posargs,
+                posargs=[],
                 reuse_existing_virtualenvs=False,
                 error_on_missing_interpreters=False,
             ),
@@ -644,7 +661,7 @@ class TestSessionRunner:
         assert runner.func is not None
         assert callable(runner.func)
         assert isinstance(runner.description, str)
-        assert runner.global_config.posargs == mock.sentinel.posargs
+        assert runner.global_config.posargs == []
         assert isinstance(runner.manifest, nox.manifest.Manifest)
 
     def test_str_and_friendly_name(self):

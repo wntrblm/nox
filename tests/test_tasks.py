@@ -140,7 +140,7 @@ def test_discover_session_functions_decorator():
     mock_module = argparse.Namespace(
         __name__=foo.__module__, foo=foo, bar=bar, notasession=notasession
     )
-    config = _options.options.namespace(sessions=(), keywords=())
+    config = _options.options.namespace(sessions=(), keywords=(), posargs=[])
 
     # Get the manifest and establish that it looks like what we expect.
     manifest = tasks.discover_manifest(mock_module, config)
@@ -150,7 +150,9 @@ def test_discover_session_functions_decorator():
 
 
 def test_filter_manifest():
-    config = _options.options.namespace(sessions=(), pythons=(), keywords=())
+    config = _options.options.namespace(
+        sessions=(), pythons=(), keywords=(), posargs=[]
+    )
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
@@ -158,14 +160,18 @@ def test_filter_manifest():
 
 
 def test_filter_manifest_not_found():
-    config = _options.options.namespace(sessions=("baz",), pythons=(), keywords=())
+    config = _options.options.namespace(
+        sessions=("baz",), pythons=(), keywords=(), posargs=[]
+    )
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value == 3
 
 
 def test_filter_manifest_pythons():
-    config = _options.options.namespace(sessions=(), pythons=("3.8",), keywords=())
+    config = _options.options.namespace(
+        sessions=(), pythons=("3.8",), keywords=(), posargs=[]
+    )
     manifest = Manifest(
         {"foo": session_func_with_python, "bar": session_func, "baz": session_func},
         config,
@@ -176,7 +182,9 @@ def test_filter_manifest_pythons():
 
 
 def test_filter_manifest_keywords():
-    config = _options.options.namespace(sessions=(), pythons=(), keywords="foo or bar")
+    config = _options.options.namespace(
+        sessions=(), pythons=(), keywords="foo or bar", posargs=[]
+    )
     manifest = Manifest(
         {"foo": session_func, "bar": session_func, "baz": session_func}, config
     )
@@ -231,7 +239,7 @@ def test_verify_manifest_empty():
 
 
 def test_verify_manifest_nonempty():
-    config = _options.options.namespace(sessions=(), keywords=())
+    config = _options.options.namespace(sessions=(), keywords=(), posargs=[])
     manifest = Manifest({"session": session_func}, config)
     return_value = tasks.verify_manifest_nonempty(manifest, global_config=config)
     assert return_value == manifest

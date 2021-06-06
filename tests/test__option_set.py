@@ -56,7 +56,7 @@ class TestOptionSet:
             optionset.namespace(non_existant_option="meep")
 
     def test_session_completer(self):
-        parsed_args = _options.options.namespace(sessions=(), keywords=())
+        parsed_args = _options.options.namespace(sessions=(), keywords=(), posargs=[])
         all_nox_sessions = _options._session_completer(
             prefix=None, parsed_args=parsed_args
         )
@@ -66,7 +66,9 @@ class TestOptionSet:
         assert len(set(some_expected_sessions) - set(all_nox_sessions)) == 0
 
     def test_session_completer_invalid_sessions(self):
-        parsed_args = _options.options.namespace(sessions=("baz",), keywords=())
+        parsed_args = _options.options.namespace(
+            sessions=("baz",), keywords=(), posargs=[]
+        )
         all_nox_sessions = _options._session_completer(
             prefix=None, parsed_args=parsed_args
         )

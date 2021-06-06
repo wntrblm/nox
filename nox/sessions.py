@@ -506,7 +506,7 @@ class SessionRunner:
         self.global_config = global_config
         self.manifest = manifest
         self.venv: Optional[ProcessEnv] = None
-        self.posargs: List[str] = global_config.posargs
+        self.posargs: List[str] = global_config.posargs[:]
 
     @property
     def description(self) -> Optional[str]:
