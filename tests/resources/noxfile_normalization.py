@@ -7,7 +7,7 @@ class Foo:
     pass
 
 
-@nox.session
+@nox.session(venv_backend="none")
 @nox.parametrize(
     "arg",
     ["Jane", "Joe's", '"hello world"', datetime.datetime(1980, 1, 1), [42], Foo()],
