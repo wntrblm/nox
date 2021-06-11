@@ -156,6 +156,10 @@ class PassthroughEnv(ProcessEnv):
     hints about the actual env.
     """
 
+    @property
+    def conda_cmd(self) -> str:
+        return "conda"
+
     @staticmethod
     def is_offline() -> bool:
         """As of now this is only used in conda_install"""
@@ -180,10 +184,11 @@ class CondaEnv(ProcessEnv):
             If not specified, this will use the currently running Python.
         reuse_existing (Optional[bool]): Flag indicating if the conda environment
             should be reused if it already exists at ``location``.
+        conda_cmd (str): The name of the command, can be "conda" (default) or "mamba".
     """
 
     is_sandboxed = True
-    allowed_globals = ("conda",)
+    allowed_globals = ("conda", "mamba")
 
     def __init__(
         self,
@@ -191,12 +196,15 @@ class CondaEnv(ProcessEnv):
         interpreter: Optional[str] = None,
         reuse_existing: bool = False,
         venv_params: Any = None,
+        *,
+        conda_cmd: str = "conda",
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
         self.reuse_existing = reuse_existing
         self.venv_params = venv_params if venv_params else []
+        self.conda_cmd = conda_cmd
         super(CondaEnv, self).__init__()
 
     def _clean_location(self) -> bool:
@@ -205,7 +213,14 @@ class CondaEnv(ProcessEnv):
             if self.reuse_existing:
                 return False
             else:
-                cmd = ["conda", "remove", "--yes", "--prefix", self.location, "--all"]
+                cmd = [
+                    self.conda_cmd,
+                    "remove",
+                    "--yes",
+                    "--prefix",
+                    self.location,
+                    "--all",
+                ]
                 nox.command.run(cmd, silent=True, log=False)
                 # Make sure that location is clean
                 try:
@@ -233,7 +248,7 @@ class CondaEnv(ProcessEnv):
 
             return False
 
-        cmd = ["conda", "create", "--yes", "--prefix", self.location]
+        cmd = [self.conda_cmd, "create", "--yes", "--prefix", self.location]
 
         cmd.extend(self.venv_params)
 
