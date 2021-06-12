@@ -352,6 +352,15 @@ def test_create_reuse_environment(make_one):
     assert reused
 
 
+@pytest.fixture
+def _enable_staleness_check(monkeypatch):
+    monkeypatch.setattr("nox.virtualenv._ENABLE_STALENESS_CHECK", True)
+
+
+enable_staleness_check = pytest.mark.usefixtures("_enable_staleness_check")
+
+
+@enable_staleness_check
 def test_create_reuse_environment_with_different_interpreter(make_one, monkeypatch):
     venv, location = make_one(reuse_existing=True)
     venv.create()
@@ -368,6 +377,7 @@ def test_create_reuse_environment_with_different_interpreter(make_one, monkeypat
     assert not location.join("marker").check()
 
 
+@enable_staleness_check
 def test_create_reuse_stale_venv_environment(make_one):
     venv, location = make_one(reuse_existing=True)
     venv.create()
@@ -387,6 +397,7 @@ def test_create_reuse_stale_venv_environment(make_one):
     assert not reused
 
 
+@enable_staleness_check
 def test_create_reuse_stale_virtualenv_environment(make_one):
     venv, location = make_one(reuse_existing=True, venv=True)
     venv.create()
@@ -411,6 +422,7 @@ def test_create_reuse_stale_virtualenv_environment(make_one):
     assert not reused
 
 
+@enable_staleness_check
 def test_create_reuse_venv_environment(make_one):
     venv, location = make_one(reuse_existing=True, venv=True)
     venv.create()
@@ -425,6 +437,7 @@ def test_create_reuse_venv_environment(make_one):
     assert reused
 
 
+@enable_staleness_check
 @pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
 def test_create_reuse_oldstyle_virtualenv_environment(make_one):
     venv, location = make_one(reuse_existing=True)
