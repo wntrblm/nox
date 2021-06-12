@@ -335,7 +335,6 @@ def test_create(monkeypatch, make_one):
     dir_.ensure("test.txt")
     assert dir_.join("test.txt").check()
     venv.reuse_existing = True
-    monkeypatch.setattr(nox.virtualenv.nox.command, "run", mock.MagicMock())
 
     venv.create()
 
@@ -440,6 +439,19 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
     reused = not venv.create()
 
     # The environment is detected as virtualenv-style and reused.
+    assert reused
+
+
+def test_create_reuse_python2_environment(make_one):
+    venv, location = make_one(reuse_existing=True, interpreter="2.7")
+
+    try:
+        venv.create()
+    except nox.virtualenv.InterpreterNotFound:
+        pytest.skip("Requires Python 2.7 installation.")
+
+    reused = not venv.create()
+
     assert reused
 
 

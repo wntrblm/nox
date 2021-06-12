@@ -339,14 +339,34 @@ class VirtualEnv(ProcessEnv):
 
     def _check_reused_environment_interpreter(self) -> bool:
         """Check if reused environment interpreter is the same."""
-        program = "import sys; print(getattr(sys, 'real_prefix', sys.base_prefix))"
-        original = nox.command.run(
-            [self._resolved_interpreter, "-c", program], silent=True, log=False
+        original = self._read_base_prefix_from_pyvenv_cfg()
+        program = (
+            "import sys; sys.stdout.write(getattr(sys, 'real_prefix', sys.base_prefix))"
         )
+
+        if original is None:
+            output = nox.command.run(
+                [self._resolved_interpreter, "-c", program], silent=True, log=False
+            )
+            assert isinstance(output, str)
+            original = output
+
         created = nox.command.run(
             ["python", "-c", program], silent=True, log=False, paths=self.bin_paths
         )
+
         return original == created
+
+    def _read_base_prefix_from_pyvenv_cfg(self) -> Optional[str]:
+        """Return the base-prefix entry from pyvenv.cfg, if present."""
+        path = os.path.join(self.location, "pyvenv.cfg")
+        if os.path.isfile(path):
+            with open(path) as io:
+                for line in io:
+                    key, _, value = line.partition("=")
+                    if key.strip() == "base-prefix":
+                        return value.strip()
+        return None
 
     @property
     def _resolved_interpreter(self) -> str:
