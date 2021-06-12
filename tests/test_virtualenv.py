@@ -455,6 +455,7 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
     assert reused
 
 
+@enable_staleness_check
 def test_create_reuse_python2_environment(make_one):
     venv, location = make_one(reuse_existing=True, interpreter="2.7")
 
