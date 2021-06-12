@@ -33,6 +33,7 @@ _BLACKLISTED_ENV_VARS = frozenset(
     ["PIP_RESPECT_VIRTUALENV", "PIP_REQUIRE_VIRTUALENV", "__PYVENV_LAUNCHER__"]
 )
 _SYSTEM = platform.system()
+_ENABLE_STALENESS_CHECK = "NOX_ENABLE_STALENESS_CHECK" in os.environ
 
 
 class InterpreterNotFound(OSError):
@@ -312,6 +313,8 @@ class VirtualEnv(ProcessEnv):
     def _clean_location(self) -> bool:
         """Deletes any existing virtual environment"""
         if os.path.exists(self.location):
+            if self.reuse_existing and not _ENABLE_STALENESS_CHECK:
+                return False
             if (
                 self.reuse_existing
                 and self._check_reused_environment_type()
