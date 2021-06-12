@@ -340,7 +340,9 @@ class VirtualEnv(ProcessEnv):
     def _check_reused_environment_interpreter(self) -> bool:
         """Check if reused environment interpreter is the same."""
         original = self._read_base_prefix_from_pyvenv_cfg()
-        program = "import sys; print(getattr(sys, 'real_prefix', sys.base_prefix))"
+        program = (
+            "import sys; sys.stdout.write(getattr(sys, 'real_prefix', sys.base_prefix))"
+        )
 
         if original is None:
             output = nox.command.run(
@@ -363,7 +365,7 @@ class VirtualEnv(ProcessEnv):
                 for line in io:
                     key, _, value = line.partition("=")
                     if key.strip() == "base-prefix":
-                        return value.strip() + "\n"
+                        return value.strip()
         return None
 
     @property
