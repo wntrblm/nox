@@ -442,6 +442,19 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
     assert reused
 
 
+def test_create_reuse_python2_environment(make_one):
+    venv, location = make_one(reuse_existing=True, interpreter="2.7")
+
+    try:
+        venv.create()
+    except nox.virtualenv.InterpreterNotFound:
+        pytest.skip("Requires Python 2.7 installation.")
+
+    reused = not venv.create()
+
+    assert reused
+
+
 def test_create_venv_backend(make_one):
     venv, dir_ = make_one(venv=True)
     venv.create()
