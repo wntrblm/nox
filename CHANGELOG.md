@@ -1,5 +1,12 @@
 # Changelog
 
+## 2021.6.12
+
+- Fix crash on Python 2 when reusing environments. (#450)
+- Hide staleness check behind a feature flag. (#451)
+- Group command-line options in `--help` message by function. (#442)
+- Avoid polluting tests with a .nox directory. (#445)
+
 ## 2021.6.6
 
 - Add option `--no-install` to skip install commands in reused environments. (#432)
