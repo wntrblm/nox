@@ -53,7 +53,9 @@ class ProcessEnv:
     # Special programs that aren't included in the environment.
     allowed_globals = ()  # type: _typing.ClassVar[Tuple[Any, ...]]
 
-    def __init__(self, bin_paths: None = None, env: Mapping[str, str] = None) -> None:
+    def __init__(
+        self, bin_paths: None = None, env: Optional[Mapping[str, str]] = None
+    ) -> None:
         self._bin_paths = bin_paths
         self.env = os.environ.copy()
         self._reused = False

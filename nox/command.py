@@ -21,11 +21,16 @@ import py
 from nox.logger import logger
 from nox.popen import popen
 
+if sys.version_info < (3, 8):
+    from typing_extensions import Literal
+else:
+    from typing import Literal
+
 
 class CommandFailed(Exception):
     """Raised when an executed command returns a non-success status code."""
 
-    def __init__(self, reason: str = None) -> None:
+    def __init__(self, reason: Optional[str] = None) -> None:
         super(CommandFailed, self).__init__(reason)
         self.reason = reason
 
@@ -70,7 +75,7 @@ def run(
     paths: Optional[List[str]] = None,
     success_codes: Optional[Iterable[int]] = None,
     log: bool = True,
-    external: bool = False,
+    external: Union[Literal["error"], bool] = False,
     **popen_kws: Any
 ) -> Union[str, bool]:
     """Run a command-line program."""
