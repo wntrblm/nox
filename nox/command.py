@@ -21,9 +21,9 @@ import py
 from nox.logger import logger
 from nox.popen import popen
 
-if sys.version_info < (3, 8):
+if sys.version_info < (3, 8):  # pragma: no cover
     from typing_extensions import Literal
-else:
+else:  # pragma: no cover
     from typing import Literal
 
 
