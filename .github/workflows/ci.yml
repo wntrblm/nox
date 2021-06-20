@@ -59,10 +59,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
-      - name: Install setuptools and wheel
-        run: python -m pip install --upgrade --user setuptools wheel
+      - name: Install build
+        run: python -m pip install --user build
       - name: Build sdist and wheel
-        run: python setup.py sdist bdist_wheel
+        run: python -m build
       - name: Publish distribution PyPI
         uses: pypa/gh-action-pypi-publish@master
         with:
