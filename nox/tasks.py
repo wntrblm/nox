@@ -63,7 +63,7 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
         return importlib.machinery.SourceFileLoader(
             "user_nox_module", global_config.noxfile
-        ).load_module()  # type: ignore
+        ).load_module()
 
     except (VersionCheckFailed, InvalidVersionSpecifier) as error:
         logger.error(str(error))

@@ -16,7 +16,7 @@ import contextlib
 import locale
 import subprocess
 import sys
-from typing import IO, Mapping, Sequence, Tuple, Union
+from typing import IO, Mapping, Optional, Sequence, Tuple, Union
 
 
 def shutdown_process(proc: subprocess.Popen) -> Tuple[bytes, bytes]:
@@ -54,9 +54,9 @@ def decode_output(output: bytes) -> str:
 
 def popen(
     args: Sequence[str],
-    env: Mapping[str, str] = None,
+    env: Optional[Mapping[str, str]] = None,
     silent: bool = False,
-    stdout: Union[int, IO] = None,
+    stdout: Optional[Union[int, IO]] = None,
     stderr: Union[int, IO] = subprocess.STDOUT,
 ) -> Tuple[int, str]:
     if silent and stdout is not None:

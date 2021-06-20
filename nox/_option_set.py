@@ -20,7 +20,8 @@ and surfaced in documentation."""
 import argparse
 import collections
 import functools
-from argparse import ArgumentError, ArgumentParser, Namespace
+from argparse import ArgumentError as ArgumentError
+from argparse import ArgumentParser, Namespace
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 import argcomplete
