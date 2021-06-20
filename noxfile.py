@@ -79,7 +79,7 @@ def cover(session):
 def blacken(session):
     """Run black code formatter."""
     session.install("black==21.5b2", "isort==5.8.0")
-    files = ["nox", "tests", "noxfile.py", "setup.py"]
+    files = ["nox", "tests", "noxfile.py"]
     session.run("black", *files)
     session.run("isort", *files)
 
@@ -96,7 +96,7 @@ def lint(session):
         "importlib_metadata",
     )
     session.run("mypy")
-    files = ["nox", "tests", "noxfile.py", "setup.py"]
+    files = ["nox", "tests", "noxfile.py"]
     session.run("black", "--check", *files)
     session.run("isort", "--check", *files)
     session.run("flake8", *files)
