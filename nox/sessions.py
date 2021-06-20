@@ -211,7 +211,7 @@ class Session:
             raise nox.command.CommandFailed()
 
     def run(
-        self, *args: str, env: Mapping[str, str] = None, **kwargs: Any
+        self, *args: str, env: Optional[Mapping[str, str]] = None, **kwargs: Any
     ) -> Optional[Any]:
         """Run a command.
 
@@ -269,7 +269,7 @@ class Session:
         return self._run(*args, env=env, **kwargs)
 
     def run_always(
-        self, *args: str, env: Mapping[str, str] = None, **kwargs: Any
+        self, *args: str, env: Optional[Mapping[str, str]] = None, **kwargs: Any
     ) -> Optional[Any]:
         """Run a command **always**.
 
@@ -311,7 +311,9 @@ class Session:
 
         return self._run(*args, env=env, **kwargs)
 
-    def _run(self, *args: str, env: Mapping[str, str] = None, **kwargs: Any) -> Any:
+    def _run(
+        self, *args: str, env: Optional[Mapping[str, str]] = None, **kwargs: Any
+    ) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
         if callable(args[0]):

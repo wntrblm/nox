@@ -86,15 +86,16 @@ def blacken(session):
 
 @nox.session(python="3.8")
 def lint(session):
-    session.install("flake8==3.9.2", "black==21.5b2", "isort==5.8.0", "mypy==0.812")
-    session.run(
-        "mypy",
-        "--config-file=",
-        "--disallow-untyped-defs",
-        "--warn-unused-ignores",
-        "--ignore-missing-imports",
-        "nox",
+    session.install(
+        "flake8==3.9.2",
+        "black==21.6b0",
+        "isort==5.8.0",
+        "mypy==0.902",
+        "types-jinja2",
+        "packaging",
+        "importlib_metadata",
     )
+    session.run("mypy")
     files = ["nox", "tests", "noxfile.py", "setup.py"]
     session.run("black", "--check", *files)
     session.run("isort", "--check", *files)

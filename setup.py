@@ -54,6 +54,7 @@ setup(
         "colorlog>=2.6.1,<7.0.0",
         "packaging>=20.9",
         "py>=1.4.0,<2.0.0",
+        "typing_extensions>=3.7.4; python_version < '3.8'",
         "virtualenv>=14.0.0",
         "importlib_metadata; python_version < '3.8'",
     ],

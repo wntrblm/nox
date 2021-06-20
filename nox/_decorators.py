@@ -18,7 +18,7 @@ class FunctionDecorator:
         return cast("FunctionDecorator", functools.wraps(func)(obj))
 
 
-def _copy_func(src: Callable, name: str = None) -> Callable:
+def _copy_func(src: Callable, name: Optional[str] = None) -> Callable:
     dst = types.FunctionType(
         src.__code__,
         src.__globals__,  # type: ignore
@@ -41,7 +41,7 @@ class Func(FunctionDecorator):
         name: Optional[str] = None,
         venv_backend: Any = None,
         venv_params: Any = None,
-        should_warn: Dict[str, Any] = None,
+        should_warn: Optional[Dict[str, Any]] = None,
     ):
         self.func = func
         self.python = python
@@ -53,7 +53,7 @@ class Func(FunctionDecorator):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
 
-    def copy(self, name: str = None) -> "Func":
+    def copy(self, name: Optional[str] = None) -> "Func":
         return Func(
             _copy_func(self.func, name),
             self.python,
