@@ -200,12 +200,21 @@ def test_honor_list_request_noop():
     assert return_value is manifest
 
 
-@pytest.mark.parametrize("description", [None, "bar"])
-def test_honor_list_request(description):
+@pytest.mark.parametrize(
+    "description, module_docstring",
+    [
+        (None, None),
+        (None, "hello docstring"),
+        ("Bar", None),
+        ("Bar", "hello docstring"),
+    ],
+)
+def test_honor_list_request(description, module_docstring):
     config = _options.options.namespace(
         list_sessions=True, noxfile="noxfile.py", color=False
     )
     manifest = mock.create_autospec(Manifest)
+    manifest.module_docstring = module_docstring
     manifest.list_all_sessions.return_value = [
         (argparse.Namespace(friendly_name="foo", description=description), True)
     ]
@@ -218,6 +227,7 @@ def test_honor_list_request_skip_and_selected(capsys):
         list_sessions=True, noxfile="noxfile.py", color=False
     )
     manifest = mock.create_autospec(Manifest)
+    manifest.module_docstring = None
     manifest.list_all_sessions.return_value = [
         (argparse.Namespace(friendly_name="foo", description=None), True),
         (argparse.Namespace(friendly_name="bar", description=None), False),
@@ -229,6 +239,44 @@ def test_honor_list_request_skip_and_selected(capsys):
 
     assert "* foo" in out
     assert "- bar" in out
+
+
+def test_honor_list_request_prints_docstring_if_present(capsys):
+    config = _options.options.namespace(
+        list_sessions=True, noxfile="noxfile.py", color=False
+    )
+    manifest = mock.create_autospec(Manifest)
+    manifest.module_docstring = "Hello I'm a docstring"
+    manifest.list_all_sessions.return_value = [
+        (argparse.Namespace(friendly_name="foo", description=None), True),
+        (argparse.Namespace(friendly_name="bar", description=None), False),
+    ]
+
+    return_value = tasks.honor_list_request(manifest, global_config=config)
+    assert return_value == 0
+
+    out = capsys.readouterr().out
+
+    assert "Hello I'm a docstring" in out
+
+
+def test_honor_list_request_doesnt_print_docstring_if_not_present(capsys):
+    config = _options.options.namespace(
+        list_sessions=True, noxfile="noxfile.py", color=False
+    )
+    manifest = mock.create_autospec(Manifest)
+    manifest.module_docstring = None
+    manifest.list_all_sessions.return_value = [
+        (argparse.Namespace(friendly_name="foo", description=None), True),
+        (argparse.Namespace(friendly_name="bar", description=None), False),
+    ]
+
+    return_value = tasks.honor_list_request(manifest, global_config=config)
+    assert return_value == 0
+
+    out = capsys.readouterr().out
+
+    assert "Hello I'm a docstring" not in out
 
 
 def test_verify_manifest_empty():

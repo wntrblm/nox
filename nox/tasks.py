@@ -104,8 +104,11 @@ def discover_manifest(
     # sorted by decorator call time.
     functions = registry.get()
 
+    # Get the docstring from the noxfile
+    module_docstring = module.__doc__
+
     # Return the final dictionary of session functions.
-    return Manifest(functions, global_config)
+    return Manifest(functions, global_config, module_docstring)
 
 
 def filter_manifest(
@@ -166,7 +169,9 @@ def honor_list_request(
         return manifest
 
     # If the user just asked for a list of sessions, print that
-    # and be done.
+    # and any docstring specified in noxfile.py and be done.
+    if manifest.module_docstring:
+        print(manifest.module_docstring)
 
     print("Sessions defined in {noxfile}:\n".format(noxfile=global_config.noxfile))
 

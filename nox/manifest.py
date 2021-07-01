@@ -55,15 +55,21 @@ class Manifest:
         session_functions (Mapping[str, function]): The registry of discovered
             session functions.
         global_config (.nox.main.GlobalConfig): The global configuration.
+        module_docstring (Optional[str]): The user noxfile.py docstring.
+            Defaults to `None`.
     """
 
     def __init__(
-        self, session_functions: Mapping[str, "Func"], global_config: argparse.Namespace
+        self,
+        session_functions: Mapping[str, "Func"],
+        global_config: argparse.Namespace,
+        module_docstring: Optional[str] = None,
     ) -> None:
         self._all_sessions = []  # type: List[SessionRunner]
         self._queue = []  # type: List[SessionRunner]
         self._consumed = []  # type: List[SessionRunner]
         self._config = global_config  # type: argparse.Namespace
+        self.module_docstring = module_docstring  # type: Optional[str]
 
         # Create the sessions based on the provided session functions.
         for name, func in session_functions.items():
