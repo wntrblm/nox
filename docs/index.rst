@@ -51,17 +51,23 @@ Projects that use Nox
 Nox is lucky to have several wonderful projects that use it and provide feedback and contributions.
 
 - `Bézier <https://github.com/dhermes/bezier>`__
+- `cibuildwheel <https://github.com/pypa/cibuildwheel>`__
 - `gapic-generator-python <https://github.com/googleapis/gapic-generator-python>`__
 - `gdbgui <https://github.com/cs01/gdbgui>`__
 - `Google Assistant SDK <https://github.com/googlesamples/assistant-sdk-python>`__
 - `google-cloud-python <https://github.com/googlecloudplatform/google-cloud-python>`__
 - `google-resumable-media-python <https://github.com/GoogleCloudPlatform/google-resumable-media-python>`__
 - `Hydra <https://hydra.cc>`__
+- `manylinux <https://github.com/pypa/manylinux>`__
 - `OmegaConf <https://github.com/omry/omegaconf>`__
 - `OpenCensus Python <https://github.com/census-instrumentation/opencensus-python>`__
-- `packaging.python.org <https://github.com/pypa/python-packaging-user-guide/>`__
-- `pipx <https://github.com/pipxproject/pipx/>`__
+- `packaging <https://github.com/pypa/packaging>`__
+- `packaging.python.org <https://github.com/pypa/python-packaging-user-guide>`__
+- `pip <https://github.com/pypa/pip>`__
+- `pipx <https://github.com/pypa/pipx>`__
 - `Salt <https://github.com/saltstack/salt>`__
+- `Scikit-build <https://github.com/scikit-build/scikit-build>`__
+- `Scikit-HEP <https://scikit-hep.org/developer/tasks>`__
 - `Subpar <https://github.com/google/subpar>`__
 - `Urllib3 <https://github.com/urllib3/urllib3>`__
 - `Zazo <https://github.com/pradyunsg/zazo>`__
