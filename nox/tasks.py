@@ -171,7 +171,7 @@ def honor_list_request(
     # If the user just asked for a list of sessions, print that
     # and any docstring specified in noxfile.py and be done.
     if manifest.module_docstring:
-        print(manifest.module_docstring)
+        print(manifest.module_docstring.strip(), end="\n\n")
 
     print("Sessions defined in {noxfile}:\n".format(noxfile=global_config.noxfile))
 
