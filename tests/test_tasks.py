@@ -18,6 +18,7 @@ import io
 import json
 import os
 import platform
+from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
@@ -76,9 +77,46 @@ def test_load_nox_module_expandvars():
     assert noxfile_module.SIGIL == "123"
 
 
-def test_load_nox_module_not_found():
-    config = _options.options.namespace(noxfile="bogus.py")
+def test_load_nox_module_not_found(caplog, tmp_path):
+    bogus_noxfile = tmp_path / "bogus.py"
+    config = _options.options.namespace(noxfile=str(bogus_noxfile))
+
     assert tasks.load_nox_module(config) == 2
+    assert f"noxfile.py not found in {str(tmp_path)!r}" in caplog.text
+
+
+def test_load_nox_module_IOError(caplog):
+
+    # Need to give it a noxfile that exists so load_nox_module can progress
+    # past FileNotFoundError
+    # use our own noxfile.py for this
+    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
+    config = _options.options.namespace(noxfile=str(our_noxfile))
+
+    with mock.patch(
+        "nox.tasks.importlib.machinery.SourceFileLoader.load_module"
+    ) as mock_load:
+        mock_load.side_effect = IOError
+
+        assert tasks.load_nox_module(config) == 2
+        assert "Failed to load Noxfile" in caplog.text
+
+
+def test_load_nox_module_OSError(caplog):
+
+    # Need to give it a noxfile that exists so load_nox_module can progress
+    # past FileNotFoundError
+    # use our own noxfile.py for this
+    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
+    config = _options.options.namespace(noxfile=str(our_noxfile))
+
+    with mock.patch(
+        "nox.tasks.importlib.machinery.SourceFileLoader.load_module"
+    ) as mock_load:
+        mock_load.side_effect = OSError
+
+        assert tasks.load_nox_module(config) == 2
+        assert "Failed to load Noxfile" in caplog.text
 
 
 @pytest.fixture
