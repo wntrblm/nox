@@ -70,7 +70,9 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         logger.error(str(error))
         return 2
     except FileNotFoundError:
-        logger.error(f"noxfile.py not found in {noxfile_parent_dir!r}.")
+        logger.error(
+            f"Failed to load Noxfile {global_config.noxfile}, no such file exists."
+        )
         return 2
     except (IOError, OSError):
         logger.exception("Failed to load Noxfile {}".format(global_config.noxfile))

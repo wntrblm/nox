@@ -82,7 +82,9 @@ def test_load_nox_module_not_found(caplog, tmp_path):
     config = _options.options.namespace(noxfile=str(bogus_noxfile))
 
     assert tasks.load_nox_module(config) == 2
-    assert f"noxfile.py not found in {str(tmp_path)!r}" in caplog.text
+    assert (
+        f"Failed to load Noxfile {bogus_noxfile}, no such file exists." in caplog.text
+    )
 
 
 def test_load_nox_module_IOError(caplog):
