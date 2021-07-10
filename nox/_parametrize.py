@@ -32,7 +32,7 @@ class Param:
         self,
         *args: Any,
         arg_names: Optional[Sequence[str]] = None,
-        id: Optional[str] = None
+        id: Optional[str] = None,
     ) -> None:
         self.args = tuple(args)
         self.id = id

@@ -226,9 +226,7 @@ class CondaEnv(ProcessEnv):
     def create(self) -> bool:
         """Create the conda env."""
         if not self._clean_location():
-            logger.debug(
-                f"Re-using existing conda env at {self.location_name}."
-            )
+            logger.debug(f"Re-using existing conda env at {self.location_name}.")
 
             self._reused = True
 
@@ -247,9 +245,7 @@ class CondaEnv(ProcessEnv):
             python_dep = "python"
         cmd.append(python_dep)
 
-        logger.info(
-            f"Creating conda env in {self.location_name} with {python_dep}"
-        )
+        logger.info(f"Creating conda env in {self.location_name} with {python_dep}")
         nox.command.run(cmd, silent=True, log=False)
 
         return True

@@ -89,9 +89,7 @@ def _dblquote_pkg_install_args(args: Tuple[str, ...]) -> Tuple[str, ...]:
             else:
                 # need to double-quote string
                 if '"' in pkg_req_str:
-                    raise ValueError(
-                        f"Cannot escape requirement string: {pkg_req_str}"
-                    )
+                    raise ValueError(f"Cannot escape requirement string: {pkg_req_str}")
                 return f'"{pkg_req_str}"'
         else:
             # no dangerous char: no need to double-quote string
@@ -410,7 +408,7 @@ class Session:
             *prefix_args,
             *args,
             external="error",
-            **kwargs
+            **kwargs,
         )
 
     def install(self, *args: str, **kwargs: Any) -> None:
@@ -614,9 +612,7 @@ class SessionRunner:
             raise
 
         except Exception as exc:
-            logger.exception(
-                f"Session {self.friendly_name} raised exception {exc!r}"
-            )
+            logger.exception(f"Session {self.friendly_name} raised exception {exc!r}")
             return Result(self, Status.FAILED)
 
 

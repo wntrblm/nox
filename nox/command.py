@@ -76,7 +76,7 @@ def run(
     success_codes: Optional[Iterable[int]] = None,
     log: bool = True,
     external: Union[Literal["error"], bool] = False,
-    **popen_kws: Any
+    **popen_kws: Any,
 ) -> Union[str, bool]:
     """Run a command-line program."""
 

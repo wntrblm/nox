@@ -260,9 +260,7 @@ class Manifest:
             if not multi:
                 long_names.append(f"{name}{call.session_signature}")
             if func.python:
-                long_names.append(
-                    f"{name}-{func.python}{call.session_signature}"
-                )
+                long_names.append(f"{name}-{func.python}{call.session_signature}")
                 # Ensure that specifying session-python will run all parameterizations.
                 long_names.append(f"{name}-{func.python}")
 

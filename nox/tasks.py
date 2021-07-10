@@ -255,9 +255,7 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
             )
 
         result = session.execute()
-        result.log(
-            f"Session {session.friendly_name} {result.imperfect}."
-        )
+        result.log(f"Session {session.friendly_name} {result.imperfect}.")
         results.append(result)
 
         # Sanity check: If we are supposed to stop on the first error case,
@@ -288,9 +286,7 @@ def print_summary(results: List[Result], global_config: Namespace) -> List[Resul
     # human-readable way.
     logger.warning("Ran multiple sessions:")
     for result in results:
-        result.log(
-            f"* {result.session.friendly_name}: {result.status.name.lower()}"
-        )
+        result.log(f"* {result.session.friendly_name}: {result.status.name.lower()}")
 
     # Return the results that were sent to this function.
     return results
