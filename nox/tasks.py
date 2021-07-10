@@ -52,6 +52,7 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
             # Be sure to expand variables
             os.path.expandvars(global_config.noxfile)
         )
+        noxfile_parent_dir = os.path.realpath(os.path.dirname(global_config.noxfile))
 
         # Check ``nox.needs_version`` by parsing the AST.
         check_nox_version(global_config.noxfile)
@@ -60,13 +61,18 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         # This will ensure that the Noxfile's path is on sys.path, and that
         # import-time path resolutions work the way the Noxfile author would
         # guess.
-        os.chdir(os.path.realpath(os.path.dirname(global_config.noxfile)))
+        os.chdir(noxfile_parent_dir)
         return importlib.machinery.SourceFileLoader(
             "user_nox_module", global_config.noxfile
         ).load_module()
 
     except (VersionCheckFailed, InvalidVersionSpecifier) as error:
         logger.error(str(error))
+        return 2
+    except FileNotFoundError:
+        logger.error(
+            f"Failed to load Noxfile {global_config.noxfile}, no such file exists."
+        )
         return 2
     except (IOError, OSError):
         logger.exception("Failed to load Noxfile {}".format(global_config.noxfile))
