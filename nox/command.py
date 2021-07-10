@@ -50,8 +50,8 @@ def which(program: str, paths: Optional[List[str]]) -> str:
     if full_path:
         return full_path.strpath
 
-    logger.error("Program {} not found.".format(program))
-    raise CommandFailed("Program {} not found".format(program))
+    logger.error(f"Program {program} not found.")
+    raise CommandFailed(f"Program {program} not found")
 
 
 def _clean_env(env: Optional[dict]) -> Optional[dict]:
@@ -84,7 +84,7 @@ def run(
         success_codes = [0]
 
     cmd, args = args[0], args[1:]
-    full_cmd = "{} {}".format(cmd, " ".join(args))
+    full_cmd = f"{cmd} {' '.join(args)}"
 
     cmd_path = which(cmd, paths)
 
@@ -128,7 +128,7 @@ def run(
             if silent:
                 sys.stderr.write(output)
 
-            raise CommandFailed("Returned code {}".format(return_code))
+            raise CommandFailed(f"Returned code {return_code}")
 
         if output:
             logger.output(output)

@@ -79,7 +79,7 @@ def _dblquote_pkg_install_args(args: Tuple[str, ...]) -> Tuple[str, ...]:
         # sanity check: we need an even number of double-quotes
         if pkg_req_str.count('"') % 2 != 0:
             raise ValueError(
-                "ill-formated argument with odd number of quotes: %s" % pkg_req_str
+                f"ill-formated argument with odd number of quotes: {pkg_req_str}"
             )
 
         if "<" in pkg_req_str or ">" in pkg_req_str:
@@ -90,9 +90,9 @@ def _dblquote_pkg_install_args(args: Tuple[str, ...]) -> Tuple[str, ...]:
                 # need to double-quote string
                 if '"' in pkg_req_str:
                     raise ValueError(
-                        "Cannot escape requirement string: %s" % pkg_req_str
+                        f"Cannot escape requirement string: {pkg_req_str}"
                     )
-                return '"%s"' % pkg_req_str
+                return f'"{pkg_req_str}"'
         else:
             # no dangerous char: no need to double-quote string
             return pkg_req_str
@@ -193,7 +193,7 @@ class Session:
 
     def chdir(self, dir: Union[str, os.PathLike]) -> None:
         """Change the current working directory."""
-        self.log("cd {}".format(dir))
+        self.log(f"cd {dir}")
         os.chdir(dir)
 
     cd = chdir
@@ -203,11 +203,11 @@ class Session:
         self, func: Callable, args: Iterable[Any], kwargs: Mapping[str, Any]
     ) -> Any:
         """Legacy support for running a function through :func`run`."""
-        self.log("{}(args={!r}, kwargs={!r})".format(func, args, kwargs))
+        self.log(f"{func}(args={args!r}, kwargs={kwargs!r})")
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logger.exception("Function {!r} raised {!r}.".format(func, e))
+            logger.exception(f"Function {func!r} raised {e!r}.")
             raise nox.command.CommandFailed()
 
     def run(
@@ -263,7 +263,7 @@ class Session:
             raise ValueError("At least one argument required to run().")
 
         if self._runner.global_config.install_only:
-            logger.info("Skipping {} run, as --install-only is set.".format(args[0]))
+            logger.info(f"Skipping {args[0]} run, as --install-only is set.")
             return None
 
         return self._run(*args, env=env, **kwargs)
@@ -520,7 +520,7 @@ class SessionRunner:
 
     def __str__(self) -> str:
         sigs = ", ".join(self.signatures)
-        return "Session(name={}, signatures={})".format(self.name, sigs)
+        return f"Session(name={self.name}, signatures={sigs})"
 
     @property
     def friendly_name(self) -> str:
@@ -577,7 +577,7 @@ class SessionRunner:
         self.venv.create()
 
     def execute(self) -> "Result":
-        logger.warning("Running session {}".format(self.friendly_name))
+        logger.warning(f"Running session {self.friendly_name}")
 
         try:
             # By default, nox should quietly change to the directory where
@@ -610,12 +610,12 @@ class SessionRunner:
             return Result(self, Status.FAILED)
 
         except KeyboardInterrupt:
-            logger.error("Session {} interrupted.".format(self.friendly_name))
+            logger.error(f"Session {self.friendly_name} interrupted.")
             raise
 
         except Exception as exc:
             logger.exception(
-                "Session {} raised exception {!r}".format(self.friendly_name, exc)
+                f"Session {self.friendly_name} raised exception {exc!r}"
             )
             return Result(self, Status.FAILED)
 
@@ -655,7 +655,7 @@ class Result:
             return "was successful"
         status = self.status.name.lower()
         if self.reason:
-            return "{}: {}".format(status, self.reason)
+            return f"{status}: {self.reason}"
         else:
             return status
 

@@ -51,7 +51,7 @@ class Param:
             return self.id
         else:
             call_spec = self.call_spec
-            args = ["{}={}".format(k, repr(call_spec[k])) for k in call_spec.keys()]
+            args = [f"{k}={repr(call_spec[k])}" for k in call_spec.keys()]
             return ", ".join(args)
 
     __repr__ = __str__

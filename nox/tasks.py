@@ -69,7 +69,7 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         logger.error(str(error))
         return 2
     except (IOError, OSError):
-        logger.exception("Failed to load Noxfile {}".format(global_config.noxfile))
+        logger.exception(f"Failed to load Noxfile {global_config.noxfile}")
         return 2
 
 
@@ -173,7 +173,7 @@ def honor_list_request(
     if manifest.module_docstring:
         print(manifest.module_docstring.strip(), end="\n\n")
 
-    print("Sessions defined in {noxfile}:\n".format(noxfile=global_config.noxfile))
+    print(f"Sessions defined in {global_config.noxfile}:\n")
 
     reset = parse_colors("reset") if global_config.color else ""
     selected_color = parse_colors("cyan") if global_config.color else ""
@@ -256,9 +256,7 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
 
         result = session.execute()
         result.log(
-            "Session {name} {status}.".format(
-                name=session.friendly_name, status=result.imperfect
-            )
+            f"Session {session.friendly_name} {result.imperfect}."
         )
         results.append(result)
 
@@ -291,9 +289,7 @@ def print_summary(results: List[Result], global_config: Namespace) -> List[Resul
     logger.warning("Ran multiple sessions:")
     for result in results:
         result.log(
-            "* {name}: {status}".format(
-                name=result.session.friendly_name, status=result.status.name.lower()
-            )
+            f"* {result.session.friendly_name}: {result.status.name.lower()}"
         )
 
     # Return the results that were sent to this function.

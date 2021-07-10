@@ -163,7 +163,7 @@ def make_flag_pair(
     The positive option is considered to be available to the noxfile, as
     there isn't much point in doing flag pairs without it.
     """
-    disable_name = "no_{}".format(name)
+    disable_name = f"no_{name}"
 
     kwargs["action"] = "store_true"
     enable_option = Option(
@@ -174,9 +174,7 @@ def make_flag_pair(
         **kwargs
     )
 
-    kwargs["help"] = "Disables {} if it is enabled in the Noxfile.".format(
-        enable_flags[-1]
-    )
+    kwargs["help"] = f"Disables {enable_flags[-1]} if it is enabled in the Noxfile."
     disable_option = Option(disable_name, *disable_flags, **kwargs)
 
     return enable_option, disable_option
@@ -285,7 +283,7 @@ class OptionSet:
         # used in tests.
         for key, value in kwargs.items():
             if key not in args:
-                raise KeyError("{} is not an option.".format(key))
+                raise KeyError(f"{key} is not an option.")
             args[key] = value
 
         return argparse.Namespace(**args)

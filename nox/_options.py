@@ -197,14 +197,14 @@ def _posargs_finalizer(
     if "--" not in posargs:
         unexpected_posargs = posargs
         raise _option_set.ArgumentError(
-            None, "Unknown argument(s) '{}'.".format(" ".join(unexpected_posargs))
+            None, f"Unknown argument(s) '{' '.join(unexpected_posargs)}'."
         )
 
     dash_index = posargs.index("--")
     if dash_index != 0:
         unexpected_posargs = posargs[0:dash_index]
         raise _option_set.ArgumentError(
-            None, "Unknown argument(s) '{}'.".format(" ".join(unexpected_posargs))
+            None, f"Unknown argument(s) '{' '.join(unexpected_posargs)}'."
         )
 
     return posargs[dash_index + 1 :]
