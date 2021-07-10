@@ -97,18 +97,14 @@ def run(
         if is_external_tool:
             if external == "error":
                 logger.error(
-                    "Error: {} is not installed into the virtualenv, it is located at {}. "
-                    "Pass external=True into run() to explicitly allow this.".format(
-                        cmd, cmd_path
-                    )
+                    f"Error: {cmd} is not installed into the virtualenv, it is located at {cmd_path}. "
+                    "Pass external=True into run() to explicitly allow this."
                 )
                 raise CommandFailed("External program disallowed.")
             elif external is False:
                 logger.warning(
-                    "Warning: {} is not installed into the virtualenv, it is located at {}. This might cause issues! "
-                    "Pass external=True into run() to silence this message.".format(
-                        cmd, cmd_path
-                    )
+                    f"Warning: {cmd} is not installed into the virtualenv, it is located at {cmd_path}. This might cause issues! "
+                    "Pass external=True into run() to silence this message."
                 )
 
     env = _clean_env(env)
@@ -119,10 +115,9 @@ def run(
         )
 
         if return_code not in success_codes:
+            suffix = ":" if silent else ""
             logger.error(
-                "Command {} failed with exit code {}{}".format(
-                    full_cmd, return_code, ":" if silent else ""
-                )
+                f"Command {full_cmd} failed with exit code {return_code}{suffix}"
             )
 
             if silent:

@@ -460,12 +460,10 @@ class VirtualEnv(ProcessEnv):
             cmd = [self._resolved_interpreter, "-m", "venv", self.location]
         cmd.extend(self.venv_params)
 
+        resolved_interpreter_name = os.path.basename(self._resolved_interpreter)
+
         logger.info(
-            "Creating virtual environment ({}) using {} in {}".format(
-                self.venv_or_virtualenv,
-                os.path.basename(self._resolved_interpreter),
-                self.location_name,
-            )
+            f"Creating virtual environment ({self.venv_or_virtualenv}) using {resolved_interpreter_name} in {self.location_name}"
         )
         nox.command.run(cmd, silent=True, log=False)
 

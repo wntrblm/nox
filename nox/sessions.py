@@ -63,9 +63,9 @@ def _normalize_path(envdir: str, path: Union[str, bytes]) -> str:
             logger.warning("The virtualenv name was hashed to avoid being too long.")
         else:
             logger.error(
-                "The virtualenv path {} is too long and will cause issues on "
+                f"The virtualenv path {full_path} is too long and will cause issues on "
                 "some environments. Use the --envdir path to modify where "
-                "nox stores virtualenvs.".format(full_path)
+                "nox stores virtualenvs."
             )
 
     return full_path
@@ -567,9 +567,7 @@ class SessionRunner:
             )
         else:
             raise ValueError(
-                "Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{}'.".format(
-                    backend
-                )
+                f"Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{backend}'."
             )
 
         self.venv.create()

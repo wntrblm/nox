@@ -209,9 +209,7 @@ def honor_list_request(
         )
 
     print(
-        "\nsessions marked with {selected_color}*{reset} are selected, sessions marked with {skipped_color}-{reset} are skipped.".format(
-            selected_color=selected_color, skipped_color=skipped_color, reset=reset
-        )
+        f"\nsessions marked with {selected_color}*{reset} are selected, sessions marked with {skipped_color}-{reset} are skipped."
     )
     return 0
 
@@ -255,9 +253,8 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
         # possibly raise warnings associated with this session
         if WARN_PYTHONS_IGNORED in session.func.should_warn:
             logger.warning(
-                "Session {} is set to run with venv_backend='none', IGNORING its python={} parametrization. ".format(
-                    session.name, session.func.should_warn[WARN_PYTHONS_IGNORED]
-                )
+                f"Session {session.name} is set to run with venv_backend='none', "
+                f"IGNORING its python={session.func.should_warn[WARN_PYTHONS_IGNORED]} parametrization. "
             )
 
         result = session.execute()
