@@ -44,6 +44,9 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
     Returns:
         module: The module designated by the Noxfile path.
     """
+    # save the original cwd, if the session wants to
+    # use it instead of giving the choice to Nox.
+    global_config.original_cwd = os.getcwd()
     try:
         # Save the absolute path to the Noxfile.
         # This will inoculate it if nox changes paths because of an implicit
