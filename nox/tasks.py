@@ -57,6 +57,9 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         # Check ``nox.needs_version`` by parsing the AST.
         check_nox_version(global_config.noxfile)
 
+        # Save working directory that nox was originally invoked from.
+        setattr(global_config, "original_wd", os.getcwd())
+
         # Move to the path where the Noxfile is.
         # This will ensure that the Noxfile's path is on sys.path, and that
         # import-time path resolutions work the way the Noxfile author would
