@@ -159,7 +159,7 @@ class TestSession:
         assert os.getcwd() == cdto
         os.chdir(current_cwd)
 
-    def test_original_wd(self, tempdir):
+    def test_original_wd(self, tmpdir):
         cdto = str(tmpdir.join("cdbby").ensure(dir=True))
         current_cwd = os.getcwd()
 
