@@ -30,7 +30,9 @@ def is_python_version(session, version):
     return py_version.startswith(version)
 
 
-@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
+# TODO: When 3.10 is released, change the version below to 3.10
+# this is here so GitHub actions can pick up on the session name
+@nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10.0-rc.2"])
 def tests(session):
     """Run test suite with pytest."""
     session.create_tmp()
