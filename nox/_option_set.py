@@ -85,7 +85,7 @@ class Option:
         default: Union[Any, Callable[[], Any]] = None,
         hidden: bool = False,
         completer: Optional[Callable[..., List[str]]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         self.name = name
         self.flags = flags
@@ -156,14 +156,14 @@ def make_flag_pair(
     name: str,
     enable_flags: Union[Tuple[str, str], Tuple[str]],
     disable_flags: Tuple[str],
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Tuple[Option, Option]:
     """Returns two options - one to enable a behavior and another to disable it.
 
     The positive option is considered to be available to the noxfile, as
     there isn't much point in doing flag pairs without it.
     """
-    disable_name = "no_{}".format(name)
+    disable_name = f"no_{name}"
 
     kwargs["action"] = "store_true"
     enable_option = Option(
@@ -171,12 +171,10 @@ def make_flag_pair(
         *enable_flags,
         noxfile=True,
         merge_func=functools.partial(flag_pair_merge_func, name, disable_name),
-        **kwargs
+        **kwargs,
     )
 
-    kwargs["help"] = "Disables {} if it is enabled in the Noxfile.".format(
-        enable_flags[-1]
-    )
+    kwargs["help"] = f"Disables {enable_flags[-1]} if it is enabled in the Noxfile."
     disable_option = Option(disable_name, *disable_flags, **kwargs)
 
     return enable_option, disable_option
@@ -285,7 +283,7 @@ class OptionSet:
         # used in tests.
         for key, value in kwargs.items():
             if key not in args:
-                raise KeyError("{} is not an option.".format(key))
+                raise KeyError(f"{key} is not an option.")
             args[key] = value
 
         return argparse.Namespace(**args)

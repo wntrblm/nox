@@ -49,7 +49,7 @@ def tests(session):
         ".coveragerc",
         "--cov-report=",
         *tests,
-        env={"COVERAGE_FILE": ".coverage.{}".format(session.python)}
+        env={"COVERAGE_FILE": f".coverage.{session.python}"},
     )
     session.notify("cover")
 

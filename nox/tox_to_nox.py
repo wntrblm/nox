@@ -29,7 +29,7 @@ _TEMPLATE = jinja2.Template(
 
 
 def wrapjoin(seq: Iterator[Any]) -> str:
-    return ", ".join(["'{}'".format(item) for item in seq])
+    return ", ".join([f"'{item}'" for item in seq])
 
 
 def main() -> None:

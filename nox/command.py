@@ -50,8 +50,8 @@ def which(program: str, paths: Optional[List[str]]) -> str:
     if full_path:
         return full_path.strpath
 
-    logger.error("Program {} not found.".format(program))
-    raise CommandFailed("Program {} not found".format(program))
+    logger.error(f"Program {program} not found.")
+    raise CommandFailed(f"Program {program} not found")
 
 
 def _clean_env(env: Optional[dict]) -> Optional[dict]:
@@ -76,7 +76,7 @@ def run(
     success_codes: Optional[Iterable[int]] = None,
     log: bool = True,
     external: Union[Literal["error"], bool] = False,
-    **popen_kws: Any
+    **popen_kws: Any,
 ) -> Union[str, bool]:
     """Run a command-line program."""
 
@@ -84,7 +84,7 @@ def run(
         success_codes = [0]
 
     cmd, args = args[0], args[1:]
-    full_cmd = "{} {}".format(cmd, " ".join(args))
+    full_cmd = f"{cmd} {' '.join(args)}"
 
     cmd_path = which(cmd, paths)
 
@@ -97,18 +97,14 @@ def run(
         if is_external_tool:
             if external == "error":
                 logger.error(
-                    "Error: {} is not installed into the virtualenv, it is located at {}. "
-                    "Pass external=True into run() to explicitly allow this.".format(
-                        cmd, cmd_path
-                    )
+                    f"Error: {cmd} is not installed into the virtualenv, it is located at {cmd_path}. "
+                    "Pass external=True into run() to explicitly allow this."
                 )
                 raise CommandFailed("External program disallowed.")
             elif external is False:
                 logger.warning(
-                    "Warning: {} is not installed into the virtualenv, it is located at {}. This might cause issues! "
-                    "Pass external=True into run() to silence this message.".format(
-                        cmd, cmd_path
-                    )
+                    f"Warning: {cmd} is not installed into the virtualenv, it is located at {cmd_path}. This might cause issues! "
+                    "Pass external=True into run() to silence this message."
                 )
 
     env = _clean_env(env)
@@ -119,16 +115,15 @@ def run(
         )
 
         if return_code not in success_codes:
+            suffix = ":" if silent else ""
             logger.error(
-                "Command {} failed with exit code {}{}".format(
-                    full_cmd, return_code, ":" if silent else ""
-                )
+                f"Command {full_cmd} failed with exit code {return_code}{suffix}"
             )
 
             if silent:
                 sys.stderr.write(output)
 
-            raise CommandFailed("Returned code {}".format(return_code))
+            raise CommandFailed(f"Returned code {return_code}")
 
         if output:
             logger.output(output)
