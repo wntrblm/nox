@@ -465,6 +465,20 @@ class Session:
         This method is idempotent; multiple notifications to the same session
         have no effect.
 
+        A common use case is to notify a code coverage analysis session
+        from a test session::
+
+            @nox.session
+            def test(session):
+                session.run("pytest")
+                session.notify("coverage")
+
+            @nox.session
+            def coverage(session):
+                session.run("coverage")
+
+        Now if you run `nox -s test`, the coverage session will run afterwards.
+
         Args:
             target (Union[str, Callable]): The session to be notified. This
                 may be specified as the appropriate string (same as used for

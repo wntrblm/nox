@@ -22,6 +22,7 @@ from typing import Any, List, Mapping, Optional, Tuple, Union
 
 import py
 
+import nox
 import nox.command
 from nox.logger import logger
 
@@ -246,7 +247,7 @@ class CondaEnv(ProcessEnv):
         cmd.append(python_dep)
 
         logger.info(f"Creating conda env in {self.location_name} with {python_dep}")
-        nox.command.run(cmd, silent=True, log=False)
+        nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
 
@@ -465,6 +466,6 @@ class VirtualEnv(ProcessEnv):
         logger.info(
             f"Creating virtual environment ({self.venv_or_virtualenv}) using {resolved_interpreter_name} in {self.location_name}"
         )
-        nox.command.run(cmd, silent=True, log=False)
+        nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
