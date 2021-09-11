@@ -69,6 +69,15 @@ class TestOptionSet:
 
         assert namespace.oh_boy_i_am_hidden == "meep"
 
+    def test_parser_groupless_option(self):
+        optionset = _option_set.OptionSet()
+        optionset.add_options(
+            _option_set.Option("oh_no_i_have_no_group", group=None, default="meep")
+        )
+
+        with pytest.raises(ValueError):
+            optionset.parser()
+
     def test_session_completer(self):
         parsed_args = _options.options.namespace(sessions=(), keywords=(), posargs=[])
         all_nox_sessions = _options._session_completer(

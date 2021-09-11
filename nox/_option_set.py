@@ -233,6 +233,12 @@ class OptionSet:
             if option.hidden is True:
                 continue
 
+            # Every option must have a group (except for hidden options)
+            if option.group is None:
+                raise ValueError(
+                    f"Option {option.name} must either have a group or be hidden."
+                )
+
             argument = groups[option.group.name].add_argument(
                 *option.flags, help=option.help, default=option.default, **option.kwargs
             )
