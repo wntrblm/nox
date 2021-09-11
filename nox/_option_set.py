@@ -230,7 +230,7 @@ class OptionSet:
         }
 
         for option in self.options.values():
-            if option.hidden or option.group is None:
+            if option.hidden is True:
                 continue
 
             argument = groups[option.group.name].add_argument(

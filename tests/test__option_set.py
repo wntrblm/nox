@@ -55,6 +55,20 @@ class TestOptionSet:
         with pytest.raises(KeyError):
             optionset.namespace(non_existant_option="meep")
 
+    def test_parser_hidden_option(self):
+        optionset = _option_set.OptionSet()
+        optionset.add_options(
+            _option_set.Option(
+                "oh_boy_i_am_hidden", hidden=True, group=None, default="meep"
+            )
+        )
+
+        parser = optionset.parser()
+        namespace = parser.parse_args([])
+        optionset._finalize_args(namespace)
+
+        assert namespace.oh_boy_i_am_hidden == "meep"
+
     def test_session_completer(self):
         parsed_args = _options.options.namespace(sessions=(), keywords=(), posargs=[])
         all_nox_sessions = _options._session_completer(
