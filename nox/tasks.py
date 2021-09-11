@@ -78,7 +78,7 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         )
         return 2
     except (IOError, OSError):
-        logger.exception("Failed to load Noxfile {}".format(global_config.noxfile))
+        logger.exception(f"Failed to load Noxfile {global_config.noxfile}")
         return 2
 
 
@@ -182,7 +182,7 @@ def honor_list_request(
     if manifest.module_docstring:
         print(manifest.module_docstring.strip(), end="\n\n")
 
-    print("Sessions defined in {noxfile}:\n".format(noxfile=global_config.noxfile))
+    print(f"Sessions defined in {global_config.noxfile}:\n")
 
     reset = parse_colors("reset") if global_config.color else ""
     selected_color = parse_colors("cyan") if global_config.color else ""
@@ -212,9 +212,7 @@ def honor_list_request(
         )
 
     print(
-        "\nsessions marked with {selected_color}*{reset} are selected, sessions marked with {skipped_color}-{reset} are skipped.".format(
-            selected_color=selected_color, skipped_color=skipped_color, reset=reset
-        )
+        f"\nsessions marked with {selected_color}*{reset} are selected, sessions marked with {skipped_color}-{reset} are skipped."
     )
     return 0
 
@@ -258,17 +256,14 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
         # possibly raise warnings associated with this session
         if WARN_PYTHONS_IGNORED in session.func.should_warn:
             logger.warning(
-                "Session {} is set to run with venv_backend='none', IGNORING its python={} parametrization. ".format(
-                    session.name, session.func.should_warn[WARN_PYTHONS_IGNORED]
-                )
+                f"Session {session.name} is set to run with venv_backend='none', "
+                f"IGNORING its python={session.func.should_warn[WARN_PYTHONS_IGNORED]} parametrization. "
             )
 
         result = session.execute()
-        result.log(
-            "Session {name} {status}.".format(
-                name=session.friendly_name, status=result.imperfect
-            )
-        )
+        name = session.friendly_name
+        status = result.imperfect
+        result.log(f"Session {name} {status}.")
         results.append(result)
 
         # Sanity check: If we are supposed to stop on the first error case,
@@ -299,11 +294,9 @@ def print_summary(results: List[Result], global_config: Namespace) -> List[Resul
     # human-readable way.
     logger.warning("Ran multiple sessions:")
     for result in results:
-        result.log(
-            "* {name}: {status}".format(
-                name=result.session.friendly_name, status=result.status.name.lower()
-            )
-        )
+        name = result.session.friendly_name
+        status = result.status.name.lower()
+        result.log(f"* {name}: {status}")
 
     # Return the results that were sent to this function.
     return results

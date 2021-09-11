@@ -542,8 +542,8 @@ def generate_noxfile_options_pythons(tmp_path):
     return generate_noxfile
 
 
-python_current_version = "{}.{}".format(sys.version_info.major, sys.version_info.minor)
-python_next_version = "{}.{}".format(sys.version_info.major, sys.version_info.minor + 1)
+python_current_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+python_next_version = f"{sys.version_info.major}.{sys.version_info.minor + 1}"
 
 
 def test_main_noxfile_options_with_pythons_override(
@@ -566,7 +566,7 @@ def test_main_noxfile_options_with_pythons_override(
 
     for python_version in [python_current_version, python_next_version]:
         for session in ["test", "launch_rocket"]:
-            line = "Running session {}-{}".format(session, python_version)
+            line = f"Running session {session}-{python_version}"
             if session == "test" and python_version == python_current_version:
                 assert line in stderr
             else:
@@ -593,7 +593,7 @@ def test_main_noxfile_options_with_sessions_override(
 
     for python_version in [python_current_version, python_next_version]:
         for session in ["test", "launch_rocket"]:
-            line = "Running session {}-{}".format(session, python_version)
+            line = f"Running session {session}-{python_version}"
             if session == "launch_rocket" and python_version == python_current_version:
                 assert line in stderr
             else:

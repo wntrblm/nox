@@ -68,7 +68,7 @@ class Func(FunctionDecorator):
 class Call(Func):
     def __init__(self, func: Func, param_spec: "Param") -> None:
         call_spec = param_spec.call_spec
-        session_signature = "({})".format(param_spec)
+        session_signature = f"({param_spec})"
 
         # Determine the Python interpreter for the session using either @session
         # or @parametrize. For backwards compatibility, we only use a "python"

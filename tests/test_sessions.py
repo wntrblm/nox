@@ -465,7 +465,7 @@ class TestSession:
             pkg_requirement = passed_arg = "urllib3"
         elif version_constraint == "yes":
             pkg_requirement = "urllib3<1.25"
-            passed_arg = '"%s"' % pkg_requirement
+            passed_arg = f'"{pkg_requirement}"'
         elif version_constraint == "already_dbl_quoted":
             pkg_requirement = passed_arg = '"urllib3<1.25"'
         else:

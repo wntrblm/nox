@@ -162,7 +162,7 @@ class Manifest:
             if _normalize_arg(session_name) not in all_sessions
         ]
         if missing_sessions:
-            raise KeyError("Sessions not found: {}".format(", ".join(missing_sessions)))
+            raise KeyError(f"Sessions not found: {', '.join(missing_sessions)}")
 
     def filter_by_python_interpreter(self, specified_pythons: Sequence[str]) -> None:
         """Filter sessions in the queue based on the user-specified
@@ -247,7 +247,7 @@ class Manifest:
             if not multi:
                 long_names.append(name)
             if func.python:
-                long_names.append("{}-{}".format(name, func.python))
+                long_names.append(f"{name}-{func.python}")
 
             return [SessionRunner(name, long_names, func, self._config, self)]
 
@@ -258,13 +258,11 @@ class Manifest:
         for call in calls:
             long_names = []
             if not multi:
-                long_names.append("{}{}".format(name, call.session_signature))
+                long_names.append(f"{name}{call.session_signature}")
             if func.python:
-                long_names.append(
-                    "{}-{}{}".format(name, func.python, call.session_signature)
-                )
+                long_names.append(f"{name}-{func.python}{call.session_signature}")
                 # Ensure that specifying session-python will run all parameterizations.
-                long_names.append("{}-{}".format(name, func.python))
+                long_names.append(f"{name}-{func.python}")
 
             sessions.append(SessionRunner(name, long_names, call, self._config, self))
 
@@ -318,7 +316,7 @@ class Manifest:
                 return True
 
         # The session was not found in the list of sessions.
-        raise ValueError("Session {} not found.".format(session))
+        raise ValueError(f"Session {session} not found.")
 
 
 class KeywordLocals(collections.abc.Mapping):

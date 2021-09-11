@@ -32,7 +32,7 @@ class Param:
         self,
         *args: Any,
         arg_names: Optional[Sequence[str]] = None,
-        id: Optional[str] = None
+        id: Optional[str] = None,
     ) -> None:
         self.args = tuple(args)
         self.id = id
@@ -51,7 +51,7 @@ class Param:
             return self.id
         else:
             call_spec = self.call_spec
-            args = ["{}={}".format(k, repr(call_spec[k])) for k in call_spec.keys()]
+            args = [f"{k}={call_spec[k]!r}" for k in call_spec.keys()]
             return ", ".join(args)
 
     __repr__ = __str__

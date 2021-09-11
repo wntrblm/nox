@@ -22,6 +22,7 @@ from typing import Any, List, Mapping, Optional, Tuple, Union
 
 import py
 
+import nox
 import nox.command
 from nox.logger import logger
 
@@ -38,7 +39,7 @@ _ENABLE_STALENESS_CHECK = "NOX_ENABLE_STALENESS_CHECK" in os.environ
 
 class InterpreterNotFound(OSError):
     def __init__(self, interpreter: str) -> None:
-        super().__init__("Python interpreter {} not found".format(interpreter))
+        super().__init__(f"Python interpreter {interpreter} not found")
         self.interpreter = interpreter
 
 
@@ -138,7 +139,7 @@ def locate_using_path_and_version(version: str) -> Optional[str]:
     path_python = py.path.local.sysfind("python")
     if path_python:
         try:
-            prefix = "{}.".format(version)
+            prefix = f"{version}."
             version_string = path_python.sysexec("-c", script).strip()
             if version_string.startswith(prefix):
                 return str(path_python)
@@ -226,9 +227,7 @@ class CondaEnv(ProcessEnv):
     def create(self) -> bool:
         """Create the conda env."""
         if not self._clean_location():
-            logger.debug(
-                "Re-using existing conda env at {}.".format(self.location_name)
-            )
+            logger.debug(f"Re-using existing conda env at {self.location_name}.")
 
             self._reused = True
 
@@ -242,15 +241,13 @@ class CondaEnv(ProcessEnv):
         cmd.append("pip")
 
         if self.interpreter:
-            python_dep = "python={}".format(self.interpreter)
+            python_dep = f"python={self.interpreter}"
         else:
             python_dep = "python"
         cmd.append(python_dep)
 
-        logger.info(
-            "Creating conda env in {} with {}".format(self.location_name, python_dep)
-        )
-        nox.command.run(cmd, silent=True, log=False)
+        logger.info(f"Creating conda env in {self.location_name} with {python_dep}")
+        nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
 
@@ -402,7 +399,7 @@ class VirtualEnv(ProcessEnv):
         match = re.match(r"^(?P<xy_ver>\d(\.\d+)?)(\.\d+)?$", self.interpreter)
         if match:
             xy_version = match.group("xy_ver")
-            cleaned_interpreter = "python{}".format(xy_version)
+            cleaned_interpreter = f"python{xy_version}"
 
         # If the cleaned interpreter is on the PATH, go ahead and return it.
         if py.path.local.sysfind(cleaned_interpreter):
@@ -449,9 +446,7 @@ class VirtualEnv(ProcessEnv):
         """Create the virtualenv or venv."""
         if not self._clean_location():
             logger.debug(
-                "Re-using existing virtual environment at {}.".format(
-                    self.location_name
-                )
+                f"Re-using existing virtual environment at {self.location_name}."
             )
 
             self._reused = True
@@ -466,13 +461,11 @@ class VirtualEnv(ProcessEnv):
             cmd = [self._resolved_interpreter, "-m", "venv", self.location]
         cmd.extend(self.venv_params)
 
+        resolved_interpreter_name = os.path.basename(self._resolved_interpreter)
+
         logger.info(
-            "Creating virtual environment ({}) using {} in {}".format(
-                self.venv_or_virtualenv,
-                os.path.basename(self._resolved_interpreter),
-                self.location_name,
-            )
+            f"Creating virtual environment ({self.venv_or_virtualenv}) using {resolved_interpreter_name} in {self.location_name}"
         )
-        nox.command.run(cmd, silent=True, log=False)
+        nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
