@@ -77,7 +77,7 @@ class Option:
         self,
         name: str,
         *flags: str,
-        group: OptionGroup,
+        group: Optional[OptionGroup],
         help: Optional[str] = None,
         noxfile: bool = False,
         merge_func: Optional[Callable[[Namespace, Namespace], Any]] = None,
@@ -230,7 +230,7 @@ class OptionSet:
         }
 
         for option in self.options.values():
-            if option.hidden:
+            if option.hidden or option.group is None:
                 continue
 
             argument = groups[option.group.name].add_argument(
@@ -282,7 +282,7 @@ class OptionSet:
         # don't bother with coverage here, this is effectively only ever
         # used in tests.
         for key, value in kwargs.items():
-            if key not in args and key != "invoked_from":
+            if key not in args:
                 raise KeyError(f"{key} is not an option.")
             args[key] = value
 
