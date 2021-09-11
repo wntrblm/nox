@@ -189,6 +189,18 @@ class Session:
         """Returns True if Nox is being run in an interactive session or False otherwise."""
         return not self._runner.global_config.non_interactive and sys.stdin.isatty()
 
+    @property
+    def invoked_from(self) -> str:
+        """The directory that Nox was originally invoked from.
+
+        Since you can use the ``--noxfile / -f`` command-line
+        argument to run a Noxfile in a location different from your shell's
+        current working directory, Nox automatically changes the working directory
+        to the Noxfile's directory before running any sessions. This gives
+        you the original working directory that Nox was invoked form.
+        """
+        return self._runner.global_config.invoked_from
+
     def chdir(self, dir: Union[str, os.PathLike]) -> None:
         """Change the current working directory."""
         self.log(f"cd {dir}")
