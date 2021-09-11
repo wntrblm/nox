@@ -70,7 +70,7 @@ class TestSession:
                 posargs=[],
                 error_on_external_run=False,
                 install_only=False,
-                original_wd=os.getcwd(),
+                invoked_from=os.getcwd(),
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -107,7 +107,7 @@ class TestSession:
         assert session.bin_paths is runner.venv.bin_paths
         assert session.bin is runner.venv.bin_paths[0]
         assert session.python is runner.func.python
-        assert session.original_wd is runner.global_config.original_wd
+        assert session.invoked_from is runner.global_config.invoked_from
 
     def test_no_bin_paths(self):
         session, runner = self.make_session_and_runner()
@@ -159,7 +159,7 @@ class TestSession:
         assert os.getcwd() == cdto
         os.chdir(current_cwd)
 
-    def test_original_wd(self, tmpdir):
+    def test_invoked_from(self, tmpdir):
         cdto = str(tmpdir.join("cdbby").ensure(dir=True))
         current_cwd = os.getcwd()
 
@@ -167,7 +167,7 @@ class TestSession:
 
         session.chdir(cdto)
 
-        assert session.original_wd == current_cwd
+        assert session.invoked_from == current_cwd
         os.chdir(current_cwd)
 
     def test_chdir_pathlib(self, tmpdir):

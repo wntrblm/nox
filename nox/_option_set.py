@@ -284,7 +284,7 @@ class OptionSet:
         # don't bother with coverage here, this is effectively only ever
         # used in tests.
         for key, value in kwargs.items():
-            if key not in args and key != "original_wd":
+            if key not in args and key != "invoked_from":
                 raise KeyError("{} is not an option.".format(key))
             args[key] = value
 

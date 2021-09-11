@@ -192,9 +192,9 @@ class Session:
         return not self._runner.global_config.non_interactive and sys.stdin.isatty()
 
     @property
-    def original_wd(self) -> str:
+    def invoked_from(self) -> str:
         """Working directory that nox was originally invoked from."""
-        return self._runner.global_config.original_wd
+        return self._runner.global_config.invoked_from
 
     def chdir(self, dir: Union[str, os.PathLike]) -> None:
         """Change the current working directory."""
