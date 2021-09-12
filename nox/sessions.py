@@ -44,13 +44,6 @@ if _typing.TYPE_CHECKING:
     from nox.manifest import Manifest
 
 
-def create_shared_cache_dir(envdir: str) -> str:
-    """Create and return a 'shared cache' directory to be used across sessions."""
-    path = os.path.join(envdir, ".shared")
-    os.makedirs(path, exist_ok=True)
-    return path
-
-
 def _normalize_path(envdir: str, path: Union[str, bytes]) -> str:
     """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
     if isinstance(path, bytes):
@@ -190,6 +183,12 @@ class Session:
         os.makedirs(tmpdir, exist_ok=True)
         self.env["TMPDIR"] = tmpdir
         return tmpdir
+    
+    def get_shared_cache_dir(self) -> str:
+        """Create and return a 'shared cache' directory to be used across sessions."""
+        path = os.path.join(self._runner.envdir, ".shared")
+        os.makedirs(path, exist_ok=True)
+        return path
 
     @property
     def interactive(self) -> bool:
