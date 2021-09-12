@@ -47,9 +47,7 @@ if _typing.TYPE_CHECKING:
 def create_shared_cache_dir(envdir: str) -> str:
     """Create and return a 'shared cache' directory to be used across sessions."""
     path = os.path.join(envdir, ".shared")
-    if os.path.exists(path):
-        raise FileExistsError(f"The shared cache directory ('{path}') already exists.")
-    os.makedirs(path)
+    os.makedirs(path, exist_ok=True)
     return path
 
 
