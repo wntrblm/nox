@@ -16,6 +16,7 @@ import argparse
 import enum
 import hashlib
 import os
+import pathlib
 import re
 import sys
 import unicodedata
@@ -183,12 +184,13 @@ class Session:
         os.makedirs(tmpdir, exist_ok=True)
         self.env["TMPDIR"] = tmpdir
         return tmpdir
-    
-    def get_shared_cache_dir(self) -> str:
+
+    @property
+    def cache_dir(self) -> pathlib.Path:
         """Create and return a 'shared cache' directory to be used across sessions."""
         path = os.path.join(self._runner.envdir, ".shared")
         os.makedirs(path, exist_ok=True)
-        return path
+        return pathlib.Path(path)
 
     @property
     def interactive(self) -> bool:
