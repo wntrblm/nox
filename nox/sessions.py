@@ -188,9 +188,9 @@ class Session:
     @property
     def cache_dir(self) -> pathlib.Path:
         """Create and return a 'shared cache' directory to be used across sessions."""
-        path = os.path.join(self._runner.envdir, ".shared")
-        os.makedirs(path, exist_ok=True)
-        return pathlib.Path(path)
+        path = pathlib.Path(self._runner.envdir).joinpath(".shared")
+        path.mkdir(exist_ok=True)
+        return path
 
     @property
     def interactive(self) -> bool:
