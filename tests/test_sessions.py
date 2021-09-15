@@ -97,22 +97,22 @@ class TestSession:
             assert session.env["TMPDIR"] == tmpdir
             assert tmpdir.startswith(root)
 
-def test_properties(self):
-    session, runner = self.make_session_and_runner()
-    with tempfile.TemporaryDirectory() as root:
-        runner.global_config.envdir = root
+    def test_properties(self):
+        session, runner = self.make_session_and_runner()
+        with tempfile.TemporaryDirectory() as root:
+            runner.global_config.envdir = root
 
-        assert session.name is runner.friendly_name
-        assert session.env is runner.venv.env
-        assert session.posargs == runner.global_config.posargs
-        assert session.virtualenv is runner.venv
-        assert session.bin_paths is runner.venv.bin_paths
-        assert session.bin is runner.venv.bin_paths[0]
-        assert session.python is runner.func.python
-        assert session.invoked_from is runner.global_config.invoked_from
-        assert session.cache_dir == Path(runner.global_config.envdir).joinpath(
-            ".shared"
-        )
+            assert session.name is runner.friendly_name
+            assert session.env is runner.venv.env
+            assert session.posargs == runner.global_config.posargs
+            assert session.virtualenv is runner.venv
+            assert session.bin_paths is runner.venv.bin_paths
+            assert session.bin is runner.venv.bin_paths[0]
+            assert session.python is runner.func.python
+            assert session.invoked_from is runner.global_config.invoked_from
+            assert session.cache_dir == Path(runner.global_config.envdir).joinpath(
+                ".shared"
+            )
 
     def test_no_bin_paths(self):
         session, runner = self.make_session_and_runner()
