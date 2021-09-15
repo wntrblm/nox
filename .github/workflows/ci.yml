@@ -35,7 +35,7 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
-          python-version: "3.10"
+          python-version: "3.10.0-rc.2"
       # Conda does not support 3.10 yet, hence why it's skipped here
       # TODO: Merge the two build jobs when 3.10 is released for conda
       - name: Install Nox-under-test
