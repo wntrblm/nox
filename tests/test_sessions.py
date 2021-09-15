@@ -111,7 +111,7 @@ class TestSession:
             assert session.python is runner.func.python
             assert session.invoked_from is runner.global_config.invoked_from
             assert session.cache_dir == Path(runner.global_config.envdir).joinpath(
-                ".shared"
+                ".cache"
             )
 
     def test_no_bin_paths(self):
