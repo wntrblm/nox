@@ -22,7 +22,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }}
-        run: nox --non-interactive --session "tests-${{ matrix.python-version }}" -- --full-trace
+        run: nox --non-interactive --session "tests-${{ matrix.python-version }}" "cover-${{ matrix.python-version }}" -- --full-trace
 
   build-py310:
     name: Build python 3.10
@@ -42,7 +42,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }}
-        run: nox --non-interactive --session "tests-3.10" -- --full-trace
+        run: nox --non-interactive --session "tests-3.10" "cover-3.10" -- --full-trace
 
   lint:
     runs-on: ubuntu-20.04
