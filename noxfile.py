@@ -16,6 +16,7 @@
 import functools
 import os
 import platform
+import sys
 
 import nox
 
@@ -30,9 +31,7 @@ def is_python_version(session, version):
     return py_version.startswith(version)
 
 
-# TODO: When 3.10 is released, change the version below to 3.10
-# this is here so GitHub actions can pick up on the session name
-@nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10.0-rc.2"])
+@nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10"])
 def tests(session):
     """Run test suite with pytest."""
     session.create_tmp()
@@ -54,6 +53,7 @@ def tests(session):
     session.notify("cover")
 
 
+# TODO: When conda supports 3.10 on GHA, add here too
 @nox.session(python=["3.6", "3.7", "3.8", "3.9"], venv_backend="conda")
 def conda_tests(session):
     """Run test suite with pytest."""
@@ -72,9 +72,16 @@ def cover(session):
     if ON_WINDOWS_CI:
         return
 
+    # 3.10 produces different coverage results for some reason
+    # see https://github.com/theacodes/nox/issues/478
+    fail_under = 100
+    py_version = sys.version_info
+    if py_version.major == 3 and py_version.minor == 10:
+        fail_under = 99
+
     session.install("coverage")
     session.run("coverage", "combine")
-    session.run("coverage", "report", "--fail-under=100", "--show-missing")
+    session.run("coverage", "report", f"--fail-under={fail_under}", "--show-missing")
     session.run("coverage", "erase")
 
 

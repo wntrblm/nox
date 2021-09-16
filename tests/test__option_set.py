@@ -85,7 +85,7 @@ class TestOptionSet:
         )
         # if noxfile.py changes, this will have to change as well since these are
         # some of the actual sessions found in noxfile.py
-        some_expected_sessions = ["cover", "blacken", "lint", "docs"]
+        some_expected_sessions = ["blacken", "lint", "docs"]
         assert len(set(some_expected_sessions) - set(all_nox_sessions)) == 0
 
     def test_session_completer_invalid_sessions(self):

@@ -30,20 +30,19 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, windows-2019]
-        python-version: ["3.10.0-rc.2"]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10.0-rc.2"
       # Conda does not support 3.10 yet, hence why it's skipped here
       # TODO: Merge the two build jobs when 3.10 is released for conda
       - name: Install Nox-under-test
         run: |
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }}
-        run: nox --non-interactive --session "tests-${{ matrix.python-version }}" -- --full-trace
+        run: nox --non-interactive --session "tests-3.10" -- --full-trace
 
   lint:
     runs-on: ubuntu-20.04
