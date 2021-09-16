@@ -16,6 +16,7 @@
 import functools
 import os
 import platform
+import sys
 
 import nox
 
@@ -65,7 +66,7 @@ def conda_tests(session):
     session.run("pytest", *tests)
 
 
-@nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10"])
+@nox.session
 def cover(session):
     """Coverage analysis."""
     if ON_WINDOWS_CI:
@@ -73,7 +74,10 @@ def cover(session):
 
     # 3.10 produces different coverage results for some reason
     # see https://github.com/theacodes/nox/issues/478
-    fail_under = 99 if is_python_version(session, "3.10.0") else 100
+    fail_under = 100
+    py_version = sys.version_info
+    if py_version.major == 3 and py_version.minor == 10:
+        fail_under = 99
 
     session.install("coverage")
     session.run("coverage", "combine")
