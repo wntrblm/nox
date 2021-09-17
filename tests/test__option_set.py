@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
 import pytest
 
 from nox import _option_set, _options
 
 # The vast majority of _option_set is tested by test_main, but the test helper
 # :func:`OptionSet.namespace` needs a bit of help to get to full coverage.
+
+
+RESOURCES = Path(__file__).parent.joinpath("resources")
 
 
 class TestOptionSet:
@@ -79,14 +84,17 @@ class TestOptionSet:
             optionset.parser()
 
     def test_session_completer(self):
-        parsed_args = _options.options.namespace(sessions=(), keywords=(), posargs=[])
+        parsed_args = _options.options.namespace(
+            sessions=("testytest", "lintylint", "typeytype"),
+            posargs=[],
+            noxfile=str(RESOURCES.joinpath("noxfile_multiple_sessions.py")),
+        )
         all_nox_sessions = _options._session_completer(
             prefix=None, parsed_args=parsed_args
         )
-        # if noxfile.py changes, this will have to change as well since these are
-        # some of the actual sessions found in noxfile.py
-        some_expected_sessions = ["blacken", "lint", "docs"]
-        assert len(set(some_expected_sessions) - set(all_nox_sessions)) == 0
+
+        some_expected_sessions = ["testytest", "lintylint", "typeytype"]
+        assert some_expected_sessions == all_nox_sessions
 
     def test_session_completer_invalid_sessions(self):
         parsed_args = _options.options.namespace(
