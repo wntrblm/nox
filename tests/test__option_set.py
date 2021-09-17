@@ -85,16 +85,15 @@ class TestOptionSet:
 
     def test_session_completer(self):
         parsed_args = _options.options.namespace(
-            sessions=("testytest", "lintylint", "typeytype"),
             posargs=[],
             noxfile=str(RESOURCES.joinpath("noxfile_multiple_sessions.py")),
         )
-        all_nox_sessions = _options._session_completer(
+        actual_sessions_from_file = _options._session_completer(
             prefix=None, parsed_args=parsed_args
         )
 
-        some_expected_sessions = ["testytest", "lintylint", "typeytype"]
-        assert some_expected_sessions == all_nox_sessions
+        expected_sessions = ["testytest", "lintylint", "typeytype"]
+        assert expected_sessions == actual_sessions_from_file
 
     def test_session_completer_invalid_sessions(self):
         parsed_args = _options.options.namespace(
