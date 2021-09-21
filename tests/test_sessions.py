@@ -600,7 +600,7 @@ class TestSession:
         session.log("meep")
 
         assert "meep" in caplog.text
-    
+
     def test_warn(self, caplog):
         caplog.set_level(logging.WARNING)
         session, _ = self.make_session_and_runner()
