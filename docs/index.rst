@@ -8,6 +8,7 @@ Welcome to Nox
    tutorial
    config
    usage
+   cookbook
    CONTRIBUTING
    CHANGELOG
 
