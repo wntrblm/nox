@@ -516,6 +516,10 @@ class Session:
         """Outputs a log during the session."""
         logger.info(*args, **kwargs)
 
+    def warn(self, *args: Any, **kwargs: Any) -> None:
+        """Outputs a warning during the session."""
+        logger.warning(*args, **kwargs)
+
     def error(self, *args: Any) -> "_typing.NoReturn":
         """Immediately aborts the session and optionally logs an error."""
         raise _SessionQuit(*args)
