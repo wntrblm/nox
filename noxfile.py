@@ -45,7 +45,7 @@ def tests(session):
         "pytest",
         "--cov=nox",
         "--cov-config",
-        ".coveragerc",
+        "pyproject.toml",
         "--cov-report=",
         *tests,
         env={"COVERAGE_FILE": f".coverage.{session.python}"},
@@ -79,7 +79,7 @@ def cover(session):
     if py_version.major == 3 and py_version.minor == 10:
         fail_under = 99
 
-    session.install("coverage")
+    session.install("coverage[toml]")
     session.run("coverage", "combine")
     session.run("coverage", "report", f"--fail-under={fail_under}", "--show-missing")
     session.run("coverage", "erase")
