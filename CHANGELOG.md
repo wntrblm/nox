@@ -1,5 +1,35 @@
 # Changelog
 
+## 2021.10.1
+
+New features:
+- Add `session.warn` to output warnings (#482)
+- Add a shared session cache directory (#476)
+- Add `session.invoked_from` (#472)
+
+Improvements:
+- Conda logs now respect `nox.options.verbose` (#466)
+- Add `session.notify` example to docs (#467)
+- Add friendlier message if no `noxfile.py` is found (#463)
+- Show the `noxfile.py` docstring when using `nox -l` (#459)
+- Mention more projects that use Nox in the docs (#460)
+
+Internal changes:
+- Move configs into pyproject.toml or setup.cfg (flake8) (#484)
+- Decouple `test_session_completer` from project level noxfile (#480)
+- Run Flynt to convert str.format to f-strings (#464)
+- Add python 3.10.0-rc2 to GitHub Actions (#475, #479)
+- Simplify CI build (#461)
+- Use PEP 517 build system, remove `setup.py`, use `setup.cfg` (#456, #457, #458)
+- Upgrade to mypy 0.902 (#455)
+
+Special thanks to our contributors:
+- @henryiii
+- @cjolowicz
+- @FollowTheProcess
+- @franekmagiera
+- @DiddiLeija
+
 ## 2021.6.12
 
 - Fix crash on Python 2 when reusing environments. (#450)
