@@ -70,7 +70,7 @@ def _clean_env(env: Optional[dict]) -> Optional[dict]:
 
 def _shlex_join(args: Sequence[str]) -> str:
     # shlex.join() was added in Python 3.8
-    return " ".join(shlex.quote(arg) for arg in split_command)
+    return " ".join(shlex.quote(arg) for arg in args)
 
 
 def run(
