@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import shlex
 import sys
 from typing import Any, Iterable, List, Optional, Sequence, Union
 
@@ -67,6 +68,11 @@ def _clean_env(env: Optional[dict]) -> Optional[dict]:
     return clean_env
 
 
+def _shlex_join(args: Sequence[str]) -> str:
+    # shlex.join() was added in Python 3.8
+    return " ".join(shlex.quote(arg) for arg in args)
+
+
 def run(
     args: Sequence[str],
     *,
@@ -84,7 +90,7 @@ def run(
         success_codes = [0]
 
     cmd, args = args[0], args[1:]
-    full_cmd = f"{cmd} {' '.join(args)}"
+    full_cmd = f"{cmd} {_shlex_join(args)}"
 
     cmd_path = which(cmd, paths)
 
