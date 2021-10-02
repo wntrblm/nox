@@ -4,17 +4,17 @@ The Nox Cookbook
 The What?
 ---------
 
-A lot of people and a lot of projects use ``nox`` for their python automation powers.
+A lot of people and a lot of projects use Nox for their python automation powers.
 
 Some of these sessions are the classic "run pytest and linting", some are more unique and more interesting!
 
-The nox cookbook is a collection of these such sessions.
+The Nox cookbook is a collection of these such sessions.
 
-``nox`` is super easy to get started with, and super powerful right out of the box. But when things get complex or you want to chain together some more powerful tasks, often the only examples can be found hunting around GitHub for novel ``nox`` sessions.
+Nox is super easy to get started with, and super powerful right out of the box. But when things get complex or you want to chain together some more powerful tasks, often the only examples can be found hunting around GitHub for novel sessions.
 
 The kind of sessions that make you think "I didn't know you could do that!"
 
-This cookbook is intended to be a centralized, community-driven repository of awesome ``nox`` sessions to act as a source of inspiration and a reference guide for nox's users. If you're doing something cool with ``nox``, why not add your session here?
+This cookbook is intended to be a centralized, community-driven repository of awesome Nox sessions to act as a source of inspiration and a reference guide for nox's users. If you're doing something cool with Nox, why not add your session here?
 
 
 Contributing a Session
@@ -24,10 +24,8 @@ Anyone can contribute sessions to the cookbook. However, there are a few guiding
 
 * Your session should be interesting or unique, it should do something out of the ordinary or otherwise interesting.
 * You should explain briefly what it does and why it's interesting.
-* You should include the full session as a code block, if it's too large, try to include a minimal example. Bonus points if a user can copy and paste it into their ``noxfile.py`` and run it straight away!
 
-
-And now on with the recipes...
+For general advice on how to contribute to Nox see our :doc:`CONTRIBUTING` guide
 
 Recipes
 -------
@@ -47,7 +45,7 @@ Enter the ``dev`` nox session:
 
     # It's a good idea to keep your dev session out of the default list
     # so it's not run twice accidentally
-    nox.options.sessions = [<sessions other than dev>]
+    nox.options.sessions = [...] # Sessions other than 'dev'
 
     @nox.session
     def dev(session: nox.Session) -> None:
@@ -81,7 +79,7 @@ The Auto-Release
 
 Releasing a new version of an open source project can be a real pain, with lots of intricate steps. Tools like `Bump2Version <https://github.com/c4urself/bump2version>`_ really help here.
 
-Even more so with a sprinkling of ``nox``:
+Even more so with a sprinkling of Nox:
 
 .. code-block:: python
 
@@ -97,23 +95,16 @@ Even more so with a sprinkling of ``nox``:
         Usage:
         $ nox -s release -- [major|minor|patch]
         """
-
-        allowed_args = {"major", "minor", "patch"}
-        n_args = len(session.posargs)
-
-        # Ensure the correct args are passed
-        if n_args != 1:
-            session.error(
-                f"Only 1 session arg allowed, got {n_args}. Pass one of: {allowed_args}"
-            )
-
-        # If we get here, we know there's only 1 posarg
-        version = session.posargs.pop()
-
-        if version not in allowed_args:
-            session.error(
-                f"Invalid argument: got {version!r}, expected one of: {allowed_args}"
-            )
+        parser = argparse.ArgumentParser(description="Release a semver version.")
+        parser.add_argument(
+            "version",
+            type=str,
+            nargs=1,
+            help="The type of semver release to make.",
+            choices={"major", "minor", "patch"},
+        )
+        args: argparse.Namespace = parser.parse_args(args=session.posargs)
+        version: str = args.version.pop()
 
         # If we get here, we should be good to go
         # Let's do a final check for safety
