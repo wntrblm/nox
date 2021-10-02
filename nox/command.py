@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import shlex
 import sys
 from typing import Any, Iterable, List, Optional, Sequence, Union
 
@@ -84,7 +85,7 @@ def run(
         success_codes = [0]
 
     cmd, args = args[0], args[1:]
-    full_cmd = f"{cmd} {' '.join(args)}"
+    full_cmd = f"{cmd} {shlex.join(args)}"
 
     cmd_path = which(cmd, paths)
 
