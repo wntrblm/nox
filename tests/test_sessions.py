@@ -609,6 +609,14 @@ class TestSession:
 
         assert "meep" in caplog.text
 
+    def test_debug(self, caplog):
+        caplog.set_level(logging.DEBUG)
+        session, _ = self.make_session_and_runner()
+
+        session.debug("meep")
+
+        assert "meep" in caplog.text
+
     def test_error(self, caplog):
         caplog.set_level(logging.ERROR)
         session, _ = self.make_session_and_runner()
