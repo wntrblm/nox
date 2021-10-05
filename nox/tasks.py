@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import ast
 import importlib.machinery
 import io
 import json
@@ -150,9 +151,17 @@ def filter_manifest(
         manifest.filter_by_python_interpreter(global_config.pythons)
 
     # Filter by keywords.
-    # This function never errors, but may cause an empty list of sessions
-    # (which is an error condition later).
     if global_config.keywords:
+        try:
+            ast.parse(global_config.keywords, mode="eval")
+        except SyntaxError:
+            logger.error(
+                "Error while collecting sessions: keywords argument must be a Python expression."
+            )
+            return 3
+
+        # This function never errors, but may cause an empty list of sessions
+        # (which is an error condition later).
         manifest.filter_by_keywords(global_config.keywords)
 
     # Return the modified manifest.
