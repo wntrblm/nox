@@ -520,6 +520,10 @@ class Session:
         """Outputs a warning during the session."""
         logger.warning(*args, **kwargs)
 
+    def debug(self, *args: Any, **kwargs: Any) -> None:
+        """Outputs a debug-level message during the session."""
+        logger.debug(*args, **kwargs)
+
     def error(self, *args: Any) -> "_typing.NoReturn":
         """Immediately aborts the session and optionally logs an error."""
         raise _SessionQuit(*args)
