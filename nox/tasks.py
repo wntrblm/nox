@@ -13,10 +13,11 @@
 # limitations under the License.
 
 import ast
-import importlib.machinery
+import importlib.util
 import io
 import json
 import os
+import sys
 import types
 from argparse import Namespace
 from typing import List, Union
@@ -64,9 +65,14 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         # guess. The original working directory (the directory that Nox was
         # invoked from) gets stored by the .invoke_from "option" in _options.
         os.chdir(noxfile_parent_dir)
-        return importlib.machinery.SourceFileLoader(
+
+        spec = importlib.util.spec_from_file_location(
             "user_nox_module", global_config.noxfile
-        ).load_module()
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["user_nox_module"] = module
+        spec.loader.exec_module(module)
+        return module
 
     except (VersionCheckFailed, InvalidVersionSpecifier) as error:
         logger.error(str(error))

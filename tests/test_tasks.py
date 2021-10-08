@@ -95,9 +95,7 @@ def test_load_nox_module_IOError(caplog):
     our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
     config = _options.options.namespace(noxfile=str(our_noxfile))
 
-    with mock.patch(
-        "nox.tasks.importlib.machinery.SourceFileLoader.load_module"
-    ) as mock_load:
+    with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_load:
         mock_load.side_effect = IOError
 
         assert tasks.load_nox_module(config) == 2
@@ -112,9 +110,7 @@ def test_load_nox_module_OSError(caplog):
     our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
     config = _options.options.namespace(noxfile=str(our_noxfile))
 
-    with mock.patch(
-        "nox.tasks.importlib.machinery.SourceFileLoader.load_module"
-    ) as mock_load:
+    with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_load:
         mock_load.side_effect = OSError
 
         assert tasks.load_nox_module(config) == 2
