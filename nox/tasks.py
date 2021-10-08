@@ -69,9 +69,21 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         spec = importlib.util.spec_from_file_location(
             "user_nox_module", global_config.noxfile
         )
+        if not spec:
+            raise IOError(f"Could not get module spec from {global_config.noxfile}")
+
         module = importlib.util.module_from_spec(spec)
+        if not module:
+            raise IOError(
+                f"Noxfile {global_config.noxfile} is not a valid python module."
+            )
         sys.modules["user_nox_module"] = module
-        spec.loader.exec_module(module)
+        loader = spec.loader
+        if not loader:
+            raise IOError(f"Could not get module loader for {global_config.noxfile}")
+        # See https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
+        # unsure why mypy doesn't like this
+        loader.exec_module(module)  # type: ignore
         return module
 
     except (VersionCheckFailed, InvalidVersionSpecifier) as error:
