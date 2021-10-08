@@ -117,6 +117,39 @@ def test_load_nox_module_OSError(caplog):
         assert "Failed to load Noxfile" in caplog.text
 
 
+def test_load_nox_module_invalid_spec(caplog, tmp_path):
+    bad_noxfile = tmp_path / "badspec.py"
+    config = _options.options.namespace(noxfile=str(bad_noxfile))
+
+    with mock.patch("nox.tasks.importlib.util.spec_from_file_location") as mock_spec:
+        mock_spec.return_value = None
+
+        assert tasks.load_nox_module(config) == 2
+        assert "Failed to load Noxfile" in caplog.text
+
+
+def test_load_nox_module_invalid_module(caplog, tmp_path):
+    bad_noxfile = tmp_path / "badspec.py"
+    config = _options.options.namespace(noxfile=str(bad_noxfile))
+
+    with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_spec:
+        mock_spec.return_value = None
+
+        assert tasks.load_nox_module(config) == 2
+        assert "Failed to load Noxfile" in caplog.text
+
+
+def test_load_nox_module_invalid_module_loader(caplog, tmp_path):
+    bad_noxfile = tmp_path / "badspec.py"
+    config = _options.options.namespace(noxfile=str(bad_noxfile))
+
+    with mock.patch("nox.tasks.importlib.machinery.ModuleSpec") as mock_spec:
+        mock_spec.loader = None
+
+        assert tasks.load_nox_module(config) == 2
+        assert "Failed to load Noxfile" in caplog.text
+
+
 @pytest.fixture
 def reset_needs_version():
     """Do not leak ``nox.needs_version`` between tests."""
