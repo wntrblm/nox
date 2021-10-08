@@ -117,37 +117,26 @@ def test_load_nox_module_OSError(caplog):
         assert "Failed to load Noxfile" in caplog.text
 
 
-def test_load_nox_module_invalid_spec(caplog, tmp_path):
-    bad_noxfile = tmp_path / "badspec.py"
-    config = _options.options.namespace(noxfile=str(bad_noxfile))
+def test_load_nox_module_invalid_spec():
+    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
+    config = _options.options.namespace(noxfile=str(our_noxfile))
 
     with mock.patch("nox.tasks.importlib.util.spec_from_file_location") as mock_spec:
         mock_spec.return_value = None
 
-        assert tasks.load_nox_module(config) == 2
-        assert "Failed to load Noxfile" in caplog.text
+        with pytest.raises(IOError):
+            tasks._load_and_exec_nox_module(config)
 
 
-def test_load_nox_module_invalid_module(caplog, tmp_path):
-    bad_noxfile = tmp_path / "badspec.py"
-    config = _options.options.namespace(noxfile=str(bad_noxfile))
+def test_load_nox_module_invalid_module():
+    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
+    config = _options.options.namespace(noxfile=str(our_noxfile))
 
     with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_spec:
         mock_spec.return_value = None
 
-        assert tasks.load_nox_module(config) == 2
-        assert "Failed to load Noxfile" in caplog.text
-
-
-def test_load_nox_module_invalid_module_loader(caplog, tmp_path):
-    bad_noxfile = tmp_path / "badspec.py"
-    config = _options.options.namespace(noxfile=str(bad_noxfile))
-
-    with mock.patch("nox.tasks.importlib.machinery.ModuleSpec") as mock_spec:
-        mock_spec.loader = None
-
-        assert tasks.load_nox_module(config) == 2
-        assert "Failed to load Noxfile" in caplog.text
+        with pytest.raises(IOError):
+            tasks._load_and_exec_nox_module(config)
 
 
 @pytest.fixture

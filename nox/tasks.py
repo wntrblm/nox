@@ -32,6 +32,42 @@ from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 from nox.sessions import Result
 
 
+def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
+    """
+    Loads, executes, then returns the global_config nox module.
+
+    Args:
+        global_config (Namespace): The global config.
+
+    Raises:
+        IOError: If the nox module cannot be loaded. This
+            exception is chosen such that it will be caught
+            by load_nox_module and logged appropriately.
+
+    Returns:
+        types.ModuleType: The initialised nox module.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "user_nox_module", global_config.noxfile
+    )
+    if not spec:
+        raise IOError(f"Could not get module spec from {global_config.noxfile}")
+
+    module = importlib.util.module_from_spec(spec)
+    if not module:
+        raise IOError(f"Noxfile {global_config.noxfile} is not a valid python module.")
+
+    sys.modules["user_nox_module"] = module
+
+    loader = spec.loader
+    if not loader:  # pragma: no cover
+        raise IOError(f"Could not get module loader for {global_config.noxfile}")
+    # See https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
+    # unsure why mypy doesn't like this
+    loader.exec_module(module)  # type: ignore
+    return module
+
+
 def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
     """Load the user's noxfile and return the module object for it.
 
@@ -66,25 +102,7 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
         # invoked from) gets stored by the .invoke_from "option" in _options.
         os.chdir(noxfile_parent_dir)
 
-        spec = importlib.util.spec_from_file_location(
-            "user_nox_module", global_config.noxfile
-        )
-        if not spec:
-            raise IOError(f"Could not get module spec from {global_config.noxfile}")
-
-        module = importlib.util.module_from_spec(spec)
-        if not module:
-            raise IOError(
-                f"Noxfile {global_config.noxfile} is not a valid python module."
-            )
-        sys.modules["user_nox_module"] = module
-        loader = spec.loader
-        if not loader:
-            raise IOError(f"Could not get module loader for {global_config.noxfile}")
-        # See https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
-        # unsure why mypy doesn't like this
-        loader.exec_module(module)  # type: ignore
-        return module
+        return _load_and_exec_nox_module(global_config)
 
     except (VersionCheckFailed, InvalidVersionSpecifier) as error:
         logger.error(str(error))
