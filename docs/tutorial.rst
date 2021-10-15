@@ -192,7 +192,6 @@ You can also pass environment variables:
 See :func:`nox.sessions.Session.run` for more options and examples for running
 programs.
 
-
 Selecting which sessions to run
 -------------------------------
 
@@ -262,6 +261,47 @@ And if you run ``nox --sessions lint`` Nox will just run the lint session:
 There are many more ways to select and run sessions! You can read more about
 invoking Nox in :doc:`usage`.
 
+Queuing sessions
+-----------------
+
+If you want to queue up (or "notify") another session from the current one, you can use the ``session.notify`` function:
+
+.. code-block:: python
+
+    @nox.session
+    def tests(session):
+        session.install("pytest")
+        session.run("pytest")
+        # Here we queue up the test coverage session to run next
+        session.notify("coverage") 
+
+    @nox.session
+    def coverage(session):
+        session.install("coverage")
+        session.run("coverage")
+
+You can obviously queue up any session you want, not just test and coverage sessions, but this is a very commonly
+used pattern.
+
+Now running ``nox --session tests`` will run the tests session and then the coverage session.
+
+You can also pass the notified session positional arguments:
+
+.. code-block:: python
+
+    @nox.session
+    def prepare_thing(session):
+        thing_path = "./path/to/thing"
+        session.run("prepare", "thing", thing_path)
+        session.notify("consume_thing", posargs=[thing_path])
+
+    @nox.session
+    def consume_thing(session):
+        # The 'consume' command has the arguments
+        # sent to it from the 'prepare_thing' session
+        session.run("consume", "thing", session.posargs)
+
+Note that this will only have the desired effect if selecting sessions to run via the ``--session/-s`` flag. If you simply run ``nox``, all selected sessions will be run.
 
 Testing against different and multiple Pythons
 ----------------------------------------------
