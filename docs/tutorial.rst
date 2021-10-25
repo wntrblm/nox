@@ -280,7 +280,7 @@ If you want to queue up (or "notify") another session from the current one, you 
         session.install("coverage")
         session.run("coverage")
 
-You can obviously queue up any session you want, not just test and coverage sessions, but this is a very commonly
+You can queue up any session you want, not just test and coverage sessions, but this is a very commonly
 used pattern.
 
 Now running ``nox --session tests`` will run the tests session and then the coverage session.
