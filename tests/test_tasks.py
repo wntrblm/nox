@@ -95,9 +95,7 @@ def test_load_nox_module_IOError(caplog):
     our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
     config = _options.options.namespace(noxfile=str(our_noxfile))
 
-    with mock.patch(
-        "nox.tasks.importlib.machinery.SourceFileLoader.load_module"
-    ) as mock_load:
+    with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_load:
         mock_load.side_effect = IOError
 
         assert tasks.load_nox_module(config) == 2
@@ -112,13 +110,33 @@ def test_load_nox_module_OSError(caplog):
     our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
     config = _options.options.namespace(noxfile=str(our_noxfile))
 
-    with mock.patch(
-        "nox.tasks.importlib.machinery.SourceFileLoader.load_module"
-    ) as mock_load:
+    with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_load:
         mock_load.side_effect = OSError
 
         assert tasks.load_nox_module(config) == 2
         assert "Failed to load Noxfile" in caplog.text
+
+
+def test_load_nox_module_invalid_spec():
+    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
+    config = _options.options.namespace(noxfile=str(our_noxfile))
+
+    with mock.patch("nox.tasks.importlib.util.spec_from_file_location") as mock_spec:
+        mock_spec.return_value = None
+
+        with pytest.raises(IOError):
+            tasks._load_and_exec_nox_module(config)
+
+
+def test_load_nox_module_invalid_module():
+    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
+    config = _options.options.namespace(noxfile=str(our_noxfile))
+
+    with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_spec:
+        mock_spec.return_value = None
+
+        with pytest.raises(IOError):
+            tasks._load_and_exec_nox_module(config)
 
 
 @pytest.fixture
@@ -231,6 +249,15 @@ def test_filter_manifest_keywords():
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
     assert len(manifest) == 2
+
+
+def test_filter_manifest_keywords_syntax_error():
+    config = _options.options.namespace(
+        sessions=(), pythons=(), keywords="foo:bar", posargs=[]
+    )
+    manifest = Manifest({"foo_bar": session_func, "foo_baz": session_func}, config)
+    return_value = tasks.filter_manifest(manifest, config)
+    assert return_value == 3
 
 
 def test_honor_list_request_noop():
