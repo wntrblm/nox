@@ -53,8 +53,7 @@ def tests(session):
     session.notify("cover")
 
 
-# TODO: When conda supports 3.10 on GHA, add here too
-@nox.session(python=["3.6", "3.7", "3.8", "3.9"], venv_backend="conda")
+@nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10"], venv_backend="conda")
 def conda_tests(session):
     """Run test suite with pytest."""
     session.create_tmp()
@@ -106,7 +105,7 @@ def lint(session):
         "importlib_metadata",
     )
     session.run("mypy")
-    files = ["nox", "tests", "noxfile.py"]
+    files = ["nox", "tests", "noxfile.py", "docs/conf.py"]
     session.run("black", "--check", *files)
     session.run("isort", "--check", *files)
     session.run("flake8", *files)
