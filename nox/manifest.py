@@ -202,7 +202,7 @@ class Manifest:
         """
         sessions = []
 
-        # if backend is none we wont parametrize the pythons
+        # If the backend is "none", we won't parametrize `python`.
         backend = (
             self._config.force_venv_backend
             or func.venv_backend
@@ -241,7 +241,7 @@ class Manifest:
             return sessions
 
         # Simple case: If this function is not parametrized, then make
-        # a simple session
+        # a simple session.
         if not hasattr(func, "parametrize"):
             long_names = []
             if not multi:
