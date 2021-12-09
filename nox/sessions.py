@@ -229,7 +229,8 @@ class Session:
             raise nox.command.CommandFailed()
 
     def run(
-        self, *args: str, env: Optional[Mapping[str, str]] = None, **kwargs: Any
+        self, *args: str, env: Optional[Mapping[str, str]] = None,
+        cwd: Optional[Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]] = None, **kwargs: Any
     ) -> Optional[Any]:
         """Run a command.
 
@@ -249,6 +250,12 @@ class Session:
                 'bash', '-c', 'echo $SOME_ENV',
                 env={'SOME_ENV': 'Hello'})
 
+        or run the command from within a specific working directory::
+
+            session.run(
+                'bash', '-c', 'pwd',
+                cwd='..')
+
         You can also tell nox to treat non-zero exit codes as success using
         ``success_codes``. For example, if you wanted to treat the ``pytest``
         "tests discovered, but none selected" error as success::
@@ -265,6 +272,8 @@ class Session:
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
         :type env: dict or None
+        :param cwd: A :ref:`path-like` object to run the command from.
+        :type cwd: str, pathlib.Path or None
         :param bool silent: Silence command output, unless the command fails.
             ``False`` by default.
         :param success_codes: A list of return codes that are considered
@@ -287,7 +296,10 @@ class Session:
         return self._run(*args, env=env, **kwargs)
 
     def run_always(
-        self, *args: str, env: Optional[Mapping[str, str]] = None, **kwargs: Any
+        self, *args: str,
+        env: Optional[Mapping[str, str]] = None,
+        cwd: Optional[Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]] = None,
+            **kwargs: Any
     ) -> Optional[Any]:
         """Run a command **always**.
 
@@ -305,6 +317,8 @@ class Session:
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
         :type env: dict or None
+        :param cwd: A :ref:`path-like` object to run the command from.
+        :type cwd: str, pathlib.Path or None
         :param bool silent: Silence command output, unless the command fails.
             ``False`` by default.
         :param success_codes: A list of return codes that are considered
@@ -330,7 +344,11 @@ class Session:
         return self._run(*args, env=env, **kwargs)
 
     def _run(
-        self, *args: str, env: Optional[Mapping[str, str]] = None, **kwargs: Any
+        self,
+        *args: str,
+        env: Optional[Mapping[str, str]] = None,
+        cwd: Optional[Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]] = None,
+        **kwargs: Any
     ) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
@@ -357,7 +375,7 @@ class Session:
             kwargs["external"] = True
 
         # Run a shell command.
-        return nox.command.run(args, env=env, paths=self.bin_paths, **kwargs)
+        return nox.command.run(args, env=env, cwd=cwd, paths=self.bin_paths, **kwargs)
 
     def conda_install(
         self, *args: str, auto_offline: bool = True, **kwargs: Any

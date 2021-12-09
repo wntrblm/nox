@@ -175,7 +175,7 @@ If you want to pass more arguments to a program just add more arguments to ``run
         session.run("pytest", "-v", "tests")
 
 
-You can also pass environment variables:
+You can also pass environment variables or select a working directory:
 
 .. code-block:: python
 
@@ -187,6 +187,7 @@ You can also pass environment variables:
             env={
                 "FLASK_DEBUG": "1"
             }
+            cwd="some/directory"
         )
 
 See :func:`nox.sessions.Session.run` for more options and examples for running
