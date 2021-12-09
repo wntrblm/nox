@@ -14,6 +14,7 @@
 
 import contextlib
 import locale
+import os
 import subprocess
 import sys
 from typing import IO, Mapping, Optional, Sequence, Tuple, Union
@@ -55,6 +56,7 @@ def decode_output(output: bytes) -> str:
 def popen(
     args: Sequence[str],
     env: Optional[Mapping[str, str]] = None,
+    cwd: Optional[Union[str, bytes, os.PathLike[str], os.PathLike[bytes]]] = None,
     silent: bool = False,
     stdout: Optional[Union[int, IO]] = None,
     stderr: Union[int, IO] = subprocess.STDOUT,
@@ -67,7 +69,7 @@ def popen(
     if silent:
         stdout = subprocess.PIPE
 
-    proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=stderr)
+    proc = subprocess.Popen(args, env=env, cwd=cwd, stdout=stdout, stderr=stderr)
 
     try:
         out, err = proc.communicate()

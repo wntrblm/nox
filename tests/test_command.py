@@ -20,8 +20,8 @@ import signal
 import subprocess
 import sys
 import time
-from textwrap import dedent
 from tempfile import TemporaryDirectory
+from textwrap import dedent
 from unittest import mock
 
 import pytest
@@ -134,7 +134,7 @@ def test_run_env_systemroot():
 def test_run_cwd_getcwd():
     with TemporaryDirectory() as temp_cwd:
         result = nox.command.run(
-            [PYTHON, "-c", 'import os;print(os.getcwd())'], silent=True, cwd=temp_cwd
+            [PYTHON, "-c", "import os;print(os.getcwd())"], silent=True, cwd=temp_cwd
         )
 
     assert temp_cwd in result
