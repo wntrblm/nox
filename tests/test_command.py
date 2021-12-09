@@ -140,6 +140,33 @@ def test_run_cwd_getcwd():
     assert temp_cwd in result
 
 
+def test_run_cwd_scoped_onsuccess():
+    original_cwd = os.getcwd()
+
+    exit_code = 0
+    args = [PYTHON, "-c", f"import sys;sys.exit({exit_code})"]
+
+    with TemporaryDirectory() as temp_cwd:
+        _ = nox.command.run(args, silent=True, cwd=temp_cwd)
+
+    assert original_cwd == os.getcwd()
+
+
+def test_run_cwd_scoped_onfailure():
+    original_cwd = os.getcwd()
+
+    exit_code = 1
+    args = [PYTHON, "-c", f"import sys;sys.exit({exit_code})"]
+
+    with TemporaryDirectory() as temp_cwd:
+        try:
+            _ = nox.command.run(args, silent=True, cwd=temp_cwd)
+        except nox.command.CommandFailed:
+            pass
+
+    assert original_cwd == os.getcwd()
+
+
 def test_run_not_found():
     with pytest.raises(nox.command.CommandFailed):
         nox.command.run(["nonexistentcmd"])
