@@ -156,9 +156,7 @@ class PassthroughEnv(ProcessEnv):
     hints about the actual env.
     """
 
-    @property
-    def conda_cmd(self) -> str:
-        return "conda"
+    conda_cmd = "conda"
 
     @staticmethod
     def is_offline() -> bool:
