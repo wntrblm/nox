@@ -1,3 +1,2 @@
-include LICENSE
 recursive-include nox *.jinja2
 include nox/py.typed

@@ -91,6 +91,7 @@ Our maintainers are (in alphabetical order):
 
 * `Chris Wilcox <https://github.com/crwilcox>`__
 * `Danny Hermes <https://github.com/dhermes>`__
+* `Diego Ramirez <https://github.com/DiddiLeija>`_
 * `Luke Sneeringer <https://github.com/lukesneeringer>`__
 * `Santos Gallegos <https://github.com/stsewd>`__
 * `Thea Flowers <https://github.com/theacodes>`__
