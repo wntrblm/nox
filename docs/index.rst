@@ -90,10 +90,12 @@ Nox is free & open-source software and is made possible by community maintainers
 Our maintainers are (in alphabetical order):
 
 * `Chris Wilcox <https://github.com/crwilcox>`__
+* `Claudio Jolowicz <https://github.com/cjolowicz>`__
 * `Danny Hermes <https://github.com/dhermes>`__
-* `Diego Ramirez <https://github.com/DiddiLeija>`_
+* `Diego Ramirez <https://github.com/DiddiLeija>`__
 * `Luke Sneeringer <https://github.com/lukesneeringer>`__
 * `Santos Gallegos <https://github.com/stsewd>`__
 * `Thea Flowers <https://github.com/theacodes>`__
+* `Tom Fleet <https://github.com/followtheprocess>`__
 
 Nox also exists due to the various patches and work contributed by `the community <https://github.com/theacodes/nox/graphs/contributors>`__. If you'd like to get involved, see :doc:`CONTRIBUTING`. We pay our contributors using `Open Collective <https://opencollective.com/python-nox>`__.
