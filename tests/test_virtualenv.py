@@ -233,6 +233,7 @@ def test_condaenv_bin_windows(make_conda):
     assert [dir_.strpath, dir_.join("Scripts").strpath] == venv.bin_paths
 
 
+@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
 def test_condaenv_(make_conda):
     venv, dir_ = make_conda()
     assert not venv.is_offline()
