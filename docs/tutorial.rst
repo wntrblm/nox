@@ -375,8 +375,9 @@ incompatible versions of packages already installed with conda.
     session.install("contexter", "--no-deps")
     session.install("-e", ".", "--no-deps")
 
-``"mamba"`` is also allowed as a choice, which will use/require 
-`mamba <https://github.com/mamba-org/mamba>`_ instead of conda.
+``"mamba"`` is also allowed as a choice for ``venv_backend``, which will
+use/require `mamba <https://github.com/mamba-org/mamba>`_ instead of conda.
+
 
 Parametrization
 ---------------
