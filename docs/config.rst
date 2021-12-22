@@ -159,7 +159,7 @@ You can also specify that the virtualenv should *always* be reused instead of re
     def tests(session):
         pass
 
-You are not limited to virtualenv, there is a selection of backends you can choose from as venv, conda or virtualenv (default):
+You are not limited to virtualenv, there is a selection of backends you can choose from as venv, conda, mamba, or virtualenv (default):
 
 .. code-block:: python
 

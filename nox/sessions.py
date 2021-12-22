@@ -421,7 +421,7 @@ class Session:
             extraopts = ("--offline",)
 
         self._run(
-            "conda",
+            venv.conda_cmd,
             "install",
             "--yes",
             *extraopts,
@@ -592,12 +592,13 @@ class SessionRunner:
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
-        elif backend == "conda":
+        elif backend in {"conda", "mamba"}:
             self.venv = CondaEnv(
                 self.envdir,
                 interpreter=self.func.python,  # type: ignore
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
+                conda_cmd=backend,
             )
         elif backend == "venv":
             self.venv = VirtualEnv(
