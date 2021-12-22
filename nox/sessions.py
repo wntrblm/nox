@@ -360,7 +360,11 @@ class Session:
         return nox.command.run(args, env=env, paths=self.bin_paths, **kwargs)
 
     def conda_install(
-        self, *args: str, auto_offline: bool = True, **kwargs: Any
+        self,
+        *args: str,
+        auto_offline: bool = True,
+        channel: Union[str, Sequence[str]] = "",
+        **kwargs: Any,
     ) -> None:
         """Install invokes `conda install`_ to install packages inside of the
         session's environment.
@@ -369,7 +373,7 @@ class Session:
 
             session.conda_install('pandas')
             session.conda_install('numpy', 'scipy')
-            session.conda_install('--channel=conda-forge', 'dask==2.1.0')
+            session.conda_install('dask==2.1.0', channel='conda-forge')
 
         To install packages from a ``requirements.txt`` file::
 
@@ -386,6 +390,10 @@ class Session:
             session.install('.', '--no-deps')
             # Install in editable mode.
             session.install('-e', '.', '--no-deps')
+
+        You can specify a conda channel using `channel=`; a falsy value will
+        not change the current channels. You can specify a list of channels if
+        needed.
 
         Additional keyword args are the same as for :meth:`run`.
 
@@ -413,12 +421,18 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        extraopts = ()  # type: Tuple[str, ...]
+        extraopts = []  # type: List[str]
         if auto_offline and venv.is_offline():
             logger.warning(
                 "Automatically setting the `--offline` flag as conda repo seems unreachable."
             )
-            extraopts = ("--offline",)
+            extraopts.append("--offline")
+
+        if channel:
+            if isinstance(channel, str):
+                extraopts.append(f"--channel={channel}")
+            else:
+                extraopts += [f"--channel={c}" for c in channel]
 
         self._run(
             venv.conda_cmd,

@@ -385,7 +385,12 @@ class TestSession:
     )
     @pytest.mark.parametrize("offline", [False, True], ids="offline={}".format)
     @pytest.mark.parametrize("conda", ["conda", "mamba"], ids=str)
-    def test_conda_install(self, auto_offline, offline, conda):
+    @pytest.mark.parametrize(
+        "channel",
+        ["", "conda-forge", ["conda-forge", "bioconda"]],
+        ids=["default", "conda-forge", "bioconda"],
+    )
+    def test_conda_install(self, auto_offline, offline, conda, channel):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -405,8 +410,14 @@ class TestSession:
         session = SessionNoSlots(runner=runner)
 
         with mock.patch.object(session, "_run", autospec=True) as run:
-            args = ("--offline",) if auto_offline and offline else ()
-            session.conda_install("requests", "urllib3", auto_offline=auto_offline)
+            args = ["--offline"] if auto_offline and offline else []
+            if channel and isinstance(channel, str):
+                args.append(f"--channel={channel}")
+            else:
+                args += [f"--channel={c}" for c in channel]
+            session.conda_install(
+                "requests", "urllib3", auto_offline=auto_offline, channel=channel
+            )
             run.assert_called_once_with(
                 conda,
                 "install",
