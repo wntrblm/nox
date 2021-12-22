@@ -177,6 +177,10 @@ def filter_manifest(
             logger.error("Error while collecting sessions.")
             logger.error(exc.args[0])
             return 3
+    elif global_config.sessions is not None:
+        # If the user did not specify sessions, and the noxfile is set
+        # to an empty list, then list the sessions instead.
+        global_config.list_sessions = True
 
     # Filter by python interpreter versions.
     # This function never errors, but may cause an empty list of sessions

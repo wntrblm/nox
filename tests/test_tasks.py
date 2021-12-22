@@ -346,6 +346,20 @@ def test_honor_list_request_doesnt_print_docstring_if_not_present(capsys):
     assert "Hello I'm a docstring" not in out
 
 
+def test_emtpy_session_list_in_noxfile():
+    config = _options.options.namespace(noxfile="noxfile.py", sessions=())
+    manifest = Manifest({}, config)
+    tasks.filter_manifest(manifest, global_config=config)
+    assert config.list_sessions
+
+
+def test_emtpy_session_None_in_noxfile():
+    config = _options.options.namespace(noxfile="noxfile.py", sessions=None)
+    manifest = Manifest({}, config)
+    tasks.filter_manifest(manifest, global_config=config)
+    assert not config.list_sessions
+
+
 def test_verify_manifest_empty():
     config = _options.options.namespace(sessions=(), keywords=())
     manifest = Manifest({}, config)
