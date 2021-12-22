@@ -16,6 +16,7 @@
 import functools
 import os
 import platform
+import shutil
 import sys
 
 import nox
@@ -118,7 +119,7 @@ def docs(session):
     doctrees, html = map(
         functools.partial(os.path.join, output_dir), ["doctrees", "html"]
     )
-    session.run("rm", "-rf", output_dir, external=True)
+    shutil.rmtree(output_dir, ignore_errors=True)
     session.install("-r", "requirements-test.txt")
     session.install(".")
     session.cd("docs")
