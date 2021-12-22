@@ -363,7 +363,7 @@ class Session:
         self,
         *args: str,
         auto_offline: bool = True,
-        channel: Union[str, Sequence] = "",
+        channel: Union[str, Sequence[str]] = "",
         **kwargs: Any,
     ) -> None:
         """Install invokes `conda install`_ to install packages inside of the
