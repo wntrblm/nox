@@ -329,7 +329,8 @@ Controlling color output
 By default, Nox will output colorful logs if you're using in an interactive
 terminal. However, if you are redirecting ``stderr`` to a file or otherwise
 not using an interactive terminal, or the environment variable ``NO_COLOR`` is
-set, nox will output in plaintext.
+set, nox will output in plaintext. If this is not set, and ``FORCE_COLOR`` is
+present, color will be forced.
 
 You can manually control Nox's output using the ``--nocolor`` and ``--forcecolor`` flags.
 
