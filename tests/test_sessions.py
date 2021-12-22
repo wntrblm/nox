@@ -384,7 +384,8 @@ class TestSession:
         "auto_offline", [False, True], ids="auto_offline={}".format
     )
     @pytest.mark.parametrize("offline", [False, True], ids="offline={}".format)
-    def test_conda_install(self, auto_offline, offline):
+    @pytest.mark.parametrize("conda", ["conda", "mamba"], ids=str)
+    def test_conda_install(self, auto_offline, offline, conda):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -396,6 +397,7 @@ class TestSession:
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
         runner.venv.is_offline = lambda: offline
+        runner.venv.conda_cmd = conda
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -406,7 +408,7 @@ class TestSession:
             args = ("--offline",) if auto_offline and offline else ()
             session.conda_install("requests", "urllib3", auto_offline=auto_offline)
             run.assert_called_once_with(
-                "conda",
+                conda,
                 "install",
                 "--yes",
                 *args,
@@ -434,6 +436,7 @@ class TestSession:
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
         runner.venv.is_offline = lambda: True
+        runner.venv.conda_cmd = "conda"
 
         runner.global_config.no_install = no_install
         runner.venv._reused = reused
@@ -460,6 +463,7 @@ class TestSession:
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
         runner.venv.is_offline = lambda: False
+        runner.venv.conda_cmd = "conda"
 
         class SessionNoSlots(nox.sessions.Session):
             pass

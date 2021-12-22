@@ -110,7 +110,7 @@ Then running ``nox --session tests`` will actually run all parametrized versions
 Changing the sessions default backend
 -------------------------------------
 
-By default nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``conda`` and ``venv`` as well as no backend (passthrough to whatever python environment nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
+By default nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``conda``, ``mamba``, and ``venv`` as well as no backend (passthrough to whatever python environment nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'virtualenv', 'conda', 'mamba', 'venv')``.
 
 .. code-block:: console
 
