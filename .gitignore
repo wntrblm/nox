@@ -76,3 +76,6 @@ target/
 
 # PyCharm
 .idea/
+
+# Standard venv location
+.venv
