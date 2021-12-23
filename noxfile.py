@@ -29,24 +29,13 @@ if shutil.which("conda"):
     nox.options.sessions.append("conda_tests")
 
 
-def is_python_version(session, version):
-    if not version.startswith(session.python):
-        return False
-    py_version = session.run("python", "-V", silent=True)
-    py_version = py_version.partition(" ")[2].strip()
-    return py_version.startswith(version)
-
-
-@nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10"])
+@nox.session(python=["3.7", "3.8", "3.9", "3.10"])
 def tests(session):
     """Run test suite with pytest."""
     session.create_tmp()
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
     tests = session.posargs or ["tests/"]
-    if is_python_version(session, "3.6.0"):
-        session.run("pytest", *tests)
-        return
     session.run(
         "pytest",
         "--cov=nox",
@@ -59,7 +48,7 @@ def tests(session):
     session.notify("cover")
 
 
-@nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10"], venv_backend="conda")
+@nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend="conda")
 def conda_tests(session):
     """Run test suite with pytest."""
     session.create_tmp()
