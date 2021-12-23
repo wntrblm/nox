@@ -16,7 +16,7 @@ import copy
 import functools
 import inspect
 import types
-from typing import Any, Callable, Dict, Iterable, List, Optional, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from . import _typing
 
@@ -29,7 +29,7 @@ class FunctionDecorator:
         cls, func: Callable[..., Any], *args: Any, **kwargs: Any
     ) -> "FunctionDecorator":
         obj = super().__new__(cls)
-        return cast("FunctionDecorator", functools.wraps(func)(obj))
+        return functools.wraps(func)(obj)
 
 
 def _copy_func(src: Callable, name: Optional[str] = None) -> Callable:

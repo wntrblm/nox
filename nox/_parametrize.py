@@ -155,7 +155,7 @@ def parametrize_decorator(
 
 
 def update_param_specs(
-    param_specs: Iterable[Param], new_specs: List[Param]
+    param_specs: Optional[Iterable[Param]], new_specs: List[Param]
 ) -> List[Param]:
     """Produces all combinations of the given sets of specs."""
     if not param_specs:
