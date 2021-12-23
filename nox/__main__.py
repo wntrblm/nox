@@ -50,7 +50,6 @@ def main() -> None:
             tasks.discover_manifest,
             tasks.filter_manifest,
             tasks.honor_list_request,
-            tasks.verify_manifest_nonempty,
             tasks.run_manifest,
             tasks.print_summary,
             tasks.create_report,
