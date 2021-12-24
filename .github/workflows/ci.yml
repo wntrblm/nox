@@ -22,7 +22,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }}
-        run: nox --non-interactive --session "tests-${{ matrix.python-version }}" -- --full-trace
+        run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
   lint:
     runs-on: ubuntu-20.04
     steps:
@@ -35,7 +35,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check .
       - name: Lint
-        run: nox --non-interactive --session "lint"
+        run: nox --non-interactive --error-on-missing-interpreter --session "lint"
   docs:
     runs-on: ubuntu-20.04
     steps:
@@ -48,7 +48,7 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check .
       - name: Docs
-        run: nox --non-interactive --session "docs"
+        run: nox --non-interactive --error-on-missing-interpreter --session "docs"
   deploy:
     needs: build
     runs-on: ubuntu-20.04

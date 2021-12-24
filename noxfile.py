@@ -119,7 +119,7 @@ def lint(session):
     session.run("flake8", *files)
 
 
-@nox.session(python="3.9")
+@nox.session
 def docs(session):
     """Build the documentation."""
     output_dir = os.path.join(session.create_tmp(), "output")
