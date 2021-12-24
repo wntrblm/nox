@@ -63,8 +63,7 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
     if not loader:  # pragma: no cover
         raise IOError(f"Could not get module loader for {global_config.noxfile}")
     # See https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
-    # unsure why mypy doesn't like this
-    loader.exec_module(module)  # type: ignore
+    loader.exec_module(module)
     return module
 
 
