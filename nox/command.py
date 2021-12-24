@@ -32,7 +32,7 @@ class CommandFailed(Exception):
     """Raised when an executed command returns a non-success status code."""
 
     def __init__(self, reason: Optional[str] = None) -> None:
-        super(CommandFailed, self).__init__(reason)
+        super().__init__(reason)
         self.reason = reason
 
 

@@ -65,11 +65,11 @@ class Manifest:
         global_config: argparse.Namespace,
         module_docstring: Optional[str] = None,
     ) -> None:
-        self._all_sessions = []  # type: List[SessionRunner]
-        self._queue = []  # type: List[SessionRunner]
-        self._consumed = []  # type: List[SessionRunner]
-        self._config = global_config  # type: argparse.Namespace
-        self.module_docstring = module_docstring  # type: Optional[str]
+        self._all_sessions: List[SessionRunner] = []
+        self._queue: List[SessionRunner] = []
+        self._consumed: List[SessionRunner] = []
+        self._config: argparse.Namespace = global_config
+        self.module_docstring: Optional[str] = module_docstring
 
         # Create the sessions based on the provided session functions.
         for name, func in session_functions.items():
@@ -217,7 +217,7 @@ class Manifest:
         if self._config.extra_pythons:
             # If extra python is provided, expand the func.python list to
             # include additional python interpreters
-            extra_pythons = self._config.extra_pythons  # type: List[str]
+            extra_pythons: List[str] = self._config.extra_pythons
             if isinstance(func.python, (list, tuple, set)):
                 func.python = _unique_list(*func.python, *extra_pythons)
             elif not multi and func.python:
@@ -253,7 +253,7 @@ class Manifest:
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
-        parametrize = func.parametrize  # type: ignore
+        parametrize = func.parametrize  # type: ignore[attr-defined]
         calls = Call.generate_calls(func, parametrize)
         for call in calls:
             long_names = []

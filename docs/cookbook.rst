@@ -40,7 +40,7 @@ Enter the ``dev`` nox session:
 .. code-block:: python
 
     import os
-    
+
     import nox
 
     # It's a good idea to keep your dev session out of the default list
@@ -91,7 +91,7 @@ Even more so with a sprinkling of Nox:
         Kicks off an automated release process by creating and pushing a new tag.
 
         Invokes bump2version with the posarg setting the version.
-        
+
         Usage:
         $ nox -s release -- [major|minor|patch]
         """

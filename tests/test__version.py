@@ -46,7 +46,7 @@ def test_needs_version_default() -> None:
 def test_get_nox_version() -> None:
     """It returns something that looks like a Nox version."""
     result = get_nox_version()
-    year, month, day = [int(part) for part in result.split(".")[:3]]
+    year, month, day, *_ = (int(part) for part in result.split("."))
     assert year >= 2020
 
 

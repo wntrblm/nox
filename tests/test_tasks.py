@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import argparse
+import builtins
 import copy
-import io
 import json
 import os
 import platform
@@ -456,7 +456,7 @@ def test_print_summary():
 
 def test_create_report_noop():
     config = _options.options.namespace(report=None)
-    with mock.patch.object(io, "open", autospec=True) as open_:
+    with mock.patch.object(builtins, "open", autospec=True) as open_:
         results = tasks.create_report(mock.sentinel.RESULTS, config)
         assert not open_.called
     assert results is mock.sentinel.RESULTS
@@ -472,7 +472,7 @@ def test_create_report():
             status=sessions.Status.SUCCESS,
         )
     ]
-    with mock.patch.object(io, "open", autospec=True) as open_:
+    with mock.patch.object(builtins, "open", autospec=True) as open_:
         with mock.patch.object(json, "dump", autospec=True) as dump:
             answer = tasks.create_report(results, config)
             assert answer is results

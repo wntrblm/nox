@@ -36,7 +36,7 @@ class InvalidVersionSpecifier(Exception):
 
 def get_nox_version() -> str:
     """Return the version of the installed Nox package."""
-    return metadata.version("nox")  # type: ignore
+    return metadata.version("nox")  # type: ignore[no-untyped-call]
 
 
 def _parse_string_constant(node: ast.AST) -> Optional[str]:  # pragma: no cover

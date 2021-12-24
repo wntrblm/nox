@@ -81,7 +81,7 @@ class Param:
 def _apply_param_specs(param_specs: List[Param], f: Any) -> Any:
     previous_param_specs = getattr(f, "parametrize", None)
     new_param_specs = update_param_specs(previous_param_specs, param_specs)
-    setattr(f, "parametrize", new_param_specs)
+    f.parametrize = new_param_specs
     return f
 
 
@@ -119,7 +119,7 @@ def parametrize_decorator(
 
     # If there's only one arg_name, arg_values_list should be a single item
     # or list. Transform it so it'll work with the combine step.
-    _arg_values_list = []  # type: List[Union[Param, Iterable[Union[Any, ArgValue]]]]
+    _arg_values_list: List[Union[Param, Iterable[Union[Any, ArgValue]]]] = []
     if len(arg_names) == 1:
         # In this case, the arg_values_list can also just be a single item.
         # Must be mutable for the transformation steps
@@ -141,7 +141,7 @@ def parametrize_decorator(
         ids = []
 
     # Generate params for each item in the param_args_values list.
-    param_specs = []  # type: List[Param]
+    param_specs: List[Param] = []
     for param_arg_values, param_id in itertools.zip_longest(_arg_values_list, ids):
         if isinstance(param_arg_values, Param):
             param_spec = param_arg_values

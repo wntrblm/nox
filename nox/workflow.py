@@ -43,7 +43,7 @@ def execute(
         return_value = None
         for function_ in workflow:
             # Send the previous task's return value if there was one.
-            args = []  # type: List[Any]
+            args: List[Any] = []
             if return_value is not None:
                 args.append(return_value)
             return_value = function_(*args, global_config=global_config)

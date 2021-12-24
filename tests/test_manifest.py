@@ -48,7 +48,7 @@ def create_mock_config():
 def test__normalize_arg():
     assert _normalize_arg('test(foo="bar")') == _normalize_arg('test(foo="bar")')
 
-    # In the case of SyntaxError it should fallback to strng
+    # In the case of SyntaxError it should fallback to string
     assert (
         _normalize_arg("datetime.datetime(1990; 2, 18),")
         == "datetime.datetime(1990; 2, 18),"
@@ -81,7 +81,7 @@ def test_contains():
     assert "baz" not in manifest
 
     # Establish that __contains__ works post-iteration.
-    for session in manifest:
+    for _session in manifest:
         pass
     assert "foo" in manifest
     assert "bar" in manifest
@@ -104,7 +104,7 @@ def test_getitem():
 
     # Establish that the sessions are still present even after being
     # consumed by iteration.
-    for session in manifest:
+    for _session in manifest:
         pass
     assert manifest["foo"].func is sessions["foo"]
     assert manifest["bar"].func is sessions["bar"]
@@ -144,7 +144,7 @@ def test_len():
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     assert len(manifest) == 2
-    for session in manifest:
+    for _session in manifest:
         assert len(manifest) == 2
 
 

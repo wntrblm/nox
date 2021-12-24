@@ -54,4 +54,4 @@ If you've contributed to Nox, you can get a cute little Nox sticker. Reach out t
 
 ## Getting paid
 
-Contributions to Nox can be expensed through [our Open Collective](https://opencollective.com/python-nox). The maintainers will let you know when and for how much you can expense contributions, but always feel free to ask. 
+Contributions to Nox can be expensed through [our Open Collective](https://opencollective.com/python-nox). The maintainers will let you know when and for how much you can expense contributions, but always feel free to ask.

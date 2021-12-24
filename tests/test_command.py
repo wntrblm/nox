@@ -121,7 +121,7 @@ def test_run_env_unicode():
 
 
 def test_run_env_systemroot():
-    systemroot = os.environ.setdefault("SYSTEMROOT", str("sigil"))
+    systemroot = os.environ.setdefault("SYSTEMROOT", "sigil")
 
     result = nox.command.run(
         [PYTHON, "-c", 'import os; print(os.environ["SYSTEMROOT"])'], silent=True
@@ -460,7 +460,7 @@ def test_output_decoding() -> None:
 
 
 def test_output_decoding_non_ascii() -> None:
-    result = nox.popen.decode_output("ü".encode("utf-8"))
+    result = nox.popen.decode_output("ü".encode())
 
     assert result == "ü"
 

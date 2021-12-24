@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # nox documentation build configuration file, created by
 # sphinx-quickstart on Sun Feb 28 00:05:25 2016.
