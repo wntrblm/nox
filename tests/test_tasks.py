@@ -249,7 +249,7 @@ def test_filter_manifest_pythons_not_found(caplog):
     )
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value == 3
-    assert "Python version selection caused no sessions to selected." in caplog.text
+    assert "Python version selection caused no sessions to be selected." in caplog.text
 
 
 def test_filter_manifest_keywords():
