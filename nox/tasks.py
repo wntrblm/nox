@@ -187,7 +187,7 @@ def filter_manifest(
     if global_config.pythons:
         manifest.filter_by_python_interpreter(global_config.pythons)
         if not manifest:
-            logger.error("Python version selection caused no sessions to selected.")
+            logger.error("Python version selection caused no sessions to be selected.")
             return 3
 
     # Filter by keywords.
