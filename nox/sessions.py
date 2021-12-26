@@ -267,12 +267,10 @@ class Session:
         ``try...finally`` block for cleanup runs, that will run even if the other runs fail::
 
            try:
-              session.run("git", "stash", "-k", "-u")
-              session.run("isort", "--check-only", "--profile=black", ".")
-              session.run("black", "--check", ".")
-              session.run("mypy", "--strict", ".")
+               session.run("coverage", "run", "-m", "pytest")
            finally:
-              session.run("git", "stash", "pop")
+               # Display coverage report even when tests fail.
+               session.run("coverage", "report")
 
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
