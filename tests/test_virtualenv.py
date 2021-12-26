@@ -230,7 +230,14 @@ def test_conda_env_create_verbose(make_conda):
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 def test_condaenv_bin_windows(make_conda):
     venv, dir_ = make_conda()
-    assert [dir_.strpath, dir_.join("Scripts").strpath] == venv.bin_paths
+    assert [
+        dir_.strpath,
+        dir_.join("Library", "mingw-w64", "bin").strpath,
+        dir_.join("Library", "usr", "bin").strpath,
+        dir_.join("Library", "bin").strpath,
+        dir_.join("Scripts").strpath,
+        dir_.join("bin").strpath,
+    ] == venv.bin_paths
 
 
 @pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
