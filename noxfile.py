@@ -93,7 +93,9 @@ def cover(session):
 @nox.session(python="3.9")
 def lint(session):
     session.install("pre-commit")
-    session.run("pre-commit", "run", "--all-files", *session.posargs)
+    session.run(
+        "pre-commit", "run", "--all-files", "--show-diff-on-failure", *session.posargs
+    )
 
 
 @nox.session
