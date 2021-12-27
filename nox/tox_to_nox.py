@@ -15,7 +15,6 @@
 """Naively converts tox.ini files into noxfile.py files."""
 
 import argparse
-import io
 import pkgutil
 from typing import Any, Iterator
 
@@ -23,7 +22,7 @@ import jinja2
 import tox.config
 
 _TEMPLATE = jinja2.Template(
-    pkgutil.get_data(__name__, "tox_to_nox.jinja2").decode("utf-8"),  # type: ignore
+    pkgutil.get_data(__name__, "tox_to_nox.jinja2").decode("utf-8"),  # type: ignore[union-attr]
     extensions=["jinja2.ext.do"],
 )
 
@@ -41,5 +40,5 @@ def main() -> None:
     config = tox.config.parseconfig([])
     output = _TEMPLATE.render(config=config, wrapjoin=wrapjoin)
 
-    with io.open(args.output, "w") as outfile:
+    with open(args.output, "w") as outfile:
         outfile.write(output)

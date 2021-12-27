@@ -22,7 +22,7 @@ from ._typing import Python
 
 F = TypeVar("F", bound=Callable[..., Any])
 
-_REGISTRY = collections.OrderedDict()  # type: collections.OrderedDict[str, Func]
+_REGISTRY: "collections.OrderedDict[str, Func]" = collections.OrderedDict()
 
 
 @overload

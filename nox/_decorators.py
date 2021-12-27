@@ -35,14 +35,14 @@ class FunctionDecorator:
 def _copy_func(src: Callable, name: Optional[str] = None) -> Callable:
     dst = types.FunctionType(
         src.__code__,
-        src.__globals__,  # type: ignore
+        src.__globals__,  # type: ignore[attr-defined]
         name=name or src.__name__,
-        argdefs=src.__defaults__,  # type: ignore
-        closure=src.__closure__,  # type: ignore
+        argdefs=src.__defaults__,  # type: ignore[attr-defined]
+        closure=src.__closure__,  # type: ignore[attr-defined]
     )
     dst.__dict__.update(copy.deepcopy(src.__dict__))
     dst = functools.update_wrapper(dst, src)
-    dst.__kwdefaults__ = src.__kwdefaults__  # type: ignore
+    dst.__kwdefaults__ = src.__kwdefaults__  # type: ignore[attr-defined]
     return dst
 
 

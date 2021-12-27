@@ -14,7 +14,6 @@
 
 import ast
 import importlib.util
-import io
 import json
 import os
 import sys
@@ -51,19 +50,19 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
         "user_nox_module", global_config.noxfile
     )
     if not spec:
-        raise IOError(f"Could not get module spec from {global_config.noxfile}")
+        raise OSError(f"Could not get module spec from {global_config.noxfile}")
 
     module = importlib.util.module_from_spec(spec)
     if not module:
-        raise IOError(f"Noxfile {global_config.noxfile} is not a valid python module.")
+        raise OSError(f"Noxfile {global_config.noxfile} is not a valid python module.")
 
     sys.modules["user_nox_module"] = module
 
     loader = spec.loader
     if not loader:  # pragma: no cover
-        raise IOError(f"Could not get module loader for {global_config.noxfile}")
+        raise OSError(f"Could not get module loader for {global_config.noxfile}")
     # See https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
-    loader.exec_module(module)
+    loader.exec_module(module)  # type: ignore[attr-defined]
     return module
 
 
@@ -111,7 +110,7 @@ def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
             f"Failed to load Noxfile {global_config.noxfile}, no such file exists."
         )
         return 2
-    except (IOError, OSError):
+    except OSError:
         logger.exception(f"Failed to load Noxfile {global_config.noxfile}")
         return 2
 
@@ -360,7 +359,7 @@ def create_report(results: List[Result], global_config: Namespace) -> List[Resul
         return results
 
     # Write the JSON report.
-    with io.open(global_config.report, "w") as report_file:
+    with open(global_config.report, "w") as report_file:
         json.dump(
             {
                 "result": int(all(results)),

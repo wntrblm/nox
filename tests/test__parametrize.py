@@ -34,7 +34,7 @@ def test_param_eq(param, other, expected):
 
 def test_param_eq_fail():
     with pytest.raises(NotImplementedError):
-        _parametrize.Param() == "a"
+        _parametrize.Param() == "a"  # noqa: B015
 
 
 def test_parametrize_decorator_one():

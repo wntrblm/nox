@@ -71,7 +71,7 @@ class NoxColoredFormatter(ColoredFormatter):
         return super().format(record)
 
 
-class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore
+class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore[misc]
     def __init__(self, name: str, level: int = logging.NOTSET):
         super().__init__(name, level)
         logging.addLevelName(SUCCESS, "SUCCESS")
