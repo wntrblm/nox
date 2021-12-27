@@ -20,6 +20,7 @@ import pathlib
 import re
 import sys
 import unicodedata
+import warnings
 from typing import (
     Any,
     Callable,
@@ -487,6 +488,15 @@ class Session:
         ):  # pragma: no cover
             raise ValueError(
                 "A session without a virtualenv can not install dependencies."
+            )
+        if isinstance(venv, PassthroughEnv):
+            warnings.warn(
+                f"Session {self.name} does not have a virtual environment, "
+                "so use of session.install() is deprecated since it would modify "
+                "the global Python environment. If you're really sure that is "
+                'what you want to do, use session.run("pip", "install", ...) instead.',
+                category=FutureWarning,
+                stacklevel=2,
             )
         if not args:
             raise ValueError("At least one argument required to install().")

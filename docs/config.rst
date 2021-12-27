@@ -149,6 +149,14 @@ If you want to disable virtualenv creation altogether, you can set ``python`` to
     def tests(session):
         pass
 
+Use of :func:`session.install()` is deprecated without a virtualenv since it modifies the global Python environment. If this is what you really want, use :func:`session.run()` and pip instead.
+
+.. code-block:: python
+
+    @nox.session(python=False)
+    def tests(session):
+        session.run("pip", "install", "nox")
+
 You can also specify that the virtualenv should *always* be reused instead of recreated every time:
 
 .. code-block:: python
