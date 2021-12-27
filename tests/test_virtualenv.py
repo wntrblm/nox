@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import os
+import re
 import shutil
+import subprocess
 import sys
 from textwrap import dedent
 from unittest import mock
@@ -244,6 +246,24 @@ def test_condaenv_bin_windows(make_conda):
 def test_condaenv_(make_conda):
     venv, dir_ = make_conda()
     assert not venv.is_offline()
+
+
+@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+def test_condaenv_detection(make_conda):
+    venv, dir_ = make_conda()
+    venv.create()
+
+    proc_result = subprocess.run(
+        [py.path.local.sysfind("conda").strpath, "list"],
+        env=venv.env,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    output = proc_result.stdout.decode()
+    path_regex = re.compile(r"packages in environment at (?P<env_dir>.+):")
+
+    assert path_regex.search(output).group("env_dir") == dir_.strpath
 
 
 def test_constructor_defaults(make_one):
