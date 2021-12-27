@@ -24,7 +24,7 @@ import nox
 ON_WINDOWS_CI = "CI" in os.environ and platform.system() == "Windows"
 
 # Skip 'conda_tests' if user doesn't have conda installed
-nox.options.sessions = ["tests", "cover", "blacken", "lint", "docs"]
+nox.options.sessions = ["tests", "cover", "lint", "docs"]
 if shutil.which("conda"):
     nox.options.sessions.append("conda_tests")
 
@@ -81,6 +81,7 @@ def cover(session):
 
 @nox.session(python="3.9")
 def lint(session):
+    """Run pre-commit linting."""
     session.install("pre-commit")
     session.run(
         "pre-commit", "run", "--all-files", "--show-diff-on-failure", *session.posargs
