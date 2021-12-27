@@ -231,9 +231,16 @@ class CondaEnv(ProcessEnv):
     @property
     def bin_paths(self) -> List[str]:
         """Returns the location of the conda env's bin folder."""
-        # see https://docs.anaconda.com/anaconda/user-guide/tasks/integration/python-path/#examples
+        # see https://github.com/conda/conda/blob/f60f0f1643af04ed9a51da3dd4fa242de81e32f4/conda/activate.py#L563-L572
         if _SYSTEM == "Windows":
-            return [self.location, os.path.join(self.location, "Scripts")]
+            return [
+                self.location,
+                os.path.join(self.location, "Library", "mingw-w64", "bin"),
+                os.path.join(self.location, "Library", "usr", "bin"),
+                os.path.join(self.location, "Library", "bin"),
+                os.path.join(self.location, "Scripts"),
+                os.path.join(self.location, "bin"),
+            ]
         else:
             return [os.path.join(self.location, "bin")]
 

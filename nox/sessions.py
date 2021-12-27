@@ -262,6 +262,16 @@ class Session:
 
             session.run('cmd', '/c', 'del', 'docs/modules.rst')
 
+        If ``session.run`` fails, it will stop the session and will not run the next steps.
+        Basically, this will raise a Python exception. Taking this in count, you can use a
+        ``try...finally`` block for cleanup runs, that will run even if the other runs fail::
+
+           try:
+               session.run("coverage", "run", "-m", "pytest")
+           finally:
+               # Display coverage report even when tests fail.
+               session.run("coverage", "report")
+
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
         :type env: dict or None
