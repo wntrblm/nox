@@ -209,7 +209,7 @@ def test_discover_session_functions_decorator():
 
 def test_filter_manifest():
     config = _options.options.namespace(
-        sessions=(), pythons=(), keywords=(), posargs=[]
+        sessions=None, pythons=(), keywords=(), posargs=[]
     )
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
@@ -228,7 +228,7 @@ def test_filter_manifest_not_found():
 
 def test_filter_manifest_pythons():
     config = _options.options.namespace(
-        sessions=(), pythons=("3.8",), keywords=(), posargs=[]
+        sessions=None, pythons=("3.8",), keywords=(), posargs=[]
     )
     manifest = Manifest(
         {"foo": session_func_with_python, "bar": session_func, "baz": session_func},
@@ -239,9 +239,22 @@ def test_filter_manifest_pythons():
     assert len(manifest) == 1
 
 
+def test_filter_manifest_pythons_not_found(caplog):
+    config = _options.options.namespace(
+        sessions=None, pythons=("1.2",), keywords=(), posargs=[]
+    )
+    manifest = Manifest(
+        {"foo": session_func_with_python, "bar": session_func, "baz": session_func},
+        config,
+    )
+    return_value = tasks.filter_manifest(manifest, config)
+    assert return_value == 3
+    assert "Python version selection caused no sessions to be selected." in caplog.text
+
+
 def test_filter_manifest_keywords():
     config = _options.options.namespace(
-        sessions=(), pythons=(), keywords="foo or bar", posargs=[]
+        sessions=None, pythons=(), keywords="foo or bar", posargs=[]
     )
     manifest = Manifest(
         {"foo": session_func, "bar": session_func, "baz": session_func}, config
@@ -251,9 +264,21 @@ def test_filter_manifest_keywords():
     assert len(manifest) == 2
 
 
+def test_filter_manifest_keywords_not_found(caplog):
+    config = _options.options.namespace(
+        sessions=None, pythons=(), keywords="mouse or python", posargs=[]
+    )
+    manifest = Manifest(
+        {"foo": session_func, "bar": session_func, "baz": session_func}, config
+    )
+    return_value = tasks.filter_manifest(manifest, config)
+    assert return_value == 3
+    assert "No sessions selected after filtering by keyword." in caplog.text
+
+
 def test_filter_manifest_keywords_syntax_error():
     config = _options.options.namespace(
-        sessions=(), pythons=(), keywords="foo:bar", posargs=[]
+        sessions=None, pythons=(), keywords="foo:bar", posargs=[]
     )
     manifest = Manifest({"foo_bar": session_func, "foo_baz": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
@@ -346,18 +371,41 @@ def test_honor_list_request_doesnt_print_docstring_if_not_present(capsys):
     assert "Hello I'm a docstring" not in out
 
 
+def test_empty_session_list_in_noxfile(capsys):
+    config = _options.options.namespace(noxfile="noxfile.py", sessions=(), posargs=[])
+    manifest = Manifest({"session": session_func}, config)
+    return_value = tasks.filter_manifest(manifest, global_config=config)
+    assert return_value == 0
+    assert "No sessions selected." in capsys.readouterr().out
+
+
+def test_empty_session_None_in_noxfile(capsys):
+    config = _options.options.namespace(noxfile="noxfile.py", sessions=None, posargs=[])
+    manifest = Manifest({"session": session_func}, config)
+    return_value = tasks.filter_manifest(manifest, global_config=config)
+    assert return_value == manifest
+
+
 def test_verify_manifest_empty():
     config = _options.options.namespace(sessions=(), keywords=())
     manifest = Manifest({}, config)
-    return_value = tasks.verify_manifest_nonempty(manifest, global_config=config)
+    return_value = tasks.filter_manifest(manifest, global_config=config)
     assert return_value == 3
 
 
 def test_verify_manifest_nonempty():
+    config = _options.options.namespace(sessions=None, keywords=(), posargs=[])
+    manifest = Manifest({"session": session_func}, config)
+    return_value = tasks.filter_manifest(manifest, global_config=config)
+    assert return_value == manifest
+
+
+def test_verify_manifest_list(capsys):
     config = _options.options.namespace(sessions=(), keywords=(), posargs=[])
     manifest = Manifest({"session": session_func}, config)
-    return_value = tasks.verify_manifest_nonempty(manifest, global_config=config)
-    assert return_value == manifest
+    return_value = tasks.filter_manifest(manifest, global_config=config)
+    assert return_value == 0
+    assert "Please select a session" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("with_warnings", [False, True], ids="with_warnings={}".format)
