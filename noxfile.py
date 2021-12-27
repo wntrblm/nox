@@ -29,7 +29,6 @@ if shutil.which("conda"):
     nox.options.sessions.append("conda_tests")
 
 
-
 def is_python_version(session, version):
     if not version.startswith(session.python):
         return False
