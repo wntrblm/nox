@@ -273,7 +273,7 @@ If you want to queue up (or "notify") another session from the current one, you 
         session.install("pytest")
         session.run("pytest")
         # Here we queue up the test coverage session to run next
-        session.notify("coverage") 
+        session.notify("coverage")
 
     @nox.session
     def coverage(session):

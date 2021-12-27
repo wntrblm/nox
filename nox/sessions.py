@@ -128,7 +128,7 @@ class Session:
         self._runner = runner
 
     @property
-    def __dict__(self) -> "Dict[str, SessionRunner]":  # type: ignore
+    def __dict__(self) -> "Dict[str, SessionRunner]":  # type: ignore[override]
         """Attribute dictionary for object inspection.
 
         This is needed because ``__slots__`` turns off ``__dict__`` by
@@ -411,7 +411,7 @@ class Session:
         """
         venv = self._runner.venv
 
-        prefix_args = ()  # type: Tuple[str, ...]
+        prefix_args: Tuple[str, ...] = ()
         if isinstance(venv, CondaEnv):
             prefix_args = ("--prefix", venv.location)
         elif not isinstance(venv, PassthroughEnv):  # pragma: no cover
@@ -431,7 +431,7 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        extraopts = []  # type: List[str]
+        extraopts: List[str] = []
         if auto_offline and venv.is_offline():
             logger.warning(
                 "Automatically setting the `--offline` flag as conda repo seems unreachable."
@@ -612,14 +612,14 @@ class SessionRunner:
         if backend is None or backend == "virtualenv":
             self.venv = VirtualEnv(
                 self.envdir,
-                interpreter=self.func.python,  # type: ignore
+                interpreter=self.func.python,  # type: ignore[arg-type]
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
             )
         elif backend in {"conda", "mamba"}:
             self.venv = CondaEnv(
                 self.envdir,
-                interpreter=self.func.python,  # type: ignore
+                interpreter=self.func.python,  # type: ignore[arg-type]
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
                 conda_cmd=backend,
@@ -627,7 +627,7 @@ class SessionRunner:
         elif backend == "venv":
             self.venv = VirtualEnv(
                 self.envdir,
-                interpreter=self.func.python,  # type: ignore
+                interpreter=self.func.python,  # type: ignore[arg-type]
                 reuse_existing=reuse_existing,
                 venv=True,
                 venv_params=self.func.venv_params,

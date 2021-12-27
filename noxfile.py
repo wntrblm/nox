@@ -90,33 +90,12 @@ def cover(session):
     session.run("coverage", "erase")
 
 
-black_pins = ["black==21.12b0", "isort==5.10.1"]
-
-
-@nox.session(python="3.9")
-def blacken(session):
-    """Run black code formatter."""
-    session.install(*black_pins)
-    files = ["nox", "tests", "noxfile.py", "docs/conf.py"]
-    session.run("black", *files)
-    session.run("isort", *files)
-
-
 @nox.session(python="3.9")
 def lint(session):
-    session.install(
-        *black_pins,
-        "flake8==4.0.1",
-        "mypy==0.930",
-        "types-jinja2",
-        "packaging",
-        "importlib_metadata",
+    session.install("pre-commit")
+    session.run(
+        "pre-commit", "run", "--all-files", "--show-diff-on-failure", *session.posargs
     )
-    session.run("mypy", "--show-error-codes")
-    files = ["nox", "tests", "noxfile.py", "docs/conf.py"]
-    session.run("black", "--check", *files)
-    session.run("isort", "--check", *files)
-    session.run("flake8", *files)
 
 
 @nox.session

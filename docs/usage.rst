@@ -128,7 +128,7 @@ Note that using this option does not change the backend for sessions where ``ven
 Forcing the sessions backend
 ----------------------------
 
-You might work in a different environment than a project's default continuous integration setttings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and nox file configuration. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
+You might work in a different environment than a project's default continuous integration settings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and nox file configuration. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
 
 .. code-block:: console
 

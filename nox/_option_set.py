@@ -191,12 +191,10 @@ class OptionSet:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.parser_args = args
         self.parser_kwargs = kwargs
-        self.options = (
+        self.options: "collections.OrderedDict[str, Option]" = collections.OrderedDict()
+        self.groups: "collections.OrderedDict[str, OptionGroup]" = (
             collections.OrderedDict()
-        )  # type: collections.OrderedDict[str, Option]
-        self.groups = (
-            collections.OrderedDict()
-        )  # type: collections.OrderedDict[str, OptionGroup]
+        )
 
     def add_options(self, *args: Option) -> None:
         """Adds a sequence of Options to the OptionSet.
@@ -242,8 +240,8 @@ class OptionSet:
             argument = groups[option.group.name].add_argument(
                 *option.flags, help=option.help, default=option.default, **option.kwargs
             )
-            if getattr(option, "completer"):
-                setattr(argument, "completer", option.completer)
+            if option.completer:
+                argument.completer = option.completer  # type: ignore[attr-defined]
 
         return parser
 

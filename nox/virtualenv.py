@@ -52,7 +52,7 @@ class ProcessEnv:
     is_sandboxed = False
 
     # Special programs that aren't included in the environment.
-    allowed_globals = ()  # type: _typing.ClassVar[Tuple[Any, ...]]
+    allowed_globals: _typing.ClassVar[Tuple[Any, ...]] = ()
 
     def __init__(
         self, bin_paths: None = None, env: Optional[Mapping[str, str]] = None
@@ -203,7 +203,7 @@ class CondaEnv(ProcessEnv):
         self.reuse_existing = reuse_existing
         self.venv_params = venv_params if venv_params else []
         self.conda_cmd = conda_cmd
-        super(CondaEnv, self).__init__()
+        super().__init__()
 
     def _clean_location(self) -> bool:
         """Deletes existing conda environment"""
@@ -285,7 +285,7 @@ class CondaEnv(ProcessEnv):
             # DNS resolution to detect situation (1) or (2).
             host = gethostbyname("repo.anaconda.com")
             return host is None
-        except:  # pragma: no cover # noqa E722
+        except BaseException:  # pragma: no cover
             return True
 
 
@@ -323,11 +323,11 @@ class VirtualEnv(ProcessEnv):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
-        self._resolved = None  # type: Union[None, str, InterpreterNotFound]
+        self._resolved: Union[None, str, InterpreterNotFound] = None
         self.reuse_existing = reuse_existing
         self.venv_or_virtualenv = "venv" if venv else "virtualenv"
         self.venv_params = venv_params if venv_params else []
-        super(VirtualEnv, self).__init__(env={"VIRTUAL_ENV": self.location})
+        super().__init__(env={"VIRTUAL_ENV": self.location})
 
     def _clean_location(self) -> bool:
         """Deletes any existing virtual environment"""
