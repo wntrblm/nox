@@ -228,7 +228,7 @@ def test_filter_manifest_not_found():
 
 def test_filter_manifest_pythons():
     config = _options.options.namespace(
-        sessions=(), pythons=("3.8",), keywords=(), posargs=[]
+        sessions=None, pythons=("3.8",), keywords=(), posargs=[]
     )
     manifest = Manifest(
         {"foo": session_func_with_python, "bar": session_func, "baz": session_func},
@@ -241,7 +241,7 @@ def test_filter_manifest_pythons():
 
 def test_filter_manifest_pythons_not_found(caplog):
     config = _options.options.namespace(
-        sessions=(), pythons=("1.2",), keywords=(), posargs=[]
+        sessions=None, pythons=("1.2",), keywords=(), posargs=[]
     )
     manifest = Manifest(
         {"foo": session_func_with_python, "bar": session_func, "baz": session_func},
@@ -254,7 +254,7 @@ def test_filter_manifest_pythons_not_found(caplog):
 
 def test_filter_manifest_keywords():
     config = _options.options.namespace(
-        sessions=(), pythons=(), keywords="foo or bar", posargs=[]
+        sessions=None, pythons=(), keywords="foo or bar", posargs=[]
     )
     manifest = Manifest(
         {"foo": session_func, "bar": session_func, "baz": session_func}, config
@@ -266,7 +266,7 @@ def test_filter_manifest_keywords():
 
 def test_filter_manifest_keywords_not_found(caplog):
     config = _options.options.namespace(
-        sessions=(), pythons=(), keywords="mouse or python", posargs=[]
+        sessions=None, pythons=(), keywords="mouse or python", posargs=[]
     )
     manifest = Manifest(
         {"foo": session_func, "bar": session_func, "baz": session_func}, config
@@ -278,7 +278,7 @@ def test_filter_manifest_keywords_not_found(caplog):
 
 def test_filter_manifest_keywords_syntax_error():
     config = _options.options.namespace(
-        sessions=(), pythons=(), keywords="foo:bar", posargs=[]
+        sessions=None, pythons=(), keywords="foo:bar", posargs=[]
     )
     manifest = Manifest({"foo_bar": session_func, "foo_baz": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)

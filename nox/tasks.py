@@ -174,14 +174,19 @@ def filter_manifest(
 
     # Filter by the name of any explicit sessions.
     # This can raise KeyError if a specified session does not exist;
-    # log this if it happens.
-    if global_config.sessions:
+    # log this if it happens. The sessions does not come from the noxfile
+    # if keywords is not empty.
+    if global_config.sessions is not None:
         try:
             manifest.filter_by_name(global_config.sessions)
         except KeyError as exc:
             logger.error("Error while collecting sessions.")
             logger.error(exc.args[0])
             return 3
+    if not manifest and not global_config.list_sessions:
+        print("No sessions selected. Please select a session with -s <session name>.\n")
+        _produce_listing(manifest, global_config)
+        return 0
 
     # Filter by python interpreter versions.
     if global_config.pythons:
@@ -207,20 +212,6 @@ def filter_manifest(
     if not manifest and not global_config.list_sessions:
         logger.error("No sessions selected after filtering by keyword.")
         return 3
-
-    # If the global_config is set to an empty list, and a list was not
-    # requested, and no filtering was done,
-    if (
-        global_config.sessions is not None
-        and not global_config.sessions
-        and not global_config.list_sessions
-        and not global_config.keywords
-        and not global_config.pythons
-    ):
-        manifest.filter_by_name(global_config.sessions)
-        print("No sessions selected. Please select a session with -s <session name>.\n")
-        _produce_listing(manifest, global_config)
-        return 0
 
     # Return the modified manifest.
     return manifest
