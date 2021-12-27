@@ -28,7 +28,6 @@ nox.options.sessions = ["tests", "cover", "lint", "docs"]
 if shutil.which("conda"):
     nox.options.sessions.append("conda_tests")
 
-nox.options.sessions = []
 
 
 def is_python_version(session, version):
