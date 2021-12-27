@@ -186,7 +186,7 @@ def filter_manifest(
     # Filter by python interpreter versions.
     if global_config.pythons:
         manifest.filter_by_python_interpreter(global_config.pythons)
-        if not manifest:
+        if not manifest and not global_config.list_sessions:
             logger.error("Python version selection caused no sessions to be selected.")
             return 3
 
@@ -204,28 +204,29 @@ def filter_manifest(
         # (which is an error condition later).
         manifest.filter_by_keywords(global_config.keywords)
 
-    if not manifest:
+    if not manifest and not global_config.list_sessions:
         logger.error("No sessions selected after filtering by keyword.")
         return 3
 
+    # If the global_config is set to an empty list, and a list was not
+    # requested, and no filtering was done,
     if (
-        not global_config.keywords
-        and not global_config.pythons
+        global_config.sessions is not None
         and not global_config.sessions
         and not global_config.list_sessions
-        and global_config.sessions is not None
+        and not global_config.keywords
+        and not global_config.pythons
     ):
+        manifest.filter_by_name(global_config.sessions)
         print("No sessions selected. Please select a session with -s <session name>.\n")
-        _produce_listing(manifest, global_config, select=False)
+        _produce_listing(manifest, global_config)
         return 0
 
     # Return the modified manifest.
     return manifest
 
 
-def _produce_listing(
-    manifest: Manifest, global_config: Namespace, *, select: bool = True
-) -> None:
+def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     # If the user just asked for a list of sessions, print that
     # and any docstring specified in noxfile.py and be done. This
     # can also be called if noxfile sessions is an empty list.
@@ -242,7 +243,7 @@ def _produce_listing(
     for session, selected in manifest.list_all_sessions():
         output = "{marker} {color}{session}{reset}"
 
-        if selected or not select:
+        if selected:
             marker = "*"
             color = selected_color
         else:
@@ -262,10 +263,9 @@ def _produce_listing(
             )
         )
 
-    if select:
-        print(
-            f"\nsessions marked with {selected_color}*{reset} are selected, sessions marked with {skipped_color}-{reset} are skipped."
-        )
+    print(
+        f"\nsessions marked with {selected_color}*{reset} are selected, sessions marked with {skipped_color}-{reset} are skipped."
+    )
 
 
 def honor_list_request(
