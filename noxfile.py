@@ -91,11 +91,17 @@ def cover(session):
 
 
 @nox.session(python="3.9")
-def lint(session):
+def lint(session: nox.Session):
     """Run pre-commit linting."""
     session.install("pre-commit")
+    # See https://github.com/theacodes/nox/issues/545
+    # and https://github.com/pre-commit/pre-commit/issues/2178#issuecomment-1002163763
     session.run(
-        "pre-commit", "run", "--all-files", "--show-diff-on-failure", *session.posargs
+        "pre-commit",
+        "run",
+        "--all-files",
+        "--show-diff-on-failure",
+        env={"SETUPTOOLS_USE_DISTUTILS": "stdlib"},
     )
 
 
