@@ -118,6 +118,23 @@ class Status(enum.Enum):
     SKIPPED = 2
 
 
+class _WorkingDirContext:
+    def __init__(self, dir: Union[str, os.PathLike]) -> None:
+        self._prev_working_dir = os.getcwd()
+        os.chdir(dir)
+
+    def __enter__(self) -> "_WorkingDirContext":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        os.chdir(self._prev_working_dir)
+
+
 class Session:
     """The Session object is passed into each user-defined session function.
 
@@ -212,23 +229,7 @@ class Session:
         """
         return self._runner.global_config.invoked_from
 
-    class _WorkingDirContext:
-        def __init__(self, dir: Union[str, os.PathLike]) -> None:
-            self._prev_working_dir = os.getcwd()
-            os.chdir(dir)
-
-        def __enter__(self) -> "Session._WorkingDirContext":
-            return self
-
-        def __exit__(
-            self,
-            exc_type: Optional[Type[BaseException]],
-            exc_value: Optional[BaseException],
-            traceback: Optional[TracebackType],
-        ) -> None:
-            os.chdir(self._prev_working_dir)
-
-    def chdir(self, dir: Union[str, os.PathLike]) -> "Session._WorkingDirContext":
+    def chdir(self, dir: Union[str, os.PathLike]) -> _WorkingDirContext:
         """Change the current working directory.
 
         Can be used as a context manager to automatically restore the working directory::
@@ -242,7 +243,7 @@ class Session:
 
         """
         self.log(f"cd {dir}")
-        return Session._WorkingDirContext(dir)
+        return _WorkingDirContext(dir)
 
     cd = chdir
     """An alias for :meth:`chdir`."""
