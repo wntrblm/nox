@@ -674,7 +674,7 @@ class SessionRunner:
             )
         else:
             raise ValueError(
-                f"Expected venv_backend one of ('virtualenv', 'conda', 'venv'), but got '{backend}'."
+                f"Expected venv_backend one of ('virtualenv', 'conda', 'mamba', 'venv'), but got '{backend}'."
             )
 
         self.venv.create()
