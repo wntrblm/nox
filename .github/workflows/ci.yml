@@ -3,7 +3,7 @@ on: [push, pull_request]
 env:
   FORCE_COLOR: "1"
   PRE_COMMIT_COLOR: "always"
-  SETUPTOOLS_USE_DISTUTIL: "stdlib"
+  SETUPTOOLS_USE_DISTUTILS: "stdlib" # See https://github.com/theacodes/nox/issues/545
 jobs:
   build:
     runs-on: ${{ matrix.os }}
