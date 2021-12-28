@@ -21,6 +21,7 @@ import re
 import sys
 import unicodedata
 import warnings
+from types import TracebackType
 from typing import (
     Any,
     Callable,
@@ -31,6 +32,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Type,
     Union,
 )
 
@@ -114,6 +116,23 @@ class Status(enum.Enum):
     FAILED = 0
     SUCCESS = 1
     SKIPPED = 2
+
+
+class _WorkingDirContext:
+    def __init__(self, dir: Union[str, os.PathLike]) -> None:
+        self._prev_working_dir = os.getcwd()
+        os.chdir(dir)
+
+    def __enter__(self) -> "_WorkingDirContext":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        os.chdir(self._prev_working_dir)
 
 
 class Session:
@@ -210,10 +229,21 @@ class Session:
         """
         return self._runner.global_config.invoked_from
 
-    def chdir(self, dir: Union[str, os.PathLike]) -> None:
-        """Change the current working directory."""
+    def chdir(self, dir: Union[str, os.PathLike]) -> _WorkingDirContext:
+        """Change the current working directory.
+
+        Can be used as a context manager to automatically restore the working directory::
+
+            with session.chdir("somewhere/deep/in/monorepo"):
+                # Runs in "/somewhere/deep/in/monorepo"
+                session.run("pytest")
+
+            # Runs in original working directory
+            session.run("flake8")
+
+        """
         self.log(f"cd {dir}")
-        os.chdir(dir)
+        return _WorkingDirContext(dir)
 
     cd = chdir
     """An alias for :meth:`chdir`."""
