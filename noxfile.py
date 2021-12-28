@@ -93,9 +93,7 @@ def cover(session):
 @nox.session(python="3.9")
 def lint(session):
     """Run pre-commit linting."""
-    # Pin virtualenv for pre-commit run
-    # See https://github.com/theacodes/nox/issues/545
-    session.install("virtualenv==20.10.0", "pre-commit")
+    session.install("pre-commit")
     session.run(
         "pre-commit", "run", "--all-files", "--show-diff-on-failure", *session.posargs
     )

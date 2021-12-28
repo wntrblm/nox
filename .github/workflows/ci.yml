@@ -3,6 +3,7 @@ on: [push, pull_request]
 env:
   FORCE_COLOR: "1"
   PRE_COMMIT_COLOR: "always"
+  SETUPTOOLS_USE_DISTUTIL: "stdlib"
 jobs:
   build:
     runs-on: ${{ matrix.os }}
