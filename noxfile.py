@@ -101,6 +101,7 @@ def lint(session):
         "run",
         "--all-files",
         "--show-diff-on-failure",
+        "--hook-stage=manual",
         env={"SETUPTOOLS_USE_DISTUTILS": "stdlib"},
         *session.posargs,
     )
