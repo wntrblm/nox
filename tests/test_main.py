@@ -602,6 +602,7 @@ def test_main_noxfile_options_with_sessions_override(
 
 @pytest.mark.parametrize(("isatty_value", "expected"), [(True, True), (False, False)])
 def test_main_color_from_isatty(monkeypatch, isatty_value, expected):
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
     monkeypatch.setattr(sys, "argv", [sys.executable])
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0
@@ -626,6 +627,7 @@ def test_main_color_from_isatty(monkeypatch, isatty_value, expected):
     ],
 )
 def test_main_color_options(monkeypatch, color_opt, expected):
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
     monkeypatch.setattr(sys, "argv", [sys.executable, color_opt])
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 0

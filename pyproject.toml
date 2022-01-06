@@ -42,3 +42,13 @@ strict_equality = true
 [[tool.mypy.overrides]]
 module = [ "argcomplete", "colorlog.*", "py", "tox.*" ]
 ignore_missing_imports = true
+
+[tool.check-manifest]
+ignore = [
+    "docs/**",
+    "noxfile.py",
+    "requirements-conda-test.txt",
+    "requirements-test.txt",
+    "*.md",
+    ".*",
+]

@@ -203,7 +203,7 @@ class CondaEnv(ProcessEnv):
         self.reuse_existing = reuse_existing
         self.venv_params = venv_params if venv_params else []
         self.conda_cmd = conda_cmd
-        super().__init__()
+        super().__init__(env={"CONDA_PREFIX": self.location})
 
     def _clean_location(self) -> bool:
         """Deletes existing conda environment"""

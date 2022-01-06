@@ -149,6 +149,14 @@ If you want to disable virtualenv creation altogether, you can set ``python`` to
     def tests(session):
         pass
 
+Use of :func:`session.install()` is deprecated without a virtualenv since it modifies the global Python environment. If this is what you really want, use :func:`session.run()` and pip instead.
+
+.. code-block:: python
+
+    @nox.session(python=False)
+    def tests(session):
+        session.run("pip", "install", "nox")
+
 You can also specify that the virtualenv should *always* be reused instead of recreated every time:
 
 .. code-block:: python
@@ -418,7 +426,7 @@ Or, if you wanted to provide a set of sessions that are run by default:
 The following options can be specified in the Noxfile:
 
 * ``nox.options.envdir`` is equivalent to specifying :ref:`--envdir <opt-envdir>`.
-* ``nox.options.sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-pythons-and-keywords>`.
+* ``nox.options.sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-pythons-and-keywords>`. If set to an empty list, no sessions will be run if no sessions were given on the command line, and the list of available sessions will be shown instead.
 * ``nox.options.pythons`` is equivalent to specifying :ref:`-p or --pythons <opt-sessions-pythons-and-keywords>`.
 * ``nox.options.keywords`` is equivalent to specifying :ref:`-k or --keywords <opt-sessions-pythons-and-keywords>`.
 * ``nox.options.default_venv_backend`` is equivalent to specifying :ref:`-db or --default-venv-backend <opt-default-venv-backend>`.

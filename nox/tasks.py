@@ -167,22 +167,33 @@ def filter_manifest(
             the manifest otherwise (to be sent to the next task).
 
     """
+    # Shouldn't happen unless the noxfile is empty
+    if not manifest:
+        logger.error(f"No sessions found in {global_config.noxfile}.")
+        return 3
+
     # Filter by the name of any explicit sessions.
     # This can raise KeyError if a specified session does not exist;
-    # log this if it happens.
-    if global_config.sessions:
+    # log this if it happens. The sessions does not come from the noxfile
+    # if keywords is not empty.
+    if global_config.sessions is not None:
         try:
             manifest.filter_by_name(global_config.sessions)
         except KeyError as exc:
             logger.error("Error while collecting sessions.")
             logger.error(exc.args[0])
             return 3
+    if not manifest and not global_config.list_sessions:
+        print("No sessions selected. Please select a session with -s <session name>.\n")
+        _produce_listing(manifest, global_config)
+        return 0
 
     # Filter by python interpreter versions.
-    # This function never errors, but may cause an empty list of sessions
-    # (which is an error condition later).
     if global_config.pythons:
         manifest.filter_by_python_interpreter(global_config.pythons)
+        if not manifest and not global_config.list_sessions:
+            logger.error("Python version selection caused no sessions to be selected.")
+            return 3
 
     # Filter by keywords.
     if global_config.keywords:
@@ -198,28 +209,19 @@ def filter_manifest(
         # (which is an error condition later).
         manifest.filter_by_keywords(global_config.keywords)
 
+    if not manifest and not global_config.list_sessions:
+        logger.error("No sessions selected after filtering by keyword.")
+        return 3
+
     # Return the modified manifest.
     return manifest
 
 
-def honor_list_request(
-    manifest: Manifest, global_config: Namespace
-) -> Union[Manifest, int]:
-    """If --list was passed, simply list the manifest and exit cleanly.
-
-    Args:
-        manifest (~.Manifest): The manifest of sessions to be run.
-        global_config (~nox.main.GlobalConfig): The global configuration.
-
-    Returns:
-        Union[~.Manifest,int]: ``0`` if a listing is all that is requested,
-            the manifest otherwise (to be sent to the next task).
-    """
-    if not global_config.list_sessions:
-        return manifest
-
+def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     # If the user just asked for a list of sessions, print that
-    # and any docstring specified in noxfile.py and be done.
+    # and any docstring specified in noxfile.py and be done. This
+    # can also be called if noxfile sessions is an empty list.
+
     if manifest.module_docstring:
         print(manifest.module_docstring.strip(), end="\n\n")
 
@@ -255,25 +257,27 @@ def honor_list_request(
     print(
         f"\nsessions marked with {selected_color}*{reset} are selected, sessions marked with {skipped_color}-{reset} are skipped."
     )
-    return 0
 
 
-def verify_manifest_nonempty(
+def honor_list_request(
     manifest: Manifest, global_config: Namespace
 ) -> Union[Manifest, int]:
-    """Abort with an error code if the manifest is empty.
+    """If --list was passed, simply list the manifest and exit cleanly.
 
     Args:
         manifest (~.Manifest): The manifest of sessions to be run.
         global_config (~nox.main.GlobalConfig): The global configuration.
 
     Returns:
-        Union[~.Manifest,int]: ``3`` on an empty manifest, the manifest
-            otherwise.
+        Union[~.Manifest,int]: ``0`` if a listing is all that is requested,
+            the manifest otherwise (to be sent to the next task).
     """
-    if not manifest:
-        return 3
-    return manifest
+    if not global_config.list_sessions:
+        return manifest
+
+    _produce_listing(manifest, global_config)
+
+    return 0
 
 
 def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
