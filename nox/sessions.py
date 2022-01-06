@@ -202,7 +202,7 @@ class Session:
         """Create, and return, a temporary directory."""
         tmpdir = os.path.join(self._runner.envdir, "tmp")
         os.makedirs(tmpdir, exist_ok=True)
-        self.env["TMPDIR"] = tmpdir
+        self.env["TMPDIR"] = os.path.abspath(tmpdir)
         return tmpdir
 
     @property
