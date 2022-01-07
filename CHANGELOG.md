@@ -1,5 +1,63 @@
 # Changelog
 
+## 2022.1.7
+
+Claudio Jolowicz, Diego Ramirez, and Tom Fleet have become maintainers of Nox. We'd like to thank the following folks who contributed to this release:
+
+- @brettcannon
+- @cjolowicz
+- @dhermes
+- @DiddiLeija
+- @FollowTheProcess
+- @franekmagiera
+- @henryiii
+- @jugmac00
+- @maciej-lech
+- @nawatts
+- @Tolker-KU
+
+New features:
+- Add `mamba` backend (#444, #448, #546, #551)
+- Add `session.debug` to show debug-level messages (#489)
+- Add cookbook page to the documentation (#483)
+- Add support for the `FORCE_COLOR` environment variable (#524, #548)
+- Allow using `session.chdir()` as a context manager (#543)
+- Deprecate use of `session.install()` without a valid backend (#537)
+
+Improvements:
+- Test against Python 3.10 (#495, $502, #506)
+- Add support for the `channel` option when using the `conda` backend (#522)
+- Show more specific error message when the `--keywords` expression contains a syntax error (#493)
+- Include reference to `session.notify()` in tutorial page (#500)
+- Document how `session.run()` fails and how to handle failures  (#533)
+- Allow the list of sessions to be empty (#523)
+
+Bugfixes:
+- Fix broken temporary directory when using `session.chdir()` (#555, #556)
+- Set the `CONDA_PREFIX` environment variable (#538)
+- Fix `bin` directory for the `conda` backend on Windows (#535)
+
+Internal changes:
+- Replace deprecated `load_module` with `exec_module` (#498)
+- Include tests with source distributions (#552)
+- Add missing copyright notices (#509)
+- Use the new ReadTheDocs configurations (#527)
+- Bump the Python version used by ReadTheDocs to 3.8 (#496)
+- Improve the Sphinx config file (#499)
+- Update all linter versions (#528)
+- Add pre-commit and new checks (#530, #539)
+- Check `MANIFEST.in` during CI (#552)
+- Remove redundant `LICENSE` from `MANIFEST.in` (#505)
+- Make `setuptools` use the standard library's `distutils` to work around `virtualenv` bug. (#547, #549)
+- Use `shlex.join()` when logging a command (#490)
+- Use `shutil.rmtree()` over shelling out to `rm -rf` in noxfile (#519)
+- Fix missing Python 3.9 CI session (#529)
+- Unpin docs session and add `--error-on-missing-interpreter` to CI (#532)
+- Enable color output from Nox, pytest, and pre-commit during CI (#542)
+- Only run `conda_tests` session by default if user has conda installed (#521)
+- Update dependencies in `requirements-conda-test.txt` (#536)
+
+
 ## 2021.10.1
 
 New features:
