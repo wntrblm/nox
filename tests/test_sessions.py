@@ -84,7 +84,7 @@ class TestSession:
         with tempfile.TemporaryDirectory() as root:
             runner.global_config.envdir = root
             tmpdir = session.create_tmp()
-            assert session.env["TMPDIR"] == tmpdir
+            assert session.env["TMPDIR"] == os.path.abspath(tmpdir)
             assert tmpdir.startswith(root)
 
     def test_create_tmp_twice(self):
@@ -94,7 +94,7 @@ class TestSession:
             runner.venv.bin = bin
             session.create_tmp()
             tmpdir = session.create_tmp()
-            assert session.env["TMPDIR"] == tmpdir
+            assert session.env["TMPDIR"] == os.path.abspath(tmpdir)
             assert tmpdir.startswith(root)
 
     def test_properties(self):
