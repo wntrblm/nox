@@ -289,11 +289,7 @@ def format_program(program, marker):
 def run_pytest_in_new_console_session(test):
     """Run the given test in a separate console session."""
     env = dict(os.environ, SECONDARY_CONSOLE_SESSION="")
-    creationflags = (
-        subprocess.CREATE_NO_WINDOW
-        if sys.version_info[:2] >= (3, 7)
-        else subprocess.CREATE_NEW_CONSOLE
-    )
+    creationflags = subprocess.CREATE_NO_WINDOW
 
     subprocess.run(
         [sys.executable, "-m", "pytest", f"{__file__}::{test}"],
