@@ -1,7 +1,7 @@
 flask
+myst-parser
 pytest
 pytest-cov
-recommonmark
-sphinx
+sphinx>=3.0
 sphinx-autobuild
 witchhazel
