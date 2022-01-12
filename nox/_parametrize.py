@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import functools
 import itertools
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Iterable, Sequence, Union
 
 
 class Param:
@@ -31,8 +33,8 @@ class Param:
     def __init__(
         self,
         *args: Any,
-        arg_names: Optional[Sequence[str]] = None,
-        id: Optional[str] = None,
+        arg_names: Sequence[str] | None = None,
+        id: str | None = None,
     ) -> None:
         self.args = tuple(args)
         self.id = id
@@ -43,7 +45,7 @@ class Param:
         self.arg_names = tuple(arg_names)
 
     @property
-    def call_spec(self) -> Dict[str, Any]:
+    def call_spec(self) -> dict[str, Any]:
         return dict(zip(self.arg_names, self.args))
 
     def __str__(self) -> str:
@@ -56,11 +58,11 @@ class Param:
 
     __repr__ = __str__
 
-    def copy(self) -> "Param":
+    def copy(self) -> Param:
         new = self.__class__(*self.args, arg_names=self.arg_names, id=self.id)
         return new
 
-    def update(self, other: "Param") -> None:
+    def update(self, other: Param) -> None:
         self.id = ", ".join([str(self), str(other)])
         self.args = self.args + other.args
         self.arg_names = self.arg_names + other.arg_names
@@ -78,7 +80,7 @@ class Param:
         raise NotImplementedError
 
 
-def _apply_param_specs(param_specs: List[Param], f: Any) -> Any:
+def _apply_param_specs(param_specs: list[Param], f: Any) -> Any:
     previous_param_specs = getattr(f, "parametrize", None)
     new_param_specs = update_param_specs(previous_param_specs, param_specs)
     f.parametrize = new_param_specs
@@ -89,9 +91,9 @@ ArgValue = Union[Param, Iterable[Any]]
 
 
 def parametrize_decorator(
-    arg_names: Union[str, List[str], Tuple[str]],
-    arg_values_list: Union[Iterable[ArgValue], ArgValue],
-    ids: Optional[Iterable[Optional[str]]] = None,
+    arg_names: str | list[str] | tuple[str],
+    arg_values_list: Iterable[ArgValue] | ArgValue,
+    ids: Iterable[str | None] | None = None,
 ) -> Callable[[Any], Any]:
     """Parametrize a session.
 
@@ -119,7 +121,7 @@ def parametrize_decorator(
 
     # If there's only one arg_name, arg_values_list should be a single item
     # or list. Transform it so it'll work with the combine step.
-    _arg_values_list: List[Union[Param, Iterable[Union[Any, ArgValue]]]] = []
+    _arg_values_list: list[Param | Iterable[Any | ArgValue]] = []
     if len(arg_names) == 1:
         # In this case, the arg_values_list can also just be a single item.
         # Must be mutable for the transformation steps
@@ -141,7 +143,7 @@ def parametrize_decorator(
         ids = []
 
     # Generate params for each item in the param_args_values list.
-    param_specs: List[Param] = []
+    param_specs: list[Param] = []
     for param_arg_values, param_id in itertools.zip_longest(_arg_values_list, ids):
         if isinstance(param_arg_values, Param):
             param_spec = param_arg_values
@@ -155,8 +157,8 @@ def parametrize_decorator(
 
 
 def update_param_specs(
-    param_specs: Optional[Iterable[Param]], new_specs: List[Param]
-) -> List[Param]:
+    param_specs: Iterable[Param] | None, new_specs: list[Param]
+) -> list[Param]:
     """Produces all combinations of the given sets of specs."""
     if not param_specs:
         return new_specs

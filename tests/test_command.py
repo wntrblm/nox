@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import ctypes
 import logging
 import os
@@ -297,8 +299,7 @@ def run_pytest_in_new_console_session(test):
         [sys.executable, "-m", "pytest", f"{__file__}::{test}"],
         env=env,
         check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         creationflags=creationflags,
     )
 

@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import os
 import platform
 import re
 import shutil
 import sys
 from socket import gethostbyname
-from typing import Any, List, Mapping, Optional, Tuple, Union
+from typing import Any, Mapping
 
 import py
 
@@ -52,10 +54,10 @@ class ProcessEnv:
     is_sandboxed = False
 
     # Special programs that aren't included in the environment.
-    allowed_globals: _typing.ClassVar[Tuple[Any, ...]] = ()
+    allowed_globals: _typing.ClassVar[tuple[Any, ...]] = ()
 
     def __init__(
-        self, bin_paths: None = None, env: Optional[Mapping[str, str]] = None
+        self, bin_paths: None = None, env: Mapping[str, str] | None = None
     ) -> None:
         self._bin_paths = bin_paths
         self.env = os.environ.copy()
@@ -73,7 +75,7 @@ class ProcessEnv:
             )
 
     @property
-    def bin_paths(self) -> Optional[List[str]]:
+    def bin_paths(self) -> list[str] | None:
         return self._bin_paths
 
     @property
@@ -88,7 +90,7 @@ class ProcessEnv:
         raise NotImplementedError("ProcessEnv.create should be overwritten in subclass")
 
 
-def locate_via_py(version: str) -> Optional[str]:
+def locate_via_py(version: str) -> str | None:
     """Find the Python executable using the Windows Launcher.
 
     This is based on :pep:397 which details that executing
@@ -116,7 +118,7 @@ def locate_via_py(version: str) -> Optional[str]:
     return None
 
 
-def locate_using_path_and_version(version: str) -> Optional[str]:
+def locate_using_path_and_version(version: str) -> str | None:
     """Check the PATH's python interpreter and return it if the version
     matches.
 
@@ -191,7 +193,7 @@ class CondaEnv(ProcessEnv):
     def __init__(
         self,
         location: str,
-        interpreter: Optional[str] = None,
+        interpreter: str | None = None,
         reuse_existing: bool = False,
         venv_params: Any = None,
         *,
@@ -229,7 +231,7 @@ class CondaEnv(ProcessEnv):
         return True
 
     @property
-    def bin_paths(self) -> List[str]:
+    def bin_paths(self) -> list[str]:
         """Returns the location of the conda env's bin folder."""
         # see https://github.com/conda/conda/blob/f60f0f1643af04ed9a51da3dd4fa242de81e32f4/conda/activate.py#L563-L572
         if _SYSTEM == "Windows":
@@ -314,7 +316,7 @@ class VirtualEnv(ProcessEnv):
     def __init__(
         self,
         location: str,
-        interpreter: Optional[str] = None,
+        interpreter: str | None = None,
         reuse_existing: bool = False,
         *,
         venv: bool = False,
@@ -323,7 +325,7 @@ class VirtualEnv(ProcessEnv):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
-        self._resolved: Union[None, str, InterpreterNotFound] = None
+        self._resolved: None | str | InterpreterNotFound = None
         self.reuse_existing = reuse_existing
         self.venv_or_virtualenv = "venv" if venv else "virtualenv"
         self.venv_params = venv_params if venv_params else []
@@ -379,7 +381,7 @@ class VirtualEnv(ProcessEnv):
 
         return original == created
 
-    def _read_base_prefix_from_pyvenv_cfg(self) -> Optional[str]:
+    def _read_base_prefix_from_pyvenv_cfg(self) -> str | None:
         """Return the base-prefix entry from pyvenv.cfg, if present."""
         path = os.path.join(self.location, "pyvenv.cfg")
         if os.path.isfile(path):
@@ -455,7 +457,7 @@ class VirtualEnv(ProcessEnv):
         raise self._resolved
 
     @property
-    def bin_paths(self) -> List[str]:
+    def bin_paths(self) -> list[str]:
         """Returns the location of the virtualenv's bin folder."""
         if _SYSTEM == "Windows":
             return [os.path.join(self.location, "Scripts")]

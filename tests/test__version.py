@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from pathlib import Path
 from textwrap import dedent
-from typing import Optional
 
 import pytest
 
@@ -93,7 +94,7 @@ def test_get_nox_version() -> None:
         ),
     ],
 )
-def test_parse_needs_version(text: str, expected: Optional[str]) -> None:
+def test_parse_needs_version(text: str, expected: str | None) -> None:
     """It is parsed successfully."""
     assert expected == _parse_needs_version(text)
 

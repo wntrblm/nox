@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import argparse
 import functools
 import os
 import sys
-from typing import Any, List, Optional, Sequence, Union
+from typing import Any, Sequence
 
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
@@ -63,7 +65,7 @@ options.add_groups(
 
 def _sessions_and_keywords_merge_func(
     key: str, command_args: argparse.Namespace, noxfile_args: argparse.Namespace
-) -> List[str]:
+) -> list[str]:
     """Only return the Noxfile value for sessions/keywords if neither sessions
     or keywords are specified on the command-line.
 
@@ -137,7 +139,7 @@ def _envdir_merge_func(
     return command_args.envdir or noxfile_args.envdir or ".nox"
 
 
-def _sessions_default() -> Optional[List[str]]:
+def _sessions_default() -> list[str] | None:
     """Looks at the NOXSESSION env var to set the default value for sessions."""
     nox_env = os.environ.get("NOXSESSION")
     env_sessions = nox_env.split(",") if nox_env else None
@@ -186,7 +188,7 @@ def _R_finalizer(value: bool, args: argparse.Namespace) -> bool:
 
 def _posargs_finalizer(
     value: Sequence[Any], args: argparse.Namespace
-) -> Union[Sequence[Any], List[Any]]:
+) -> Sequence[Any] | list[Any]:
     """Removes the leading "--"s in the posargs array (if any) and asserts that
     remaining arguments came after a "--".
     """
@@ -212,7 +214,7 @@ def _posargs_finalizer(
 
 def _session_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
-) -> List[str]:
+) -> list[str]:
     global_config = parsed_args
     module = load_nox_module(global_config)
     manifest = discover_manifest(module, global_config)

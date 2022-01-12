@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import ast
 import importlib.util
 import json
@@ -19,7 +21,6 @@ import os
 import sys
 import types
 from argparse import Namespace
-from typing import List, Union
 
 from colorlog.escape_codes import parse_colors
 
@@ -66,7 +67,7 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
     return module
 
 
-def load_nox_module(global_config: Namespace) -> Union[types.ModuleType, int]:
+def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     """Load the user's noxfile and return the module object for it.
 
     .. note::
@@ -130,7 +131,7 @@ def merge_noxfile_options(
 
 
 def discover_manifest(
-    module: Union[types.ModuleType, int], global_config: Namespace
+    module: types.ModuleType | int, global_config: Namespace
 ) -> Manifest:
     """Discover all session functions in the noxfile module.
 
@@ -153,9 +154,7 @@ def discover_manifest(
     return Manifest(functions, global_config, module_docstring)
 
 
-def filter_manifest(
-    manifest: Manifest, global_config: Namespace
-) -> Union[Manifest, int]:
+def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | int:
     """Filter the manifest according to the provided configuration.
 
     Args:
@@ -259,9 +258,7 @@ def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     )
 
 
-def honor_list_request(
-    manifest: Manifest, global_config: Namespace
-) -> Union[Manifest, int]:
+def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest | int:
     """If --list was passed, simply list the manifest and exit cleanly.
 
     Args:
@@ -280,7 +277,7 @@ def honor_list_request(
     return 0
 
 
-def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
+def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
     """Run the full manifest of sessions.
 
     Args:
@@ -320,7 +317,7 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> List[Result]:
     return results
 
 
-def print_summary(results: List[Result], global_config: Namespace) -> List[Result]:
+def print_summary(results: list[Result], global_config: Namespace) -> list[Result]:
     """Print a summary of the results.
 
     Args:
@@ -347,7 +344,7 @@ def print_summary(results: List[Result], global_config: Namespace) -> List[Resul
     return results
 
 
-def create_report(results: List[Result], global_config: Namespace) -> List[Result]:
+def create_report(results: list[Result], global_config: Namespace) -> list[Result]:
     """Write a report to the location designated in the config, if any.
 
     Args:
@@ -377,7 +374,7 @@ def create_report(results: List[Result], global_config: Namespace) -> List[Resul
     return results
 
 
-def final_reduce(results: List[Result], global_config: Namespace) -> int:
+def final_reduce(results: list[Result], global_config: Namespace) -> int:
     """Reduce the results to a final exit code.
 
     Args:

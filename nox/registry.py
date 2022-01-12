@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import collections
 import copy
 import functools
-from typing import Any, Callable, Optional, TypeVar, Union, overload
+from typing import Any, Callable, TypeVar, overload
 
 from ._decorators import Func
 from ._typing import Python
 
 F = TypeVar("F", bound=Callable[..., Any])
 
-_REGISTRY: "collections.OrderedDict[str, Func]" = collections.OrderedDict()
+_REGISTRY: collections.OrderedDict[str, Func] = collections.OrderedDict()
 
 
 @overload
@@ -35,8 +37,8 @@ def session_decorator(
     __func: None = ...,
     python: Python = ...,
     py: Python = ...,
-    reuse_venv: Optional[bool] = ...,
-    name: Optional[str] = ...,
+    reuse_venv: bool | None = ...,
+    name: str | None = ...,
     venv_backend: Any = ...,
     venv_params: Any = ...,
 ) -> Callable[[F], F]:
@@ -44,14 +46,14 @@ def session_decorator(
 
 
 def session_decorator(
-    func: Optional[F] = None,
+    func: F | None = None,
     python: Python = None,
     py: Python = None,
-    reuse_venv: Optional[bool] = None,
-    name: Optional[str] = None,
+    reuse_venv: bool | None = None,
+    name: str | None = None,
     venv_backend: Any = None,
     venv_params: Any = None,
-) -> Union[F, Callable[[F], F]]:
+) -> F | Callable[[F], F]:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
     # being sent as part of the Python syntax (`@nox.session`).
@@ -85,7 +87,7 @@ def session_decorator(
     return fn
 
 
-def get() -> "collections.OrderedDict[str, Func]":
+def get() -> collections.OrderedDict[str, Func]:
     """Return a shallow copy of the registry.
 
     This ensures that the registry is not accidentally modified by

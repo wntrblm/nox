@@ -12,23 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import argparse
 import ast
 import collections.abc
 import itertools
 from collections import OrderedDict
-from typing import (
-    Any,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Any, Iterable, Iterator, Mapping, Sequence
 
 from nox._decorators import Call, Func
 from nox.sessions import Session, SessionRunner
@@ -36,7 +27,7 @@ from nox.sessions import Session, SessionRunner
 WARN_PYTHONS_IGNORED = "python_ignored"
 
 
-def _unique_list(*args: str) -> List[str]:
+def _unique_list(*args: str) -> list[str]:
     """Return a list without duplicates, while preserving order."""
     return list(OrderedDict.fromkeys(args))
 
@@ -61,22 +52,22 @@ class Manifest:
 
     def __init__(
         self,
-        session_functions: Mapping[str, "Func"],
+        session_functions: Mapping[str, Func],
         global_config: argparse.Namespace,
-        module_docstring: Optional[str] = None,
+        module_docstring: str | None = None,
     ) -> None:
-        self._all_sessions: List[SessionRunner] = []
-        self._queue: List[SessionRunner] = []
-        self._consumed: List[SessionRunner] = []
+        self._all_sessions: list[SessionRunner] = []
+        self._queue: list[SessionRunner] = []
+        self._consumed: list[SessionRunner] = []
         self._config: argparse.Namespace = global_config
-        self.module_docstring: Optional[str] = module_docstring
+        self.module_docstring: str | None = module_docstring
 
         # Create the sessions based on the provided session functions.
         for name, func in session_functions.items():
             for session in self.make_session(name, func):
                 self.add_session(session)
 
-    def __contains__(self, needle: Union[str, SessionRunner]) -> bool:
+    def __contains__(self, needle: str | SessionRunner) -> bool:
         if needle in self._queue or needle in self._consumed:
             return True
         for session in self._queue + self._consumed:
@@ -84,7 +75,7 @@ class Manifest:
                 return True
         return False
 
-    def __iter__(self) -> "Manifest":
+    def __iter__(self) -> Manifest:
         return self
 
     def __getitem__(self, key: str) -> SessionRunner:
@@ -108,7 +99,7 @@ class Manifest:
     def __len__(self) -> int:
         return len(self._queue) + len(self._consumed)
 
-    def list_all_sessions(self) -> Iterator[Tuple[SessionRunner, bool]]:
+    def list_all_sessions(self) -> Iterator[tuple[SessionRunner, bool]]:
         """Yields all sessions and whether or not they're selected."""
         for session in self._all_sessions:
             yield session, session in self._queue
@@ -186,8 +177,8 @@ class Manifest:
         ]
 
     def make_session(
-        self, name: str, func: "Func", multi: bool = False
-    ) -> List[SessionRunner]:
+        self, name: str, func: Func, multi: bool = False
+    ) -> list[SessionRunner]:
         """Create a session object from the session function.
 
         Args:
@@ -217,7 +208,7 @@ class Manifest:
         if self._config.extra_pythons:
             # If extra python is provided, expand the func.python list to
             # include additional python interpreters
-            extra_pythons: List[str] = self._config.extra_pythons
+            extra_pythons: list[str] = self._config.extra_pythons
             if isinstance(func.python, (list, tuple, set)):
                 func.python = _unique_list(*func.python, *extra_pythons)
             elif not multi and func.python:
@@ -280,7 +271,7 @@ class Manifest:
         return self.__next__()
 
     def notify(
-        self, session: Union[str, SessionRunner], posargs: Optional[List[str]] = None
+        self, session: str | SessionRunner, posargs: list[str] | None = None
     ) -> bool:
         """Enqueue the specified session in the queue.
 
@@ -328,7 +319,7 @@ class KeywordLocals(collections.abc.Mapping):
     returns False.
     """
 
-    def __init__(self, keywords: Set[str]) -> None:
+    def __init__(self, keywords: set[str]) -> None:
         self._keywords = keywords
 
     def __getitem__(self, variable_name: str) -> bool:
@@ -367,7 +358,7 @@ def _normalized_session_match(session_name: str, session: SessionRunner) -> bool
     return False
 
 
-def _normalize_arg(arg: str) -> Union[str]:
+def _normalize_arg(arg: str) -> str:
     """Normalize arg for comparison."""
     try:
         return str(ast.dump(ast.parse(arg)))

@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import ast
 import contextlib
 import sys
-from typing import Optional
 
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
@@ -39,7 +40,7 @@ def get_nox_version() -> str:
     return metadata.version("nox")  # type: ignore[no-untyped-call]
 
 
-def _parse_string_constant(node: ast.AST) -> Optional[str]:  # pragma: no cover
+def _parse_string_constant(node: ast.AST) -> str | None:  # pragma: no cover
     """Return the value of a string constant."""
     if sys.version_info < (3, 8):
         if isinstance(node, ast.Str) and isinstance(node.s, str):
@@ -49,9 +50,9 @@ def _parse_string_constant(node: ast.AST) -> Optional[str]:  # pragma: no cover
     return None
 
 
-def _parse_needs_version(source: str, filename: str = "<unknown>") -> Optional[str]:
+def _parse_needs_version(source: str, filename: str = "<unknown>") -> str | None:
     """Parse ``nox.needs_version`` from the user's noxfile."""
-    value: Optional[str] = None
+    value: str | None = None
     module: ast.Module = ast.parse(source, filename=filename)
     for statement in module.body:
         if isinstance(statement, ast.Assign):
@@ -66,7 +67,7 @@ def _parse_needs_version(source: str, filename: str = "<unknown>") -> Optional[s
     return value
 
 
-def _read_needs_version(filename: str) -> Optional[str]:
+def _read_needs_version(filename: str) -> str | None:
     """Read ``nox.needs_version`` from the user's noxfile."""
     with open(filename) as io:
         source = io.read()
