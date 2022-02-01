@@ -19,11 +19,13 @@ import sys
 from typing import IO, Mapping, Optional, Sequence, Tuple, Union
 
 
-def shutdown_process(proc: subprocess.Popen) -> Tuple[bytes, bytes]:
+def shutdown_process(
+    proc: subprocess.Popen, child_timeout: Optional[float]
+) -> Tuple[bytes, bytes]:
     """Gracefully shutdown a child process."""
 
     with contextlib.suppress(subprocess.TimeoutExpired):
-        return proc.communicate(timeout=0.3)
+        return proc.communicate(timeout=child_timeout or 0.3)
 
     proc.terminate()
 
@@ -58,6 +60,7 @@ def popen(
     silent: bool = False,
     stdout: Optional[Union[int, IO]] = None,
     stderr: Union[int, IO] = subprocess.STDOUT,
+    child_shutdown_timeout: Optional[float] = None,
 ) -> Tuple[int, str]:
     if silent and stdout is not None:
         raise ValueError(
@@ -74,7 +77,7 @@ def popen(
         sys.stdout.flush()
 
     except KeyboardInterrupt:
-        out, err = shutdown_process(proc)
+        out, err = shutdown_process(proc, child_shutdown_timeout)
         if proc.returncode != 0:
             raise
 

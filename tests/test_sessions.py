@@ -245,6 +245,7 @@ class TestSession:
             external=mock.ANY,
             paths=mock.ANY,
             silent=mock.ANY,
+            child_shutdown_timeout=None,
         )
 
     def test_run_success(self):
@@ -281,7 +282,11 @@ class TestSession:
             session.run(sys.executable, "--version")
 
         run.assert_called_once_with(
-            (sys.executable, "--version"), external=True, env=mock.ANY, paths=None
+            (sys.executable, "--version"),
+            external=True,
+            env=mock.ANY,
+            paths=None,
+            child_shutdown_timeout=None,
         )
 
     def test_run_external_condaenv(self):
@@ -301,6 +306,7 @@ class TestSession:
             external=True,
             env=mock.ANY,
             paths=["/path/to/env/bin"],
+            child_shutdown_timeout=None,
         )
 
     def test_run_external_with_error_on_external_run(self):

@@ -397,6 +397,10 @@ class Session:
         if args[0] in self.virtualenv.allowed_globals:
             kwargs["external"] = True
 
+        kwargs.setdefault(
+            "child_shutdown_timeout", self._runner.global_config.child_shutdown_timeout
+        )
+
         # Run a shell command.
         return nox.command.run(args, env=env, paths=self.bin_paths, **kwargs)
 
