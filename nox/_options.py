@@ -139,7 +139,7 @@ def _envdir_merge_func(
 
 def _child_shutdown_timeout_merge_func(
     command_args: argparse.Namespace, noxfile_args: argparse.Namespace
-) -> str:
+) -> Union[float, None]:
     """Merge child_shutdown_timeout from command args and nox file.
 
     Args:
