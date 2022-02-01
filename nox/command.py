@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import os
 import shlex
 import sys
-from typing import Any, Iterable, List, Optional, Sequence, Union
+from typing import Any, Iterable, Sequence
 
 import py
 
@@ -31,12 +33,12 @@ else:  # pragma: no cover
 class CommandFailed(Exception):
     """Raised when an executed command returns a non-success status code."""
 
-    def __init__(self, reason: Optional[str] = None) -> None:
+    def __init__(self, reason: str | None = None) -> None:
         super().__init__(reason)
         self.reason = reason
 
 
-def which(program: str, paths: Optional[List[str]]) -> str:
+def which(program: str, paths: list[str] | None) -> str:
     """Finds the full path to an executable."""
     full_path = None
 
@@ -55,7 +57,7 @@ def which(program: str, paths: Optional[List[str]]) -> str:
     raise CommandFailed(f"Program {program} not found")
 
 
-def _clean_env(env: Optional[dict]) -> Optional[dict]:
+def _clean_env(env: dict | None) -> dict | None:
     if env is None:
         return None
 
@@ -76,14 +78,14 @@ def _shlex_join(args: Sequence[str]) -> str:
 def run(
     args: Sequence[str],
     *,
-    env: Optional[dict] = None,
+    env: dict | None = None,
     silent: bool = False,
-    paths: Optional[List[str]] = None,
-    success_codes: Optional[Iterable[int]] = None,
+    paths: list[str] | None = None,
+    success_codes: Iterable[int] | None = None,
     log: bool = True,
-    external: Union[Literal["error"], bool] = False,
+    external: Literal["error"] | bool = False,
     **popen_kws: Any,
-) -> Union[str, bool]:
+) -> str | bool:
     """Run a command-line program."""
 
     if success_codes is None:

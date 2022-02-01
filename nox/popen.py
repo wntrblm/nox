@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import contextlib
 import locale
 import subprocess
 import sys
-from typing import IO, Mapping, Optional, Sequence, Tuple, Union
+from typing import IO, Mapping, Sequence
 
 
 def shutdown_process(
-    proc: subprocess.Popen, child_timeout: Optional[float]
-) -> Tuple[bytes, bytes]:
+    proc: subprocess.Popen, child_timeout: float | None
+) -> tuple[bytes, bytes]:
     """Gracefully shutdown a child process."""
-
     with contextlib.suppress(subprocess.TimeoutExpired):
         return proc.communicate(timeout=child_timeout or 0.3)
 
@@ -56,12 +57,12 @@ def decode_output(output: bytes) -> str:
 
 def popen(
     args: Sequence[str],
-    env: Optional[Mapping[str, str]] = None,
+    env: Mapping[str, str] | None = None,
     silent: bool = False,
-    stdout: Optional[Union[int, IO]] = None,
-    stderr: Union[int, IO] = subprocess.STDOUT,
-    child_shutdown_timeout: Optional[float] = None,
-) -> Tuple[int, str]:
+    stdout: int | IO | None = None,
+    stderr: int | IO = subprocess.STDOUT,
+    child_shutdown_timeout: float | None = None,
+) -> tuple[int, str]:
     if silent and stdout is not None:
         raise ValueError(
             "Can not specify silent and stdout; passing a custom stdout always silences the commands output in Nox's log."

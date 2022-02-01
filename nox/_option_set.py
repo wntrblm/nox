@@ -16,13 +16,14 @@
 can be specified from the command line and the noxfile, easily used in tests,
 and surfaced in documentation."""
 
+from __future__ import annotations
 
 import argparse
 import collections
 import functools
 from argparse import ArgumentError as ArgumentError
 from argparse import ArgumentParser, Namespace
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable
 
 import argcomplete
 
@@ -77,14 +78,14 @@ class Option:
         self,
         name: str,
         *flags: str,
-        group: Optional[OptionGroup],
-        help: Optional[str] = None,
+        group: OptionGroup | None,
+        help: str | None = None,
         noxfile: bool = False,
-        merge_func: Optional[Callable[[Namespace, Namespace], Any]] = None,
-        finalizer_func: Optional[Callable[[Any, Namespace], Any]] = None,
-        default: Union[Any, Callable[[], Any]] = None,
+        merge_func: Callable[[Namespace, Namespace], Any] | None = None,
+        finalizer_func: Callable[[Any, Namespace], Any] | None = None,
+        default: Any | Callable[[], Any] = None,
         hidden: bool = False,
-        completer: Optional[Callable[..., List[str]]] = None,
+        completer: Callable[..., list[str]] | None = None,
         **kwargs: Any,
     ) -> None:
         self.name = name
@@ -100,7 +101,7 @@ class Option:
         self._default = default
 
     @property
-    def default(self) -> Optional[Union[bool, str]]:
+    def default(self) -> bool | str | None:
         if callable(self._default):
             return self._default()
         return self._default
@@ -154,10 +155,10 @@ def flag_pair_merge_func(
 
 def make_flag_pair(
     name: str,
-    enable_flags: Union[Tuple[str, str], Tuple[str]],
-    disable_flags: Tuple[str],
+    enable_flags: tuple[str, str] | tuple[str],
+    disable_flags: tuple[str],
     **kwargs: Any,
-) -> Tuple[Option, Option]:
+) -> tuple[Option, Option]:
     """Returns two options - one to enable a behavior and another to disable it.
 
     The positive option is considered to be available to the noxfile, as
@@ -191,10 +192,10 @@ class OptionSet:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.parser_args = args
         self.parser_kwargs = kwargs
-        self.options: "collections.OrderedDict[str, Option]" = collections.OrderedDict()
-        self.groups: "collections.OrderedDict[str, OptionGroup]" = (
-            collections.OrderedDict()
-        )
+        self.options: collections.OrderedDict[str, Option] = collections.OrderedDict()
+        self.groups: collections.OrderedDict[
+            str, OptionGroup
+        ] = collections.OrderedDict()
 
     def add_options(self, *args: Option) -> None:
         """Adds a sequence of Options to the OptionSet.

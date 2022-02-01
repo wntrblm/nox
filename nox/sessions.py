@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import argparse
 import enum
 import hashlib
@@ -22,19 +24,7 @@ import sys
 import unicodedata
 import warnings
 from types import TracebackType
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import py
 
@@ -48,7 +38,7 @@ if _typing.TYPE_CHECKING:
     from nox.manifest import Manifest
 
 
-def _normalize_path(envdir: str, path: Union[str, bytes]) -> str:
+def _normalize_path(envdir: str, path: str | bytes) -> str:
     """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
     if isinstance(path, bytes):
         path = path.decode("utf-8")
@@ -75,7 +65,7 @@ def _normalize_path(envdir: str, path: Union[str, bytes]) -> str:
     return full_path
 
 
-def _dblquote_pkg_install_args(args: Tuple[str, ...]) -> Tuple[str, ...]:
+def _dblquote_pkg_install_args(args: tuple[str, ...]) -> tuple[str, ...]:
     """Double-quote package install arguments in case they contain '>' or '<' symbols"""
 
     # routine used to handle a single arg
@@ -119,18 +109,18 @@ class Status(enum.Enum):
 
 
 class _WorkingDirContext:
-    def __init__(self, dir: Union[str, os.PathLike]) -> None:
+    def __init__(self, dir: str | os.PathLike) -> None:
         self._prev_working_dir = os.getcwd()
         os.chdir(dir)
 
-    def __enter__(self) -> "_WorkingDirContext":
+    def __enter__(self) -> _WorkingDirContext:
         return self
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         os.chdir(self._prev_working_dir)
 
@@ -144,11 +134,11 @@ class Session:
 
     __slots__ = ("_runner",)
 
-    def __init__(self, runner: "SessionRunner") -> None:
+    def __init__(self, runner: SessionRunner) -> None:
         self._runner = runner
 
     @property
-    def __dict__(self) -> "Dict[str, SessionRunner]":  # type: ignore[override]
+    def __dict__(self) -> dict[str, SessionRunner]:  # type: ignore[override]
         """Attribute dictionary for object inspection.
 
         This is needed because ``__slots__`` turns off ``__dict__`` by
@@ -168,7 +158,7 @@ class Session:
         return self.virtualenv.env
 
     @property
-    def posargs(self) -> List[str]:
+    def posargs(self) -> list[str]:
         """Any extra arguments from the ``nox`` commandline or :class:`Session.notify`."""
         return self._runner.posargs
 
@@ -181,12 +171,12 @@ class Session:
         return venv
 
     @property
-    def python(self) -> Optional[Union[str, Sequence[str], bool]]:
+    def python(self) -> str | Sequence[str] | bool | None:
         """The python version passed into ``@nox.session``."""
         return self._runner.func.python
 
     @property
-    def bin_paths(self) -> Optional[List[str]]:
+    def bin_paths(self) -> list[str] | None:
         """The bin directories for the virtualenv."""
         return self.virtualenv.bin_paths
 
@@ -229,7 +219,7 @@ class Session:
         """
         return self._runner.global_config.invoked_from
 
-    def chdir(self, dir: Union[str, os.PathLike]) -> _WorkingDirContext:
+    def chdir(self, dir: str | os.PathLike) -> _WorkingDirContext:
         """Change the current working directory.
 
         Can be used as a context manager to automatically restore the working directory::
@@ -260,8 +250,8 @@ class Session:
             raise nox.command.CommandFailed()
 
     def run(
-        self, *args: str, env: Optional[Mapping[str, str]] = None, **kwargs: Any
-    ) -> Optional[Any]:
+        self, *args: str, env: Mapping[str, str] | None = None, **kwargs: Any
+    ) -> Any | None:
         """Run a command.
 
         Commands must be specified as a list of strings, for example::
@@ -328,8 +318,8 @@ class Session:
         return self._run(*args, env=env, **kwargs)
 
     def run_always(
-        self, *args: str, env: Optional[Mapping[str, str]] = None, **kwargs: Any
-    ) -> Optional[Any]:
+        self, *args: str, env: Mapping[str, str] | None = None, **kwargs: Any
+    ) -> Any | None:
         """Run a command **always**.
 
         This is a variant of :meth:`run` that runs even in the presence of
@@ -371,7 +361,7 @@ class Session:
         return self._run(*args, env=env, **kwargs)
 
     def _run(
-        self, *args: str, env: Optional[Mapping[str, str]] = None, **kwargs: Any
+        self, *args: str, env: Mapping[str, str] | None = None, **kwargs: Any
     ) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
@@ -408,7 +398,7 @@ class Session:
         self,
         *args: str,
         auto_offline: bool = True,
-        channel: Union[str, Sequence[str]] = "",
+        channel: str | Sequence[str] = "",
         **kwargs: Any,
     ) -> None:
         """Install invokes `conda install`_ to install packages inside of the
@@ -446,7 +436,7 @@ class Session:
         """
         venv = self._runner.venv
 
-        prefix_args: Tuple[str, ...] = ()
+        prefix_args: tuple[str, ...] = ()
         if isinstance(venv, CondaEnv):
             prefix_args = ("--prefix", venv.location)
         elif not isinstance(venv, PassthroughEnv):  # pragma: no cover
@@ -466,7 +456,7 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        extraopts: List[str] = []
+        extraopts: list[str] = []
         if auto_offline and venv.is_offline():
             logger.warning(
                 "Automatically setting the `--offline` flag as conda repo seems unreachable."
@@ -545,8 +535,8 @@ class Session:
 
     def notify(
         self,
-        target: "Union[str, SessionRunner]",
-        posargs: Optional[Iterable[str]] = None,
+        target: str | SessionRunner,
+        posargs: Iterable[str] | None = None,
     ) -> None:
         """Place the given session at the end of the queue.
 
@@ -592,11 +582,11 @@ class Session:
         """Outputs a debug-level message during the session."""
         logger.debug(*args, **kwargs)
 
-    def error(self, *args: Any) -> "_typing.NoReturn":
+    def error(self, *args: Any) -> _typing.NoReturn:
         """Immediately aborts the session and optionally logs an error."""
         raise _SessionQuit(*args)
 
-    def skip(self, *args: Any) -> "_typing.NoReturn":
+    def skip(self, *args: Any) -> _typing.NoReturn:
         """Immediately skips the session and optionally logs a warning."""
         raise _SessionSkip(*args)
 
@@ -605,21 +595,21 @@ class SessionRunner:
     def __init__(
         self,
         name: str,
-        signatures: List[str],
+        signatures: list[str],
         func: Func,
         global_config: argparse.Namespace,
-        manifest: "Manifest",
+        manifest: Manifest,
     ) -> None:
         self.name = name
         self.signatures = signatures
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
-        self.venv: Optional[ProcessEnv] = None
-        self.posargs: List[str] = global_config.posargs[:]
+        self.venv: ProcessEnv | None = None
+        self.posargs: list[str] = global_config.posargs[:]
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         doc = self.func.__doc__
         if doc:
             first_line = doc.strip().split("\n")[0]
@@ -683,7 +673,7 @@ class SessionRunner:
 
         self.venv.create()
 
-    def execute(self) -> "Result":
+    def execute(self) -> Result:
         logger.warning(f"Running session {self.friendly_name}")
 
         try:
@@ -729,7 +719,7 @@ class Result:
     """An object representing the result of a session."""
 
     def __init__(
-        self, session: SessionRunner, status: Status, reason: Optional[str] = None
+        self, session: SessionRunner, status: Status, reason: str | None = None
     ) -> None:
         """Initialize the Result object.
 
@@ -779,7 +769,7 @@ class Result:
             log_function = logger.error
         log_function(message)
 
-    def serialize(self) -> Dict[str, Any]:
+    def serialize(self) -> dict[str, Any]:
         """Return a serialized representation of this result.
 
         Returns:

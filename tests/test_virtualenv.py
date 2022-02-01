@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import os
 import re
 import shutil
@@ -257,8 +259,7 @@ def test_condaenv_detection(make_conda):
         [py.path.local.sysfind("conda").strpath, "list"],
         env=venv.env,
         check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     output = proc_result.stdout.decode()
     path_regex = re.compile(r"packages in environment at (?P<env_dir>.+):")
