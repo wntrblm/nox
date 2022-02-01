@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import copy
 import functools
 import inspect
 import types
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Callable, Iterable
 
 from . import _typing
 
@@ -27,12 +29,12 @@ if _typing.TYPE_CHECKING:
 class FunctionDecorator:
     def __new__(
         cls, func: Callable[..., Any], *args: Any, **kwargs: Any
-    ) -> "FunctionDecorator":
+    ) -> FunctionDecorator:
         obj = super().__new__(cls)
         return functools.wraps(func)(obj)
 
 
-def _copy_func(src: Callable, name: Optional[str] = None) -> Callable:
+def _copy_func(src: Callable, name: str | None = None) -> Callable:
     dst = types.FunctionType(
         src.__code__,
         src.__globals__,  # type: ignore[attr-defined]
@@ -51,11 +53,11 @@ class Func(FunctionDecorator):
         self,
         func: Callable,
         python: _typing.Python = None,
-        reuse_venv: Optional[bool] = None,
-        name: Optional[str] = None,
+        reuse_venv: bool | None = None,
+        name: str | None = None,
         venv_backend: Any = None,
         venv_params: Any = None,
-        should_warn: Optional[Dict[str, Any]] = None,
+        should_warn: dict[str, Any] | None = None,
     ):
         self.func = func
         self.python = python
@@ -67,7 +69,7 @@ class Func(FunctionDecorator):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
 
-    def copy(self, name: Optional[str] = None) -> "Func":
+    def copy(self, name: str | None = None) -> Func:
         return Func(
             _copy_func(self.func, name),
             self.python,
@@ -80,7 +82,7 @@ class Func(FunctionDecorator):
 
 
 class Call(Func):
-    def __init__(self, func: Func, param_spec: "Param") -> None:
+    def __init__(self, func: Func, param_spec: Param) -> None:
         call_spec = param_spec.call_spec
         session_signature = f"({param_spec})"
 
@@ -113,5 +115,5 @@ class Call(Func):
         return super().__call__(*args, **kwargs)
 
     @classmethod
-    def generate_calls(cls, func: Func, param_specs: "Iterable[Param]") -> "List[Call]":
+    def generate_calls(cls, func: Func, param_specs: Iterable[Param]) -> list[Call]:
         return [cls(func, param_spec) for param_spec in param_specs]

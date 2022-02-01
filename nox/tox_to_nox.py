@@ -14,6 +14,8 @@
 
 """Naively converts tox.ini files into noxfile.py files."""
 
+from __future__ import annotations
+
 import argparse
 import pkgutil
 from typing import Any, Iterator

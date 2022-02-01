@@ -19,6 +19,8 @@ function). This module primarily loads configuration, and then passes
 control to :meth:``nox.workflow.execute``.
 """
 
+from __future__ import annotations
+
 import sys
 
 from nox import _options, tasks, workflow

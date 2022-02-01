@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import nox
 
 # Deliberately giving these silly names so we know this is not confused

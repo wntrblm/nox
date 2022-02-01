@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import argparse
-from typing import Any, Callable, Iterable, List
+from typing import Any, Callable, Iterable
 
 
 def execute(
@@ -43,7 +45,7 @@ def execute(
         return_value = None
         for function_ in workflow:
             # Send the previous task's return value if there was one.
-            args: List[Any] = []
+            args: list[Any] = []
             if return_value is not None:
                 args.append(return_value)
             return_value = function_(*args, global_config=global_config)

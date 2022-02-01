@@ -23,7 +23,7 @@ exclude_lines = [
 
 [tool.mypy]
 files = ["nox"]
-python_version = "3.6"
+python_version = "3.7"
 warn_unused_configs = true
 disallow_any_generics = false
 disallow_subclassing_any = false
