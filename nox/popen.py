@@ -63,7 +63,8 @@ def popen(
 ) -> tuple[int, str]:
     if silent and stdout is not None:
         raise ValueError(
-            "Can not specify silent and stdout; passing a custom stdout always silences the commands output in Nox's log."
+            "Can not specify silent and stdout; passing a custom stdout always silences"
+            " the commands output in Nox's log."
         )
 
     if silent:
