@@ -696,7 +696,6 @@ class SessionRunner:
             else:
                 logger.warning(
                     "Missing interpreters will error by default on CI systems."
-                    " Use `--error-on-missing-interpreters` to emulate this behaviour."
                 )
                 return Result(self, Status.SKIPPED, reason=str(exc))
 
