@@ -50,18 +50,15 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
     spec = importlib.util.spec_from_file_location(
         "user_nox_module", global_config.noxfile
     )
-    if not spec:
-        raise OSError(f"Could not get module spec from {global_config.noxfile}")
+    assert spec is not None  # If None, fatal importlib error, would crash anyway
 
     module = importlib.util.module_from_spec(spec)
-    if not module:
-        raise OSError(f"Noxfile {global_config.noxfile} is not a valid python module.")
+    assert module is not None  # If None, fatal importlib error, would crash anyway
 
     sys.modules["user_nox_module"] = module
 
     loader = spec.loader
-    if not loader:  # pragma: no cover
-        raise OSError(f"Could not get module loader for {global_config.noxfile}")
+    assert loader is not None  # If None, fatal importlib error, would crash anyway
     # See https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
     loader.exec_module(module)
     return module
@@ -101,8 +98,6 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
         # invoked from) gets stored by the .invoke_from "option" in _options.
         os.chdir(noxfile_parent_dir)
 
-        return _load_and_exec_nox_module(global_config)
-
     except (VersionCheckFailed, InvalidVersionSpecifier) as error:
         logger.error(str(error))
         return 2
@@ -114,6 +109,8 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     except OSError:
         logger.exception(f"Failed to load Noxfile {global_config.noxfile}")
         return 2
+    else:
+        return _load_and_exec_nox_module(global_config)
 
 
 def merge_noxfile_options(
