@@ -105,14 +105,16 @@ def run(
         if is_external_tool:
             if external == "error":
                 logger.error(
-                    f"Error: {cmd} is not installed into the virtualenv, it is located at {cmd_path}. "
-                    "Pass external=True into run() to explicitly allow this."
+                    f"Error: {cmd} is not installed into the virtualenv, it is located"
+                    f" at {cmd_path}. Pass external=True into run() to explicitly allow"
+                    " this."
                 )
                 raise CommandFailed("External program disallowed.")
             elif external is False:
                 logger.warning(
-                    f"Warning: {cmd} is not installed into the virtualenv, it is located at {cmd_path}. This might cause issues! "
-                    "Pass external=True into run() to silence this message."
+                    f"Warning: {cmd} is not installed into the virtualenv, it is"
+                    f" located at {cmd_path}. This might cause issues! Pass"
+                    " external=True into run() to silence this message."
                 )
 
     env = _clean_env(env)

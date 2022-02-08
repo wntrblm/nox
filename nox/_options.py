@@ -48,7 +48,8 @@ options.add_groups(
     _option_set.OptionGroup(
         "environment",
         "Environment options",
-        "These arguments are used to control Nox's creation and usage of virtual environments.",
+        "These arguments are used to control Nox's creation and usage of virtual"
+        " environments.",
     ),
     _option_set.OptionGroup(
         "execution",
@@ -317,8 +318,11 @@ options.add_options(
         group=options.groups["environment"],
         noxfile=True,
         merge_func=_default_venv_backend_merge_func,
-        help="Virtual environment backend to use by default for nox sessions, this is ``'virtualenv'`` by default but "
-        "any of ``('virtualenv', 'conda', 'mamba', 'venv')`` are accepted.",
+        help=(
+            "Virtual environment backend to use by default for nox sessions, this is"
+            " ``'virtualenv'`` by default but any of ``('virtualenv', 'conda', 'mamba',"
+            " 'venv')`` are accepted."
+        ),
         choices=["none", "virtualenv", "conda", "mamba", "venv"],
     ),
     _option_set.Option(
@@ -328,9 +332,12 @@ options.add_options(
         group=options.groups["environment"],
         noxfile=True,
         merge_func=_force_venv_backend_merge_func,
-        help="Virtual environment backend to force-use for all nox sessions in this run, overriding any other venv "
-        "backend declared in the nox file and ignoring the default backend. Any of ``('virtualenv', 'conda', 'mamba', 'venv')`` "
-        "are accepted.",
+        help=(
+            "Virtual environment backend to force-use for all nox sessions in this run,"
+            " overriding any other venv backend declared in the nox file and ignoring"
+            " the default backend. Any of ``('virtualenv', 'conda', 'mamba', 'venv')``"
+            " are accepted."
+        ),
         choices=["none", "virtualenv", "conda", "mamba", "venv"],
     ),
     _option_set.Option(
@@ -339,8 +346,10 @@ options.add_options(
         group=options.groups["environment"],
         default=False,
         action="store_true",
-        help="Runs the selected sessions directly on the current interpreter, without creating a venv. This is an alias "
-        "for '--force-venv-backend none'.",
+        help=(
+            "Runs the selected sessions directly on the current interpreter, without"
+            " creating a venv. This is an alias for '--force-venv-backend none'."
+        ),
     ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
@@ -392,8 +401,8 @@ options.add_options(
         group=options.groups["python"],
         nargs="*",
         help=(
-            "Run sessions with the given interpreters instead of those listed in the Noxfile."
-            " This is a shorthand for ``--python=X.Y --extra-python=X.Y``."
+            "Run sessions with the given interpreters instead of those listed in the"
+            " Noxfile. This is a shorthand for ``--python=X.Y --extra-python=X.Y``."
         ),
         finalizer_func=_force_pythons_finalizer,
     ),
@@ -416,7 +425,10 @@ options.add_options(
         ("--error-on-external-run",),
         ("--no-error-on-external-run",),
         group=options.groups["execution"],
-        help="Error if run() is used to execute a program that isn't installed in a session's virtualenv.",
+        help=(
+            "Error if run() is used to execute a program that isn't installed in a"
+            " session's virtualenv."
+        ),
     ),
     _option_set.Option(
         "install_only",
@@ -449,7 +461,10 @@ options.add_options(
         "--non-interactive",
         group=options.groups["execution"],
         action="store_true",
-        help="Force session.interactive to always be False, even in interactive sessions.",
+        help=(
+            "Force session.interactive to always be False, even in interactive"
+            " sessions."
+        ),
     ),
     _option_set.Option(
         "nocolor",

@@ -437,7 +437,8 @@ class Session:
             prefix_args = ("--prefix", venv.location)
         elif not isinstance(venv, PassthroughEnv):  # pragma: no cover
             raise ValueError(
-                "A session without a conda environment can not install dependencies from conda."
+                "A session without a conda environment can not install dependencies"
+                " from conda."
             )
 
         if not args:
@@ -455,7 +456,8 @@ class Session:
         extraopts: list[str] = []
         if auto_offline and venv.is_offline():
             logger.warning(
-                "Automatically setting the `--offline` flag as conda repo seems unreachable."
+                "Automatically setting the `--offline` flag as conda repo seems"
+                " unreachable."
             )
             extraopts.append("--offline")
 
@@ -664,7 +666,8 @@ class SessionRunner:
             )
         else:
             raise ValueError(
-                f"Expected venv_backend one of ('virtualenv', 'conda', 'mamba', 'venv'), but got '{backend}'."
+                "Expected venv_backend one of ('virtualenv', 'conda', 'mamba',"
+                f" 'venv'), but got '{backend}'."
             )
 
         self.venv.create()
