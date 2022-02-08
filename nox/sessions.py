@@ -688,9 +688,13 @@ class SessionRunner:
             return Result(self, Status.SUCCESS)
 
         except nox.virtualenv.InterpreterNotFound as exc:
-            if self.global_config.error_on_missing_interpreters:
+            if self.global_config.error_on_missing_interpreters or "CI" in os.environ:
                 return Result(self, Status.FAILED, reason=str(exc))
             else:
+                logger.warning(
+                    "Missing interpreters will error by default on CI systems."
+                    " Use `--error-on-missing-interpreters` to emulate this behaviour."
+                )
                 return Result(self, Status.SKIPPED, reason=str(exc))
 
         except _SessionQuit as exc:
