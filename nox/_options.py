@@ -139,26 +139,6 @@ def _envdir_merge_func(
     return command_args.envdir or noxfile_args.envdir or ".nox"
 
 
-def _child_shutdown_timeout_merge_func(
-    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
-) -> float | None:
-    """Merge child_shutdown_timeout from command args and nox file.
-
-    Args:
-        command_args (_option_set.Namespace): The options specified on the
-            command-line.
-        noxfile_Args (_option_set.Namespace): The options specified in the
-            Noxfile.
-    """
-    try:
-        return float(command_args.child_shutdown_timeout)
-    except (ValueError, TypeError):
-        try:
-            return float(noxfile_args.child_shutdown_timeout)
-        except (ValueError, TypeError):
-            return None
-
-
 def _sessions_default() -> list[str] | None:
     """Looks at the NOXSESSION env var to set the default value for sessions."""
     nox_env = os.environ.get("NOXSESSION")
@@ -455,18 +435,6 @@ options.add_options(
             "Skip invocations of session methods for installing packages"
             " (session.install, session.conda_install, session.run_always)"
             " when a virtualenv is being reused."
-        ),
-    ),
-    _option_set.Option(
-        "child_shutdown_timeout",
-        "--child-shutdown-timeout",
-        noxfile=True,
-        merge_func=_child_shutdown_timeout_merge_func,
-        type=float,
-        group=options.groups["execution"],
-        help=(
-            "The number of seconds to wait for children to shut down cleanly after "
-            "receiving a SIGTERM signal before sending them a SIGKILL signal."
         ),
     ),
     _option_set.Option(
