@@ -901,9 +901,10 @@ class TestSessionRunner:
         assert result.status == nox.sessions.Status.SKIPPED
         assert "no parameters" in result.reason
 
-    def test_execute_skip_missing_interpreter(self, caplog):
+    def test_execute_skip_missing_interpreter(self, caplog, monkeypatch):
         runner = self.make_runner_with_mock_venv()
         runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
+        monkeypatch.delenv("CI", raising=False)
 
         result = runner.execute()
 
@@ -913,12 +914,12 @@ class TestSessionRunner:
             "Missing interpreters will error by default on CI systems." in caplog.text
         )
 
-    def test_execute_missing_interpreter_on_CI(self):
+    def test_execute_missing_interpreter_on_CI(self, monkeypatch):
         runner = self.make_runner_with_mock_venv()
         runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
+        monkeypatch.setenv("CI", "True")
 
-        with mock.patch.dict(os.environ, {"CI": True}):
-            result = runner.execute()
+        result = runner.execute()
 
         assert result.status == nox.sessions.Status.FAILED
         assert "meep" in result.reason
