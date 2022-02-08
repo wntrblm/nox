@@ -63,7 +63,7 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
     if not loader:  # pragma: no cover
         raise OSError(f"Could not get module loader for {global_config.noxfile}")
     # See https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
-    loader.exec_module(module)  # type: ignore[attr-defined]
+    loader.exec_module(module)
     return module
 
 
@@ -200,7 +200,8 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
             ast.parse(global_config.keywords, mode="eval")
         except SyntaxError:
             logger.error(
-                "Error while collecting sessions: keywords argument must be a Python expression."
+                "Error while collecting sessions: keywords argument must be a Python"
+                " expression."
             )
             return 3
 
@@ -254,7 +255,8 @@ def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
         )
 
     print(
-        f"\nsessions marked with {selected_color}*{reset} are selected, sessions marked with {skipped_color}-{reset} are skipped."
+        f"\nsessions marked with {selected_color}*{reset} are selected, sessions marked"
+        f" with {skipped_color}-{reset} are skipped."
     )
 
 
@@ -299,7 +301,8 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
         if WARN_PYTHONS_IGNORED in session.func.should_warn:
             logger.warning(
                 f"Session {session.name} is set to run with venv_backend='none', "
-                f"IGNORING its python={session.func.should_warn[WARN_PYTHONS_IGNORED]} parametrization. "
+                "IGNORING its"
+                f" python={session.func.should_warn[WARN_PYTHONS_IGNORED]} parametrization. "
             )
 
         result = session.execute()
