@@ -664,7 +664,10 @@ class TestSession:
         with mock.patch.object(session, "_run", autospec=True) as run:
             with pytest.warns(
                 FutureWarning,
-                match=r"use of session\.install\(\) is deprecated since it would modify the global Python environment",
+                match=(
+                    r"use of session\.install\(\) is deprecated since it would modify"
+                    r" the global Python environment"
+                ),
             ):
                 session.install("requests", "urllib3")
             run.assert_called_once_with(
