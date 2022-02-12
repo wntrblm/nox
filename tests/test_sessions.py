@@ -905,9 +905,12 @@ class TestSessionRunner:
         assert "no parameters" in result.reason
 
     def test_execute_skip_missing_interpreter(self, caplog, monkeypatch):
+        # Important to have this first here as the runner will pick it up
+        # to set default for --error-on-missing-interpreters
+        monkeypatch.delenv("CI", raising=False)
+
         runner = self.make_runner_with_mock_venv()
         runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
-        monkeypatch.delenv("CI", raising=False)
 
         result = runner.execute()
 
