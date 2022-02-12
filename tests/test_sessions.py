@@ -749,7 +749,7 @@ class TestSessionRunner:
                 envdir="envdir",
                 posargs=[],
                 reuse_existing_virtualenvs=False,
-                error_on_missing_interpreters=False,
+                error_on_missing_interpreters=True if "CI" in os.environ else False,
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -918,9 +918,9 @@ class TestSessionRunner:
         )
 
     def test_execute_missing_interpreter_on_CI(self, monkeypatch):
+        monkeypatch.setenv("CI", "True")
         runner = self.make_runner_with_mock_venv()
         runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
-        monkeypatch.setenv("CI", "True")
 
         result = runner.execute()
 

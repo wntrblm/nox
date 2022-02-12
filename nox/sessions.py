@@ -691,7 +691,7 @@ class SessionRunner:
             return Result(self, Status.SUCCESS)
 
         except nox.virtualenv.InterpreterNotFound as exc:
-            if self.global_config.error_on_missing_interpreters or "CI" in os.environ:
+            if self.global_config.error_on_missing_interpreters:
                 return Result(self, Status.FAILED, reason=str(exc))
             else:
                 logger.warning(
