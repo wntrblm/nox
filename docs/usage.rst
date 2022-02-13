@@ -218,13 +218,15 @@ If the Noxfile sets ``nox.options.stop_on_first_error``, you can override the No
 Failing sessions when the interpreter is missing
 ------------------------------------------------
 
-By default, Nox will skip sessions where the Python interpreter can't be found. If you want Nox to mark these sessions as failed, you can use ``--error-on-missing-interpreters``:
+By default, when not on CI, Nox will skip sessions where the Python interpreter can't be found. If you want Nox to mark these sessions as failed, you can use ``--error-on-missing-interpreters``:
 
 .. code-block:: console
 
     nox --error-on-missing-interpreters
 
 If the Noxfile sets ``nox.options.error_on_missing_interpreters``, you can override the Noxfile setting from the command line by using ``--no-error-on-missing-interpreters``.
+
+If being run on Continuous Integration (CI) systems, Nox will treat missing interpreters as errors by default to avoid sessions silently passing when the requested python interpreter is not installed. Nox does this by looking for an environment variable called ``CI`` which is a convention used by most CI providers.
 
 .. _opt-error-on-external-run:
 

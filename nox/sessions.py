@@ -694,6 +694,9 @@ class SessionRunner:
             if self.global_config.error_on_missing_interpreters:
                 return Result(self, Status.FAILED, reason=str(exc))
             else:
+                logger.warning(
+                    "Missing interpreters will error by default on CI systems."
+                )
                 return Result(self, Status.SKIPPED, reason=str(exc))
 
         except _SessionQuit as exc:
