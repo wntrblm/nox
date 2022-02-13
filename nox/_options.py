@@ -419,7 +419,7 @@ options.add_options(
         ("--no-error-on-missing-interpreters",),
         group=options.groups["execution"],
         help="Error instead of skipping sessions if an interpreter can not be located.",
-        default=True if "CI" in os.environ else False,
+        default="CI" in os.environ,
     ),
     *_option_set.make_flag_pair(
         "error_on_external_run",

@@ -749,7 +749,7 @@ class TestSessionRunner:
                 envdir="envdir",
                 posargs=[],
                 reuse_existing_virtualenvs=False,
-                error_on_missing_interpreters=True if "CI" in os.environ else False,
+                error_on_missing_interpreters="CI" in os.environ,
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
