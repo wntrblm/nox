@@ -749,7 +749,7 @@ class TestSessionRunner:
                 envdir="envdir",
                 posargs=[],
                 reuse_existing_virtualenvs=False,
-                error_on_missing_interpreters=False,
+                error_on_missing_interpreters="CI" in os.environ,
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
@@ -904,13 +904,30 @@ class TestSessionRunner:
         assert result.status == nox.sessions.Status.SKIPPED
         assert "no parameters" in result.reason
 
-    def test_execute_skip_missing_interpreter(self):
+    def test_execute_skip_missing_interpreter(self, caplog, monkeypatch):
+        # Important to have this first here as the runner will pick it up
+        # to set default for --error-on-missing-interpreters
+        monkeypatch.delenv("CI", raising=False)
+
         runner = self.make_runner_with_mock_venv()
         runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
 
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.SKIPPED
+        assert "meep" in result.reason
+        assert (
+            "Missing interpreters will error by default on CI systems." in caplog.text
+        )
+
+    def test_execute_missing_interpreter_on_CI(self, monkeypatch):
+        monkeypatch.setenv("CI", "True")
+        runner = self.make_runner_with_mock_venv()
+        runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
+
+        result = runner.execute()
+
+        assert result.status == nox.sessions.Status.FAILED
         assert "meep" in result.reason
 
     def test_execute_error_missing_interpreter(self):

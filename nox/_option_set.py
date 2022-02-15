@@ -157,6 +157,7 @@ def make_flag_pair(
     name: str,
     enable_flags: tuple[str, str] | tuple[str],
     disable_flags: tuple[str],
+    default: bool = False,
     **kwargs: Any,
 ) -> tuple[Option, Option]:
     """Returns two options - one to enable a behavior and another to disable it.
@@ -172,6 +173,7 @@ def make_flag_pair(
         *enable_flags,
         noxfile=True,
         merge_func=functools.partial(flag_pair_merge_func, name, disable_name),
+        default=default,
         **kwargs,
     )
 
