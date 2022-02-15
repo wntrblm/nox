@@ -3,6 +3,9 @@ import nox
 {% for envname, envconfig in config.envconfigs.items()|sort: %}
 @nox.session({%- if envconfig.basepython %}python='{{envconfig.basepython}}'{%- endif %})
 def {{fixname(envname)}}(session):
+    {%- if envconfig.description != '' %}
+    """{{envconfig.description}}"""
+    {%- endif %}
     {%- set envs = dict(envconfig.setenv) -%}
     {%- do envs.pop('PYTHONHASHSEED', None) -%}
     {%- do envs.pop('TOX_ENV_DIR', None) -%}
