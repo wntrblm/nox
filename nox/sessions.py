@@ -297,8 +297,8 @@ class Session:
             command. By default, all environment variables are passed.
         :type env: dict or None
         :param bool silent: Silence command output, unless the command fails.
-            ``False`` by default. If it's ``True``, it returns the output from
-            the command (unless the command fails).
+            If ``True``, returns the command output (unless the command fails).
+            ``False`` by default.
         :param success_codes: A list of return codes that are considered
             successful. By default, only ``0`` is considered success.
         :type success_codes: list, tuple, or None
