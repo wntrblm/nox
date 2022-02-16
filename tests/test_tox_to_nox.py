@@ -247,3 +247,67 @@ def test_chdir(makeconfig):
     """
         ).lstrip()
     )
+
+
+def test_dash_in_envname(makeconfig):
+    result = makeconfig(
+        textwrap.dedent(
+            """
+            [tox]
+            envlist = test-with-dash
+
+            [testenv:test-with-dash]
+            basepython = python2.7
+            """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent(
+            """
+        import nox
+
+
+        @nox.session(python='python2.7')
+        def test_with_dash(session):
+            session.install('.')
+        """
+        ).lstrip()
+    )
+
+
+def test_non_identifier_in_envname(makeconfig, capfd):
+    result = makeconfig(
+        textwrap.dedent(
+            """
+            [tox]
+            envlist = test-with-&
+
+            [testenv:test-with-&]
+            basepython = python2.7
+            """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent(
+            """
+        import nox
+
+
+        @nox.session(python='python2.7')
+        def test_with_&(session):
+            session.install('.')
+        """
+        ).lstrip()
+    )
+
+    out, _ = capfd.readouterr()
+
+    assert (
+        out
+        == "Environment 'test_with_&' is not a valid nox session name.\n"
+        "Manually update the session name in noxfile.py before running nox.\n"
+    )
