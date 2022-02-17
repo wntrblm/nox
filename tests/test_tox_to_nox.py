@@ -311,3 +311,35 @@ def test_non_identifier_in_envname(makeconfig, capfd):
         == "Environment 'test_with_&' is not a valid nox session name.\n"
         "Manually update the session name in noxfile.py before running nox.\n"
     )
+
+
+def test_descriptions_into_docstrings(makeconfig):
+    result = makeconfig(
+        textwrap.dedent(
+            """
+            [tox]
+            envlist = lint
+
+            [testenv:lint]
+            basepython = python2.7
+            description =
+                runs the lint action
+                now with an unnecessary second line
+            """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent(
+            """
+            import nox
+
+
+            @nox.session(python='python2.7')
+            def lint(session):
+                \"\"\"runs the lint action now with an unnecessary second line\"\"\"
+                session.install('.')
+            """
+        ).lstrip()
+    )
