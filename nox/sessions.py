@@ -273,7 +273,7 @@ class Session:
         You can extend the shutdown timeout to allow long-running cleanup tasks to
         complete before being terminated, for example, to allow pytest to clean up
         large projects in the case that nox receives an interrupt signal from your
-        build system and needs to terminate its child processes. 
+        build system and needs to terminate its child processes.
 
             session.run(
                 'pytest', '-k', 'long_cleanup',
