@@ -23,8 +23,8 @@ from typing import IO, Mapping, Sequence
 
 def shutdown_process(
     proc: subprocess.Popen,
-    interrupt_timeout: float,
-    terminate_timeout: float,
+    interrupt_timeout: float | None,
+    terminate_timeout: float | None,
 ) -> tuple[bytes, bytes]:
     """Gracefully shutdown a child process."""
     with contextlib.suppress(subprocess.TimeoutExpired):
@@ -63,8 +63,8 @@ def popen(
     silent: bool = False,
     stdout: int | IO | None = None,
     stderr: int | IO = subprocess.STDOUT,
-    interrupt_timeout: float = 0.3,
-    terminate_timeout: float = 0.2,
+    interrupt_timeout: float | None = 0.3,
+    terminate_timeout: float | None = 0.2,
 ) -> tuple[int, str]:
     if silent and stdout is not None:
         raise ValueError(

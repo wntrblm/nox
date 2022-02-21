@@ -355,7 +355,8 @@ class TestSession:
             "terminate_timeout_expected",
         ),
         [
-            (None, None, 0.3, 0.2),
+            ("default", "default", 0.3, 0.2),
+            (None, None, None, None),
             (0, 0, 0, 0),
             (1, 2, 1, 2),
         ],
@@ -382,9 +383,9 @@ class TestSession:
             shutdown_process.return_value = ("", "")
 
             timeout_kwargs = {}
-            if interrupt_timeout_setting is not None:
+            if interrupt_timeout_setting != "default":
                 timeout_kwargs["interrupt_timeout"] = interrupt_timeout_setting
-            if terminate_timeout_setting is not None:
+            if terminate_timeout_setting != "default":
                 timeout_kwargs["terminate_timeout"] = terminate_timeout_setting
 
             with pytest.raises(KeyboardInterrupt):
