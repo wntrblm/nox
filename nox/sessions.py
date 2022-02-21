@@ -274,7 +274,7 @@ class Session:
         complete before being terminated. For example, if you wanted to allow ``pytest``
         extra time to clean up large projects in the case that nox receives an
         interrupt signal from your build system and needs to terminate its child
-        processes.
+        processes::
 
             session.run(
                 'pytest', '-k', 'long_cleanup',
