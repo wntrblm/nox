@@ -20,7 +20,6 @@ import copy
 import json
 import os
 import platform
-from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
@@ -89,56 +88,13 @@ def test_load_nox_module_not_found(caplog, tmp_path):
     )
 
 
-def test_load_nox_module_IOError(caplog):
-
-    # Need to give it a noxfile that exists so load_nox_module can progress
-    # past FileNotFoundError
-    # use our own noxfile.py for this
-    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
-    config = _options.options.namespace(noxfile=str(our_noxfile))
-
-    with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_load:
-        mock_load.side_effect = IOError
-
+def test_load_nox_module_os_error(caplog):
+    noxfile = os.path.join(RESOURCES, "noxfile.py")
+    config = _options.options.namespace(noxfile=noxfile)
+    with mock.patch("nox.tasks.check_nox_version", autospec=True) as version_checker:
+        version_checker.side_effect = OSError
         assert tasks.load_nox_module(config) == 2
-        assert "Failed to load Noxfile" in caplog.text
-
-
-def test_load_nox_module_OSError(caplog):
-
-    # Need to give it a noxfile that exists so load_nox_module can progress
-    # past FileNotFoundError
-    # use our own noxfile.py for this
-    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
-    config = _options.options.namespace(noxfile=str(our_noxfile))
-
-    with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_load:
-        mock_load.side_effect = OSError
-
-        assert tasks.load_nox_module(config) == 2
-        assert "Failed to load Noxfile" in caplog.text
-
-
-def test_load_nox_module_invalid_spec():
-    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
-    config = _options.options.namespace(noxfile=str(our_noxfile))
-
-    with mock.patch("nox.tasks.importlib.util.spec_from_file_location") as mock_spec:
-        mock_spec.return_value = None
-
-        with pytest.raises(IOError):
-            tasks._load_and_exec_nox_module(config)
-
-
-def test_load_nox_module_invalid_module():
-    our_noxfile = Path(__file__).parent.parent.joinpath("noxfile.py")
-    config = _options.options.namespace(noxfile=str(our_noxfile))
-
-    with mock.patch("nox.tasks.importlib.util.module_from_spec") as mock_spec:
-        mock_spec.return_value = None
-
-        with pytest.raises(IOError):
-            tasks._load_and_exec_nox_module(config)
+        assert f"Failed to load Noxfile {noxfile}" in caplog.text
 
 
 @pytest.fixture

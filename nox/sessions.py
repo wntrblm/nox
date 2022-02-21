@@ -297,6 +297,7 @@ class Session:
             command. By default, all environment variables are passed.
         :type env: dict or None
         :param bool silent: Silence command output, unless the command fails.
+            If ``True``, returns the command output (unless the command fails).
             ``False`` by default.
         :param success_codes: A list of return codes that are considered
             successful. By default, only ``0`` is considered success.
@@ -694,6 +695,9 @@ class SessionRunner:
             if self.global_config.error_on_missing_interpreters:
                 return Result(self, Status.FAILED, reason=str(exc))
             else:
+                logger.warning(
+                    "Missing interpreters will error by default on CI systems."
+                )
                 return Result(self, Status.SKIPPED, reason=str(exc))
 
         except _SessionQuit as exc:

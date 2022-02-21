@@ -33,6 +33,16 @@ def wrapjoin(seq: Iterator[Any]) -> str:
     return ", ".join([f"'{item}'" for item in seq])
 
 
+def fixname(envname: str) -> str:
+    envname = envname.replace("-", "_")
+    if not envname.isidentifier():
+        print(
+            f"Environment {envname!r} is not a valid nox session name.\n"
+            "Manually update the session name in noxfile.py before running nox."
+        )
+    return envname
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Converts toxfiles to noxfiles.")
     parser.add_argument("--output", default="noxfile.py")
@@ -40,7 +50,7 @@ def main() -> None:
     args = parser.parse_args()
 
     config = tox.config.parseconfig([])
-    output = _TEMPLATE.render(config=config, wrapjoin=wrapjoin)
+    output = _TEMPLATE.render(config=config, wrapjoin=wrapjoin, fixname=fixname)
 
     with open(args.output, "w") as outfile:
         outfile.write(output)
