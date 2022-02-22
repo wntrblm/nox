@@ -283,7 +283,10 @@ class TestSession:
             session.run(sys.executable, "--version")
 
         run.assert_called_once_with(
-            (sys.executable, "--version"), external=True, env=mock.ANY, paths=None
+            (sys.executable, "--version"),
+            external=True,
+            env=mock.ANY,
+            paths=None,
         )
 
     def test_run_external_condaenv(self):
@@ -343,6 +346,56 @@ class TestSession:
         runner.global_config.install_only = True
 
         assert session.run_always(operator.add, 23, 19) == 42
+
+    @pytest.mark.parametrize(
+        (
+            "interrupt_timeout_setting",
+            "terminate_timeout_setting",
+            "interrupt_timeout_expected",
+            "terminate_timeout_expected",
+        ),
+        [
+            ("default", "default", 0.3, 0.2),
+            (None, None, None, None),
+            (0, 0, 0, 0),
+            (1, 2, 1, 2),
+        ],
+    )
+    def test_run_shutdown_process_timeouts(
+        self,
+        interrupt_timeout_setting,
+        terminate_timeout_setting,
+        interrupt_timeout_expected,
+        terminate_timeout_expected,
+    ):
+        session, runner = self.make_session_and_runner()
+
+        runner.venv = nox.virtualenv.ProcessEnv()
+
+        subp_popen_instance = mock.Mock()
+        subp_popen_instance.communicate.side_effect = KeyboardInterrupt()
+        with mock.patch(
+            "nox.popen.shutdown_process", autospec=True
+        ) as shutdown_process, mock.patch(
+            "nox.popen.subprocess.Popen",
+            new=mock.Mock(return_value=subp_popen_instance),
+        ):
+            shutdown_process.return_value = ("", "")
+
+            timeout_kwargs = {}
+            if interrupt_timeout_setting != "default":
+                timeout_kwargs["interrupt_timeout"] = interrupt_timeout_setting
+            if terminate_timeout_setting != "default":
+                timeout_kwargs["terminate_timeout"] = terminate_timeout_setting
+
+            with pytest.raises(KeyboardInterrupt):
+                session.run(sys.executable, "--version", **timeout_kwargs)
+
+        shutdown_process.assert_called_once_with(
+            proc=mock.ANY,
+            interrupt_timeout=interrupt_timeout_expected,
+            terminate_timeout=terminate_timeout_expected,
+        )
 
     @pytest.mark.parametrize(
         ("no_install", "reused", "run_called"),

@@ -270,6 +270,17 @@ class Session:
                 'bash', '-c', 'echo $SOME_ENV',
                 env={'SOME_ENV': 'Hello'})
 
+        You can extend the shutdown timeout to allow long-running cleanup tasks to
+        complete before being terminated. For example, if you wanted to allow ``pytest``
+        extra time to clean up large projects in the case that nox receives an
+        interrupt signal from your build system and needs to terminate its child
+        processes::
+
+            session.run(
+                'pytest', '-k', 'long_cleanup',
+                interrupt_timeout=10.0,
+                terminate_timeout=2.0)
+
         You can also tell nox to treat non-zero exit codes as success using
         ``success_codes``. For example, if you wanted to treat the ``pytest``
         "tests discovered, but none selected" error as success::
@@ -308,6 +319,16 @@ class Session:
             ``--error-on-external-run``. This has no effect for sessions that
             do not have a virtualenv.
         :type external: bool
+        :param interrupt_timeout: The timeout (in seconds) that nox should wait after it
+            and its children receive an interrupt signal before sending a terminate
+            signal to its children. Set to ``None`` to never send a terminate signal.
+            Default: ``0.3``
+        :type interrupt_timeout: float or None
+        :param terminate_timeout: The timeout (in seconds) that nox should wait after it
+            sends a terminate signal to its children before sending a kill signal to
+            them. Set to ``None`` to never send a kill signal.
+            Default: ``0.2``
+        :type terminate_timeout: float or None
         """
         if not args:
             raise ValueError("At least one argument required to run().")
@@ -348,6 +369,16 @@ class Session:
             ``--error-on-external-run``. This has no effect for sessions that
             do not have a virtualenv.
         :type external: bool
+        :param interrupt_timeout: The timeout (in seconds) that nox should wait after it
+            and its children receive an interrupt signal before sending a terminate
+            signal to its children. Set to ``None`` to never send a terminate signal.
+            Default: ``0.3``
+        :type interrupt_timeout: float or None
+        :param terminate_timeout: The timeout (in seconds) that nox should wait after it
+            sends a terminate signal to its children before sending a kill signal to
+            them. Set to ``None`` to never send a kill signal.
+            Default: ``0.2``
+        :type terminate_timeout: float or None
         """
         if (
             self._runner.global_config.no_install
