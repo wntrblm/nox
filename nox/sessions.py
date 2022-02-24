@@ -532,6 +532,12 @@ class Session:
             session.install('-e', '.')
 
         Additional keyword args are the same as for :meth:`run`.
+        
+        .. warning::
+
+            Running ``session.install`` without a virtual environment
+            is no longer supported. If you still want to do that, please
+            use ``session.run("pip", "install", ...)`` instead.
 
         .. _pip: https://pip.readthedocs.org
         """
@@ -544,13 +550,11 @@ class Session:
                 "A session without a virtualenv can not install dependencies."
             )
         if isinstance(venv, PassthroughEnv):
-            warnings.warn(
+            raise ValueError (
                 f"Session {self.name} does not have a virtual environment, "
-                "so use of session.install() is deprecated since it would modify "
+                "so use of session.install() is no longer allowed since it would modify "
                 "the global Python environment. If you're really sure that is "
-                'what you want to do, use session.run("pip", "install", ...) instead.',
-                category=FutureWarning,
-                stacklevel=2,
+                'what you want to do, use session.run("pip", "install", ...) instead.'
             )
         if not args:
             raise ValueError("At least one argument required to install().")
