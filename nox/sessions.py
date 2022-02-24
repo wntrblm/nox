@@ -22,7 +22,6 @@ import pathlib
 import re
 import sys
 import unicodedata
-import warnings
 from types import TracebackType
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -532,7 +531,7 @@ class Session:
             session.install('-e', '.')
 
         Additional keyword args are the same as for :meth:`run`.
-        
+
         .. warning::
 
             Running ``session.install`` without a virtual environment
@@ -550,11 +549,11 @@ class Session:
                 "A session without a virtualenv can not install dependencies."
             )
         if isinstance(venv, PassthroughEnv):
-            raise ValueError (
-                f"Session {self.name} does not have a virtual environment, "
-                "so use of session.install() is no longer allowed since it would modify "
-                "the global Python environment. If you're really sure that is "
-                'what you want to do, use session.run("pip", "install", ...) instead.'
+            raise ValueError(
+                f"Session {self.name} does not have a virtual environment, so use of"
+                " session.install() is no longer allowed since it would modify the"
+                " global Python environment. If you're really sure that is what you"
+                ' want to do, use session.run("pip", "install", ...) instead.'
             )
         if not args:
             raise ValueError("At least one argument required to install().")
