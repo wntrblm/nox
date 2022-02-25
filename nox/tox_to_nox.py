@@ -38,7 +38,7 @@ def fixname(envname: str) -> str:
     if not envname.isidentifier():
         print(
             f"Environment {envname!r} is not a valid nox session name.\n"
-            "Manually update the session name in noxfile.py before running Nox."
+            "Manually update the session name in noxfile.py before running nox."
         )
     return envname
 
