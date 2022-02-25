@@ -1,5 +1,5 @@
 #
-# nox documentation build configuration file, created by
+# Nox documentation build configuration file, created by
 # sphinx-quickstart on Sun Feb 28 00:05:25 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -24,7 +24,7 @@ except ImportError:
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-# Note: even though nox is installed when the docs are built, there's a
+# Note: even though Nox is installed when the docs are built, there's a
 # possibility it's installed as a bytecode-compiled binary (.egg). So,
 # include the source anyway.
 sys.path.insert(0, os.path.abspath(".."))

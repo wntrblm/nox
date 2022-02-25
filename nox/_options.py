@@ -23,7 +23,7 @@ from typing import Any, Sequence
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 
-"""All of nox's configuration options."""
+"""All of Nox's configuration options."""
 
 options = _option_set.OptionSet(
     description="Nox is a Python automation toolkit.", add_help=False
@@ -86,7 +86,7 @@ def _sessions_and_keywords_merge_func(
 def _default_venv_backend_merge_func(
     command_args: argparse.Namespace, noxfile_args: argparse.Namespace
 ) -> str:
-    """Merge default_venv_backend from command args and nox file. Default is "virtualenv".
+    """Merge default_venv_backend from command args and Noxfile. Default is "virtualenv".
 
     Args:
         command_args (_option_set.Namespace): The options specified on the
@@ -104,7 +104,7 @@ def _default_venv_backend_merge_func(
 def _force_venv_backend_merge_func(
     command_args: argparse.Namespace, noxfile_args: argparse.Namespace
 ) -> str:
-    """Merge force_venv_backend from command args and nox file. Default is None.
+    """Merge force_venv_backend from command args and Noxfile. Default is None.
 
     Args:
         command_args (_option_set.Namespace): The options specified on the
@@ -319,7 +319,7 @@ options.add_options(
         noxfile=True,
         merge_func=_default_venv_backend_merge_func,
         help=(
-            "Virtual environment backend to use by default for nox sessions, this is"
+            "Virtual environment backend to use by default for Nox sessions, this is"
             " ``'virtualenv'`` by default but any of ``('virtualenv', 'conda', 'mamba',"
             " 'venv')`` are accepted."
         ),
@@ -333,8 +333,8 @@ options.add_options(
         noxfile=True,
         merge_func=_force_venv_backend_merge_func,
         help=(
-            "Virtual environment backend to force-use for all nox sessions in this run,"
-            " overriding any other venv backend declared in the nox file and ignoring"
+            "Virtual environment backend to force-use for all Nox sessions in this run,"
+            " overriding any other venv backend declared in the Noxfile and ignoring"
             " the default backend. Any of ``('virtualenv', 'conda', 'mamba', 'venv')``"
             " are accepted."
         ),
@@ -371,12 +371,12 @@ options.add_options(
         finalizer_func=_R_finalizer,
     ),
     _option_set.Option(
-        "noxfile",
+        "Noxfile",
         "-f",
         "--noxfile",
         group=options.groups["general"],
         default="noxfile.py",
-        help="Location of the Python file containing nox sessions.",
+        help="Location of the Python file containing Nox sessions.",
     ),
     _option_set.Option(
         "envdir",
@@ -384,7 +384,7 @@ options.add_options(
         noxfile=True,
         merge_func=_envdir_merge_func,
         group=options.groups["environment"],
-        help="Directory where nox will store virtualenvs, this is ``.nox`` by default.",
+        help="Directory where Nox will store virtualenvs, this is ``.nox`` by default.",
     ),
     _option_set.Option(
         "extra_pythons",

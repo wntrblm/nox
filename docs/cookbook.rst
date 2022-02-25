@@ -14,7 +14,7 @@ Nox is super easy to get started with, and super powerful right out of the box. 
 
 The kind of sessions that make you think "I didn't know you could do that!"
 
-This cookbook is intended to be a centralized, community-driven repository of awesome Nox sessions to act as a source of inspiration and a reference guide for nox's users. If you're doing something cool with Nox, why not add your session here?
+This cookbook is intended to be a centralized, community-driven repository of awesome Nox sessions to act as a source of inspiration and a reference guide for Nox's users. If you're doing something cool with Nox, why not add your session here?
 
 
 Contributing a Session
