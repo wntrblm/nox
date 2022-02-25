@@ -308,8 +308,8 @@ def test_non_identifier_in_envname(makeconfig, capfd):
 
     assert (
         out
-        == "Environment 'test_with_&' is not a valid nox session name.\n"
-        "Manually update the session name in noxfile.py before running nox.\n"
+        == "Environment 'test_with_&' is not a valid Nox session name.\n"
+        "Manually update the session name in noxfile.py before running Nox.\n"
     )
 
 
