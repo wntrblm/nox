@@ -39,7 +39,7 @@ VERSION = metadata.version("nox")
 
 
 # This is needed because CI systems will mess up these tests due to the
-# way nox handles the --session parameter's default value. This avoids that
+# way Nox handles the --session parameter's default value. This avoids that
 # mess.
 os.environ.pop("NOXSESSION", None)
 

@@ -371,7 +371,7 @@ options.add_options(
         finalizer_func=_R_finalizer,
     ),
     _option_set.Option(
-        "Noxfile",
+        "noxfile",
         "-f",
         "--noxfile",
         group=options.groups["general"],

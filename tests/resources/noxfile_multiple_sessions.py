@@ -17,7 +17,7 @@ from __future__ import annotations
 import nox
 
 # Deliberately giving these silly names so we know this is not confused
-# with the projects noxfile
+# with the projects Noxfile
 
 
 @nox.session
