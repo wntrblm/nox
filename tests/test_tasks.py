@@ -84,7 +84,7 @@ def test_load_nox_module_not_found(caplog, tmp_path):
 
     assert tasks.load_nox_module(config) == 2
     assert (
-        f"Failed to load Noxfile {bogus_noxfile}, no such file exists." in caplog.text
+        f"Failed to load noxfile {bogus_noxfile}, no such file exists." in caplog.text
     )
 
 
@@ -94,7 +94,7 @@ def test_load_nox_module_os_error(caplog):
     with mock.patch("nox.tasks.check_nox_version", autospec=True) as version_checker:
         version_checker.side_effect = OSError
         assert tasks.load_nox_module(config) == 2
-        assert f"Failed to load Noxfile {noxfile}" in caplog.text
+        assert f"Failed to load noxfile {noxfile}" in caplog.text
 
 
 @pytest.fixture
