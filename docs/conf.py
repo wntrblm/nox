@@ -58,7 +58,7 @@ source_suffix = [".rst", ".md"]
 master_doc = "index"
 
 # General information about the project.
-project = "nox"
+project = "Nox"
 copyright = "2016, Alethea Katherine Flowers"
 author = "Alethea Katherine Flowers"
 
