@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """High-level options interface. This allows defining options just once that
-can be specified from the command line and the noxfile, easily used in tests,
+can be specified from the command line and the Noxfile, easily used in tests,
 and surfaced in documentation."""
 
 from __future__ import annotations
@@ -113,7 +113,7 @@ def flag_pair_merge_func(
     command_args: Namespace,
     noxfile_args: Namespace,
 ) -> bool:
-    """Merge function for flag pairs. If the flag is set in the noxfile or
+    """Merge function for flag pairs. If the flag is set in the Noxfile or
     the command line params, return ``True`` *unless* the disable flag has been
     specified on the command-line.
 
@@ -162,7 +162,7 @@ def make_flag_pair(
 ) -> tuple[Option, Option]:
     """Returns two options - one to enable a behavior and another to disable it.
 
-    The positive option is considered to be available to the noxfile, as
+    The positive option is considered to be available to the Noxfile, as
     there isn't much point in doing flag pairs without it.
     """
     disable_name = f"no_{name}"
@@ -309,7 +309,7 @@ class OptionSet:
     def merge_namespaces(
         self, command_args: Namespace, noxfile_args: Namespace
     ) -> None:
-        """Merges the command-line options with the noxfile options."""
+        """Merges the command-line options with the Noxfile options."""
         command_args_copy = Namespace(**vars(command_args))
         for name, option in self.options.items():
             if option.merge_func:

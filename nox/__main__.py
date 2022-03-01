@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The nox `main` module.
+"""The Nox `main` module.
 
 This is the entrypoint for the ``nox`` command (specifically, the ``main``
 function). This module primarily loads configuration, and then passes

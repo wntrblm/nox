@@ -55,7 +55,7 @@ def test_formatter(caplog):
 
     logs = [rec for rec in caplog.records if rec.levelname == "OUTPUT"]
     assert len(logs) == 1
-    # Make sure output level log records are not nox prefixed
+    # Make sure output level log records are not Nox prefixed
     assert "nox" not in logs[0].message
 
 

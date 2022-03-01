@@ -65,7 +65,7 @@ def test_load_nox_module():
 
 
 def test_load_nox_module_expandvars():
-    # Assert that variables are expanded when looking up the path to the noxfile
+    # Assert that variables are expanded when looking up the path to the Noxfile
     # This is particular importand in Windows when one needs to use variables like
     # %TEMP% to point to the noxfile.py
     with mock.patch.dict(os.environ, {"RESOURCES_PATH": RESOURCES}):

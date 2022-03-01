@@ -51,7 +51,7 @@ def _parse_string_constant(node: ast.AST) -> str | None:  # pragma: no cover
 
 
 def _parse_needs_version(source: str, filename: str = "<unknown>") -> str | None:
-    """Parse ``nox.needs_version`` from the user's noxfile."""
+    """Parse ``nox.needs_version`` from the user's Noxfile."""
     value: str | None = None
     module: ast.Module = ast.parse(source, filename=filename)
     for statement in module.body:
@@ -68,7 +68,7 @@ def _parse_needs_version(source: str, filename: str = "<unknown>") -> str | None
 
 
 def _read_needs_version(filename: str) -> str | None:
-    """Read ``nox.needs_version`` from the user's noxfile."""
+    """Read ``nox.needs_version`` from the user's Noxfile."""
     with open(filename) as io:
         source = io.read()
 
@@ -95,12 +95,12 @@ def _check_nox_version_satisfies(needs_version: str) -> None:
 
 
 def check_nox_version(filename: str) -> None:
-    """Check if ``nox.needs_version`` in the user's noxfile is satisfied.
+    """Check if ``nox.needs_version`` in the user's Noxfile is satisfied.
 
     Args:
 
-        filename: The location of the user's noxfile. ``nox.needs_version`` is
-            read from the noxfile by parsing the AST.
+        filename: The location of the user's Noxfile. ``nox.needs_version`` is
+            read from the Noxfile by parsing the AST.
 
     Raises:
         VersionCheckFailed: The Nox version does not satisfy what

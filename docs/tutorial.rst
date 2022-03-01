@@ -259,7 +259,7 @@ And if you run ``nox --sessions lint`` Nox will just run the lint session:
     nox > Session lint was successful.
 
 
-In the noxfile, you can specify a default set of sessions to run. If so, a plain
+In the Noxfile, you can specify a default set of sessions to run. If so, a plain
 ``nox`` call will only trigger certain sessions:
 
 .. code-block:: python
