@@ -646,7 +646,7 @@ class TestSession:
                 external="error",
             )
 
-    def test_install_no_venv_deprecated(self):
+    def test_install_no_venv_failure(self):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -662,25 +662,14 @@ class TestSession:
 
         session = SessionNoSlots(runner=runner)
 
-        with mock.patch.object(session, "_run", autospec=True) as run:
-            with pytest.warns(
-                FutureWarning,
-                match=(
-                    r"use of session\.install\(\) is deprecated since it would modify"
-                    r" the global Python environment"
-                ),
-            ):
-                session.install("requests", "urllib3")
-            run.assert_called_once_with(
-                "python",
-                "-m",
-                "pip",
-                "install",
-                "requests",
-                "urllib3",
-                silent=True,
-                external="error",
-            )
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"use of session\.install\(\) is no longer allowed since"
+                r" it would modify the global Python environment"
+            ),
+        ):
+            session.install("requests", "urllib3")
 
     def test_notify(self):
         session, runner = self.make_session_and_runner()
