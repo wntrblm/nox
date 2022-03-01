@@ -50,7 +50,7 @@ The order that sessions are executed is the order that they appear in the Noxfil
 Specifying one or more sessions
 -------------------------------
 
-By default Nox will run all sessions defined in the noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``:
+By default Nox will run all sessions defined in the Noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``:
 
 .. code-block:: console
 
@@ -110,7 +110,7 @@ Then running ``nox --session tests`` will actually run all parametrized versions
 Changing the sessions default backend
 -------------------------------------
 
-By default nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``conda``, ``mamba``, and ``venv`` as well as no backend (passthrough to whatever python environment nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'virtualenv', 'conda', 'mamba', 'venv')``.
+By default Nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``conda``, ``mamba``, and ``venv`` as well as no backend (passthrough to whatever python environment Nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'virtualenv', 'conda', 'mamba', 'venv')``.
 
 .. code-block:: console
 
@@ -128,7 +128,7 @@ Note that using this option does not change the backend for sessions where ``ven
 Forcing the sessions backend
 ----------------------------
 
-You might work in a different environment than a project's default continuous integration settings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and nox file configuration. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
+You might work in a different environment than a project's default continuous integration settings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current Nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and Noxfile configuration. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
 
 .. code-block:: console
 
@@ -138,7 +138,7 @@ You might work in a different environment than a project's default continuous in
 
 You can also set this option in the Noxfile with ``nox.options.force_venv_backend``. In case both are provided, the commandline argument takes precedence.
 
-Finally note that the ``--no-venv`` flag is a shortcut for ``--force-venv-backend none`` and allows to temporarily run all selected sessions on the current python interpreter (the one running nox).
+Finally note that the ``--no-venv`` flag is a shortcut for ``--force-venv-backend none`` and allows to temporarily run all selected sessions on the current python interpreter (the one running Nox).
 
 .. code-block:: console
 
@@ -206,7 +206,7 @@ using the ``python`` specified for the current ``PATH``::
 Stopping if any session fails
 -----------------------------
 
-By default nox will continue to run all sessions even if one fails. You can use ``--stop-on-first-error`` to make nox abort as soon as the first session fails::
+By default Nox will continue to run all sessions even if one fails. You can use ``--stop-on-first-error`` to make Nox abort as soon as the first session fails::
 
     nox --stop-on-first-error
 
@@ -244,7 +244,7 @@ If the Noxfile sets ``nox.options.error_on_external_run``, you can override the 
 Specifying a different configuration file
 -----------------------------------------
 
-If for some reason your noxfile is not named *noxfile.py*, you can use ``--noxfile`` or ``-f``:
+If for some reason your Noxfile is not named *noxfile.py*, you can use ``--noxfile`` or ``-f``:
 
 .. code-block:: console
 
@@ -257,7 +257,7 @@ If for some reason your noxfile is not named *noxfile.py*, you can use ``--noxfi
 Storing virtualenvs in a different directory
 --------------------------------------------
 
-By default nox stores virtualenvs in ``./.nox``, however, you can change this using ``--envdir``:
+By default Nox stores virtualenvs in ``./.nox``, however, you can change this using ``--envdir``:
 
 .. code-block:: console
 
@@ -331,7 +331,7 @@ Controlling color output
 By default, Nox will output colorful logs if you're using in an interactive
 terminal. However, if you are redirecting ``stderr`` to a file or otherwise
 not using an interactive terminal, or the environment variable ``NO_COLOR`` is
-set, nox will output in plaintext. If this is not set, and ``FORCE_COLOR`` is
+set, Nox will output in plaintext. If this is not set, and ``FORCE_COLOR`` is
 present, color will be forced.
 
 You can manually control Nox's output using the ``--nocolor`` and ``--forcecolor`` flags.
@@ -417,7 +417,7 @@ zsh
     autoload -U bashcompinit
     bashcompinit
 
-    # Afterwards you can enable completion for nox:
+    # Afterwards you can enable completion for Nox:
     eval "$(register-python-argcomplete nox)"
 
 tcsh

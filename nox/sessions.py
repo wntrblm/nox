@@ -58,7 +58,7 @@ def _normalize_path(envdir: str, path: str | bytes) -> str:
             logger.error(
                 f"The virtualenv path {full_path} is too long and will cause issues on "
                 "some environments. Use the --envdir path to modify where "
-                "nox stores virtualenvs."
+                "Nox stores virtualenvs."
             )
 
     return full_path
@@ -271,7 +271,7 @@ class Session:
 
         You can extend the shutdown timeout to allow long-running cleanup tasks to
         complete before being terminated. For example, if you wanted to allow ``pytest``
-        extra time to clean up large projects in the case that nox receives an
+        extra time to clean up large projects in the case that Nox receives an
         interrupt signal from your build system and needs to terminate its child
         processes::
 
@@ -280,7 +280,7 @@ class Session:
                 interrupt_timeout=10.0,
                 terminate_timeout=2.0)
 
-        You can also tell nox to treat non-zero exit codes as success using
+        You can also tell Nox to treat non-zero exit codes as success using
         ``success_codes``. For example, if you wanted to treat the ``pytest``
         "tests discovered, but none selected" error as success::
 
@@ -318,12 +318,12 @@ class Session:
             ``--error-on-external-run``. This has no effect for sessions that
             do not have a virtualenv.
         :type external: bool
-        :param interrupt_timeout: The timeout (in seconds) that nox should wait after it
+        :param interrupt_timeout: The timeout (in seconds) that Nox should wait after it
             and its children receive an interrupt signal before sending a terminate
             signal to its children. Set to ``None`` to never send a terminate signal.
             Default: ``0.3``
         :type interrupt_timeout: float or None
-        :param terminate_timeout: The timeout (in seconds) that nox should wait after it
+        :param terminate_timeout: The timeout (in seconds) that Nox should wait after it
             sends a terminate signal to its children before sending a kill signal to
             them. Set to ``None`` to never send a kill signal.
             Default: ``0.2``
@@ -368,12 +368,12 @@ class Session:
             ``--error-on-external-run``. This has no effect for sessions that
             do not have a virtualenv.
         :type external: bool
-        :param interrupt_timeout: The timeout (in seconds) that nox should wait after it
+        :param interrupt_timeout: The timeout (in seconds) that Nox should wait after it
             and its children receive an interrupt signal before sending a terminate
             signal to its children. Set to ``None`` to never send a terminate signal.
             Default: ``0.3``
         :type interrupt_timeout: float or None
-        :param terminate_timeout: The timeout (in seconds) that nox should wait after it
+        :param terminate_timeout: The timeout (in seconds) that Nox should wait after it
             sends a terminate signal to its children before sending a kill signal to
             them. Set to ``None`` to never send a kill signal.
             Default: ``0.2``
@@ -711,7 +711,7 @@ class SessionRunner:
         logger.warning(f"Running session {self.friendly_name}")
 
         try:
-            # By default, nox should quietly change to the directory where
+            # By default, Nox should quietly change to the directory where
             # the noxfile.py file is located.
             cwd = py.path.local(
                 os.path.realpath(os.path.dirname(self.global_config.noxfile))

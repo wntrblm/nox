@@ -29,7 +29,7 @@ side of including lots of information, such as:
 ## Running tests
 
 Nox runs its own tests (it's recursive!). The best thing to do is start with
-a known-good nox installation, e.g. from PyPI:
+a known-good Nox installation, e.g. from PyPI:
 
     pip install --pre --upgrade nox
 

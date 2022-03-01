@@ -34,18 +34,18 @@ from nox.sessions import Result
 
 def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
     """
-    Loads, executes, then returns the global_config nox module.
+    Loads, executes, then returns the global_config Nox module.
 
     Args:
         global_config (Namespace): The global config.
 
     Raises:
-        IOError: If the nox module cannot be loaded. This
+        IOError: If the Nox module cannot be loaded. This
             exception is chosen such that it will be caught
             by load_nox_module and logged appropriately.
 
     Returns:
-        types.ModuleType: The initialised nox module.
+        types.ModuleType: The initialised Nox module.
     """
     spec = importlib.util.spec_from_file_location(
         "user_nox_module", global_config.noxfile
@@ -65,7 +65,7 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
 
 
 def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
-    """Load the user's noxfile and return the module object for it.
+    """Load the user's Noxfile and return the module object for it.
 
     .. note::
 
@@ -80,7 +80,7 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     """
     try:
         # Save the absolute path to the Noxfile.
-        # This will inoculate it if nox changes paths because of an implicit
+        # This will inoculate it if Nox changes paths because of an implicit
         # or explicit chdir (like the one below).
         global_config.noxfile = os.path.realpath(
             # Be sure to expand variables
@@ -130,7 +130,7 @@ def merge_noxfile_options(
 def discover_manifest(
     module: types.ModuleType | int, global_config: Namespace
 ) -> Manifest:
-    """Discover all session functions in the noxfile module.
+    """Discover all session functions in the Noxfile module.
 
     Args:
         module (module): The Noxfile module.
@@ -144,7 +144,7 @@ def discover_manifest(
     # sorted by decorator call time.
     functions = registry.get()
 
-    # Get the docstring from the noxfile
+    # Get the docstring from the Noxfile
     module_docstring = module.__doc__
 
     # Return the final dictionary of session functions.
@@ -163,14 +163,14 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
             the manifest otherwise (to be sent to the next task).
 
     """
-    # Shouldn't happen unless the noxfile is empty
+    # Shouldn't happen unless the Noxfile is empty
     if not manifest:
         logger.error(f"No sessions found in {global_config.noxfile}.")
         return 3
 
     # Filter by the name of any explicit sessions.
     # This can raise KeyError if a specified session does not exist;
-    # log this if it happens. The sessions does not come from the noxfile
+    # log this if it happens. The sessions does not come from the Noxfile
     # if keywords is not empty.
     if global_config.sessions is not None:
         try:
@@ -217,7 +217,7 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
 def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     # If the user just asked for a list of sessions, print that
     # and any docstring specified in noxfile.py and be done. This
-    # can also be called if noxfile sessions is an empty list.
+    # can also be called if Noxfile sessions is an empty list.
 
     if manifest.module_docstring:
         print(manifest.module_docstring.strip(), end="\n\n")
