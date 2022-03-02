@@ -48,6 +48,7 @@ ignore = [
     "docs/**",
     "noxfile.py",
     "requirements-conda-test.txt",
+    "requirements-dev.txt",
     "requirements-test.txt",
     "*.md",
     ".*",
