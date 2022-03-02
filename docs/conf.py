@@ -1,5 +1,5 @@
 #
-# nox documentation build configuration file, created by
+# Nox documentation build configuration file, created by
 # sphinx-quickstart on Sun Feb 28 00:05:25 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -24,7 +24,7 @@ except ImportError:
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-# Note: even though nox is installed when the docs are built, there's a
+# Note: even though Nox is installed when the docs are built, there's a
 # possibility it's installed as a bytecode-compiled binary (.egg). So,
 # include the source anyway.
 sys.path.insert(0, os.path.abspath(".."))
@@ -254,7 +254,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "nox.tex", "nox Documentation", "Alethea Katherine Flowers", "manual"),
+    (master_doc, "nox.tex", "Nox Documentation", "Alethea Katherine Flowers", "manual"),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -282,7 +282,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "nox", "nox Documentation", [author], 1)]
+man_pages = [(master_doc, "nox", "Nox Documentation", [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -297,7 +297,7 @@ texinfo_documents = [
     (
         master_doc,
         "nox",
-        "nox Documentation",
+        "Nox Documentation",
         author,
         "nox",
         "One line description of project.",

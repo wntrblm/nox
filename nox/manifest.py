@@ -36,7 +36,7 @@ class Manifest:
     """Session manifest.
 
     The session manifest provides the source of truth for the sequence of
-    sessions that should be run by nox.
+    sessions that should be run by Nox.
 
     It is possible for this to be mutated during execution. This allows for
     useful use cases, such as for one session to "notify" another or

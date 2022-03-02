@@ -126,7 +126,7 @@ Special thanks to our contributors:
 - Support users specifying an undeclared parametrization of python via `--extra-python` (#361)
 - Support double-digit minor version in `python` keyword (#367)
 - Add `py.typed` to `manifest.in` (#360)
-- Update nox to latest supported python versions. (#362)
+- Update Nox to latest supported python versions. (#362)
 - Decouple merging of `--python` with `nox.options` from `--sessions` and `--keywords` (#359)
 - Do not merge command-line options in place (#357)
 
@@ -180,7 +180,7 @@ Special thanks to our contributors:
 - Add `venv` as an option for `venv_backend`. (#231)
 - Add gdbgui to list of projects. (#235)
 - Add mypy to Nox's lint. (#230)
-- Add pipx to projects that use nox. (#225)
+- Add pipx to projects that use Nox. (#225)
 - Add `session(venv_backend='conda')` option to use Conda environments. (#217, #221)
 - Document how to call builtins on Windows. (#223)
 - Replace `imp.load_source()` with `importlib`. (#214)
@@ -345,7 +345,7 @@ Other changes:
 
 ## v0.18.1
 
-* Fix nox not returning a non-zero exit code on failure. (#55)
+* Fix Nox not returning a non-zero exit code on failure. (#55)
 * Restore result and report output. (#57)
 
 ## v0.18.0

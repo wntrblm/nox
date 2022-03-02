@@ -152,7 +152,7 @@ def locate_using_path_and_version(version: str) -> str | None:
 
 
 class PassthroughEnv(ProcessEnv):
-    """Represents the environment used to run nox itself
+    """Represents the environment used to run Nox itself
 
     For now, this class is empty but it might contain tools to grasp some
     hints about the actual env.
