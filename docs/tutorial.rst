@@ -181,7 +181,7 @@ You can also pass environment variables:
 
     @nox.session
     def tests(session):
-        session.install("black")
+        session.install("pytest")
         session.run(
             "pytest",
             env={
