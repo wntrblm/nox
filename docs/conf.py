@@ -129,7 +129,7 @@ html_theme_options = {
     "logo": "alice.png",
     "logo_name": True,
     "description": "Flexible test automation",
-    "github_user": "theacodes",
+    "github_user": "wntrblm",
     "github_repo": "nox",
     "github_banner": True,
     "github_button": False,
