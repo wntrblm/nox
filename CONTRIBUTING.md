@@ -3,15 +3,15 @@
 Thank you for your interest in improving Nox. Nox is open-source under the
 [Apache License Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) and welcomes contributions in the form of bug reports, feature requests, and pull requests.
 
-Nox is hosted on [GitHub](https://github.com/theacodes/nox).
+Nox is hosted on [GitHub](https://github.com/wntrblm/nox).
 
 ## Support, questions, and feature requests
 
-Feel free to file a bug on [GitHub](https://github.com/theacodes/nox).
+Feel free to file a bug on [GitHub](https://github.com/wntrblm/nox).
 
 ## Reporting issues
 
-File a bug on [GitHub](https://github.com/theacodes/nox). To help us figure out what's going on, please err on the
+File a bug on [GitHub](https://github.com/wntrblm/nox). To help us figure out what's going on, please err on the
 side of including lots of information, such as:
 
 * Operating system.
