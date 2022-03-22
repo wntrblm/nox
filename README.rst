@@ -12,4 +12,4 @@ The source code is available on `GitHub`_.
 
 .. _tox: https://tox.readthedocs.io
 .. _Read the Docs: https://nox.readthedocs.io
-.. _GitHub: https://github.com/theacodes/nox
+.. _GitHub: https://github.com/wntrblm/nox
