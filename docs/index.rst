@@ -98,4 +98,4 @@ Our maintainers are (in alphabetical order):
 * `Thea Flowers <https://github.com/theacodes>`__
 * `Tom Fleet <https://github.com/followtheprocess>`__
 
-Nox also exists due to the various patches and work contributed by `the community <https://github.com/theacodes/nox/graphs/contributors>`__. If you'd like to get involved, see :doc:`CONTRIBUTING`. We pay our contributors using `Open Collective <https://opencollective.com/python-nox>`__.
+Nox also exists due to the various patches and work contributed by `the community <https://github.com/wntrblm/nox/graphs/contributors>`__. If you'd like to get involved, see :doc:`CONTRIBUTING`. We pay our contributors using `Open Collective <https://opencollective.com/python-nox>`__.
