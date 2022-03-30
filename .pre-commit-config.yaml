@@ -46,10 +46,6 @@ repos:
     hooks:
       - id: pycln
         args: [--config=pyproject.toml]
-        # TODO: When pycln resolves the issue
-        # with click (to be precise, when the typer
-        # dep fixes their issue with click), we should remove this
-        additional_dependencies: ["click==8.0.4"]
         stages: [manual]
 
   - repo: https://github.com/asottile/yesqa
