@@ -25,7 +25,7 @@ New features:
 - Deprecate use of `session.install()` without a valid backend (#537)
 
 Improvements:
-- Test against Python 3.10 (#495, $502, #506)
+- Test against Python 3.10 (#495, #502, #506)
 - Add support for the `channel` option when using the `conda` backend (#522)
 - Show more specific error message when the `--keywords` expression contains a syntax error (#493)
 - Include reference to `session.notify()` in tutorial page (#500)
