@@ -47,6 +47,11 @@ Enter the ``dev`` nox session:
     # so it's not run twice accidentally
     nox.options.sessions = [...] # Sessions other than 'dev'
 
+    # this VENV_DIR constant specifies the name of the dir that the `dev`
+    # session will create, containing the virtualenv;
+    # the `resolve()` makes it portable
+    VENV_DIR = pathlib.Path('./.venv').resolve()
+
     @nox.session
     def dev(session: nox.Session) -> None:
         """
@@ -61,8 +66,7 @@ Enter the ``dev`` nox session:
         """
 
         session.install("virtualenv")
-        # VENV_DIR here is a pathlib.Path location of the project virtualenv
-        # e.g. .venv
+        # the VENV_DIR constant is explained above
         session.run("virtualenv", os.fsdecode(VENV_DIR), silent=True)
 
         python = os.fsdecode(VENV_DIR.joinpath("bin/python"))
