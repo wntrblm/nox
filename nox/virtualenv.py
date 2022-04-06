@@ -142,9 +142,7 @@ def locate_using_path_and_version(version: str) -> str | None:
     if path_python:
         prefix = f"{version}."
         ret = subprocess.run([path_python, "-c", script], check=False, text=True)
-        if ret.returncode != 0 or not ret.stdout:
-            return None
-        if ret.stdout.startswith(prefix):
+        if ret.returncode == 0 and ret.stdout and ret.stdout.startswith(prefix):
             return str(path_python)
 
     return None

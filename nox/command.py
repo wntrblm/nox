@@ -39,7 +39,6 @@ class CommandFailed(Exception):
 
 def which(program: str, paths: list[str] | None) -> str:
     """Finds the full path to an executable."""
-    full_path = None
 
     if paths is not None:
         full_path = shutil.which(program, path=os.pathsep.join(paths))
