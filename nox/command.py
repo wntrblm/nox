@@ -16,10 +16,9 @@ from __future__ import annotations
 
 import os
 import shlex
+import shutil
 import sys
 from typing import Any, Iterable, Sequence
-
-import py
 
 from nox.logger import logger
 from nox.popen import popen
@@ -42,16 +41,15 @@ def which(program: str, paths: list[str] | None) -> str:
     """Finds the full path to an executable."""
     full_path = None
 
-    if paths:
-        full_path = py.path.local.sysfind(program, paths=paths)
+    if paths is not None:
+        full_path = shutil.which(program, path=os.pathsep.join(paths))
+        if full_path:
+            return full_path
+
+    full_path = shutil.which(program)
 
     if full_path:
-        return full_path.strpath
-
-    full_path = py.path.local.sysfind(program)
-
-    if full_path:
-        return full_path.strpath
+        return full_path
 
     logger.error(f"Program {program} not found.")
     raise CommandFailed(f"Program {program} not found")

@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import enum
 import hashlib
 import os
@@ -23,9 +24,7 @@ import re
 import sys
 import unicodedata
 from types import TracebackType
-from typing import Any, Callable, Iterable, Mapping, Sequence
-
-import py
+from typing import Any, Callable, Generator, Iterable, Mapping, Sequence
 
 import nox.command
 from nox import _typing
@@ -35,6 +34,17 @@ from nox.virtualenv import CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
 
 if _typing.TYPE_CHECKING:
     from nox.manifest import Manifest
+
+
+@contextlib.contextmanager
+def _chdir(path: str) -> Generator[None, None, None]:
+    """Change the current working directory to the given path. Follows Python 3.11's chdir behavior."""
+    cwd = os.getcwd()
+    try:
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(cwd)
 
 
 def _normalize_path(envdir: str, path: str | bytes) -> str:
@@ -713,11 +723,9 @@ class SessionRunner:
         try:
             # By default, Nox should quietly change to the directory where
             # the noxfile.py file is located.
-            cwd = py.path.local(
-                os.path.realpath(os.path.dirname(self.global_config.noxfile))
-            ).as_cwd()
+            cwd_str = os.path.realpath(os.path.dirname(self.global_config.noxfile))
 
-            with cwd:
+            with _chdir(cwd_str):
                 self._create_venv()
                 session = Session(self)
                 self.func(session)
