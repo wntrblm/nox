@@ -10,9 +10,13 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-20.04, windows-2019]
         python-version: ["3.7", "3.8", "3.9", "3.10"]
+        include:
+          - os: macos-latest
+            python-version: "3.9"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
