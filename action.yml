@@ -31,6 +31,6 @@ runs:
         python-version: "3.10"
 
     - name: "Install nox"
-      run: pipx install nox
+      run: pipx install '${{ github.action_path }}'
       shell: bash
 
