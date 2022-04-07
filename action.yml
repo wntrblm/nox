@@ -33,4 +33,3 @@ runs:
     - name: "Install nox"
       run: pipx install '${{ github.action_path }}'
       shell: bash
-
