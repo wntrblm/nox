@@ -19,7 +19,6 @@ import functools
 import os
 import platform
 import shutil
-import sys
 
 import nox
 
