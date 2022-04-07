@@ -1,0 +1,36 @@
+name: Setup Nox
+description: 'Prepares all python versions for nox'
+branding:
+  icon: package
+  color: blue
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "pypy-3.7"
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "pypy-3.8"
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "pypy-3.9"
+
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "3.7"
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "3.8"
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "3.9"
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+
+    - name: "Install nox"
+      run: pipx install nox
+      shell: bash
+
