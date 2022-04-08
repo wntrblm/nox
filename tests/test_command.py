@@ -18,6 +18,7 @@ import ctypes
 import logging
 import os
 import platform
+import shutil
 import signal
 import subprocess
 import sys
@@ -44,6 +45,14 @@ only_on_windows = pytest.mark.skipif(
 
 def test_run_defaults(capsys):
     result = nox.command.run([PYTHON, "-c", "print(123)"])
+
+    assert result is True
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
+def test_run_not_in_path(capsys):
+    # Paths falls back on the environment PATH if the command is not found.
+    result = nox.command.run(["git", "--version"], paths=["."])
 
     assert result is True
 
