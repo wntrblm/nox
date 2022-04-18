@@ -111,7 +111,10 @@ def locate_via_py(version: str) -> str | None:
     py_exe = shutil.which("py")
     if py_exe is not None:
         ret = subprocess.run(
-            [py_exe, f"-{version}", "-c", script], check=False, text=True
+            [py_exe, f"-{version}", "-c", script],
+            check=False,
+            text=True,
+            capture_output=True,
         )
         if ret.returncode == 0 and ret.stdout:
             return ret.stdout.strip()
@@ -141,8 +144,10 @@ def locate_using_path_and_version(version: str) -> str | None:
     path_python = shutil.which("python")
     if path_python:
         prefix = f"{version}."
-        ret = subprocess.run([path_python, "-c", script], check=False, text=True)
-        if ret.returncode == 0 and ret.stdout and ret.stdout.startswith(prefix):
+        ret = subprocess.run(
+            [path_python, "-c", script], check=False, text=True, capture_output=True
+        )
+        if ret.returncode == 0 and ret.stdout and ret.stdout.strip().startswith(prefix):
             return str(path_python)
 
     return None
