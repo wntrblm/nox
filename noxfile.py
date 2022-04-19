@@ -36,14 +36,13 @@ def tests(session):
     session.create_tmp()
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
-    tests = session.posargs or ["tests/"]
     session.run(
         "pytest",
         "--cov=nox",
         "--cov-config",
         "pyproject.toml",
         "--cov-report=",
-        *tests,
+        *session.posargs,
         env={"COVERAGE_FILE": f".coverage.{session.python}"},
     )
     session.notify("cover")
@@ -57,8 +56,7 @@ def conda_tests(session):
         "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
     )
     session.install("-e", ".", "--no-deps")
-    tests = session.posargs or ["tests/"]
-    session.run("pytest", *tests)
+    session.run("pytest", *session.posargs)
 
 
 @nox.session
