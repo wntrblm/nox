@@ -26,6 +26,8 @@ files = ["nox"]
 python_version = "3.7"
 show_error_codes = true
 strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 
 [[tool.mypy.overrides]]
 module = [ "argcomplete", "colorlog.*", "py", "tox.*" ]
