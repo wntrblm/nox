@@ -45,7 +45,7 @@ repos:
     rev: v1.2.5
     hooks:
       - id: pycln
-        args: [--config=pyproject.toml]
+        args: [--all]
         stages: [manual]
 
   - repo: https://github.com/asottile/yesqa
