@@ -83,7 +83,11 @@ class Option:
         noxfile: bool = False,
         merge_func: Callable[[Namespace, Namespace], Any] | None = None,
         finalizer_func: Callable[[Any, Namespace], Any] | None = None,
-        default: Any | Callable[[], Any] = None,
+        default: bool
+        | str
+        | None
+        | list[str]
+        | Callable[[], bool | str | None | list[str]] = None,
         hidden: bool = False,
         completer: Callable[..., list[str]] | None = None,
         **kwargs: Any,
@@ -101,7 +105,7 @@ class Option:
         self._default = default
 
     @property
-    def default(self) -> bool | str | None:
+    def default(self) -> bool | str | None | list[str]:
         if callable(self._default):
             return self._default()
         return self._default

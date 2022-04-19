@@ -112,7 +112,7 @@ def locate_via_py(version: str) -> str | None:
     py_exe = py.path.local.sysfind("py")
     if py_exe is not None:
         try:
-            return py_exe.sysexec("-" + version, "-c", script).strip()
+            return py_exe.sysexec("-" + version, "-c", script).strip()  # type: ignore[no-any-return]
         except py.process.cmdexec.Error:
             return None
     return None
