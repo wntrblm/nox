@@ -21,6 +21,16 @@ exclude_lines = [
     "@overload",
 ]
 
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+xfail_strict = true
+filterwarnings = ["error"]
+log_cli_level = "info"
+testpaths = [
+    "tests",
+]
+
 [tool.mypy]
 files = ["nox"]
 python_version = "3.7"
