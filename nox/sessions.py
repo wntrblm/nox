@@ -216,7 +216,7 @@ class Session:
         to the Noxfile's directory before running any sessions. This gives
         you the original working directory that Nox was invoked form.
         """
-        return self._runner.global_config.invoked_from
+        return self._runner.global_config.invoked_from  # type: ignore[no-any-return]
 
     def chdir(self, dir: str | os.PathLike[str]) -> _WorkingDirContext:
         """Change the current working directory.

@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-import collections.abc
 import itertools
 from collections import OrderedDict
 from typing import Any, Iterable, Iterator, Mapping, Sequence
@@ -310,7 +309,7 @@ class Manifest:
         raise ValueError(f"Session {session} not found.")
 
 
-class KeywordLocals(collections.abc.Mapping):
+class KeywordLocals(Mapping[str, bool]):
     """Eval locals using keywords.
 
     When looking up a local variable the variable name is compared against

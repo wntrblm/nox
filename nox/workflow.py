@@ -42,7 +42,7 @@ def execute(
     """
     try:
         # Iterate over each task and run it.
-        return_value = None
+        return_value: Any = None
         for function_ in workflow:
             # Send the previous task's return value if there was one.
             args: list[Any] = []
