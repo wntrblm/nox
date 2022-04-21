@@ -108,7 +108,7 @@ class Status(enum.Enum):
 
 
 class _WorkingDirContext:
-    def __init__(self, dir: str | os.PathLike) -> None:
+    def __init__(self, dir: str | os.PathLike[str]) -> None:
         self._prev_working_dir = os.getcwd()
         os.chdir(dir)
 
@@ -152,7 +152,7 @@ class Session:
         return self._runner.friendly_name
 
     @property
-    def env(self) -> dict:
+    def env(self) -> dict[str, str]:
         """A dictionary of environment variables to pass into all commands."""
         return self.virtualenv.env
 
@@ -218,7 +218,7 @@ class Session:
         """
         return self._runner.global_config.invoked_from
 
-    def chdir(self, dir: str | os.PathLike) -> _WorkingDirContext:
+    def chdir(self, dir: str | os.PathLike[str]) -> _WorkingDirContext:
         """Change the current working directory.
 
         Can be used as a context manager to automatically restore the working directory::
@@ -238,7 +238,7 @@ class Session:
     """An alias for :meth:`chdir`."""
 
     def _run_func(
-        self, func: Callable, args: Iterable[Any], kwargs: Mapping[str, Any]
+        self, func: Callable[..., Any], args: Iterable[Any], kwargs: Mapping[str, Any]
     ) -> Any:
         """Legacy support for running a function through :func`run`."""
         self.log(f"{func}(args={args!r}, kwargs={kwargs!r})")
