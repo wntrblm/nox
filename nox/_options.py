@@ -79,8 +79,8 @@ def _sessions_and_keywords_merge_func(
         noxfile_Args (_option_set.Namespace): The options specified in the
             Noxfile."""
     if not command_args.sessions and not command_args.keywords:
-        return getattr(noxfile_args, key)
-    return getattr(command_args, key)
+        return getattr(noxfile_args, key)  # type: ignore[no-any-return]
+    return getattr(command_args, key)  # type: ignore[no-any-return]
 
 
 def _default_venv_backend_merge_func(
@@ -123,7 +123,7 @@ def _force_venv_backend_merge_func(
         else:
             return "none"
     else:
-        return command_args.force_venv_backend or noxfile_args.force_venv_backend
+        return command_args.force_venv_backend or noxfile_args.force_venv_backend  # type: ignore[no-any-return]
 
 
 def _envdir_merge_func(

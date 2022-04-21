@@ -46,18 +46,18 @@ def which(program: str, paths: list[str] | None) -> str:
         full_path = py.path.local.sysfind(program, paths=paths)
 
     if full_path:
-        return full_path.strpath
+        return full_path.strpath  # type: ignore[no-any-return]
 
     full_path = py.path.local.sysfind(program)
 
     if full_path:
-        return full_path.strpath
+        return full_path.strpath  # type: ignore[no-any-return]
 
     logger.error(f"Program {program} not found.")
     raise CommandFailed(f"Program {program} not found")
 
 
-def _clean_env(env: dict | None) -> dict | None:
+def _clean_env(env: dict[str, str] | None) -> dict[str, str] | None:
     if env is None:
         return None
 
@@ -78,7 +78,7 @@ def _shlex_join(args: Sequence[str]) -> str:
 def run(
     args: Sequence[str],
     *,
-    env: dict | None = None,
+    env: dict[str, str] | None = None,
     silent: bool = False,
     paths: list[str] | None = None,
     success_codes: Iterable[int] | None = None,

@@ -18,7 +18,7 @@ import copy
 import functools
 import inspect
 import types
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, TypeVar, cast
 
 from . import _typing
 
@@ -34,24 +34,27 @@ class FunctionDecorator:
         return functools.wraps(func)(obj)
 
 
-def _copy_func(src: Callable, name: str | None = None) -> Callable:
+T = TypeVar("T", bound=Callable[..., Any])
+
+
+def _copy_func(src: T, name: str | None = None) -> T:
     dst = types.FunctionType(
         src.__code__,
-        src.__globals__,  # type: ignore[attr-defined]
+        src.__globals__,
         name=name or src.__name__,
-        argdefs=src.__defaults__,  # type: ignore[attr-defined]
-        closure=src.__closure__,  # type: ignore[attr-defined]
+        argdefs=src.__defaults__,
+        closure=src.__closure__,
     )
     dst.__dict__.update(copy.deepcopy(src.__dict__))
     dst = functools.update_wrapper(dst, src)
-    dst.__kwdefaults__ = src.__kwdefaults__  # type: ignore[attr-defined]
-    return dst
+    dst.__kwdefaults__ = src.__kwdefaults__
+    return cast(T, dst)
 
 
 class Func(FunctionDecorator):
     def __init__(
         self,
-        func: Callable,
+        func: Callable[..., Any],
         python: _typing.Python = None,
         reuse_venv: bool | None = None,
         name: str | None = None,
