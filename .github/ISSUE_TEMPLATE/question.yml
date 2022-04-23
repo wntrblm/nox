@@ -1,0 +1,20 @@
+name: ❓ Question
+description: Ask something about the project
+title: "<title>"
+labels:
+  - "question"
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: Ask your question here.
+      placeholder: How can I...? Is it possible to...?
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Anything else?
+      description: Any other relevant information or background.
+    validations:
+      required: false
