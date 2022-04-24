@@ -29,7 +29,41 @@ Either way, Nox is usually installed *globally*, similar to ``tox``, ``pip``, an
 
 If you're interested in running ``nox`` within `docker`_, you can use the `thekevjames/nox images`_ on DockerHub which contain builds for all ``nox`` versions and all supported ``python`` versions. Nox is also supported via ``pipx run nox`` in the `manylinux images`_.
 
-If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/nox`` action, which installs the latest ``nox`` and makes available all active CPython and PyPY versions provided by the GitHub Actions environment. You can safely combine this with with ``setup-python`` for past end-of-life or development versions of Python, as well.
+If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/nox`` action, which installs the latest ``nox`` and makes available all active CPython and PyPY versions provided by the GitHub Actions environment. You can combine this with ``setup-python`` for past end-of-life or development versions of Python, as well:
+
+.. code-block:: yaml
+
+    # setup nox with all active CPython and PyPY versions provided by
+    # the GitHub Actions environment i.e.
+    # CPython 3.7 -> 3.10, PyPy 3.7 -> 3.9
+    - uses: wntrblm/nox
+
+    # You can also combine this with setup-python:
+    - uses: wntrblm/nox
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "2.7"
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "3.11-dev"
+
+    # Installation order matters
+    # You need to reinstall CPython if you update PyPy
+    - uses: wntrblm/nox
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "pypy-3.9-nightly"
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "3.9"
+
+    # You can't change the python version that's also used by nox:
+    - uses: wntrblm/nox
+    # The following has no effect
+    # nox will still use the default "3.10" for "3.10" sessions.
+    - uses: actions/setup-python@v3
+      with:
+        python-version: "3.10.3"
 
 .. _pip: https://pip.readthedocs.org
 .. _user site: https://packaging.python.org/tutorials/installing-packages/#installing-to-the-user-site
