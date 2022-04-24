@@ -1,0 +1,22 @@
+name: Action
+on:
+  push:
+    branches:
+      - 'main'
+      - '**action**'
+  pull_request:
+    paths:
+      - '.github/workflows/action.yml'
+      - 'action.yml'
+env:
+  FORCE_COLOR: "1"
+jobs:
+  action-default-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, windows-2019, windows-2022, macos-10.15, macos-11, macos-12]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./
+      - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_default_tests
