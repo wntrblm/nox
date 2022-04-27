@@ -1,0 +1,33 @@
+name: 🚀 Feature Request
+description: Request a new feature or enhancement
+title: "<title>"
+labels:
+  - "enhancement"
+body:
+  - type: textarea
+    attributes:
+      label: How would this feature be useful?
+      description: Describe any use cases this solves or frustrations it alleviates.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Describe the solution you'd like
+      description: If you have an idea on how to do this, let us know here!
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Describe alternatives you've considered
+      description: If there's some workaround or alternative solutions, let us know here!
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Anything else?
+      description: Any other relevant information or background.
+    validations:
+      required: false

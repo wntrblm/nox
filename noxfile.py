@@ -19,7 +19,6 @@ import functools
 import os
 import platform
 import shutil
-import sys
 
 import nox
 
@@ -37,14 +36,13 @@ def tests(session):
     session.create_tmp()
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
-    tests = session.posargs or ["tests/"]
     session.run(
         "pytest",
         "--cov=nox",
         "--cov-config",
         "pyproject.toml",
         "--cov-report=",
-        *tests,
+        *session.posargs,
         env={"COVERAGE_FILE": f".coverage.{session.python}"},
     )
     session.notify("cover")
@@ -58,8 +56,7 @@ def conda_tests(session):
         "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
     )
     session.install("-e", ".", "--no-deps")
-    tests = session.posargs or ["tests/"]
-    session.run("pytest", *tests)
+    session.run("pytest", *session.posargs)
 
 
 @nox.session
@@ -68,16 +65,9 @@ def cover(session):
     if ON_WINDOWS_CI:
         return
 
-    # 3.10 produces different coverage results for some reason
-    # see https://github.com/theacodes/nox/issues/478
-    fail_under = 100
-    py_version = sys.version_info
-    if py_version.major == 3 and py_version.minor == 10:
-        fail_under = 99
-
     session.install("coverage[toml]")
     session.run("coverage", "combine")
-    session.run("coverage", "report", f"--fail-under={fail_under}", "--show-missing")
+    session.run("coverage", "report", "--fail-under=100", "--show-missing")
     session.run("coverage", "erase")
 
 

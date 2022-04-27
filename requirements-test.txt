@@ -1,6 +1,6 @@
 flask
 myst-parser
-pytest
+pytest>=6.0
 pytest-cov
 sphinx>=3.0
 sphinx-autobuild

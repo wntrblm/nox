@@ -22,7 +22,7 @@ from typing import IO, Mapping, Sequence
 
 
 def shutdown_process(
-    proc: subprocess.Popen,
+    proc: subprocess.Popen[bytes],
     interrupt_timeout: float | None,
     terminate_timeout: float | None,
 ) -> tuple[bytes, bytes]:
@@ -61,8 +61,8 @@ def popen(
     args: Sequence[str],
     env: Mapping[str, str] | None = None,
     silent: bool = False,
-    stdout: int | IO | None = None,
-    stderr: int | IO = subprocess.STDOUT,
+    stdout: int | IO[str] | None = None,
+    stderr: int | IO[str] = subprocess.STDOUT,
     interrupt_timeout: float | None = 0.3,
     terminate_timeout: float | None = 0.2,
 ) -> tuple[int, str]:

@@ -64,7 +64,7 @@ def test_formatter(caplog):
     [
         # This currently fails due to some incompatibility between caplog and colorlog
         # that causes caplog to not collect the asctime from colorlog.
-        pytest.param(True, id="color", marks=pytest.mark.xfail),
+        pytest.param(True, id="color", marks=pytest.mark.xfail(strict=False)),
         pytest.param(False, id="no-color"),
     ],
 )
