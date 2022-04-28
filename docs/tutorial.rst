@@ -27,9 +27,9 @@ Or you can be extra fancy and use `pipx`_:
 
 Either way, Nox is usually installed *globally*, similar to ``tox``, ``pip``, and other similar tools.
 
-If you're interested in running ``nox`` within `docker`_, you can use the `thekevjames/nox images`_ on DockerHub which contain builds for all ``nox`` versions and all supported ``python`` versions.
+If you're interested in running ``nox`` within `docker`_, you can use the `thekevjames/nox images`_ on DockerHub which contain builds for all ``nox`` versions and all supported ``python`` versions. Nox is also supported via ``pipx run nox`` in the `manylinux images`_.
 
-If you want to run ``nox`` within `GitHub Actions`_, you can use the `excitedleigh/setup-nox action`_, which installs the latest ``nox`` and makes available all Python versions provided by the GitHub Actions environment.
+If you want to run ``nox`` within `GitHub Actions`_, you can use the `wntrblm/nox action`_, which installs the latest ``nox`` and makes available all active CPython and PyPY versions provided by the GitHub Actions environment. You can safely combine this with with ``setup-python`` for past end-of-life or development versions of Python, as well.
 
 .. _pip: https://pip.readthedocs.org
 .. _user site: https://packaging.python.org/tutorials/installing-packages/#installing-to-the-user-site
@@ -37,7 +37,8 @@ If you want to run ``nox`` within `GitHub Actions`_, you can use the `excitedlei
 .. _docker: https://www.docker.com/
 .. _thekevjames/nox images: https://hub.docker.com/r/thekevjames/nox
 .. _GitHub Actions: https://github.com/features/actions
-.. _excitedleigh/setup-nox action: https://github.com/marketplace/actions/setup-nox
+.. _wntrblm/nox action: https://github.com/marketplace/actions/nox
+.. _manylinux images: https://github.com/pypa/manylinux
 
 Writing the configuration file
 ------------------------------

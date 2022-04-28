@@ -42,6 +42,7 @@ ignore_missing_imports = true
 
 [tool.check-manifest]
 ignore = [
+    "action.yml",
     "docs/**",
     "noxfile.py",
     "requirements-conda-test.txt",
