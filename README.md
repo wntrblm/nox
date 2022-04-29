@@ -38,7 +38,7 @@ def lint(session: nox.Session) -> None:
 
 ## Installation
 
-Nox is designed to be installed globally (not in a project virtual environment), the recommended way of doing this is via [pipx], a tool designed to install python CLI programs whilst keeping them seperate from your global or system python.
+Nox is designed to be installed globally (not in a project virtual environment), the recommended way of doing this is via [pipx], a tool designed to install python CLI programs whilst keeping them separate from your global or system python.
 
 To install Nox with [pipx]:
 
