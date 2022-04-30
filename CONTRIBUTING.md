@@ -27,7 +27,7 @@ side of including lots of information, such as:
 * Nox maintains 100% test coverage. All pull requests must maintain this.
 * Follow [pep8](https://pep8.org).
 * Update documentation and tests if relevant.
-* Ensure your changes pass nox's tests and lint suites before pushing.
+* Ensure your changes pass Nox's tests and lint suites before pushing.
 
 ## Running tests
 
