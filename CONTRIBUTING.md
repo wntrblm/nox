@@ -7,7 +7,9 @@ Nox is hosted on [GitHub](https://github.com/wntrblm/nox).
 
 ## Support, questions, and feature requests
 
-Feel free to file a bug on [GitHub](https://github.com/wntrblm/nox).
+Feel free to file a bug or feature request on [GitHub](https://github.com/wntrblm/nox). If your question is more general or does not fit neatly into one of those categories, we also have a Nox channel on the Winterbloom Discord server.
+
+You should find a permalink to the invite when you raise a new issue on GitHub.
 
 ## Reporting issues
 
@@ -24,7 +26,8 @@ side of including lots of information, such as:
   chance to talk it over with the owners and validate your approach.
 * Nox maintains 100% test coverage. All pull requests must maintain this.
 * Follow [pep8](https://pep8.org).
-* Update documentation, if relevant.
+* Update documentation and tests if relevant.
+* Ensure your changes pass Nox's tests and lint suites before pushing.
 
 ## Running tests
 
@@ -43,7 +46,6 @@ To run against a particular Python version:
     nox --session tests-3.7
     nox --session tests-3.8
     nox --session tests-3.9
-
 
 When you send a pull request the CI will handle running everything, but it is
 recommended to test as much as possible locally before pushing.
