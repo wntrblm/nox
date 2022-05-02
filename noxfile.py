@@ -31,9 +31,8 @@ if shutil.which("conda"):
 
 
 @nox.session(python=["3.7", "3.8", "3.9", "3.10"])
-def tests(session):
+def tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
-    session.create_tmp()
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
     session.run(
@@ -49,9 +48,8 @@ def tests(session):
 
 
 @nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend="conda")
-def conda_tests(session):
+def conda_tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
-    session.create_tmp()
     session.conda_install(
         "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
     )
@@ -60,7 +58,7 @@ def conda_tests(session):
 
 
 @nox.session
-def cover(session):
+def cover(session: nox.Session) -> None:
     """Coverage analysis."""
     if ON_WINDOWS_CI:
         return
@@ -72,24 +70,21 @@ def cover(session):
 
 
 @nox.session(python="3.9")
-def lint(session):
+def lint(session: nox.Session) -> None:
     """Run pre-commit linting."""
     session.install("pre-commit")
-    # See https://github.com/theacodes/nox/issues/545
-    # and https://github.com/pre-commit/pre-commit/issues/2178#issuecomment-1002163763
     session.run(
         "pre-commit",
         "run",
         "--all-files",
         "--show-diff-on-failure",
         "--hook-stage=manual",
-        env={"SETUPTOOLS_USE_DISTUTILS": "stdlib"},
         *session.posargs,
     )
 
 
 @nox.session
-def docs(session):
+def docs(session: nox.Session) -> None:
     """Build the documentation."""
     output_dir = os.path.join(session.create_tmp(), "output")
     doctrees, html = map(
