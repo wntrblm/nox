@@ -69,7 +69,7 @@ repos:
         files: ^nox/
         args: []
         additional_dependencies:
-          - types-jinja2
+          - jinja2
           - packaging
           - importlib_metadata
 
