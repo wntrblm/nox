@@ -1,5 +1,5 @@
 <p align="center">
-<img src="docs/_static/alice.png" alt="logo" width=50%>
+<img src="https://github.com/wntrblm/nox/raw/main/docs/_static/alice.png" alt="logo" width=50%>
 </p>
 
 # Nox
