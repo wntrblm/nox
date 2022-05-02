@@ -33,6 +33,7 @@ if shutil.which("conda"):
 @nox.session(python=["3.7", "3.8", "3.9", "3.10"])
 def tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
+    session.create_tmp()  # Fixes permission errors on Windows
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
     session.run(
@@ -50,6 +51,7 @@ def tests(session: nox.Session) -> None:
 @nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend="conda")
 def conda_tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
+    session.create_tmp()  # Fixes permission errors on Windows
     session.conda_install(
         "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
     )
