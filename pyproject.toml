@@ -1,100 +1,112 @@
 [build-system]
-requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=61",
+]
 
 [project]
 name = "nox"
 version = "2022.1.7"
 description = "Flexible test automation."
 readme = "README.md"
-requires-python = ">=3.7"
+keywords = [
+  "automation",
+  "testing",
+  "tox",
+]
 license = { file = "LICENSE" }
-authors = [{ name = "Alethea Katherine Flowers" }, { email = "me@thea.codes" }]
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: MacOS",
-    "Operating System :: Microsoft :: Windows",
-    "Operating System :: POSIX",
-    "Operating System :: Unix",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Topic :: Software Development :: Testing",
+authors = [
+  { name = "Alethea Katherine Flowers" },
+  { email = "me@thea.codes" },
 ]
-keywords = ["testing", "automation", "tox"]
+requires-python = ">=3.7"
 dependencies = [
-    "argcomplete>=1.9.4,<3.0",
-    "colorlog>=2.6.1,<7.0.0",
-    "packaging>=20.9",
-    "py>=1.4.0,<2.0.0",
-    "virtualenv>=14.0.0",
-    'importlib-metadata; python_version<"3.8"',
-    'typing-extensions>=3.7.4; python_version<"3.8"',
+  "argcomplete<3.0,>=1.9.4",
+  "colorlog<7.0.0,>=2.6.1",
+  'importlib-metadata; python_version < "3.8"',
+  "packaging>=20.9",
+  "py<2.0.0,>=1.4",
+  'typing-extensions>=3.7.4; python_version < "3.8"',
+  "virtualenv>=14",
 ]
-
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Software Development :: Testing",
+]
 [project.optional-dependencies]
-tox_to_nox = ["jinja2", "tox"]
+tox_to_nox = [
+  "jinja2",
+  "tox",
+]
 
 [project.urls]
-homepage = "https://github.com/wntrblm/nox"
-documentation = "https://nox.thea.codes"
-repository = "https://github.com/wntrblm/nox"
 bug-tracker = "https://github.com/wntrblm/nox/issues"
+documentation = "https://nox.thea.codes"
+homepage = "https://github.com/wntrblm/nox"
+repository = "https://github.com/wntrblm/nox"
 
 [project.scripts]
 nox = "nox.__main__:main"
 tox-to-nox = "nox.tox_to_nox:main"
 
+
 [tool.setuptools]
 zip-safe = false
 include-package-data = true
-package-data = { "nox" = ["py.typed"] }
+package-data = { "nox" = [ "py.typed" ] }
 
 [tool.isort]
 profile = "black"
 
 [tool.coverage.run]
 branch = true
-omit = ["nox/_typing.py"]
+omit = [ "nox/_typing.py" ]
 
 [tool.coverage.report]
-exclude_lines = ["pragma: no cover", "if _typing.TYPE_CHECKING:", "@overload"]
+exclude_lines = [ "pragma: no cover", "if _typing.TYPE_CHECKING:", "@overload" ]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = ["-ra", "--strict-markers", "--strict-config"]
+addopts = [ "-ra", "--strict-markers", "--strict-config" ]
 xfail_strict = true
-filterwarnings = ["error"]
+filterwarnings = [ "error" ]
 log_cli_level = "info"
-testpaths = ["tests"]
+testpaths = [ "tests" ]
 
 [tool.mypy]
-files = ["nox/**/*.py", "noxfile.py"]
+files = [ "nox/**/*.py", "noxfile.py" ]
 python_version = "3.7"
 show_error_codes = true
 strict = true
 warn_unreachable = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
 
 [[tool.mypy.overrides]]
-module = ["argcomplete", "colorlog.*", "py", "tox.*"]
+module = [ "argcomplete", "colorlog.*", "py", "tox.*" ]
 ignore_missing_imports = true
 
 [tool.check-manifest]
 ignore = [
-    "action.yml",
-    "docs/**",
-    "noxfile.py",
-    "requirements-conda-test.txt",
-    "requirements-dev.txt",
-    "requirements-test.txt",
-    "*.md",
-    ".*",
+  "action.yml",
+  "docs/**",
+  "noxfile.py",
+  "requirements-conda-test.txt",
+  "requirements-dev.txt",
+  "requirements-test.txt",
+  "*.md",
+  ".*",
 ]
