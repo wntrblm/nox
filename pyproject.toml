@@ -8,7 +8,7 @@ version = "2022.1.7"
 description = "Flexible test automation."
 readme = "README.md"
 requires-python = ">=3.7"
-license = { file = "LICENSE" }
+license = { text = "Apache-2.0" }
 authors = [{ name = "Alethea Katherine Flowers" }, { email = "me@thea.codes" }]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
