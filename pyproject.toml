@@ -14,7 +14,7 @@ keywords = [
   "testing",
   "tox",
 ]
-license = { file = "LICENSE" }
+license = { text = "Apache-2.0" }
 authors = [
   { name = "Alethea Katherine Flowers" },
   { email = "me@thea.codes" },
