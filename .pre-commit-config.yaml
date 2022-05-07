@@ -36,6 +36,11 @@ repos:
       - id: pyupgrade
         args: [--py37-plus]
 
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: "0.3.3"
+    hooks:
+      - id: pyproject-fmt
+
   - repo: https://github.com/hadialqattan/pycln
     rev: v1.3.2
     hooks:
