@@ -29,7 +29,7 @@ Either way, Nox is usually installed *globally*, similar to ``tox``, ``pip``, an
 
 If you're interested in running ``nox`` within `docker`_, you can use the `thekevjames/nox images`_ on DockerHub which contain builds for all ``nox`` versions and all supported ``python`` versions. Nox is also supported via ``pipx run nox`` in the `manylinux images`_.
 
-If you want to run ``nox`` within `GitHub Actions`_, you can use the `wntrblm/nox action`_, which installs the latest ``nox`` and makes available all active CPython and PyPY versions provided by the GitHub Actions environment. You can safely combine this with with ``setup-python`` for past end-of-life or development versions of Python, as well.
+If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/nox`` action, which installs the latest ``nox`` and makes available all active CPython and PyPY versions provided by the GitHub Actions environment. You can safely combine this with with ``setup-python`` for past end-of-life or development versions of Python, as well.
 
 .. _pip: https://pip.readthedocs.org
 .. _user site: https://packaging.python.org/tutorials/installing-packages/#installing-to-the-user-site
@@ -37,7 +37,6 @@ If you want to run ``nox`` within `GitHub Actions`_, you can use the `wntrblm/no
 .. _docker: https://www.docker.com/
 .. _thekevjames/nox images: https://hub.docker.com/r/thekevjames/nox
 .. _GitHub Actions: https://github.com/features/actions
-.. _wntrblm/nox action: https://github.com/marketplace/actions/nox
 .. _manylinux images: https://github.com/pypa/manylinux
 
 Writing the configuration file
