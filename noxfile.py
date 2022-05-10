@@ -105,3 +105,31 @@ def docs(session: nox.Session) -> None:
         sphinx_args.insert(0, "--open-browser")
 
     session.run(sphinx_cmd, *sphinx_args)
+
+
+# The following sessions are only to be run in CI to check the nox GHA action
+def _check_python_version(session: nox.Session) -> None:
+    if session.python.startswith("pypy"):
+        python_version = session.python[4:]
+        implementation = "pypy"
+    else:
+        python_version = session.python
+        implementation = "cpython"
+    session.run(
+        "python",
+        "-c",
+        "import sys; assert '.'.join(str(v) for v in sys.version_info[:2]) =="
+        f" '{python_version}'",
+    )
+    if python_version[:2] != "2.":
+        session.run(
+            "python",
+            "-c",
+            f"import sys; assert sys.implementation.name == '{implementation}'",
+        )
+
+
+@nox.session(python=["3.7", "3.8", "3.9", "3.10", "pypy3.7", "pypy3.8", "pypy3.9"])
+def github_actions_default_tests(session: nox.Session) -> None:
+    """Check default versions installed by the nox GHA Action"""
+    _check_python_version(session)
