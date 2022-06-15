@@ -658,6 +658,10 @@ class SessionRunner:
         return self.signatures[0] if self.signatures else self.name
 
     @property
+    def tags(self) -> list[str]:
+        return self.func.tags
+
+    @property
     def envdir(self) -> str:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 

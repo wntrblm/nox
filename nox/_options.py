@@ -286,6 +286,15 @@ options.add_options(
         help="Only run sessions that match the given expression.",
     ),
     _option_set.Option(
+        "tags",
+        "-t",
+        "--tags",
+        group=options.groups["sessions"],
+        noxfile=True,
+        nargs="*",
+        help="Only run sessions with the given tags.",
+    ),
+    _option_set.Option(
         "posargs",
         "posargs",
         group=options.groups["general"],

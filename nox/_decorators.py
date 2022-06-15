@@ -61,6 +61,7 @@ class Func(FunctionDecorator):
         venv_backend: Any = None,
         venv_params: Any = None,
         should_warn: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
     ):
         self.func = func
         self.python = python
@@ -68,6 +69,7 @@ class Func(FunctionDecorator):
         self.venv_backend = venv_backend
         self.venv_params = venv_params
         self.should_warn = should_warn or dict()
+        self.tags = tags or []
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
@@ -81,6 +83,7 @@ class Func(FunctionDecorator):
             self.venv_backend,
             self.venv_params,
             self.should_warn,
+            self.tags,
         )
 
 
@@ -109,6 +112,7 @@ class Call(Func):
             func.venv_backend,
             func.venv_params,
             func.should_warn,
+            func.tags,
         )
         self.call_spec = call_spec
         self.session_signature = session_signature

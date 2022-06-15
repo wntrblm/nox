@@ -74,12 +74,15 @@ If you have a :ref:`configured session's virtualenv <virtualenv config>`, you ca
     nox --python 3.8
     nox -p 3.7 3.8
 
-You can also use `pytest-style keywords`_ to filter test sessions:
+You can also use `pytest-style keywords`_ using ``-k`` or ``--keywords``, and
+tags using ``-t`` or ``--tags`` to filter test sessions:
 
 .. code-block:: console
 
     nox -k "not lint"
     nox -k "tests and not lint"
+    nox -k "not my_tag"
+    nox -t "my_tag" "my_other_tag"
 
 .. _pytest-style keywords: https://docs.pytest.org/en/latest/usage.html#specifying-tests-selecting-tests
 

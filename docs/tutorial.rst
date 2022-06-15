@@ -432,6 +432,58 @@ read more about parametrization and see more examples over at
 .. _pytest's parametrize: https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize
 
 
+Session tags
+------------
+
+You can add tags to your sessions to help you organize your test suite:
+
+.. code-block:: python
+
+    @nox.session(tags=["style", "fix"])
+    def black(session):
+        session.install("black")
+        session.run("black", "my_package")
+
+    @nox.session(tags=["style", "fix"])
+    def isort(session):
+        session.install("isort")
+        session.run("isort", "my_package")
+
+    @nox.session(tags=["style"])
+    def flake8(session):
+        session.install("flake8")
+        session.run("flake8", "my_package")
+
+
+If you run ``nox -t style``, Nox will run all three sessions:
+
+.. code-block:: console
+
+    * black
+    * isort
+    * flake8
+
+
+If you run ``nox -t fix``, Nox will only run the ``black`` and ``isort``
+sessions:
+
+.. code-block:: console
+
+    * black
+    * isort
+    - flake8
+
+
+If you run ``nox -t style fix``, Nox will all sessions that match *any* of
+the tags, so all three sessions:
+
+.. code-block:: console
+
+    * black
+    * isort
+    * flake8
+
+
 Next steps
 ----------
 
