@@ -29,7 +29,23 @@ Either way, Nox is usually installed *globally*, similar to ``tox``, ``pip``, an
 
 If you're interested in running ``nox`` within `docker`_, you can use the `thekevjames/nox images`_ on DockerHub which contain builds for all ``nox`` versions and all supported ``python`` versions. Nox is also supported via ``pipx run nox`` in the `manylinux images`_.
 
-If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/nox`` action, which installs the latest ``nox`` and makes available all active CPython and PyPY versions provided by the GitHub Actions environment. You can safely combine this with with ``setup-python`` for past end-of-life or development versions of Python, as well.
+If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/nox`` action, which installs the latest ``nox`` and makes available all active CPython and PyPY versions provided by the GitHub Actions environment:
+
+.. code-block:: yaml
+
+    # setup nox with all active CPython and PyPY versions provided by
+    # the GitHub Actions environment i.e.
+    # python-versions: "3.7, 3.8, 3.9, 3.10, pypy-3.7, pypy-3.8, pypy-3.9"
+    - uses: wntrblm/nox
+
+    # setup nox only for a given list of python versions
+    # Limitations:
+    # - Version specifiers shall be supported by actions/setup-python
+    # - You can specify up-to 20 versions
+    # - There can only be one "major.minor" per interpreter i.e. "3.7.0, 3.7.1" is invalid
+    - uses: wntrblm/nox
+      with:
+          python-versions: "2.7, 3.5, 3.11-dev, pypy-3.9"
 
 .. _pip: https://pip.readthedocs.org
 .. _user site: https://packaging.python.org/tutorials/installing-packages/#installing-to-the-user-site

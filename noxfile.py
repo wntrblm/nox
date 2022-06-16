@@ -19,6 +19,7 @@ import functools
 import os
 import platform
 import shutil
+import sys
 
 import nox
 
@@ -132,4 +133,28 @@ def _check_python_version(session: nox.Session) -> None:
 @nox.session(python=["3.7", "3.8", "3.9", "3.10", "pypy3.7", "pypy3.8", "pypy3.9"])
 def github_actions_default_tests(session: nox.Session) -> None:
     """Check default versions installed by the nox GHA Action"""
+    assert sys.version_info[:2] == (3, 10)
+    _check_python_version(session)
+
+
+# The following sessions are only to be run in CI to check the nox GHA action
+@nox.session(
+    python=[
+        "2.7",
+        "3.4",
+        "3.5",
+        "3.6",
+        "3.7",
+        "3.8",
+        "3.9",
+        "3.10",
+        "3.11",
+        "pypy2.7",
+        "pypy3.7",
+        "pypy3.8",
+        "pypy3.9",
+    ]
+)
+def github_actions_all_tests(session: nox.Session) -> None:
+    """Check all versions installed by the nox GHA Action"""
     _check_python_version(session)
