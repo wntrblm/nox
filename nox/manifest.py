@@ -178,7 +178,7 @@ class Manifest:
         ]
 
     def filter_by_tags(self, tags: list[str]) -> None:
-        """Filter sessions using pytest-like tag expressions.
+        """Filter sessions by their tags.
 
         Args:
             tags (list[str]): A list of tags which session names
