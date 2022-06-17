@@ -181,11 +181,8 @@ class Manifest:
         """Filter sessions using pytest-like tag expressions.
 
         Args:
-            tags (str): A Python expression of tags which session names
+            tags (list[str]): A list of tags which session names
                 are checked against.
-
-        Raises:
-            SyntaxError: If the tag expression is invalid.
         """
         self._queue = [x for x in self._queue if set(x.tags).intersection(tags)]
 
