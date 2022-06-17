@@ -177,7 +177,7 @@ class Manifest:
             if keyword_match(keywords, x.signatures + x.tags + [x.name])
         ]
 
-    def filter_by_tags(self, tags: str) -> None:
+    def filter_by_tags(self, tags: list[str]) -> None:
         """Filter sessions using pytest-like tag expressions.
 
         Args:
