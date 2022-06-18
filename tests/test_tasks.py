@@ -258,19 +258,19 @@ def test_filter_manifest_keywords_syntax_error():
 )
 def test_filter_manifest_tags(tags, session_count):
     @nox.session(tags=["foo"])
-    def foo():
+    def qux():
         pass
 
     @nox.session(tags=["bar"])
-    def bar():
+    def quux():
         pass
 
     @nox.session(tags=["foo", "bar"])
-    def foo_bar():
+    def quuz():
         pass
 
     @nox.session(tags=["foo", "bar", "baz"])
-    def foo_bar_baz():
+    def corge():
         pass
 
     config = _options.options.namespace(
@@ -278,10 +278,10 @@ def test_filter_manifest_tags(tags, session_count):
     )
     manifest = Manifest(
         {
-            "foo": foo,
-            "bar": bar,
-            "foo_bar": foo_bar,
-            "foo_bar_baz": foo_bar_baz,
+            "qux": qux,
+            "quux": quux,
+            "quuz": quuz,
+            "corge": corge,
         },
         config,
     )
@@ -290,15 +290,26 @@ def test_filter_manifest_tags(tags, session_count):
     assert len(manifest) == session_count
 
 
-def test_filter_manifest_tags_not_found(caplog):
+@pytest.mark.parametrize(
+    "tags",
+    [
+        ["Foo"],
+        ["not-found"],
+    ],
+    ids=[
+        "tags-are-case-insensitive",
+        "tag-does-not-exist",
+    ],
+)
+def test_filter_manifest_tags_not_found(tags, caplog):
     @nox.session(tags=["foo"])
-    def foo():
+    def quux():
         pass
 
     config = _options.options.namespace(
-        sessions=None, pythons=(), posargs=[], tags=["not-found"]
+        sessions=None, pythons=(), posargs=[], tags=tags
     )
-    manifest = Manifest({"foo": foo}, config)
+    manifest = Manifest({"quux": quux}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value == 3
     assert "Tag selection caused no sessions to be selected." in caplog.text

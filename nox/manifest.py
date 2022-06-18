@@ -177,11 +177,11 @@ class Manifest:
             if keyword_match(keywords, x.signatures + x.tags + [x.name])
         ]
 
-    def filter_by_tags(self, tags: list[str]) -> None:
+    def filter_by_tags(self, tags: Sequence[str]) -> None:
         """Filter sessions by their tags.
 
         Args:
-            tags (list[str]): A list of tags which session names
+            tags (Sequence[str]): A list of tags which session names
                 are checked against.
         """
         self._queue = [x for x in self._queue if set(x.tags).intersection(tags)]
