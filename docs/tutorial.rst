@@ -435,7 +435,7 @@ read more about parametrization and see more examples over at
 Session tags
 ------------
 
-You can add tags to your sessions to help you organize your test suite:
+You can add tags to your sessions to help you organize your development tasks:
 
 .. code-block:: python
 
