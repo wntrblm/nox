@@ -162,6 +162,22 @@ class Session:
         return self._runner.posargs
 
     @property
+    def no_install(self) -> bool:
+        """
+        Whether ``--no-install`` is passed to the ``nox`` command line.
+        This property may be useful if a user is using their own installing
+        command (e.g., ``pip-sync``).
+        """
+        return self._runner.global_config.no_install
+
+    @property
+    def install_only(self) -> bool:
+        """
+        Whether ``--install-only`` is passed to the ``nox`` command line.
+        """
+        return self._runner.global_config.install_only
+
+    @property
     def virtualenv(self) -> ProcessEnv:
         """The virtualenv that all commands are run in."""
         venv = self._runner.venv
