@@ -191,6 +191,13 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
             logger.error("Python version selection caused no sessions to be selected.")
             return 3
 
+    # Filter by tags.
+    if global_config.tags is not None:
+        manifest.filter_by_tags(global_config.tags)
+        if not manifest and not global_config.list_sessions:
+            logger.error("Tag selection caused no sessions to be selected.")
+            return 3
+
     # Filter by keywords.
     if global_config.keywords:
         try:

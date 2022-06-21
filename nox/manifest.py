@@ -172,8 +172,19 @@ class Manifest:
                 session names are checked against.
         """
         self._queue = [
-            x for x in self._queue if keyword_match(keywords, x.signatures + [x.name])
+            x
+            for x in self._queue
+            if keyword_match(keywords, x.signatures + x.tags + [x.name])
         ]
+
+    def filter_by_tags(self, tags: list[str]) -> None:
+        """Filter sessions by their tags.
+
+        Args:
+            tags (list[str]): A list of tags which session names
+                are checked against.
+        """
+        self._queue = [x for x in self._queue if set(x.tags).intersection(tags)]
 
     def make_session(
         self, name: str, func: Func, multi: bool = False

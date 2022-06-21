@@ -33,8 +33,13 @@ from nox.manifest import (
 
 def create_mock_sessions():
     sessions = collections.OrderedDict()
-    sessions["foo"] = mock.Mock(spec=(), python=None, venv_backend=None)
-    sessions["bar"] = mock.Mock(spec=(), python=None, venv_backend=None)
+    sessions["foo"] = mock.Mock(spec=(), python=None, venv_backend=None, tags=["baz"])
+    sessions["bar"] = mock.Mock(
+        spec=(),
+        python=None,
+        venv_backend=None,
+        tags=["baz", "qux"],
+    )
     return sessions
 
 
@@ -190,6 +195,27 @@ def test_filter_by_keyword():
     assert len(manifest) == 2
     manifest.filter_by_keywords("foo")
     assert len(manifest) == 1
+    # Match tags
+    manifest.filter_by_keywords("not baz")
+    assert len(manifest) == 0
+
+
+@pytest.mark.parametrize(
+    "tags,session_count",
+    [
+        (["baz", "qux"], 2),
+        (["baz"], 2),
+        (["qux"], 1),
+        (["missing"], 0),
+        (["baz", "missing"], 2),
+    ],
+)
+def test_filter_by_tags(tags: list[str], session_count: int):
+    sessions = create_mock_sessions()
+    manifest = Manifest(sessions, create_mock_config())
+    assert len(manifest) == 2
+    manifest.filter_by_tags(tags)
+    assert len(manifest) == session_count
 
 
 def test_list_all_sessions_with_filter():

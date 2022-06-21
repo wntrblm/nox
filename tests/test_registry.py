@@ -60,6 +60,14 @@ def test_session_decorator_list_of_pythons(cleanup_registry):
     assert unit_tests.python == ["3.5", "3.6"]
 
 
+def test_session_decorator_tags(cleanup_registry):
+    @registry.session_decorator(tags=["tag-1", "tag-2"])
+    def unit_tests(session):
+        pass
+
+    assert unit_tests.tags == ["tag-1", "tag-2"]
+
+
 def test_session_decorator_py_alias(cleanup_registry):
     @registry.session_decorator(py=["3.5", "3.6"])
     def unit_tests(session):
