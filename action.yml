@@ -20,7 +20,8 @@ runs:
         
     - name: "Validate input"
       id: helper
-      run: '${{ steps.localpython.outputs.python-path }}' '${{ github.action_path }}/.github/action_helper.py' '${{ inputs.python-versions }}'
+      run: >
+        '${{ steps.localpython.outputs.python-path }}' '${{ github.action_path }}/.github/action_helper.py' '${{ inputs.python-versions }}'
       shell: bash
 
     - uses: actions/setup-python@v4
