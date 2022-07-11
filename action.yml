@@ -12,12 +12,12 @@ branding:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v4.1.0
       id: localpython
       with:
         python-version: "3.7-3.10"
         activate-environment: false
-        
+
     - name: "Validate input"
       id: helper
       run: >
