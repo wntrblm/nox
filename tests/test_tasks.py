@@ -41,6 +41,7 @@ session_func.venv_backend = None
 session_func.should_warn = {}
 session_func.tags = []
 session_func.default = True
+session_func.requires = []
 
 
 def session_func_with_python():
@@ -50,6 +51,7 @@ def session_func_with_python():
 session_func_with_python.python = "3.8"
 session_func_with_python.venv_backend = None
 session_func_with_python.default = True
+session_func_with_python.requires = []
 
 
 def session_func_venv_pythons_warning():

@@ -965,6 +965,7 @@ class TestSessionRunner:
         func.python = None
         func.venv_backend = None
         func.reuse_venv = False
+        func.requires = []
         return nox.sessions.SessionRunner(
             name="test",
             signatures=["test(1, 2)"],
@@ -1168,6 +1169,7 @@ class TestSessionRunner:
         def func(session):
             session.error("meep")
 
+        func.requires = []
         runner.func = func
 
         result = runner.execute()
@@ -1180,6 +1182,7 @@ class TestSessionRunner:
         def func(session):
             session.skip("meep")
 
+        func.requires = []
         runner.func = func
 
         result = runner.execute()
@@ -1237,6 +1240,7 @@ class TestSessionRunner:
         def func(session):
             raise nox.command.CommandFailed()
 
+        func.requires = []
         runner.func = func
 
         result = runner.execute()
@@ -1249,6 +1253,7 @@ class TestSessionRunner:
         def func(session):
             raise KeyboardInterrupt()
 
+        func.requires = []
         runner.func = func
 
         with pytest.raises(KeyboardInterrupt):
@@ -1260,6 +1265,7 @@ class TestSessionRunner:
         def func(session):
             raise ValueError("meep")
 
+        func.requires = []
         runner.func = func
 
         result = runner.execute()
@@ -1277,6 +1283,7 @@ class TestSessionRunner:
                 f' os.environ["NOX_CURRENT_SESSION"] == {session.name!r} else 0)',
             )
 
+        func.requires = []
         runner.func = func
 
         result = runner.execute()
