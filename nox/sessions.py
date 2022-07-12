@@ -29,6 +29,7 @@ from collections.abc import (
     Callable,
     Generator,
     Iterable,
+    Iterator,
     Mapping,
     Sequence,
 )
@@ -902,6 +903,7 @@ class SessionRunner:
         func: Func,
         global_config: argparse.Namespace,
         manifest: Manifest,
+        multi: bool = False,
     ) -> None:
         self.name = name
         self.signatures = signatures
@@ -910,6 +912,8 @@ class SessionRunner:
         self.manifest = manifest
         self.venv: ProcessEnv | None = None
         self.posargs: list[str] = global_config.posargs[:]
+        self.result: Result | None = None
+        self.multi = multi
 
     @property
     def description(self) -> str | None:
@@ -933,6 +937,43 @@ class SessionRunner:
     @property
     def envdir(self) -> str:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
+
+    def get_direct_dependencies(
+        self, sessions_by_id: Mapping[str, SessionRunner] | None = None
+    ) -> Iterator[SessionRunner]:
+        """Yields the sessions of the session's direct dependencies.
+
+        Args:
+            sessions_by_id (Mapping[str, ~nox.sessions.SessionRunner] | None): An
+                optional mapping from both dependency signatures and names to
+                corresponding ``SessionRunner``s. If this is not provided,
+                ``self.manifest.all_sessions_by_signature`` will be used to find the
+                sessions corresponding to signatures in ``self.func.requires``, and
+                non-signature names (i.e. names of sessions that were parameterized with
+                multiple Pythons) in ``self.func.requires`` will be resolved via
+                ``self.manifest.parametrized_sessions_by_name``.
+
+        Returns:
+            Iterator[~nox.session.SessionRunner]
+
+        Raises:
+            KeyError: If a dependency's session could not be found.
+        """
+        try:
+            if sessions_by_id is None:
+                sessions_by_signature = self.manifest.all_sessions_by_signature
+                parametrized_sessions_by_name = (
+                    self.manifest.parametrized_sessions_by_name
+                )
+                for requirement in self.func.requires:
+                    if requirement in sessions_by_signature:
+                        yield sessions_by_signature[requirement]
+                    else:
+                        yield from parametrized_sessions_by_name[requirement]
+            else:
+                yield from map(sessions_by_id.__getitem__, self.func.requires)
+        except KeyError as exc:
+            raise KeyError(f"Session not found: {exc.args[0]}") from exc
 
     def _create_venv(self) -> None:
         reuse_existing = self.reuse_existing_venv()
@@ -1023,6 +1064,18 @@ class SessionRunner:
     def execute(self) -> Result:
         logger.warning(f"Running session {self.friendly_name}")
 
+        for dependency in self.get_direct_dependencies():
+            if not dependency.result:
+                self.result = Result(
+                    self,
+                    Status.ABORTED,
+                    reason=(
+                        f"Prerequisite session {dependency.friendly_name} was not"
+                        " successful"
+                    ),
+                )
+                return self.result
+
         try:
             cwd = os.path.realpath(os.path.dirname(self.global_config.noxfile))
 
@@ -1033,22 +1086,25 @@ class SessionRunner:
                 self.func(session)
 
             # Nothing went wrong; return a success.
-            return Result(self, Status.SUCCESS)
+            self.result = Result(self, Status.SUCCESS)
 
         except nox.virtualenv.InterpreterNotFound as exc:
             if self.global_config.error_on_missing_interpreters:
-                return Result(self, Status.FAILED, reason=str(exc))
-            logger.warning("Missing interpreters will error by default on CI systems.")
-            return Result(self, Status.SKIPPED, reason=str(exc))
+                self.result = Result(self, Status.FAILED, reason=str(exc))
+            else:
+                logger.warning(
+                    "Missing interpreters will error by default on CI systems."
+                )
+                self.result = Result(self, Status.SKIPPED, reason=str(exc))
 
         except _SessionQuit as exc:
-            return Result(self, Status.ABORTED, reason=str(exc))
+            self.result = Result(self, Status.ABORTED, reason=str(exc))
 
         except _SessionSkip as exc:
-            return Result(self, Status.SKIPPED, reason=str(exc))
+            self.result = Result(self, Status.SKIPPED, reason=str(exc))
 
         except nox.command.CommandFailed:
-            return Result(self, Status.FAILED)
+            self.result = Result(self, Status.FAILED)
 
         except KeyboardInterrupt:
             logger.error(f"Session {self.friendly_name} interrupted.")
@@ -1056,7 +1112,9 @@ class SessionRunner:
 
         except Exception as exc:
             logger.exception(f"Session {self.friendly_name} raised exception {exc!r}")
-            return Result(self, Status.FAILED)
+            self.result = Result(self, Status.FAILED)
+
+        return self.result
 
 
 class Result:

@@ -17,11 +17,13 @@ from __future__ import annotations
 import argparse
 import ast
 import itertools
+import operator
 from collections import OrderedDict
 from collections.abc import Iterable, Iterator, Sequence
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
 from nox._decorators import Call, Func
+from nox._resolver import CycleError, lazy_stable_topo_sort
 from nox.sessions import Session, SessionRunner
 
 WARN_PYTHONS_IGNORED = "python_ignored"
@@ -103,6 +105,32 @@ class Manifest:
         """Yields all sessions and whether or not they're selected."""
         for session in self._all_sessions:
             yield session, session in self._queue
+
+    @property
+    def all_sessions_by_signature(self) -> dict[str, SessionRunner]:
+        return {
+            signature: session
+            for session in self._all_sessions
+            for signature in session.signatures
+        }
+
+    @property
+    def parametrized_sessions_by_name(self) -> dict[str, list[SessionRunner]]:
+        """Returns a mapping from names to all sessions that are parameterizations of
+        the ``@session`` with each name.
+
+        The sessions in each returned list will occur in the same order as they occur in
+        ``self._all_sessions``.
+        """
+        parametrized_sessions = filter(operator.attrgetter("multi"), self._all_sessions)
+        key = operator.attrgetter("name")
+        # Note that ``sorted`` uses a stable sorting algorithm.
+        return {
+            name: list(sessions_parametrizing_name)
+            for name, sessions_parametrizing_name in itertools.groupby(
+                sorted(parametrized_sessions, key=key), key
+            )
+        }
 
     def add_session(self, session: SessionRunner) -> None:
         """Add the given session to the manifest.
@@ -192,6 +220,56 @@ class Manifest:
         """
         self._queue = [x for x in self._queue if set(x.tags).intersection(tags)]
 
+    def add_dependencies(self) -> None:
+        """Add direct and recursive dependencies to the queue.
+
+        Raises:
+            KeyError: If any depended-on sessions are not found.
+            ~nox._resolver.CycleError: If a dependency cycle is encountered.
+        """
+        sessions_by_id = self.all_sessions_by_signature
+        # For each session that was parametrized from a list of Pythons, create a fake
+        # parent session that depends on it.
+        parent_sessions: set[SessionRunner] = set()
+        for (
+            parent_name,
+            parametrized_sessions,
+        ) in self.parametrized_sessions_by_name.items():
+            parent_func = _null_session_func.copy()
+            parent_func.requires = [
+                session.signatures[0] for session in parametrized_sessions
+            ]
+            parent_session = SessionRunner(
+                parent_name, [], parent_func, self._config, self, False
+            )
+            parent_sessions.add(parent_session)
+            sessions_by_id[parent_name] = parent_session
+
+        # Construct the dependency graph. Note that this is done lazily with iterators
+        # so that we won't raise if a session that doesn't actually need to run declares
+        # missing/improper dependencies.
+        dependency_graph = {
+            session: session.get_direct_dependencies(sessions_by_id)
+            for session in sessions_by_id.values()
+        }
+
+        # Resolve the dependency graph.
+        root = cast(SessionRunner, object())  # sentinel
+        try:
+            resolved_graph = list(
+                lazy_stable_topo_sort({**dependency_graph, root: self._queue}, root)
+            )
+        except CycleError as exc:
+            raise CycleError(
+                "Sessions are in a dependency cycle: "
+                + " -> ".join(session.name for session in exc.args[1])
+            ) from exc
+
+        # Remove fake parent sessions from the resolved graph.
+        self._queue = [
+            session for session in resolved_graph if session not in parent_sessions
+        ]
+
     def make_session(
         self, name: str, func: Func, multi: bool = False
     ) -> list[SessionRunner]:
@@ -259,7 +337,7 @@ class Manifest:
             if func.python:
                 long_names.append(f"{name}-{func.python}")
 
-            return [SessionRunner(name, long_names, func, self._config, self)]
+            return [SessionRunner(name, long_names, func, self._config, self, multi)]
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
@@ -274,13 +352,15 @@ class Manifest:
                 # Ensure that specifying session-python will run all parameterizations.
                 long_names.append(f"{name}-{func.python}")
 
-            sessions.append(SessionRunner(name, long_names, call, self._config, self))
+            sessions.append(
+                SessionRunner(name, long_names, call, self._config, self, multi)
+            )
 
         # Edge case: If the parameters made it such that there were no valid
         # calls, add an empty, do-nothing session.
         if not calls:
             sessions.append(
-                SessionRunner(name, [], _null_session_func, self._config, self)
+                SessionRunner(name, [], _null_session_func, self._config, self, multi)
             )
 
         # Return the list of sessions.
