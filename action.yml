@@ -12,7 +12,7 @@ branding:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-python@v4.1
+    - uses: actions/setup-python@v4
       id: localpython
       with:
         python-version: "3.7 - 3.10"
