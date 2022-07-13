@@ -12,9 +12,16 @@ branding:
 runs:
   using: composite
   steps:
+    - uses: actions/setup-python@v4
+      id: localpython
+      with:
+        python-version: "3.7 - 3.10"
+        activate-environment: false
+
     - name: "Validate input"
       id: helper
-      run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} '${{ github.action_path }}/.github/action_helper.py' '${{ inputs.python-versions }}'
+      run: >
+        '${{ steps.localpython.outputs.python-path }}' '${{ github.action_path }}/.github/action_helper.py' '${{ inputs.python-versions }}'
       shell: bash
 
     - uses: actions/setup-python@v4
@@ -99,6 +106,5 @@ runs:
       if: ${{ steps.helper.outputs.interpreter_count > 19 }}
 
     - name: "Install nox"
-      # --python "$(which python)" => always use the last setup-python version to install nox.
-      run: pipx install --python "$(which python)" '${{ github.action_path }}'
+      run: pipx install --python "${{ steps.localpython.outputs.python-path }}" '${{ github.action_path }}'
       shell: bash
