@@ -16,7 +16,7 @@ runs:
       id: localpython
       with:
         python-version: "3.7 - 3.10"
-        activate-environment: false
+        update-environment: false
 
     - name: "Validate input"
       id: helper
