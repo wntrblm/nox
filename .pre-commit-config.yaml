@@ -29,14 +29,12 @@ repos:
     hooks:
       - id: isort
         args: ["-a", "from __future__ import annotations"]
-        exclude: ^.github/action_helper.py$
 
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.32.0
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
-        exclude: ^.github/action_helper.py$
 
   - repo: https://github.com/tox-dev/pyproject-fmt
     rev: "0.3.3"
