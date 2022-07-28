@@ -160,7 +160,7 @@ def flag_pair_merge_func(
 def make_flag_pair(
     name: str,
     enable_flags: tuple[str, str] | tuple[str],
-    disable_flags: tuple[str],
+    disable_flags: tuple[str, str] | tuple[str],
     default: bool = False,
     **kwargs: Any,
 ) -> tuple[Option, Option]:
