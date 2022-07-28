@@ -363,7 +363,10 @@ options.add_options(
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
         ("-r", "--reuse-existing-virtualenvs"),
-        ("-nr", "--no-reuse-existing-virtualenvs",),
+        (
+            "-nr",
+            "--no-reuse-existing-virtualenvs",
+        ),
         group=options.groups["environment"],
         help="Re-use existing virtualenvs instead of recreating them.",
     ),
