@@ -724,6 +724,7 @@ class SessionRunner:
             with cwd:
                 self._create_venv()
                 session = Session(self)
+                session.env["NOX_CURRENT_SESSION"] = session.name
                 self.func(session)
 
             # Nothing went wrong; return a success.

@@ -900,6 +900,8 @@ class TestSessionRunner:
     def make_runner_with_mock_venv(self):
         runner = self.make_runner()
         runner._create_venv = mock.Mock()
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.env = {}
         return runner
 
     def test_execute_noop_success(self, caplog):
@@ -1016,6 +1018,23 @@ class TestSessionRunner:
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.FAILED
+
+    def test_execute_check_env(self):
+        runner = self.make_runner_with_mock_venv()
+
+        def func(session):
+            session.run(
+                sys.executable,
+                "-c",
+                'import os; raise SystemExit(0 if os.environ["NOX_CURRENT_SESSION"] =='
+                f" {session.name!r} else 0)",
+            )
+
+        runner.func = func
+
+        result = runner.execute()
+
+        assert result
 
 
 class TestResult:
