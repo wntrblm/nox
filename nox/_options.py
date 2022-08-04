@@ -364,7 +364,7 @@ options.add_options(
         "reuse_existing_virtualenvs",
         ("-r", "--reuse-existing-virtualenvs"),
         (
-            "-R",
+            "-N",
             "--no-reuse-existing-virtualenvs",
         ),
         group=options.groups["environment"],
