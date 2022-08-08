@@ -1,5 +1,60 @@
 # Changelog
 
+## 2022.8.7
+
+We'd like to thank the following folks who contributed to this release:
+- @CN-M
+- @crwilcox
+- @DiddiLeija
+- @edgarrmondragon
+- @FollowTheProcess
+- @hauntsaninja
+- @henryiii
+- @johnthagen
+- @jwodder
+- @ktbarrett
+- @mayeut
+- @meowmeowmeowcat
+- @NickleDave
+- @raddessi
+- @zhanpon
+
+Removals:
+- Drop support for Python 3.6 (#526)
+- Disable running `session.install` outside a venv (#580)
+
+New features:
+- Official Nox GitHub Action (#594, #606, #609, #620, #629, #637, #632, #633)
+- Missing interpreters now error the session on CI by default (#567)
+- Allow configurable child shutdown timeouts (#565)
+- Add session tags (#627)
+- Add short `-N` alias for `--no-reuse-existing-virtualenvs` (#639)
+- Export session name in `NOX_CURRENT_SESSION` environment variable (#641)
+
+Improvements:
+- Add `VENV_DIR` to `dev` session in cookbook (#591)
+- Fix typo in `tutorial.rst` (#586)
+- Use consistent spelling for Nox in documentation (#581)
+- Support descriptions in `tox-to-nox` (#575)
+- Document that `silent=True` returns the command output (#578)
+- Support argcomplete v2 (#564)
+
+Bugfixes:
+-  Fix incorrect `FileNotFoundError` in `load_nox_module` (#571)
+
+Internal changes:
+- Update the classifiers, documentation, and more to point to the new Winterbloom location (#587)
+- Support PEP 621 (`pyproject.toml`) (#616, #619)
+- Configure language code to avoid warning on sphinx build (#626)
+- Use latest GitHub action runners and include macOS (#613)
+- Jazz up the README with some badges/logo etc. (#605, #614)
+- Prefer type checking against Jinja2 (#610)
+- Introduce GitHub issue forms (#600, #603, #608)
+- Full strictness checking on mypy (#595, #596)
+- Drop 99% coverage threshold flag for 3.10 in noxfile (#593)
+- Create a `requirements-dev.txt` (#582)
+- Use `myst-parser` for Markdown docs (#561)
+
 ## 2022.1.7
 
 Claudio Jolowicz, Diego Ramirez, and Tom Fleet have become maintainers of Nox. We'd like to thank the following folks who contributed to this release:
