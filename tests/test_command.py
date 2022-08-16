@@ -156,13 +156,16 @@ def test_run_path_nonexistent():
 
 
 def test_run_path_existent(tmpdir, monkeypatch):
-    executable = tmpdir.join("testexc")
+    executable_name = (
+        "testexc" if platform.platform().lower() != "windows" else "testexc.exe"
+    )
+    executable = tmpdir.join(executable_name)
     executable.ensure("")
     executable.chmod(0o700)
 
     with mock.patch("nox.command.popen") as mock_command:
         mock_command.return_value = (0, "")
-        nox.command.run(["testexc"], silent=True, paths=[tmpdir.strpath])
+        nox.command.run([executable_name], silent=True, paths=[tmpdir.strpath])
         mock_command.assert_called_with([executable.strpath], env=None, silent=True)
 
 
