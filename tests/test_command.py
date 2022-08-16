@@ -156,11 +156,13 @@ def test_run_path_nonexistent():
     assert "/non/existent" not in result
 
 
-def test_run_path_existent(tmp_path: Path, monkeypatch):
+def test_run_path_existent(tmp_path: Path):
     executable_name = (
         "testexc.exe" if platform.platform().lower() == "windows" else "testexc"
     )
+    tmp_path.touch()
     executable = tmp_path.joinpath(executable_name)
+    executable.touch()
     executable.chmod(0o700)
 
     with mock.patch("nox.command.popen") as mock_command:
