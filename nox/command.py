@@ -18,6 +18,7 @@ import os
 import shlex
 import shutil
 import sys
+from platform import platform
 from typing import Any, Iterable, Sequence
 
 from nox.logger import logger
@@ -39,6 +40,9 @@ class CommandFailed(Exception):
 
 def which(program: str, paths: list[str] | None) -> str:
     """Finds the full path to an executable."""
+    if platform().lower() == "windows":
+        program = f"{program}.exe"
+
     if paths is not None:
         full_path = shutil.which(program, path=os.pathsep.join(paths))
         if full_path:
