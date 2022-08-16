@@ -86,7 +86,7 @@ def _check_nox_version_satisfies(needs_version: str) -> None:
         with contextlib.suppress(InvalidVersion):
             Version(needs_version)
             message += f", did you mean '>= {needs_version}'?"
-        raise InvalidVersionSpecifier(message)
+        raise InvalidVersionSpecifier(message) from error
 
     if not specifiers.contains(version, prereleases=True):
         raise VersionCheckFailed(

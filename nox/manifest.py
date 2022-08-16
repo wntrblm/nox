@@ -233,7 +233,6 @@ class Manifest:
         # If the func has the python attribute set to a list, we'll need
         # to expand them.
         if isinstance(func.python, (list, tuple, set)):
-
             for python in func.python:
                 single_func = func.copy()
                 single_func.python = python
