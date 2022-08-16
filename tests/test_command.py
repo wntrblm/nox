@@ -23,6 +23,7 @@ import signal
 import subprocess
 import sys
 import time
+from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
@@ -155,18 +156,17 @@ def test_run_path_nonexistent():
     assert "/non/existent" not in result
 
 
-def test_run_path_existent(tmpdir, monkeypatch):
+def test_run_path_existent(tmp_path: Path, monkeypatch):
     executable_name = (
-        "testexc" if platform.platform().lower() != "windows" else "testexc.exe"
+        "testexc.exe" if platform.platform().lower() == "windows" else "testexc"
     )
-    executable = tmpdir.join(executable_name)
-    executable.ensure("")
+    executable = tmp_path.joinpath(executable_name)
     executable.chmod(0o700)
 
     with mock.patch("nox.command.popen") as mock_command:
         mock_command.return_value = (0, "")
-        nox.command.run([executable_name], silent=True, paths=[tmpdir.strpath])
-        mock_command.assert_called_with([executable.strpath], env=None, silent=True)
+        nox.command.run([executable_name], silent=True, paths=[str(tmp_path)])
+        mock_command.assert_called_with([str(executable)], env=None, silent=True)
 
 
 def test_run_external_warns(tmpdir, caplog):
