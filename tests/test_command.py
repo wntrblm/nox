@@ -158,7 +158,7 @@ def test_run_path_nonexistent():
 
 def test_run_path_existent(tmp_path: Path):
     executable_name = (
-        "testexc.exe" if platform.platform().lower() == "windows" else "testexc"
+        "testexc.exe" if "windows" in platform.platform().lower() else "testexc"
     )
     tmp_path.touch()
     executable = tmp_path.joinpath(executable_name)
