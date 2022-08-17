@@ -40,7 +40,7 @@ class CommandFailed(Exception):
 
 def which(program: str, paths: list[str] | None) -> str:
     """Finds the full path to an executable."""
-    if platform().lower() == "windows":
+    if platform().lower() == "windows":  # pragma: no cover
         program = f"{program}.exe"
 
     if paths is not None:
