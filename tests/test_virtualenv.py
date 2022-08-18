@@ -227,7 +227,7 @@ def test_condaenv_detection(make_conda):
     venv.create()
 
     proc_result = subprocess.run(
-        [py.path.local.sysfind("conda").strpath, "list"],
+        [shutil.which("conda"), "list"],
         env=venv.env,
         check=True,
         capture_output=True,
@@ -565,7 +565,7 @@ def test__resolved_interpreter_windows_full_path(which, make_one):
     # or otherwise) and the path exists, that we accept it.
     venv, _ = make_one(interpreter=r"c:\Python36\python.exe")
 
-    which.return_value = py.path.local(venv.interpreter)
+    which.return_value = venv.interpreter
     assert venv._resolved_interpreter == r"c:\Python36\python.exe"
     which.assert_called_once_with(r"c:\Python36\python.exe")
 
