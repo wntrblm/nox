@@ -37,6 +37,8 @@ class OptionGroup:
         kwargs: Passed through to``ArgumentParser.add_argument_group``.
     """
 
+    __slots__ = ("name", "args", "kwargs")
+
     def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
         self.name = name
         self.args = args
