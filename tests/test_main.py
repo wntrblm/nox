@@ -489,6 +489,56 @@ def test_main_with_bad_session_names(run_nox, session):
     assert session in stderr
 
 
+@pytest.mark.parametrize(
+    ("sessions", "expected_order"),
+    [
+        (("g", "a", "d"), ("b", "c", "h", "g", "a", "e", "d")),
+        (("m",), ("k-3.9", "k-3.10", "m")),
+        (("n",), ("k-3.10", "n")),
+    ],
+)
+def test_main_requires(run_nox, sessions, expected_order):
+    noxfile = os.path.join(RESOURCES, "noxfile_requires.py")
+    returncode, stdout, _ = run_nox(f"--noxfile={noxfile}", "--sessions", *sessions)
+    assert returncode == 0
+    assert tuple(stdout.rstrip("\n").split("\n")) == expected_order
+
+
+def test_main_requires_cycle(run_nox):
+    noxfile = os.path.join(RESOURCES, "noxfile_requires.py")
+    returncode, _, stderr = run_nox(f"--noxfile={noxfile}", "--session=i")
+    assert returncode != 0
+    # While the exact cycle reported is not unique and is an implementation detail, this
+    # still serves as a regression test for unexpected changes in the implementation's
+    # behavior.
+    assert "Sessions are in a dependency cycle: i -> j -> i" in stderr
+
+
+def test_main_requires_missing_session(run_nox):
+    noxfile = os.path.join(RESOURCES, "noxfile_requires.py")
+    returncode, _, stderr = run_nox(f"--noxfile={noxfile}", "--session=o")
+    assert returncode != 0
+    assert "Session not found: does_not_exist" in stderr
+
+
+def test_main_requires_bad_python_parametrization(run_nox):
+    noxfile = os.path.join(RESOURCES, "noxfile_requires.py")
+    with pytest.raises(
+        ValueError,
+        match="Cannot parametrize requires",
+    ):
+        returncode, _, _ = run_nox(f"--noxfile={noxfile}", "--session=q")
+        assert returncode != 0
+
+
+@pytest.mark.parametrize("session", ("s", "t"))
+def test_main_requires_chain_fail(run_nox, session):
+    noxfile = os.path.join(RESOURCES, "noxfile_requires.py")
+    returncode, _, stderr = run_nox(f"--noxfile={noxfile}", f"--session={session}")
+    assert returncode != 0
+    assert "Prerequisite session r was not successful" in stderr
+
+
 def test_main_noxfile_options(monkeypatch, generate_noxfile_options):
     noxfile_path = generate_noxfile_options(reuse_existing_virtualenvs=True)
     monkeypatch.setattr(
