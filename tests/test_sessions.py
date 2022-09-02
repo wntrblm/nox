@@ -225,6 +225,7 @@ class TestSession:
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
+        assert session.install_only
 
         with mock.patch.object(nox.command, "run") as run:
             assert session.run("spam", "eggs") is None
@@ -236,6 +237,7 @@ class TestSession:
     def test_run_install_only_should_install(self):
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
+        assert session.install_only
 
         with mock.patch.object(nox.command, "run") as run:
             session.install("spam")
@@ -344,6 +346,7 @@ class TestSession:
     def test_run_always_install_only(self, caplog):
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
+        assert session.install_only
 
         assert session.run_always(operator.add, 23, 19) == 42
 
@@ -409,6 +412,7 @@ class TestSession:
     def test_run_always_no_install(self, no_install, reused, run_called):
         session, runner = self.make_session_and_runner()
         runner.global_config.no_install = no_install
+        assert session.no_install == no_install
         runner.venv._reused = reused
 
         with mock.patch.object(nox.command, "run") as run:
@@ -518,6 +522,7 @@ class TestSession:
         runner.venv.conda_cmd = "conda"
 
         runner.global_config.no_install = no_install
+        assert session.no_install == no_install
         runner.venv._reused = reused
 
         with mock.patch.object(nox.command, "run") as run:
@@ -756,6 +761,7 @@ class TestSession:
     def test_session_venv_reused_with_no_install(self, no_install, reused, run_called):
         session, runner = self.make_session_and_runner()
         runner.global_config.no_install = no_install
+        assert session.no_install == no_install
         runner.venv._reused = reused
 
         with mock.patch.object(nox.command, "run") as run:
