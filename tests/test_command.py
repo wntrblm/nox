@@ -22,6 +22,7 @@ import signal
 import subprocess
 import sys
 import time
+from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
@@ -110,6 +111,19 @@ def test_run_verbosity_failed_command(capsys, caplog):
 
     # Nothing is logged but the error is still written to stderr
     assert not logs
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="See https://github.com/python/cpython/issues/85815",
+)
+def test_run_non_str():
+    result = nox.command.run(
+        [Path(PYTHON), "-c", "import sys; print(sys.argv)", Path(PYTHON)],
+        silent=True,
+    )
+
+    assert PYTHON in result
 
 
 def test_run_env_unicode():

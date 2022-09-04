@@ -92,7 +92,10 @@ def run(
         success_codes = [0]
 
     cmd, args = args[0], args[1:]
-    full_cmd = f"{cmd} {_shlex_join(args)}"
+    try:
+        full_cmd = f"{cmd} {_shlex_join(args)}"
+    except TypeError:
+        full_cmd = f"{cmd} {args}"
 
     cmd_path = which(cmd, paths)
 
