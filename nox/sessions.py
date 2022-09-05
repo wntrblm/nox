@@ -23,7 +23,7 @@ import re
 import sys
 import unicodedata
 from types import TracebackType
-from typing import Any, Callable, Iterable, Mapping, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence, cast
 
 import py
 
@@ -168,14 +168,14 @@ class Session:
         This property may be useful if a user is using their own installing
         command (e.g., ``pip-sync``).
         """
-        return self._runner.global_config.no_install
+        return cast(bool, self._runner.global_config.no_install)
 
     @property
     def install_only(self) -> bool:
         """
         Whether ``--install-only`` is passed to the ``nox`` command line.
         """
-        return self._runner.global_config.install_only
+        return cast(bool, self._runner.global_config.install_only)
 
     @property
     def virtualenv(self) -> ProcessEnv:
