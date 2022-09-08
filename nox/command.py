@@ -71,8 +71,7 @@ def _clean_env(env: dict[str, str] | None) -> dict[str, str] | None:
 
 
 def _shlex_join(args: Sequence[str]) -> str:
-    # shlex.join() was added in Python 3.8
-    return " ".join(shlex.quote(arg) for arg in args)
+    return " ".join(shlex.quote(os.fspath(arg)) for arg in args)
 
 
 def run(
@@ -92,10 +91,7 @@ def run(
         success_codes = [0]
 
     cmd, args = args[0], args[1:]
-    try:
-        full_cmd = f"{cmd} {_shlex_join(args)}"
-    except TypeError:
-        full_cmd = f"{cmd} {args}"
+    full_cmd = f"{cmd} {_shlex_join(args)}"
 
     cmd_path = which(cmd, paths)
 
