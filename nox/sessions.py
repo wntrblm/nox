@@ -316,7 +316,7 @@ class Session:
                 out.seek(0)
                 commit = out.read().decode().strip()
 
-            print("Curent Git commit is", commit)
+            print("Current Git commit is", commit)
 
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
