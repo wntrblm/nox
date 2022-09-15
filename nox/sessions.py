@@ -305,18 +305,15 @@ class Session:
                # Display coverage report even when tests fail.
                session.run("coverage", "report")
 
-        You can redirect the output of a command into an open file. For example to get the
-        current Git commit ID::
+        If you pass ``silent=True``, you can capture the output of a command that would
+        otherwise be shown to the user. For example to get the current Git commit ID::
 
-            with tempfile.TemporaryFile() as out:
-                session.run(
-                    "git", "rev-parse", "--short", "HEAD",
-                     external=True, stdout=out
-                )
-                out.seek(0)
-                commit = out.read().decode().strip()
+            out = session.run(
+                "git", "rev-parse", "--short", "HEAD",
+                external=True, silent=True
+            )
 
-            print("Current Git commit is", commit)
+            print("Current Git commit is", out.strip())
 
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
@@ -343,9 +340,11 @@ class Session:
             them. Set to ``None`` to never send a kill signal.
             Default: ``0.2``
         :type terminate_timeout: float or None
-        :param stdout: Redirect standard output of the command into a file.
+        :param stdout: Redirect standard output of the command into a file. Can't be
+            combined with *silent*.
         :type stdout: file or file descriptor
-        :param stderr: Redirect standard output of the command into a file.
+        :param stderr: Redirect standard output of the command into a file. Can't be
+            combined with *silent*.
         :type stderr: file or file descriptor
         """
         if not args:
