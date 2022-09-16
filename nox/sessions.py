@@ -305,6 +305,16 @@ class Session:
                # Display coverage report even when tests fail.
                session.run("coverage", "report")
 
+        If you pass ``silent=True``, you can capture the output of a command that would
+        otherwise be shown to the user. For example to get the current Git commit ID::
+
+            out = session.run(
+                "git", "rev-parse", "--short", "HEAD",
+                external=True, silent=True
+            )
+
+            print("Current Git commit is", out.strip())
+
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
         :type env: dict or None
@@ -330,6 +340,12 @@ class Session:
             them. Set to ``None`` to never send a kill signal.
             Default: ``0.2``
         :type terminate_timeout: float or None
+        :param stdout: Redirect standard output of the command into a file. Can't be
+            combined with *silent*.
+        :type stdout: file or file descriptor
+        :param stderr: Redirect standard output of the command into a file. Can't be
+            combined with *silent*.
+        :type stderr: file or file descriptor
         """
         if not args:
             raise ValueError("At least one argument required to run().")
