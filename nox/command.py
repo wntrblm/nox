@@ -52,16 +52,16 @@ def which(program: str, paths: list[str] | None) -> str:
     raise CommandFailed(f"Program {program} not found")
 
 
-def _clean_env(env: dict[str, str] | None) -> dict[str, str] | None:
-    if env is None:
-        return None
-
+def _clean_env(env: dict[str, str] | None) -> dict[str, str]:
     clean_env = {}
 
     # Ensure systemroot is passed down, otherwise Windows will explode.
-    clean_env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
+    if sys.platform == "win32":
+        clean_env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
 
-    clean_env.update(env)
+    if env is not None:
+        clean_env.update(env)
+
     return clean_env
 
 
