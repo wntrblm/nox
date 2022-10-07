@@ -18,6 +18,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
+        if: matrix.python-version != '3.11-dev'
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
