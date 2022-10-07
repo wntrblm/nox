@@ -18,6 +18,7 @@ import ctypes
 import logging
 import os
 import platform
+import shutil
 import signal
 import subprocess
 import sys
@@ -56,6 +57,13 @@ def test_run_silent(capsys):
 
     assert "123" in result
     assert out == ""
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="Needs git")
+def test_run_not_in_path(capsys):
+    # Paths falls back on the environment PATH if the command is not found.
+    result = nox.command.run(["git", "--version"], paths=["."])
+    assert result is True
 
 
 def test_run_verbosity(capsys, caplog):
@@ -161,15 +169,19 @@ def test_run_path_nonexistent():
     assert "/non/existent" not in result
 
 
-def test_run_path_existent(tmpdir, monkeypatch):
-    executable = tmpdir.join("testexc")
-    executable.ensure("")
+def test_run_path_existent(tmp_path: Path):
+    executable_name = (
+        "testexc.exe" if "windows" in platform.platform().lower() else "testexc"
+    )
+    tmp_path.touch()
+    executable = tmp_path.joinpath(executable_name)
+    executable.touch()
     executable.chmod(0o700)
 
     with mock.patch("nox.command.popen") as mock_command:
         mock_command.return_value = (0, "")
-        nox.command.run(["testexc"], silent=True, paths=[tmpdir.strpath])
-        mock_command.assert_called_with([executable.strpath], env=None, silent=True)
+        nox.command.run([executable_name], silent=True, paths=[str(tmp_path)])
+        mock_command.assert_called_with([str(executable)], env=None, silent=True)
 
 
 def test_run_external_warns(tmpdir, caplog):

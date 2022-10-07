@@ -18,17 +18,15 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 import sys
 from socket import gethostbyname
 from typing import Any, Mapping
 
-import py
-
 import nox
 import nox.command
+from nox import _typing
 from nox.logger import logger
-
-from . import _typing
 
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
@@ -109,12 +107,16 @@ def locate_via_py(version: str) -> str | None:
         if it is found.
     """
     script = "import sys; print(sys.executable)"
-    py_exe = py.path.local.sysfind("py")
+    py_exe = shutil.which("py")
     if py_exe is not None:
-        try:
-            return py_exe.sysexec("-" + version, "-c", script).strip()  # type: ignore[no-any-return]
-        except py.process.cmdexec.Error:
-            return None
+        ret = subprocess.run(
+            [py_exe, f"-{version}", "-c", script],
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+        if ret.returncode == 0 and ret.stdout:
+            return ret.stdout.strip()
     return None
 
 
@@ -138,15 +140,17 @@ def locate_using_path_and_version(version: str) -> str | None:
         return None
 
     script = "import platform; print(platform.python_version())"
-    path_python = py.path.local.sysfind("python")
+    path_python = shutil.which("python")
     if path_python:
-        try:
-            prefix = f"{version}."
-            version_string = path_python.sysexec("-c", script).strip()
-            if version_string.startswith(prefix):
-                return str(path_python)
-        except py.process.cmdexec.Error:
-            return None
+        prefix = f"{version}"
+        ret = subprocess.run(
+            [path_python, "-c", script],
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+        if ret.returncode == 0 and ret.stdout and ret.stdout.strip().startswith(prefix):
+            return path_python
 
     return None
 
@@ -424,7 +428,7 @@ class VirtualEnv(ProcessEnv):
             cleaned_interpreter = f"python{xy_version}"
 
         # If the cleaned interpreter is on the PATH, go ahead and return it.
-        if py.path.local.sysfind(cleaned_interpreter):
+        if shutil.which(cleaned_interpreter):
             self._resolved = cleaned_interpreter
             return self._resolved
 
