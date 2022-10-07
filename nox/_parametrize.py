@@ -36,7 +36,7 @@ class Param:
         arg_names: Sequence[str] | None = None,
         id: str | None = None,
     ) -> None:
-        self.args = tuple(args)
+        self.args = args
         self.id = id
 
         if arg_names is None:

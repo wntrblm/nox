@@ -24,15 +24,23 @@ import re
 import sys
 import unicodedata
 from types import TracebackType
-from typing import Any, Callable, Generator, Iterable, Mapping, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Generator,
+    Iterable,
+    Mapping,
+    NoReturn,
+    Sequence,
+)
 
 import nox.command
-from nox import _typing
 from nox._decorators import Func
 from nox.logger import logger
 from nox.virtualenv import CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
 
-if _typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from nox.manifest import Manifest
 
 
@@ -89,7 +97,7 @@ def _dblquote_pkg_install_args(args: tuple[str, ...]) -> tuple[str, ...]:
             )
 
         if "<" in pkg_req_str or ">" in pkg_req_str:
-            if pkg_req_str[0] == '"' and pkg_req_str[-1] == '"':
+            if pkg_req_str[0] == pkg_req_str[-1] == '"':
                 # already double-quoted string
                 return pkg_req_str
             else:
@@ -646,11 +654,11 @@ class Session:
         """Outputs a debug-level message during the session."""
         logger.debug(*args, **kwargs)
 
-    def error(self, *args: Any) -> _typing.NoReturn:
+    def error(self, *args: Any) -> NoReturn:
         """Immediately aborts the session and optionally logs an error."""
         raise _SessionQuit(*args)
 
-    def skip(self, *args: Any) -> _typing.NoReturn:
+    def skip(self, *args: Any) -> NoReturn:
         """Immediately skips the session and optionally logs a warning."""
         raise _SessionSkip(*args)
 
@@ -817,11 +825,12 @@ class Result:
         """
         if self.status == Status.SUCCESS:
             return "was successful"
+
         status = self.status.name.lower()
         if self.reason:
             return f"{status}: {self.reason}"
-        else:
-            return status
+
+        return status
 
     def log(self, message: str) -> None:
         """Log a message using the appropriate log function.

@@ -14,33 +14,8 @@
 
 from __future__ import annotations
 
-__all__ = ["TYPE_CHECKING", "ClassVar", "NoReturn", "Python"]
+__all__ = ["Python"]
 
-import typing as _typing
+from typing import Sequence, Union
 
-try:
-    from typing import TYPE_CHECKING
-except ImportError:
-    try:
-        from typing import TYPE_CHECKING
-    except ImportError:
-        TYPE_CHECKING = False
-
-try:
-    from typing import NoReturn
-except ImportError:
-    try:
-        from typing import NoReturn
-    except ImportError:
-        pass
-
-
-try:
-    from typing import ClassVar
-except ImportError:
-    try:
-        from typing import ClassVar
-    except ImportError:
-        pass
-
-Python = _typing.Optional[_typing.Union[str, _typing.Sequence[str], bool]]
+Python = Union[str, Sequence[str], bool, None]

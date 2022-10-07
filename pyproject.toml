@@ -76,7 +76,7 @@ branch = true
 omit = [ "nox/_typing.py" ]
 
 [tool.coverage.report]
-exclude_lines = [ "pragma: no cover", "if _typing.TYPE_CHECKING:", "@overload" ]
+exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
