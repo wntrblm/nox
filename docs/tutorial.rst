@@ -329,7 +329,7 @@ You can also pass the notified session positional arguments:
     def consume_thing(session):
         # The 'consume' command has the arguments
         # sent to it from the 'prepare_thing' session
-        session.run("consume", "thing", session.posargs)
+        session.run("consume", "thing", *session.posargs)
 
 Note that this will only have the desired effect if selecting sessions to run via the ``--session/-s`` flag. If you simply run ``nox``, all selected sessions will be run.
 
