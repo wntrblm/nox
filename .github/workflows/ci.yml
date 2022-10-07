@@ -27,6 +27,10 @@ jobs:
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }}
         run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
+        if: matrix.python-version != '3.11-dev'
+      - name: Run tests on ${{ matrix.os }}
+        if: matrix.python-version == '3.11-dev'
+        run: nox --non-interactive --error-on-missing-interpreter --session "tests-3.11" -- --full-trace
   lint:
     runs-on: ubuntu-latest
     steps:
