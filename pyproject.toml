@@ -1,7 +1,7 @@
 [build-system]
-build-backend = "setuptools.build_meta"
+build-backend = "hatchling.build"
 requires = [
-  "setuptools>=61",
+  "hatchling"
 ]
 
 [project]
@@ -63,11 +63,6 @@ repository = "https://github.com/wntrblm/nox"
 nox = "nox.__main__:main"
 tox-to-nox = "nox.tox_to_nox:main"
 
-
-[tool.setuptools]
-zip-safe = false
-include-package-data = true
-package-data = { "nox" = [ "py.typed" ] }
 
 [tool.isort]
 profile = "black"
