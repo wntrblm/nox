@@ -484,7 +484,7 @@ class Session:
             # Install in editable mode.
             session.install('-e', '.', '--no-deps')
 
-        You can specify a conda channel using `channel=`; a falsy value will
+        You can specify a conda channel using `channel=`; a falsey value will
         not change the current channels. You can specify a list of channels if
         needed.
 

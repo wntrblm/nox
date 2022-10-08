@@ -230,8 +230,10 @@ def test_fail_with_silent(capsys):
             [
                 PYTHON,
                 "-c",
-                'import sys; sys.stdout.write("out");'
-                'sys.stderr.write("err"); sys.exit(1)',
+                (
+                    'import sys; sys.stdout.write("out");'
+                    'sys.stderr.write("err"); sys.exit(1)'
+                ),
             ],
             silent=True,
         )
@@ -390,8 +392,10 @@ def test_custom_stdout(capsys, tmpdir):
             [
                 PYTHON,
                 "-c",
-                'import sys; sys.stdout.write("out");'
-                'sys.stderr.write("err"); sys.exit(0)',
+                (
+                    'import sys; sys.stdout.write("out");'
+                    'sys.stderr.write("err"); sys.exit(0)'
+                ),
             ],
             stdout=stdout,
         )
@@ -418,8 +422,10 @@ def test_custom_stdout_failed_command(capsys, tmpdir):
                 [
                     PYTHON,
                     "-c",
-                    'import sys; sys.stdout.write("out");'
-                    'sys.stderr.write("err"); sys.exit(1)',
+                    (
+                        'import sys; sys.stdout.write("out");'
+                        'sys.stderr.write("err"); sys.exit(1)'
+                    ),
                 ],
                 stdout=stdout,
             )
@@ -439,8 +445,10 @@ def test_custom_stderr(capsys, tmpdir):
             [
                 PYTHON,
                 "-c",
-                'import sys; sys.stdout.write("out");'
-                'sys.stderr.write("err"); sys.exit(0)',
+                (
+                    'import sys; sys.stdout.write("out");'
+                    'sys.stderr.write("err"); sys.exit(0)'
+                ),
             ],
             stderr=stderr,
         )
@@ -461,8 +469,10 @@ def test_custom_stderr_failed_command(capsys, tmpdir):
                 [
                     PYTHON,
                     "-c",
-                    'import sys; sys.stdout.write("out");'
-                    'sys.stderr.write("err"); sys.exit(1)',
+                    (
+                        'import sys; sys.stdout.write("out");'
+                        'sys.stderr.write("err"); sys.exit(1)'
+                    ),
                 ],
                 stderr=stderr,
             )
