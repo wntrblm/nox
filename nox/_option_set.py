@@ -237,7 +237,7 @@ class OptionSet:
         }
 
         for option in self.options.values():
-            if option.hidden is True:
+            if option.hidden:
                 continue
 
             # Every option must have a group (except for hidden options)

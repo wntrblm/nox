@@ -157,15 +157,15 @@ def _color_finalizer(value: bool, args: argparse.Namespace) -> bool:
     Returns:
         The new value for the "color" option.
     """
-    if args.forcecolor is True and args.nocolor is True:
+    if args.forcecolor and args.nocolor:
         raise _option_set.ArgumentError(
             None, "Can not specify both --no-color and --force-color."
         )
 
-    if args.forcecolor is True:
+    if args.forcecolor:
         return True
 
-    if args.nocolor is True:
+    if args.nocolor:
         return False
 
     return sys.stdout.isatty()
@@ -510,7 +510,7 @@ options.add_options(
         "invoked_from",
         group=None,
         hidden=True,
-        default=lambda: os.getcwd(),
+        default=os.getcwd,
     ),
 )
 

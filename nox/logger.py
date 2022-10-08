@@ -97,7 +97,7 @@ logger = cast(LoggerWithSuccessAndOutput, logging.getLogger("nox"))
 
 
 def _get_formatter(color: bool, add_timestamp: bool) -> logging.Formatter:
-    if color is True:
+    if color:
         return NoxColoredFormatter(
             reset=True,
             log_colors={
@@ -112,8 +112,7 @@ def _get_formatter(color: bool, add_timestamp: bool) -> logging.Formatter:
             secondary_log_colors=None,
             add_timestamp=add_timestamp,
         )
-    else:
-        return NoxFormatter(add_timestamp=add_timestamp)
+    return NoxFormatter(add_timestamp=add_timestamp)
 
 
 def setup_logging(

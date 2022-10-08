@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import platform
 import re
@@ -21,11 +22,10 @@ import shutil
 import subprocess
 import sys
 from socket import gethostbyname
-from typing import Any, Mapping
+from typing import Any, ClassVar, Mapping
 
 import nox
 import nox.command
-from nox import _typing
 from nox.logger import logger
 
 # Problematic environment variables that are stripped from all commands inside
@@ -52,7 +52,7 @@ class ProcessEnv:
     is_sandboxed = False
 
     # Special programs that aren't included in the environment.
-    allowed_globals: _typing.ClassVar[tuple[Any, ...]] = ()
+    allowed_globals: ClassVar[tuple[Any, ...]] = ()
 
     def __init__(
         self, bin_paths: None = None, env: Mapping[str, str] | None = None
@@ -207,7 +207,7 @@ class CondaEnv(ProcessEnv):
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
         self.reuse_existing = reuse_existing
-        self.venv_params = venv_params if venv_params else []
+        self.venv_params = venv_params or []
         self.conda_cmd = conda_cmd
         super().__init__(env={"CONDA_PREFIX": self.location})
 
@@ -227,10 +227,8 @@ class CondaEnv(ProcessEnv):
                 ]
                 nox.command.run(cmd, silent=True, log=False)
                 # Make sure that location is clean
-                try:
+                with contextlib.suppress(FileNotFoundError):
                     shutil.rmtree(self.location)
-                except FileNotFoundError:
-                    pass
 
         return True
 
@@ -247,8 +245,8 @@ class CondaEnv(ProcessEnv):
                 os.path.join(self.location, "Scripts"),
                 os.path.join(self.location, "bin"),
             ]
-        else:
-            return [os.path.join(self.location, "bin")]
+
+        return [os.path.join(self.location, "bin")]
 
     def create(self) -> bool:
         """Create the conda env."""
@@ -332,7 +330,7 @@ class VirtualEnv(ProcessEnv):
         self._resolved: None | str | InterpreterNotFound = None
         self.reuse_existing = reuse_existing
         self.venv_or_virtualenv = "venv" if venv else "virtualenv"
-        self.venv_params = venv_params if venv_params else []
+        self.venv_params = venv_params or []
         super().__init__(env={"VIRTUAL_ENV": self.location})
 
     def _clean_location(self) -> bool:
@@ -465,8 +463,7 @@ class VirtualEnv(ProcessEnv):
         """Returns the location of the virtualenv's bin folder."""
         if _SYSTEM == "Windows":
             return [os.path.join(self.location, "Scripts")]
-        else:
-            return [os.path.join(self.location, "bin")]
+        return [os.path.join(self.location, "bin")]
 
     def create(self) -> bool:
         """Create the virtualenv or venv."""

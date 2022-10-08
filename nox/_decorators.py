@@ -18,11 +18,11 @@ import copy
 import functools
 import inspect
 import types
-from typing import Any, Callable, Iterable, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeVar, cast
 
 from . import _typing
 
-if _typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from ._parametrize import Param
 
 
@@ -68,7 +68,7 @@ class Func(FunctionDecorator):
         self.reuse_venv = reuse_venv
         self.venv_backend = venv_backend
         self.venv_params = venv_params
-        self.should_warn = should_warn or dict()
+        self.should_warn = should_warn or {}
         self.tags = tags or []
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
