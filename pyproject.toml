@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "hatchling.build"
 requires = [
-  "hatchling"
+  "hatchling",
 ]
 
 [project]
