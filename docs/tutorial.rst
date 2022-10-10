@@ -490,7 +490,7 @@ sessions:
     - flake8
 
 
-If you run ``nox -t style fix``, Nox will all sessions that match *any* of
+If you run ``nox -t style fix``, Nox will run all sessions that match *any* of
 the tags, so all three sessions:
 
 .. code-block:: console
