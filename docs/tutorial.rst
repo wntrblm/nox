@@ -36,14 +36,14 @@ If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/n
     # setup nox with all active CPython and PyPY versions provided by
     # the GitHub Actions environment i.e.
     # python-versions: "3.7, 3.8, 3.9, 3.10, pypy-3.7, pypy-3.8, pypy-3.9"
-    - uses: wntrblm/nox
+    - uses: wntrblm/nox@latest
 
     # setup nox only for a given list of python versions
     # Limitations:
     # - Version specifiers shall be supported by actions/setup-python
     # - You can specify up-to 20 versions
     # - There can only be one "major.minor" per interpreter i.e. "3.7.0, 3.7.1" is invalid
-    - uses: wntrblm/nox
+    - uses: wntrblm/nox@latest
       with:
           python-versions: "2.7, 3.5, 3.11-dev, pypy-3.9"
 
