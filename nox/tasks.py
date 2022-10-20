@@ -184,6 +184,11 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
         _produce_listing(manifest, global_config)
         return 0
 
+    # JSON output requires list sessions also be specified
+    if global_config.json and not global_config.list_sessions:
+        logger.error("Must specify --list-sessions with --json")
+        return 3
+
     # Filter by python interpreter versions.
     if global_config.pythons:
         manifest.filter_by_python_interpreter(global_config.pythons)
@@ -264,6 +269,23 @@ def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     )
 
 
+def _produce_json_listing(manifest: Manifest, global_config: Namespace) -> None:
+    report = []
+    for session, selected in manifest.list_all_sessions():
+        if selected:
+            report.append(
+                {
+                    "session": session.friendly_name,
+                    "name": session.name,
+                    "description": session.description or "",
+                    "python": session.func.python,
+                    "tags": session.tags,
+                    "call_spec": getattr(session.func, "call_spec", {}),
+                }
+            )
+    print(json.dumps(report))
+
+
 def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest | int:
     """If --list was passed, simply list the manifest and exit cleanly.
 
@@ -275,10 +297,13 @@ def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest
         Union[~.Manifest,int]: ``0`` if a listing is all that is requested,
             the manifest otherwise (to be sent to the next task).
     """
-    if not global_config.list_sessions:
+    if not (global_config.list_sessions or global_config.json):
         return manifest
 
-    _produce_listing(manifest, global_config)
+    if global_config.json:
+        _produce_json_listing(manifest, global_config)
+    else:
+        _produce_listing(manifest, global_config)
 
     return 0
 
