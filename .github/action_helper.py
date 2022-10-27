@@ -65,9 +65,9 @@ def setup_action(input_: str) -> None:
     if len(versions) > 20:
         raise ValueError(f"too many interpreters to install: {len(versions)} > 20")
 
-    print(f"::set-output name=interpreter_count::{len(versions)}")
+    print(f"interpreter_count={len(versions)}")
     for i, version in enumerate(versions):
-        print(f"::set-output name=interpreter_{i}::{version}")
+        print(f"interpreter_{i}={version}")
 
 
 if __name__ == "__main__":
