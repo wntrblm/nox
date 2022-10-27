@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11-dev"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -18,7 +18,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
-        if: matrix.python-version != '3.11-dev'
+        if: matrix.python-version != '3.11'
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
@@ -27,9 +27,9 @@ jobs:
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }}
         run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
-        if: matrix.python-version != '3.11-dev'
+        if: matrix.python-version != '3.11'
       - name: Run tests on ${{ matrix.os }}
-        if: matrix.python-version == '3.11-dev'
+        if: matrix.python-version == '3.11'
         run: nox --non-interactive --error-on-missing-interpreter --session "tests-3.11" -- --full-trace
   lint:
     runs-on: ubuntu-latest

@@ -13,7 +13,7 @@ VALID_VERSIONS = {
     "2.7.18": "2.7",
     "3.9-dev": "3.9",
     "3.10": "3.10",
-    "3.11.0.beta1": "3.11",
+    "3.11": "3.11",
     "pypy-3.7": "3.7",
     "pypy-3.8-v7.3.9": "3.8",
     "pypy-3.9": "3.9",
@@ -42,8 +42,8 @@ def test_filter_version_invalid_minor():
 
 
 VALID_VERSION_LISTS = {
-    "3.7, 3.8, 3.9, 3.10, pypy-3.7, pypy-3.8, pypy-3.9": [
-        "::set-output name=interpreter_count::7",
+    "3.7, 3.8, 3.9, 3.10, 3.11, pypy-3.7, pypy-3.8, pypy-3.9": [
+        "::set-output name=interpreter_count::8",
         "::set-output name=interpreter_0::pypy-3.7",
         "::set-output name=interpreter_1::pypy-3.8",
         "::set-output name=interpreter_2::pypy-3.9",
@@ -51,35 +51,37 @@ VALID_VERSION_LISTS = {
         "::set-output name=interpreter_4::3.8",
         "::set-output name=interpreter_5::3.9",
         "::set-output name=interpreter_6::3.10",
+        "::set-output name=interpreter_7::3.11",
     ],
     "": [
         "::set-output name=interpreter_count::1",
-        "::set-output name=interpreter_0::3.10",
+        "::set-output name=interpreter_0::3.11",
     ],
-    "3.10.4": [
+    "3.11.4": [
         "::set-output name=interpreter_count::1",
-        "::set-output name=interpreter_0::3.10.4",
+        "::set-output name=interpreter_0::3.11.4",
     ],
     "3.9-dev,pypy3.9-nightly": [
         "::set-output name=interpreter_count::3",
         "::set-output name=interpreter_0::pypy3.9-nightly",
         "::set-output name=interpreter_1::3.9-dev",
-        "::set-output name=interpreter_2::3.10",
+        "::set-output name=interpreter_2::3.11",
     ],
-    "3.10, 3.9, 3.8": [
-        "::set-output name=interpreter_count::3",
-        "::set-output name=interpreter_0::3.9",
-        "::set-output name=interpreter_1::3.8",
-        "::set-output name=interpreter_2::3.10",
+    "3.11, 3.10, 3.9, 3.8": [
+        "::set-output name=interpreter_count::4",
+        "::set-output name=interpreter_0::3.10",
+        "::set-output name=interpreter_1::3.9",
+        "::set-output name=interpreter_2::3.8",
+        "::set-output name=interpreter_3::3.11",
     ],
     ",".join(f"3.{minor}" for minor in range(20)): [
         "::set-output name=interpreter_count::20"
     ]
     + [
         f"::set-output name=interpreter_{i}::3.{minor}"
-        for i, minor in enumerate(minor_ for minor_ in range(20) if minor_ != 10)
+        for i, minor in enumerate(minor_ for minor_ in range(20) if minor_ != 11)
     ]
-    + ["::set-output name=interpreter_19::3.10"],
+    + ["::set-output name=interpreter_19::3.11"],
 }
 
 
