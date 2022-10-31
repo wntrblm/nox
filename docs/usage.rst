@@ -186,17 +186,17 @@ In addition to Nox supporting executing single sessions, it also supports runnin
 
 .. code-block:: console
 
-    nox --extra-pythons 3.8 3.9
+    nox --extra-pythons 3.8 3.9 3.10
 
 This will, in addition to specified Python versions in the Noxfile, also create sessions for the specified versions.
 
 This option can be combined with ``--python`` to replace, instead of appending, the Python interpreter for a given session::
 
-    nox --python 3.10 --extra-python 3.10 -s lint
+    nox --python 3.11 --extra-python 3.11 -s lint
 
 Instead of passing both options, you can use the ``--force-python`` shorthand::
 
-    nox --force-python 3.10 -s lint
+    nox --force-python 3.11 -s lint
 
 Also, you can specify ``python`` in place of a specific version. This will run the session
 using the ``python`` specified for the current ``PATH``::

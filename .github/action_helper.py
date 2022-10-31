@@ -14,7 +14,7 @@ def filter_version(version: str) -> str:
     else:
         version_ = version
 
-    # remove extra specifier e.g. "3.11-dev" => "3.11"
+    # remove extra specifier e.g. "3.12-dev" => "3.12"
     version_ = version_.split("-")[0]
 
     version_parts = version_.split(".")
@@ -52,15 +52,15 @@ def setup_action(input_: str) -> None:
     # other interpreters also define pythonX.Y symlinks.
     versions = pypy_versions + cpython_versions
 
-    # we want to install python 3.10 last to ease nox set-up
-    if "3.10" in cpython_versions_filtered:
-        index = cpython_versions_filtered.index("3.10")
+    # we want to install python 3.11 last to ease nox set-up
+    if "3.11" in cpython_versions_filtered:
+        index = cpython_versions_filtered.index("3.11")
         index = versions.index(cpython_versions[index])
         cpython_310 = versions.pop(index)
         versions.append(cpython_310)
     else:
         # add this to install nox
-        versions.append("3.10")
+        versions.append("3.11")
 
     if len(versions) > 20:
         raise ValueError(f"too many interpreters to install: {len(versions)} > 20")

@@ -47,7 +47,7 @@ If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/n
     # this uses version 2022.8.7 but any Nox tag will work here
     - uses: wntrblm/nox@2022.8.7
       with:
-          python-versions: "2.7, 3.5, 3.11-dev, pypy-3.9"
+          python-versions: "2.7, 3.5, 3.11, pypy-3.9"
 
 .. _pip: https://pip.readthedocs.org
 .. _user site: https://packaging.python.org/tutorials/installing-packages/#installing-to-the-user-site
