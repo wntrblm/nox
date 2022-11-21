@@ -1,5 +1,38 @@
 # Changelog
 
+## 2022.11.21
+
+We'd like to thank the following folks who contributed to this release:
+- @airtower-luna
+- @DiddiLeija
+- @FollowTheProcess
+- @henryiii
+- @hynek
+- @Julian
+- @nhtsai
+- @paw-lu
+
+New features:
+- Include Python 3.11 classifier & testing (#655)
+
+Improvements:
+- Fixed a few typos (#661, #660)
+- Drop dependency on `py` (#647)
+- `nox.session.run` now accepts a `pathlib.Path` for the command (#649)
+- Document `nox.session.run`'s `stdout` and `stderr` arguments and add example of capturing output (#651)
+
+Bugfixes:
+- GitHub Action: replace deprecated set-output command (#668)
+- GitHub Action: point docs to 2022.8.7 not latest (#664)
+- Docs: fix argument passing in `session.posargs` example (#653)
+- Include GitHub action helper in `MANIFEST.in` (#645)
+
+Internal changes:
+- GitHub Action: move to 3.11 final (#667)
+- Cleanup Python 2 style code (#657)
+- Update tools used in pre-commit (#646, #656)
+
+
 ## 2022.8.7
 
 We'd like to thank the following folks who contributed to this release:
