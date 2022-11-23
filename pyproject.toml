@@ -63,6 +63,7 @@ repository = "https://github.com/wntrblm/nox"
 nox = "nox.__main__:main"
 tox-to-nox = "nox.tox_to_nox:main"
 
+
 [tool.hatch]
 metadata.allow-ambiguous-features = true  # disable normalization (tox-to-nox) for back-compat
 
