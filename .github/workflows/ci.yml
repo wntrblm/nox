@@ -63,6 +63,6 @@ jobs:
       - name: Build sdist and wheel
         run: pipx run build
       - name: Publish distribution PyPI
-        uses: pypa/gh-action-pypi-publish@v1.5.1
+        uses: pypa/gh-action-pypi-publish@v1.6.1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
