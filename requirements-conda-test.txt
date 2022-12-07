@@ -1,7 +1,6 @@
 argcomplete >=1.9.4,<3.0
 colorlog >=2.6.1,<7.0.0
 jinja2
-py >=1.4.0,<2.0.0
 pytest
-tox
+tox<4.0.0
 virtualenv >=14.0.0
