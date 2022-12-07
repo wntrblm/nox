@@ -23,7 +23,6 @@ from textwrap import dedent
 from typing import NamedTuple
 from unittest import mock
 
-import py
 import pytest
 
 import nox.virtualenv
