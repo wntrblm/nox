@@ -23,7 +23,6 @@ from textwrap import dedent
 from typing import NamedTuple
 from unittest import mock
 
-import py
 import pytest
 
 import nox.virtualenv
@@ -675,16 +674,14 @@ def test__resolved_interpreter_windows_path_and_version_fails(
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
-@mock.patch.object(py._path.local.LocalPath, "check")
 @mock.patch.object(shutil, "which")
-def test__resolved_interpreter_not_found(which, check, make_one):
+def test__resolved_interpreter_not_found(which, make_one):
     # Establish that if an interpreter cannot be found at a standard
     # location on Windows, we raise a useful error.
     venv, _ = make_one(interpreter="python3.6")
 
     # We are on Windows, and nothing can be found.
     which.return_value = None
-    check.return_value = False
 
     # Run the test.
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
