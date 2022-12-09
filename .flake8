@@ -1,5 +1,5 @@
 [flake8]
-extend-ignore = E501, W503, E203, B950, B905
-extend-select = B9
+extend-ignore = E501, W503, E203
+extend-select = B902, B903, B904
 import-order-style = google
 application-import-names = nox,tests
