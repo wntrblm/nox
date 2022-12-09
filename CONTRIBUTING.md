@@ -7,7 +7,7 @@ Nox is hosted on [GitHub](https://github.com/wntrblm/nox).
 
 ## Support, questions, and feature requests
 
-Feel free to file a bug or feature request on [GitHub](https://github.com/wntrblm/nox). If your question is more general or does not fit neatly into one of those categories, we also have a Nox channel on the Winterbloom Discord server.
+Feel free to file a bug or feature request on [GitHub](https://github.com/wntrblm/nox). If your question is more general or does not fit neatly into one of those categories, we also have a Nox channel on the [Winterbloom Discord server](https://discord.com/invite/UpfqghQ).
 
 You should find a permalink to the invite when you raise a new issue on GitHub.
 
