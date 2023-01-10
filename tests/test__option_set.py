@@ -40,7 +40,7 @@ class TestOptionSet:
         namespace = optionset.namespace()
 
         assert hasattr(namespace, "option_a")
-        assert not hasattr(namespace, "non_existant_option")
+        assert not hasattr(namespace, "non_existent_option")
         assert namespace.option_a == "meep"
 
     def test_namespace_values(self):
@@ -56,11 +56,11 @@ class TestOptionSet:
 
         assert namespace.option_a == "moop"
 
-    def test_namespace_non_existant_options_with_values(self):
+    def test_namespace_non_existent_options_with_values(self):
         optionset = _option_set.OptionSet()
 
         with pytest.raises(KeyError):
-            optionset.namespace(non_existant_option="meep")
+            optionset.namespace(non_existent_option="meep")
 
     def test_parser_hidden_option(self):
         optionset = _option_set.OptionSet()

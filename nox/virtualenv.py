@@ -44,7 +44,7 @@ class InterpreterNotFound(OSError):
 
 
 class ProcessEnv:
-    """A environment with a 'bin' directory and a set of 'env' vars."""
+    """An environment with a 'bin' directory and a set of 'env' vars."""
 
     location: str
 

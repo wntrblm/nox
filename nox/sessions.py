@@ -93,7 +93,7 @@ def _dblquote_pkg_install_args(args: tuple[str, ...]) -> tuple[str, ...]:
         # sanity check: we need an even number of double-quotes
         if pkg_req_str.count('"') % 2 != 0:
             raise ValueError(
-                f"ill-formated argument with odd number of quotes: {pkg_req_str}"
+                f"ill-formatted argument with odd number of quotes: {pkg_req_str}"
             )
 
         if "<" in pkg_req_str or ">" in pkg_req_str:

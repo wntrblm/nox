@@ -50,7 +50,7 @@ def execute(
                 args.append(return_value)
             return_value = function_(*args, global_config=global_config)
 
-            # If we got a integer value as a result, abort task processing
+            # If we got an integer value as a result, abort task processing
             # and return it.
             if isinstance(return_value, int):
                 return return_value
