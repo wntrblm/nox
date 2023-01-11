@@ -390,7 +390,7 @@ The session object
 
 .. module:: nox.sessions
 
-Nox will call your session functions with a an instance of the :class:`Session`
+Nox will call your session functions with an instance of the :class:`Session`
 class.
 
 .. autoclass:: Session

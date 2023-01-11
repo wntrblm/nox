@@ -148,7 +148,7 @@ def test_condaenv_create(make_conda):
     venv.create()
     assert not dir_.join("test.txt").check()
 
-    # Test running create on an existing environment with reuse_exising
+    # Test running create on an existing environment with reuse_existing
     # enabled, it should not be deleted.
     dir_.ensure("test.txt")
     assert dir_.join("test.txt").check()
@@ -346,7 +346,7 @@ def test_create(monkeypatch, make_one):
     venv.create()
     assert not dir_.join("test.txt").check()
 
-    # Test running create on an existing environment with reuse_exising
+    # Test running create on an existing environment with reuse_existing
     # enabled, it should not be deleted.
     dir_.ensure("test.txt")
     assert dir_.join("test.txt").check()
