@@ -239,6 +239,75 @@ def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
             assert session in config.sessions
 
 
+@pytest.mark.parametrize(
+    "env,pythons", [("3.9", ["3.9"]), ("3.9,3.10", ["3.9", "3.10"])]
+)
+def test_python_from_nox_env_var(monkeypatch, env, pythons):
+    monkeypatch.setenv("NOXPYTHON", env)
+    monkeypatch.setattr(sys, "argv", [sys.executable])
+
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit") as exit:
+            nox.__main__.main()
+            exit.assert_called_once_with(0)
+        assert execute.called
+
+        # Verify that the Python versions from the env var are listed in the config.
+        config = execute.call_args[1]["global_config"]
+        assert len(config.pythons) == len(pythons)
+        for session in pythons:
+            assert session in config.pythons
+
+
+@pytest.mark.parametrize(
+    "env,pythons", [("3.9", ["3.9"]), ("3.9,3.10", ["3.9", "3.10"])]
+)
+def test_extra_python_from_nox_env_var(monkeypatch, env, pythons):
+    monkeypatch.setenv("NOXEXTRAPYTHON", env)
+    monkeypatch.setattr(sys, "argv", [sys.executable])
+
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit") as exit:
+            nox.__main__.main()
+            exit.assert_called_once_with(0)
+        assert execute.called
+
+        # Verify that the Python versions from the env var are listed in the config.
+        config = execute.call_args[1]["global_config"]
+        assert len(config.extra_pythons) == len(pythons)
+        for session in pythons:
+            assert session in config.extra_pythons
+
+
+@pytest.mark.parametrize(
+    "env,pythons", [("3.9", ["3.9"]), ("3.9,3.10", ["3.9", "3.10"])]
+)
+def test_force_python_from_nox_env_var(monkeypatch, env, pythons):
+    monkeypatch.setenv("NOXFORCEPYTHON", env)
+    monkeypatch.setattr(sys, "argv", [sys.executable])
+
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit") as exit:
+            nox.__main__.main()
+            exit.assert_called_once_with(0)
+        assert execute.called
+
+        # Verify that the Python versions from the env var are listed in the config.
+        config = execute.call_args[1]["global_config"]
+        assert len(config.force_pythons) == len(pythons)
+        for session in pythons:
+            assert session in config.force_pythons
+
+
 def test_main_positional_args(capsys, monkeypatch):
     fake_exit = mock.Mock(side_effect=ValueError("asdf!"))
 
