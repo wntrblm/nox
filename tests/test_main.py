@@ -217,10 +217,30 @@ def test_main_explicit_sessions_with_spaces_in_names(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "env,sessions", [("foo", ["foo"]), ("foo,bar", ["foo", "bar"])]
+    "var,option,env,values",
+    [
+        ("NOXSESSION", "sessions", "foo", ["foo"]),
+        ("NOXSESSION", "sessions", "foo,bar", ["foo", "bar"]),
+        ("NOXPYTHON", "pythons", "3.9", ["3.9"]),
+        ("NOXPYTHON", "pythons", "3.9,3.10", ["3.9", "3.10"]),
+        ("NOXEXTRAPYTHON", "extra_pythons", "3.9", ["3.9"]),
+        ("NOXEXTRAPYTHON", "extra_pythons", "3.9,3.10", ["3.9", "3.10"]),
+        ("NOXFORCEPYTHON", "force_pythons", "3.9", ["3.9"]),
+        ("NOXFORCEPYTHON", "force_pythons", "3.9,3.10", ["3.9", "3.10"]),
+    ],
+    ids=[
+        "single_session",
+        "multiple_sessions",
+        "single_python",
+        "multiple_pythons",
+        "single_extra_python",
+        "multiple_extra_pythons",
+        "single_force_python",
+        "multiple_force_pythons",
+    ]
 )
-def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
-    monkeypatch.setenv("NOXSESSION", env)
+def test_main_list_option_from_nox_env_var(monkeypatch, var, option, env, values):
+    monkeypatch.setenv(var, env)
     monkeypatch.setattr(sys, "argv", [sys.executable])
 
     with mock.patch("nox.workflow.execute") as execute:
@@ -234,78 +254,10 @@ def test_main_session_from_nox_env_var(monkeypatch, env, sessions):
 
         # Verify that the sessions from the env var are listed in the config.
         config = execute.call_args[1]["global_config"]
-        assert len(config.sessions) == len(sessions)
-        for session in sessions:
-            assert session in config.sessions
-
-
-@pytest.mark.parametrize(
-    "env,pythons", [("3.9", ["3.9"]), ("3.9,3.10", ["3.9", "3.10"])]
-)
-def test_python_from_nox_env_var(monkeypatch, env, pythons):
-    monkeypatch.setenv("NOXPYTHON", env)
-    monkeypatch.setattr(sys, "argv", [sys.executable])
-
-    with mock.patch("nox.workflow.execute") as execute:
-        execute.return_value = 0
-
-        # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
-            exit.assert_called_once_with(0)
-        assert execute.called
-
-        # Verify that the Python versions from the env var are listed in the config.
-        config = execute.call_args[1]["global_config"]
-        assert len(config.pythons) == len(pythons)
-        for session in pythons:
-            assert session in config.pythons
-
-
-@pytest.mark.parametrize(
-    "env,pythons", [("3.9", ["3.9"]), ("3.9,3.10", ["3.9", "3.10"])]
-)
-def test_extra_python_from_nox_env_var(monkeypatch, env, pythons):
-    monkeypatch.setenv("NOXEXTRAPYTHON", env)
-    monkeypatch.setattr(sys, "argv", [sys.executable])
-
-    with mock.patch("nox.workflow.execute") as execute:
-        execute.return_value = 0
-
-        # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
-            exit.assert_called_once_with(0)
-        assert execute.called
-
-        # Verify that the Python versions from the env var are listed in the config.
-        config = execute.call_args[1]["global_config"]
-        assert len(config.extra_pythons) == len(pythons)
-        for session in pythons:
-            assert session in config.extra_pythons
-
-
-@pytest.mark.parametrize(
-    "env,pythons", [("3.9", ["3.9"]), ("3.9,3.10", ["3.9", "3.10"])]
-)
-def test_force_python_from_nox_env_var(monkeypatch, env, pythons):
-    monkeypatch.setenv("NOXFORCEPYTHON", env)
-    monkeypatch.setattr(sys, "argv", [sys.executable])
-
-    with mock.patch("nox.workflow.execute") as execute:
-        execute.return_value = 0
-
-        # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
-            exit.assert_called_once_with(0)
-        assert execute.called
-
-        # Verify that the Python versions from the env var are listed in the config.
-        config = execute.call_args[1]["global_config"]
-        assert len(config.force_pythons) == len(pythons)
-        for session in pythons:
-            assert session in config.force_pythons
+        config_values = getattr(config, option)
+        assert len(config_values) == len(values)
+        for value in values:
+            assert value in config_values
 
 
 def test_main_positional_args(capsys, monkeypatch):
