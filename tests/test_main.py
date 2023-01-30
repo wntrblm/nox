@@ -237,7 +237,7 @@ def test_main_explicit_sessions_with_spaces_in_names(monkeypatch):
         "multiple_extra_pythons",
         "single_force_python",
         "multiple_force_pythons",
-    ]
+    ],
 )
 def test_main_list_option_from_nox_env_var(monkeypatch, var, option, env, values):
     monkeypatch.setenv(var, env)
