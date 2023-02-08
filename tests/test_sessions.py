@@ -1026,8 +1026,10 @@ class TestSessionRunner:
             session.run(
                 sys.executable,
                 "-c",
-                'import os; raise SystemExit(0 if os.environ["NOX_CURRENT_SESSION"] =='
-                f" {session.name!r} else 0)",
+                (
+                    "import os; raise SystemExit(0 if"
+                    f' os.environ["NOX_CURRENT_SESSION"] == {session.name!r} else 0)'
+                ),
             )
 
         runner.func = func

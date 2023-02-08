@@ -48,8 +48,10 @@ options.add_groups(
     _option_set.OptionGroup(
         "environment",
         "Environment options",
-        "These arguments are used to control Nox's creation and usage of virtual"
-        " environments.",
+        (
+            "These arguments are used to control Nox's creation and usage of virtual"
+            " environments."
+        ),
     ),
     _option_set.OptionGroup(
         "execution",
