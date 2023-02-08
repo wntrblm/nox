@@ -74,12 +74,14 @@ VALID_VERSION_LISTS = {
         "interpreter_2=3.8",
         "interpreter_3=3.11",
     ],
-    ",".join(f"3.{minor}" for minor in range(20)): ["interpreter_count=20"]
-    + [
-        f"interpreter_{i}=3.{minor}"
-        for i, minor in enumerate(minor_ for minor_ in range(20) if minor_ != 11)
-    ]
-    + ["interpreter_19=3.11"],
+    ",".join(f"3.{minor}" for minor in range(20)): (
+        ["interpreter_count=20"]
+        + [
+            f"interpreter_{i}=3.{minor}"
+            for i, minor in enumerate(minor_ for minor_ in range(20) if minor_ != 11)
+        ]
+        + ["interpreter_19=3.11"]
+    ),
 }
 
 

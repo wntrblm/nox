@@ -20,14 +20,6 @@ authors = [
   { email = "me@thea.codes" },
 ]
 requires-python = ">=3.7"
-dependencies = [
-  "argcomplete<3.0,>=1.9.4",
-  "colorlog<7.0.0,>=2.6.1",
-  'importlib-metadata; python_version < "3.8"',
-  "packaging>=20.9",
-  'typing-extensions>=3.7.4; python_version < "3.8"',
-  "virtualenv>=14",
-]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
@@ -46,6 +38,14 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Topic :: Software Development :: Testing",
+]
+dependencies = [
+  "argcomplete<3.0,>=1.9.4",
+  "colorlog<7.0.0,>=2.6.1",
+  'importlib-metadata; python_version < "3.8"',
+  "packaging>=20.9",
+  'typing-extensions>=3.7.4; python_version < "3.8"',
+  "virtualenv>=14",
 ]
 [project.optional-dependencies]
 tox_to_nox = [

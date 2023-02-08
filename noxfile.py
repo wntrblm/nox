@@ -119,8 +119,10 @@ def _check_python_version(session: nox.Session) -> None:
     session.run(
         "python",
         "-c",
-        "import sys; assert '.'.join(str(v) for v in sys.version_info[:2]) =="
-        f" '{python_version}'",
+        (
+            "import sys; assert '.'.join(str(v) for v in sys.version_info[:2]) =="
+            f" '{python_version}'"
+        ),
     )
     if python_version[:2] != "2.":
         session.run(
