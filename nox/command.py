@@ -115,7 +115,7 @@ def run(
 
     try:
         return_code, output = popen(
-            [cmd_path] + list(args), silent=silent, env=env, **popen_kws
+            [cmd_path, *list(args)], silent=silent, env=env, **popen_kws
         )
 
         if return_code not in success_codes:
