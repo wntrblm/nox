@@ -179,8 +179,7 @@ class Session:
 
     @property
     def posargs(self) -> list[str]:
-        """Any extra arguments from the ``nox`` commandline or :class:`Session.notify`.
-        """
+        """Any extra arguments from the ``nox`` commandline or :class:`Session.notify`."""
         return self._runner.posargs
 
     @property
@@ -225,8 +224,7 @@ class Session:
 
     @property
     def interactive(self) -> bool:
-        """Returns True if Nox is being run in an interactive session or False otherwise.
-        """
+        """Returns True if Nox is being run in an interactive session or False otherwise."""
         return not self._runner.global_config.non_interactive and sys.stdin.isatty()
 
     @property
