@@ -147,6 +147,9 @@ def default_env_var_list_factory(env_var: str) -> Callable[[], list[str] | None]
 
     Args:
         env_var (str): The name of the environment variable to look up.
+
+    Returns:
+        A callback that retrieves a list from a comma-delimited environment variable.
     """
 
     def _default_list() -> list[str] | None:
