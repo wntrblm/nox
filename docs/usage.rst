@@ -52,27 +52,35 @@ Specifying one or more sessions
 
 By default Nox will run all sessions defined in the Noxfile. However, you can choose to run a particular set of them using ``--session``, ``-s``, or ``-e``:
 
-.. code-block:: console
+.. tabs::
 
-    nox --session tests
-    nox -s lint tests
-    nox -e lint
+   .. code-tab:: console CLI options
 
-You can also use the ``NOXSESSION`` environment variable:
+         nox --session tests
+         nox -s lint tests
+         nox -e lint
 
-.. code-block:: console
+   .. code-tab:: console Environment variables
 
-    NOXSESSION=lint nox
-    NOXSESSION=lint,tests nox
+         NOXSESSION=tests nox
+         NOXSESSION=lint nox
+         NOXSESSION=lint,tests nox
 
 Nox will run these sessions in the same order they are specified.
 
 If you have a :ref:`configured session's virtualenv <virtualenv config>`, you can choose to run only sessions with given Python versions:
 
-.. code-block:: console
+.. tabs::
 
-    nox --python 3.8
-    nox -p 3.7 3.8
+   .. code-tab:: console CLI options
+
+         nox --python 3.8
+         nox -p 3.7 3.8
+
+   .. code-tab:: console Environment variables
+
+         NOXPYTHON=3.8 nox
+         NOXPYTHON=3.7,3.8 nox
 
 You can also use `pytest-style keywords`_ using ``-k`` or ``--keywords``, and
 tags using ``-t`` or ``--tags`` to filter test sessions:
@@ -184,25 +192,55 @@ Running additional Python versions
 
 In addition to Nox supporting executing single sessions, it also supports running Python versions that aren't specified using ``--extra-pythons``.
 
-.. code-block:: console
+.. tabs::
 
-    nox --extra-pythons 3.8 3.9 3.10
+   .. code-tab:: console CLI options
+
+         nox --extra-pythons 3.8 3.9 3.10
+
+   .. code-tab:: console Environment variables
+
+         NOXEXTRAPYTHON=3.8,3.9,3.10 nox
+
 
 This will, in addition to specified Python versions in the Noxfile, also create sessions for the specified versions.
 
-This option can be combined with ``--python`` to replace, instead of appending, the Python interpreter for a given session::
+This option can be combined with ``--python`` to replace, instead of appending, the Python interpreter for a given session:
 
-    nox --python 3.11 --extra-python 3.11 -s lint
+.. tabs::
 
-Instead of passing both options, you can use the ``--force-python`` shorthand::
+   .. code-tab:: console CLI options
 
-    nox --force-python 3.11 -s lint
+         nox --python 3.11 --extra-python 3.11 -s lint
+
+   .. code-tab:: console Environment variables
+
+         NOXPYTHON=3.11 NOXEXTRAPYTHON=3.11 NOXSESSION=lint nox
+
+Instead of passing both options, you can use the ``--force-python`` shorthand:
+
+.. tabs::
+
+   .. code-tab:: console CLI options
+
+         nox --force-python 3.11 -s lint
+
+   .. code-tab:: console Environment variables
+
+         NOXFORCEPYTHON=3.11 NOXSESSION=lint nox
 
 Also, you can specify ``python`` in place of a specific version. This will run the session
-using the ``python`` specified for the current ``PATH``::
+using the ``python`` specified for the current ``PATH``:
 
-    nox --force-python python -s lint
+.. tabs::
 
+   .. code-tab:: console CLI options
+
+         nox --force-python python -s lint
+
+   .. code-tab:: console Environment variables
+
+         NOXFORCEPYTHON=python NOXSESSION=lint nox
 
 .. _opt-stop-on-first-error:
 

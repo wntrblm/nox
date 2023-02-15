@@ -18,7 +18,7 @@ import argparse
 import functools
 import os
 import sys
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
@@ -142,11 +142,21 @@ def _envdir_merge_func(
     return command_args.envdir or noxfile_args.envdir or ".nox"
 
 
-def _sessions_default() -> list[str] | None:
-    """Looks at the NOXSESSION env var to set the default value for sessions."""
-    nox_env = os.environ.get("NOXSESSION")
-    env_sessions = nox_env.split(",") if nox_env else None
-    return env_sessions
+def default_env_var_list_factory(env_var: str) -> Callable[[], list[str] | None]:
+    """Looks at the env var to set the default value for a list of env vars.
+
+    Args:
+        env_var (str): The name of the environment variable to look up.
+
+    Returns:
+        A callback that retrieves a list from a comma-delimited environment variable.
+    """
+
+    def _default_list() -> list[str] | None:
+        env_value = os.environ.get(env_var)
+        return env_value.split(",") if env_value else None
+
+    return _default_list
 
 
 def _color_finalizer(value: bool, args: argparse.Namespace) -> bool:
@@ -264,7 +274,7 @@ options.add_options(
         noxfile=True,
         merge_func=functools.partial(_sessions_and_keywords_merge_func, "sessions"),
         nargs="*",
-        default=_sessions_default,
+        default=default_env_var_list_factory("NOXSESSION"),
         help="Which sessions to run. By default, all sessions will run.",
         completer=_session_completer,
     ),
@@ -276,6 +286,7 @@ options.add_options(
         group=options.groups["python"],
         noxfile=True,
         nargs="*",
+        default=default_env_var_list_factory("NOXPYTHON"),
         help="Only run sessions that use the given python interpreter versions.",
     ),
     _option_set.Option(
@@ -406,6 +417,7 @@ options.add_options(
         "--extra-python",
         group=options.groups["python"],
         nargs="*",
+        default=default_env_var_list_factory("NOXEXTRAPYTHON"),
         help="Additionally, run sessions using the given python interpreter versions.",
     ),
     _option_set.Option(
@@ -414,6 +426,7 @@ options.add_options(
         "--force-python",
         group=options.groups["python"],
         nargs="*",
+        default=default_env_var_list_factory("NOXFORCEPYTHON"),
         help=(
             "Run sessions with the given interpreters instead of those listed in the"
             " Noxfile. This is a shorthand for ``--python=X.Y --extra-python=X.Y``."
