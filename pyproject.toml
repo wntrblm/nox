@@ -50,7 +50,7 @@ dependencies = [
 [project.optional-dependencies]
 tox_to_nox = [
   "jinja2",
-  "tox<4",
+  "tox",
 ]
 
 [project.urls]
