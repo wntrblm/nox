@@ -31,12 +31,29 @@ if shutil.which("conda"):
     nox.options.sessions.append("conda_tests")
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11"])
-def tests(session: nox.Session) -> None:
+@nox.session
+@nox.parametrize(
+    "python, tox_version",
+    [
+        (python, tox_version)
+        for python in ("3.7", "3.8", "3.9", "3.10", "3.11")
+        for tox_version in ("latest", "<4")
+    ],
+)
+def tests(session: nox.Session, tox_version: str) -> None:
     """Run test suite with pytest."""
+    # Because there is a dependency conflict between
+    # argcomplete and the latest tox (both depend on
+    # a different version of importlibmetadata for Py 3.7)
+    # pip installs tox 3 as the latest one for Py 3.7.
+    if session.python == "3.7" and tox_version == "latest":
+        return
+
     session.create_tmp()  # Fixes permission errors on Windows
     session.install("-r", "requirements-test.txt")
     session.install("-e", ".[tox_to_nox]")
+    if tox_version != "latest":
+        session.install(f"tox{tox_version}")
     session.run(
         "pytest",
         "--cov=nox",
@@ -44,9 +61,10 @@ def tests(session: nox.Session) -> None:
         "pyproject.toml",
         "--cov-report=",
         *session.posargs,
-        env={"COVERAGE_FILE": f".coverage.{session.python}"},
+        env={
+            "COVERAGE_FILE": f".coverage.{session.python}.tox.{tox_version.lstrip('<')}"
+        },
     )
-    session.notify("cover")
 
 
 @nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend="conda")

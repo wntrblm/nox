@@ -73,6 +73,7 @@ profile = "black"
 
 [tool.coverage.run]
 branch = true
+relative_files = true
 omit = [ "nox/_typing.py" ]
 
 [tool.coverage.report]
