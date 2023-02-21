@@ -26,7 +26,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "0.9.1"
+    rev: "0.7.0"
     hooks:
       - id: pyproject-fmt
 
