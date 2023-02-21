@@ -93,10 +93,11 @@ ignore_missing_imports = true
 
 
 
+
 [tool.ruff]
 select = [
-  "E", "F", "W",  # flake8
-  "B", "B904",  # flake8-bugbear
+  "E", "F", "W", # flake8
+  "B", "B904",   # flake8-bugbear
   "I",           # isort
   "C4",          # flake8-comprehensions
   "ICN",         # flake8-import-conventions
