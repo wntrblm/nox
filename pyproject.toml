@@ -52,28 +52,17 @@ tox_to_nox = [
   "jinja2",
   "tox<4",
 ]
-
 [project.urls]
 bug-tracker = "https://github.com/wntrblm/nox/issues"
 documentation = "https://nox.thea.codes"
 homepage = "https://github.com/wntrblm/nox"
 repository = "https://github.com/wntrblm/nox"
-
 [project.scripts]
 nox = "nox.__main__:main"
 tox-to-nox = "nox.tox_to_nox:main"
 
-
 [tool.hatch]
 metadata.allow-ambiguous-features = true # disable normalization (tox-to-nox) for back-compat
-
-
-[tool.coverage.run]
-branch = true
-omit = [ "nox/_typing.py" ]
-
-[tool.coverage.report]
-exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -82,6 +71,13 @@ xfail_strict = true
 filterwarnings = [ "error" ]
 log_cli_level = "info"
 testpaths = [ "tests" ]
+
+[tool.coverage.run]
+branch = true
+omit = [ "nox/_typing.py" ]
+
+[tool.coverage.report]
+exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.mypy]
 files = [ "nox/**/*.py", "noxfile.py" ]
@@ -94,6 +90,8 @@ enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
 [[tool.mypy.overrides]]
 module = [ "argcomplete", "colorlog.*", "py", "tox.*" ]
 ignore_missing_imports = true
+
+
 
 [tool.ruff]
 select = [
