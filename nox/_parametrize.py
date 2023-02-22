@@ -53,7 +53,7 @@ class Param:
             return self.id
         else:
             call_spec = self.call_spec
-            args = [f"{k}={call_spec[k]!r}" for k in call_spec.keys()]
+            args = [f"{k}={call_spec[k]!r}" for k in call_spec]
             return ", ".join(args)
 
     __repr__ = __str__

@@ -448,7 +448,7 @@ def test_no_venv_backend_but_some_pythons():
     # the session sets "no venv backend" but declares some pythons
     my_session.python = ["3.7", "3.8"]
     my_session.venv_backend = "none"
-    my_session.should_warn = dict()
+    my_session.should_warn = {}
 
     sessions = manifest.make_session("my_session", my_session)
 

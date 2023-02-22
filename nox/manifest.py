@@ -332,10 +332,7 @@ class KeywordLocals(Mapping[str, bool]):
         self._keywords = keywords
 
     def __getitem__(self, variable_name: str) -> bool:
-        for keyword in self._keywords:
-            if variable_name in keyword:
-                return True
-        return False
+        return any(variable_name in keyword for keyword in self._keywords)
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._keywords)
@@ -347,7 +344,7 @@ class KeywordLocals(Mapping[str, bool]):
 def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
     """See if an expression matches the given set of keywords."""
     locals = KeywordLocals(set(keywords))
-    return eval(expression, {}, locals)
+    return eval(expression, {}, locals)  # noqa: PGH001
 
 
 def _null_session_func_(session: Session) -> None:

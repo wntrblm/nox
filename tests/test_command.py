@@ -410,7 +410,7 @@ def test_custom_stdout(capsys, tmpdir):
 
 
 def test_custom_stdout_silent_flag(capsys, tmpdir):
-    with open(str(tmpdir / "out.txt"), "w+b") as stdout:
+    with open(str(tmpdir / "out.txt"), "w+b") as stdout:  # noqa: SIM117
         with pytest.raises(ValueError, match="silent"):
             nox.command.run([PYTHON, "-c", 'print("hi")'], stdout=stdout, silent=True)
 

@@ -67,17 +67,6 @@ tox-to-nox = "nox.tox_to_nox:main"
 [tool.hatch]
 metadata.allow-ambiguous-features = true # disable normalization (tox-to-nox) for back-compat
 
-
-[tool.isort]
-profile = "black"
-
-[tool.coverage.run]
-branch = true
-omit = [ "nox/_typing.py" ]
-
-[tool.coverage.report]
-exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
-
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = [ "-ra", "--strict-markers", "--strict-config" ]
@@ -85,6 +74,13 @@ xfail_strict = true
 filterwarnings = [ "error" ]
 log_cli_level = "info"
 testpaths = [ "tests" ]
+
+[tool.coverage.run]
+branch = true
+omit = [ "nox/_typing.py" ]
+
+[tool.coverage.report]
+exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.mypy]
 files = [ "nox/**/*.py", "noxfile.py" ]
@@ -97,3 +93,22 @@ enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
 [[tool.mypy.overrides]]
 module = [ "argcomplete", "colorlog.*", "py", "tox.*" ]
 ignore_missing_imports = true
+
+[tool.ruff]
+select = [
+  "E", "F", "W", # flake8
+  "B", "B904",   # flake8-bugbear
+  "I",           # isort
+  "C4",          # flake8-comprehensions
+  "ICN",         # flake8-import-conventions
+  "ISC",         # flake8-implicit-str-concat
+  "PGH",         # pygrep-hooks
+  "PIE",         # flake8-pie
+  "RUF",         # Ruff-specific
+  "SIM",         # flake8-simplify
+  "UP",          # pyupgrade
+  "YTT",         # flake8-2020
+]
+extend-ignore = ["E501"]
+target-version = "py37"
+exclude = []
