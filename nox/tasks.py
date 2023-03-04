@@ -179,15 +179,11 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
             logger.error("Error while collecting sessions.")
             logger.error(exc.args[0])
             return 3
+
     if not manifest and not global_config.list_sessions:
         print("No sessions selected. Please select a session with -s <session name>.\n")
         _produce_listing(manifest, global_config)
         return 0
-
-    # JSON output requires list sessions also be specified
-    if global_config.json and not global_config.list_sessions:
-        logger.error("Must specify --list-sessions with --json")
-        return 3
 
     # Filter by python interpreter versions.
     if global_config.pythons:
@@ -299,6 +295,11 @@ def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest
     """
     if not (global_config.list_sessions or global_config.json):
         return manifest
+
+    # JSON output requires list sessions also be specified
+    if global_config.json and not global_config.list_sessions:
+        logger.error("Must specify --list-sessions with --json")
+        return 3
 
     if global_config.json:
         _produce_json_listing(manifest, global_config)
