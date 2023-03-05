@@ -265,6 +265,13 @@ options.add_options(
         help="List all available sessions and exit.",
     ),
     _option_set.Option(
+        "json",
+        "--json",
+        group=options.groups["sessions"],
+        action="store_true",
+        help="JSON output formatting. Requires list-sessions currently.",
+    ),
+    _option_set.Option(
         "sessions",
         "-s",
         "-e",
