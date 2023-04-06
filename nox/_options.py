@@ -20,6 +20,8 @@ import os
 import sys
 from typing import Any, Callable, Sequence
 
+from argcomplete.completers import DirectoriesCompleter, FilesCompleter
+
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 
@@ -418,6 +420,7 @@ options.add_options(
         merge_func=_envdir_merge_func,
         group=options.groups["environment"],
         help="Directory where Nox will store virtualenvs, this is ``.nox`` by default.",
+        completer=DirectoriesCompleter(),
     ),
     _option_set.Option(
         "extra_pythons",
@@ -491,6 +494,7 @@ options.add_options(
         group=options.groups["reporting"],
         noxfile=True,
         help="Output a report of all sessions to the given filename.",
+        completer=FilesCompleter(("json",)),
     ),
     _option_set.Option(
         "non_interactive",
