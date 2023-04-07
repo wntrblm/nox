@@ -227,6 +227,19 @@ def _posargs_finalizer(
     return posargs[dash_index + 1 :]
 
 
+def _python_completer(
+    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
+) -> list[str]:
+    global_config = parsed_args
+    module = load_nox_module(global_config)
+    manifest = discover_manifest(module, global_config)
+    return [
+        session.func.python
+        for session, _ in manifest.list_all_sessions()
+        if session.func.python
+    ]
+
+
 def _session_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
 ) -> list[str]:
@@ -298,6 +311,7 @@ options.add_options(
         nargs="*",
         default=default_env_var_list_factory("NOXPYTHON"),
         help="Only run sessions that use the given python interpreter versions.",
+        completer=_python_completer,
     ),
     _option_set.Option(
         "keywords",
@@ -430,6 +444,7 @@ options.add_options(
         nargs="*",
         default=default_env_var_list_factory("NOXEXTRAPYTHON"),
         help="Additionally, run sessions using the given python interpreter versions.",
+        completer=_python_completer,
     ),
     _option_set.Option(
         "force_pythons",
@@ -443,6 +458,7 @@ options.add_options(
             " Noxfile. This is a shorthand for ``--python=X.Y --extra-python=X.Y``."
         ),
         finalizer_func=_force_pythons_finalizer,
+        completer=_python_completer,
     ),
     *_option_set.make_flag_pair(
         "stop_on_first_error",
