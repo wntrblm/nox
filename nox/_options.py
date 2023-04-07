@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import functools
+import itertools
 import os
 import sys
 from typing import Any, Callable, Sequence
@@ -255,6 +256,19 @@ def _session_completer(
     ]
 
 
+def _tag_completer(
+    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
+) -> list[str]:
+    global_config = parsed_args
+    module = load_nox_module(global_config)
+    manifest = discover_manifest(module, global_config)
+    return list(
+        itertools.chain.from_iterable(
+            session.tags for session, _ in manifest.list_all_sessions() if session.tags
+        )
+    )
+
+
 options.add_options(
     _option_set.Option(
         "help",
@@ -330,6 +344,7 @@ options.add_options(
         noxfile=True,
         nargs="*",
         help="Only run sessions with the given tags.",
+        completer=_tag_completer,
     ),
     _option_set.Option(
         "posargs",
