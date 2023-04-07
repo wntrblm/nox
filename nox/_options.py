@@ -21,7 +21,11 @@ import os
 import sys
 from typing import Any, Callable, Sequence
 
-from argcomplete.completers import DirectoriesCompleter, FilesCompleter
+from argcomplete.completers import (
+    ChoicesCompleter,
+    DirectoriesCompleter,
+    FilesCompleter,
+)
 
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
@@ -335,6 +339,7 @@ options.add_options(
         noxfile=True,
         merge_func=functools.partial(_sessions_and_keywords_merge_func, "keywords"),
         help="Only run sessions that match the given expression.",
+        completer=ChoicesCompleter(()),
     ),
     _option_set.Option(
         "tags",
