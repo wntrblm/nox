@@ -95,7 +95,7 @@ class TestOptionSet:
         )
 
         expected_sessions = ["testytest", "lintylint", "typeytype"]
-        assert expected_sessions == actual_sessions_from_file
+        assert expected_sessions == list(actual_sessions_from_file)
 
     def test_session_completer_invalid_sessions(self):
         parsed_args = _options.options.namespace(

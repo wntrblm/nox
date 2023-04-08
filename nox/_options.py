@@ -19,6 +19,7 @@ import functools
 import itertools
 import os
 import sys
+from collections.abc import Iterable
 from typing import Any, Callable, Sequence
 
 from argcomplete.completers import (
@@ -234,20 +235,20 @@ def _posargs_finalizer(
 
 def _python_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
-) -> list[str]:
+) -> Iterable[str]:
     global_config = parsed_args
     module = load_nox_module(global_config)
     manifest = discover_manifest(module, global_config)
-    return [
+    return (
         session.func.python
         for session, _ in manifest.list_all_sessions()
         if session.func.python
-    ]
+    )
 
 
 def _session_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
-) -> list[str]:
+) -> Iterable[str]:
     global_config = parsed_args
     global_config.list_sessions = True
     module = load_nox_module(global_config)
@@ -255,21 +256,19 @@ def _session_completer(
     filtered_manifest = filter_manifest(manifest, global_config)
     if isinstance(filtered_manifest, int):
         return []
-    return [
+    return (
         session.friendly_name for session, _ in filtered_manifest.list_all_sessions()
-    ]
+    )
 
 
 def _tag_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
-) -> list[str]:
+) -> Iterable[str]:
     global_config = parsed_args
     module = load_nox_module(global_config)
     manifest = discover_manifest(module, global_config)
-    return list(
-        itertools.chain.from_iterable(
-            session.tags for session, _ in manifest.list_all_sessions() if session.tags
-        )
+    return itertools.chain.from_iterable(
+        session.tags for session, _ in manifest.list_all_sessions() if session.tags
     )
 
 
