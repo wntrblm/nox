@@ -475,8 +475,11 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
 
 
 @enable_staleness_check
-def test_create_reuse_python38_environment(make_one):
+def test_create_reuse_environment_missing_pyvenv_cfg(make_one, monkeypatch):
     venv, location = make_one(reuse_existing=True, interpreter="3.8")
+
+    # Pretend we couldn't read pyvenv config.
+    monkeypatch.setattr(venv, "_read_base_prefix_from_pyvenv_cfg", lambda: None)
 
     try:
         venv.create()
