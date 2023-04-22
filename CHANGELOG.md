@@ -1,5 +1,38 @@
 # Changelog
 
+## 2023.04.22
+
+We'd like to thank the following folks who contributed to this release:
+- @crwilcox 
+- @dcermak 
+- @edgarrmondragon 
+- @FollowTheProcess 
+- @henryiii 
+- @reaperhulk 
+- @scop 
+
+New Features:
+* Add support for `NOXPYTHON`, `NOXEXTRAPYTHON` and `NOXFORCEPYTHON` by @edgarrmondragon in https://github.com/wntrblm/nox/pull/688
+* feat: --json --list-sessions by @henryiii in https://github.com/wntrblm/nox/pull/665
+
+Documentation Improvements:
+* style: spelling and grammar fixes by @scop in https://github.com/wntrblm/nox/pull/682
+* Add invite link to the discord server to CONTRIBUTING.md by @dcermak in https://github.com/wntrblm/nox/pull/679
+
+Internal Changes:
+* chore: update pre-commit hooks by @edgarrmondragon in https://github.com/wntrblm/nox/pull/690
+* chore: move to using Ruff by @henryiii in https://github.com/wntrblm/nox/pull/691
+* Fix assertion in GHA tests by @FollowTheProcess in https://github.com/wntrblm/nox/pull/670
+* ci: some minor fixes by @henryiii in https://github.com/wntrblm/nox/pull/675
+* Constrain tox to <4.0.0 and minor fixes by @FollowTheProcess in https://github.com/wntrblm/nox/pull/677
+* chore: long term fix for bugbear opinionated checks by @henryiii in https://github.com/wntrblm/nox/pull/678
+* chore: switch to hatchling by @henryiii in https://github.com/wntrblm/nox/pull/659
+* Don't run python 2.7 virtualenv tests for newer versions of virtualenv by @crwilcox in https://github.com/wntrblm/nox/pull/702
+* allow the use of argcomplete 3 by @reaperhulk in https://github.com/wntrblm/nox/pull/700
+* fix: enable `list_sessions` for session completion by @scop in https://github.com/wntrblm/nox/pull/699
+* chore: remove 3.6 tests, min version is 3.7 by @crwilcox in https://github.com/wntrblm/nox/pull/703
+
+
 ## 2022.11.21
 
 We'd like to thank the following folks who contributed to this release:
