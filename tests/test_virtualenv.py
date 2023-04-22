@@ -24,12 +24,15 @@ from typing import NamedTuple
 from unittest import mock
 
 import pytest
+import virtualenv
+from packaging import version
 
 import nox.virtualenv
 
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 HAS_CONDA = shutil.which("conda") is not None
 RAISE_ERROR = "RAISE_ERROR"
+VIRTUALENV_VERSION = virtualenv.version.version
 
 
 class TextProcessResult(NamedTuple):
@@ -472,6 +475,10 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
 
 
 @enable_staleness_check
+@pytest.mark.skipif(
+    version.parse(VIRTUALENV_VERSION) >= version.parse("20.22.0"),
+    reason="Python 2.7 unsupported for virtualenv>=20.22.0",
+)
 def test_create_reuse_python2_environment(make_one):
     venv, location = make_one(reuse_existing=True, interpreter="2.7")
 
