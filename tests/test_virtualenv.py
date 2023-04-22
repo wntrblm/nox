@@ -24,12 +24,15 @@ from typing import NamedTuple
 from unittest import mock
 
 import pytest
+import virtualenv
+from packaging import version
 
 import nox.virtualenv
 
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 HAS_CONDA = shutil.which("conda") is not None
 RAISE_ERROR = "RAISE_ERROR"
+VIRTUALENV_VERSION = virtualenv.version.version
 
 
 class TextProcessResult(NamedTuple):
@@ -472,6 +475,33 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
 
 
 @enable_staleness_check
+@pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
+def test_inner_functions_reusing_venv(make_one):
+    venv, location = make_one(reuse_existing=True)
+    venv.create()
+
+    # Drop a venv-style pyvenv.cfg into the environment.
+    pyvenv_cfg = """\
+    home = /usr/bin
+    include-system-site-packages = false
+    version = 3.10
+    base-prefix = foo
+    """
+    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+
+    base_prefix = venv._read_base_prefix_from_pyvenv_cfg()
+    assert base_prefix == "foo"
+
+    reused_interpreter = venv._check_reused_environment_interpreter()
+    # The created won't match 'foo'
+    assert not reused_interpreter
+
+
+@enable_staleness_check
+@pytest.mark.skipif(
+    version.parse(VIRTUALENV_VERSION) >= version.parse("20.22.0"),
+    reason="Python 2.7 unsupported for virtualenv>=20.22.0",
+)
 def test_create_reuse_python2_environment(make_one):
     venv, location = make_one(reuse_existing=True, interpreter="2.7")
 
