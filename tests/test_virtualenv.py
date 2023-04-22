@@ -476,7 +476,7 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
 
 @enable_staleness_check
 def test_inner_functions_reusing_venv(make_one):
-    venv, location = make_one(reuse_existing=True, interpreter="3.10")
+    venv, location = make_one(reuse_existing=True)
     venv.create()
 
     # Drop a venv-style pyvenv.cfg into the environment.
