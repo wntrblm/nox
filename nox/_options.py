@@ -229,6 +229,7 @@ def _session_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
 ) -> list[str]:
     global_config = parsed_args
+    global_config.list_sessions = True
     module = load_nox_module(global_config)
     manifest = discover_manifest(module, global_config)
     filtered_manifest = filter_manifest(manifest, global_config)
