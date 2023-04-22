@@ -475,20 +475,25 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
 
 
 @enable_staleness_check
-def test_create_reuse_environment_missing_pyvenv_cfg(make_one, monkeypatch):
-    venv, location = make_one(reuse_existing=True, interpreter="3.8")
+def test_inner_functions_reusing_venv(make_one):
+    venv, location = make_one(reuse_existing=True, interpreter="3.10")
+    venv.create()
 
-    # Pretend we couldn't read pyvenv config.
-    monkeypatch.setattr(venv, "_read_base_prefix_from_pyvenv_cfg", lambda: None)
+    # Drop a venv-style pyvenv.cfg into the environment.
+    pyvenv_cfg = """\
+    home = /usr/bin
+    include-system-site-packages = false
+    version = 3.10
+    base-prefix = foo
+    """
+    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
 
-    try:
-        venv.create()
-    except nox.virtualenv.InterpreterNotFound:
-        pytest.skip("Requires Python 3.8 installation.")
+    base_prefix = venv._read_base_prefix_from_pyvenv_cfg()
+    assert base_prefix == "foo"
 
-    reused = not venv.create()
-
-    assert reused
+    reused_interpreter = venv._check_reused_environment_interpreter()
+    # The created won't match 'foo'
+    assert not reused_interpreter
 
 
 @enable_staleness_check
