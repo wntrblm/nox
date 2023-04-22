@@ -40,7 +40,7 @@ classifiers = [
   "Topic :: Software Development :: Testing",
 ]
 dependencies = [
-  "argcomplete<3.0,>=1.9.4",
+  "argcomplete<4.0,>=1.9.4",
   "colorlog<7.0.0,>=2.6.1",
   'importlib-metadata; python_version < "3.8"',
   "packaging>=20.9",
