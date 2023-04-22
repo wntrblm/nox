@@ -475,6 +475,20 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
 
 
 @enable_staleness_check
+def test_create_reuse_python38_environment(make_one):
+    venv, location = make_one(reuse_existing=True, interpreter="3.8")
+
+    try:
+        venv.create()
+    except nox.virtualenv.InterpreterNotFound:
+        pytest.skip("Requires Python 3.8 installation.")
+
+    reused = not venv.create()
+
+    assert reused
+
+
+@enable_staleness_check
 @pytest.mark.skipif(
     version.parse(VIRTUALENV_VERSION) >= version.parse("20.22.0"),
     reason="Python 2.7 unsupported for virtualenv>=20.22.0",
