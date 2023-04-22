@@ -46,8 +46,8 @@ dependencies = [
   'importlib-metadata; python_version < "3.8"',
   "packaging>=20.9",
   'typing-extensions>=3.7.4; python_version < "3.8"',
+  'virtualenv<20.22.0,>=14; python_version <= "3.6"',
   'virtualenv>=14; python_version > "3.6"',
-  'virtualenv>=14,<20.22.0; python_version <= "3.6"',
 ]
 [project.optional-dependencies]
 tox_to_nox = [
