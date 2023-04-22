@@ -144,15 +144,11 @@ def github_actions_default_tests(session: nox.Session) -> None:
 # The following sessions are only to be run in CI to check the nox GHA action
 @nox.session(
     python=[
-        "2.7",
-        "3.4",
-        "3.5",
         "3.7",
         "3.8",
         "3.9",
         "3.10",
         "3.11",
-        "pypy2.7",
         "pypy3.7",
         "pypy3.8",
         "pypy3.9",
