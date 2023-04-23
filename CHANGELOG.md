@@ -3,13 +3,13 @@
 ## 2023.04.22
 
 We'd like to thank the following folks who contributed to this release:
-- @crwilcox 
-- @dcermak 
-- @edgarrmondragon 
-- @FollowTheProcess 
-- @henryiii 
-- @reaperhulk 
-- @scop 
+- @crwilcox
+- @dcermak
+- @edgarrmondragon
+- @FollowTheProcess
+- @henryiii
+- @reaperhulk
+- @scop
 
 New Features:
 - Add support for `NOXPYTHON`, `NOXEXTRAPYTHON` and `NOXFORCEPYTHON` by @edgarrmondragon in https://github.com/wntrblm/nox/pull/688
