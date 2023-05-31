@@ -4,6 +4,7 @@
 
 # Nox
 
+[![Nox](https://img.shields.io/badge/%F0%9F%91%97-Nox-3CE9CE.svg)](https://github.com/wntrblm/nox)
 [![License](https://img.shields.io/github/license/wntrblm/nox)](https://github.com/wntrblm/nox)
 [![PyPI](https://img.shields.io/pypi/v/nox.svg?logo=python)](https://pypi.python.org/pypi/nox)
 [![GitHub](https://img.shields.io/github/v/release/wntrblm/nox?logo=github&sort=semver)](https://github.com/wntrblm/nox)
