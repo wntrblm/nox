@@ -512,4 +512,27 @@ For this point you can:
 * Read more docs, such as :doc:`usage` and :doc:`config`.
 * Give us feedback or contribute, see :doc:`CONTRIBUTING`.
 
+For any projects using Nox, you may add its official badge somewhere prominent
+like the README.
+
+.. image:: https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg
+   :alt: Nox
+   :target: https://github.com/wntrblm/nox
+
+.. tabs::
+
+   .. tab:: Markdown
+
+      .. code-block:: markdown
+
+          [![Nox](https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg)](https://github.com/wntrblm/nox)
+
+   .. tab:: reStructuredText
+
+        .. code-block:: rst
+
+            .. image:: https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg
+               :alt: Nox
+               :target: https://github.com/wntrblm/nox
+
 Have fun! 💜
