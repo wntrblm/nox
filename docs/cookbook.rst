@@ -131,3 +131,35 @@ Even more so with a sprinkling of Nox:
         session.run("git", "push", "--tags", external=True)
 
 Now a simple ``nox -s release -- patch`` will automate your release (provided you have Bump2Version set up to change your files). This is especially powerful if you have a CI/CD pipeline set up!
+
+
+Generating a matrix with GitHub Actions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Nox knows what sessions it needs to run. Why not tell GitHub Actions what jobs to run dynamically? Using the ``--json`` flag and a bit of json processing, it's easy:
+
+.. code-block:: yaml
+
+    jobs:
+      generate-jobs:
+        runs-on: ubuntu-latest
+        outputs:
+          session: ${{ steps.set-matrix.outputs.session }}
+        steps:
+        - uses: actions/checkout@v3
+        - uses: wntrblm/nox@main
+        - id: set-matrix
+          shell: bash
+          run: echo session=$(nox --json -l | jq -c '[.[].session]') | tee --append $GITHUB_OUTPUT
+      checks:
+        name: Session ${{ matrix.session }}
+        needs: [generate-jobs]
+        runs-on: ubuntu-latest
+        strategy:
+          fail-fast: false
+          matrix:
+            session: ${{ fromJson(needs.generate-jobs.outputs.session) }}
+        steps:
+        - uses: actions/checkout@v3
+        - uses: wntrblm/nox@main
+        - run: nox -s '${{ matrix.session }}'
