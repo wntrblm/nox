@@ -149,6 +149,7 @@ Nox knows what sessions it needs to run. Why not tell GitHub Actions what jobs t
         - uses: actions/checkout@v3
         - uses: wntrblm/nox@main
         - id: set-matrix
+          shell: bash
           run: echo session=$(nox --json -l | jq -c '[.[].session]') | tee --append $GITHUB_OUTPUT
       checks:
         name: Session ${{ matrix.session }}
