@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import collections
+from collections.abc import Sequence
 from unittest import mock
 
 import pytest
@@ -210,7 +211,7 @@ def test_filter_by_keyword():
         (["baz", "missing"], 2),
     ],
 )
-def test_filter_by_tags(tags: list[str], session_count: int):
+def test_filter_by_tags(tags: Sequence[str], session_count: int):
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     assert len(manifest) == 2

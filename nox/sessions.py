@@ -23,16 +23,18 @@ import pathlib
 import re
 import sys
 import unicodedata
-from types import TracebackType
-from typing import (
-    TYPE_CHECKING,
-    Any,
+from collections.abc import (
     Callable,
     Generator,
     Iterable,
     Mapping,
-    NoReturn,
     Sequence,
+)
+from types import TracebackType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    NoReturn,
 )
 
 import nox.command
@@ -85,7 +87,7 @@ def _normalize_path(envdir: str, path: str | bytes) -> str:
     return full_path
 
 
-def _dblquote_pkg_install_args(args: tuple[str, ...]) -> tuple[str, ...]:
+def _dblquote_pkg_install_args(args: Iterable[str]) -> tuple[str, ...]:
     """Double-quote package install arguments in case they contain '>' or '<' symbols"""
 
     # routine used to handle a single arg
@@ -270,7 +272,10 @@ class Session:
             raise nox.command.CommandFailed() from e
 
     def run(
-        self, *args: str, env: Mapping[str, str] | None = None, **kwargs: Any
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
+        **kwargs: Any,
     ) -> Any | None:
         """Run a command.
 
@@ -376,7 +381,10 @@ class Session:
         return self._run(*args, env=env, **kwargs)
 
     def run_always(
-        self, *args: str, env: Mapping[str, str] | None = None, **kwargs: Any
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
+        **kwargs: Any,
     ) -> Any | None:
         """Run a command **always**.
 
@@ -429,12 +437,15 @@ class Session:
         return self._run(*args, env=env, **kwargs)
 
     def _run(
-        self, *args: str, env: Mapping[str, str] | None = None, **kwargs: Any
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
         if callable(args[0]):
-            return self._run_func(args[0], args[1:], kwargs)
+            return self._run_func(args[0], args[1:], kwargs)  # type: ignore[unreachable]
 
         # Combine the env argument with our virtualenv's env vars.
         if env is not None:
@@ -665,7 +676,7 @@ class SessionRunner:
     def __init__(
         self,
         name: str,
-        signatures: list[str],
+        signatures: Sequence[str],
         func: Func,
         global_config: argparse.Namespace,
         manifest: Manifest,

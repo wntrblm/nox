@@ -18,7 +18,8 @@ import copy
 import functools
 import inspect
 import types
-from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeVar, cast
+from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
 
 from . import _typing
 
@@ -60,16 +61,16 @@ class Func(FunctionDecorator):
         name: str | None = None,
         venv_backend: Any = None,
         venv_params: Any = None,
-        should_warn: dict[str, Any] | None = None,
-        tags: list[str] | None = None,
+        should_warn: Mapping[str, Any] | None = None,
+        tags: Sequence[str] | None = None,
     ):
         self.func = func
         self.python = python
         self.reuse_venv = reuse_venv
         self.venv_backend = venv_backend
         self.venv_params = venv_params
-        self.should_warn = should_warn or {}
-        self.tags = tags or []
+        self.should_warn = dict(should_warn or {})
+        self.tags = list(tags or [])
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
