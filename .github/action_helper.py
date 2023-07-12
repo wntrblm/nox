@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 
 
@@ -11,10 +12,12 @@ def filter_version(version: str) -> str:
         version_ = version[5:]
     elif version.startswith("pypy"):
         version_ = version[4:]
+    elif version.startswith("~"):
+        version_ = version[1:]
     else:
         version_ = version
 
-    # remove extra specifier e.g. "3.12-dev" => "3.12"
+    # remove extra specifier e.g. "3.12-dev" => "3.12", "~3.12.0-0" => "3.12"
     version_ = version_.split("-")[0]
 
     version_parts = version_.split(".")
@@ -56,18 +59,13 @@ def setup_action(input_: str) -> None:
     if "3.11" in cpython_versions_filtered:
         index = cpython_versions_filtered.index("3.11")
         index = versions.index(cpython_versions[index])
-        cpython_310 = versions.pop(index)
-        versions.append(cpython_310)
+        cpython_nox = versions.pop(index)
+        versions.append(cpython_nox)
     else:
         # add this to install nox
         versions.append("3.11")
 
-    if len(versions) > 20:
-        raise ValueError(f"too many interpreters to install: {len(versions)} > 20")
-
-    print(f"interpreter_count={len(versions)}")
-    for i, version in enumerate(versions):
-        print(f"interpreter_{i}={version}")
+    print(f"interpreters={json.dumps(versions)}")
 
 
 if __name__ == "__main__":

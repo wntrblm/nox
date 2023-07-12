@@ -17,6 +17,7 @@ from __future__ import annotations
 import nox
 
 nox.options.reuse_existing_virtualenvs = True
+# nox.options.error_on_missing_interpreters = {error_on_missing_interpreters} # used by tests
 nox.options.sessions = ["test"]
 
 

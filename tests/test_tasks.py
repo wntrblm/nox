@@ -107,6 +107,11 @@ def reset_needs_version():
         nox.needs_version = None
 
 
+@pytest.fixture
+def reset_global_nox_options():
+    nox.options = _options.options.noxfile_namespace()
+
+
 def test_load_nox_module_needs_version_static(reset_needs_version, tmp_path):
     text = dedent(
         """
@@ -313,6 +318,31 @@ def test_filter_manifest_tags_not_found(tags, caplog):
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value == 3
     assert "Tag selection caused no sessions to be selected." in caplog.text
+
+
+def test_merge_sessions_and_tags(reset_global_nox_options):
+    @nox.session(tags=["foobar"])
+    def test():
+        pass
+
+    @nox.session(tags=["foobar"])
+    def bar():
+        pass
+
+    config = _options.options.namespace(
+        noxfile=os.path.join(RESOURCES, "noxfile_options.py"),
+        sessions=None,
+        pythons=(),
+        posargs=[],
+        tags=["foobar"],
+    )
+
+    nox_module = tasks.load_nox_module(config)
+    tasks.merge_noxfile_options(nox_module, config)
+    manifest = Manifest({"test": test, "bar": bar}, config)
+    return_value = tasks.filter_manifest(manifest, config)
+    assert return_value is manifest
+    assert len(manifest) == 2
 
 
 def test_honor_list_request_noop():
