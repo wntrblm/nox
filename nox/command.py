@@ -60,11 +60,10 @@ def _clean_env(env: Mapping[str, str] | None) -> dict[str, str] | None:
     clean_env: dict[str, str] = {}
 
     # Ensure systemroot is passed down, otherwise Windows will explode.
-    if sys.platform == "win32":
+    if sys.platform == "win32":  # pragma: no cover
         clean_env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
 
-    if env is not None:
-        clean_env.update(env)
+    clean_env.update(env)
 
     return clean_env
 
