@@ -66,6 +66,7 @@ class Func(FunctionDecorator):
         self.func = func
         self.python = python
         self.reuse_venv = reuse_venv
+        self.name = name
         self.venv_backend = venv_backend
         self.venv_params = venv_params
         self.should_warn = should_warn or {}

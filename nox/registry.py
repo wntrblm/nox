@@ -85,8 +85,11 @@ def session_decorator(
     if python is None:
         python = py
 
-    fn = Func(func, python, reuse_venv, name, venv_backend, venv_params, tags=tags)
-    _REGISTRY[name or func.__name__] = fn
+    final_name = name or func.__name__
+    fn = Func(
+        func, python, reuse_venv, final_name, venv_backend, venv_params, tags=tags
+    )
+    _REGISTRY[final_name] = fn
     return fn
 
 
