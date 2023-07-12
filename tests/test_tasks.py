@@ -107,6 +107,11 @@ def reset_needs_version():
         nox.needs_version = None
 
 
+@pytest.fixture
+def reset_global_nox_options():
+    nox.options = _options.options.noxfile_namespace()
+
+
 def test_load_nox_module_needs_version_static(reset_needs_version, tmp_path):
     text = dedent(
         """
@@ -315,7 +320,7 @@ def test_filter_manifest_tags_not_found(tags, caplog):
     assert "Tag selection caused no sessions to be selected." in caplog.text
 
 
-def test_merge_sessions_and_tags():
+def test_merge_sessions_and_tags(reset_global_nox_options):
     @nox.session(tags=["foobar"])
     def test():
         pass
