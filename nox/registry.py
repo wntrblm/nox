@@ -17,6 +17,7 @@ from __future__ import annotations
 import collections
 import copy
 import functools
+from collections.abc import Sequence
 from typing import Any, Callable, TypeVar, overload
 
 from ._decorators import Func
@@ -41,7 +42,7 @@ def session_decorator(
     name: str | None = ...,
     venv_backend: Any = ...,
     venv_params: Any = ...,
-    tags: list[str] | None = ...,
+    tags: Sequence[str] | None = ...,
 ) -> Callable[[F], F]:
     ...
 
@@ -54,7 +55,7 @@ def session_decorator(
     name: str | None = None,
     venv_backend: Any = None,
     venv_params: Any = None,
-    tags: list[str] | None = None,
+    tags: Sequence[str] | None = None,
 ) -> F | Callable[[F], F]:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function

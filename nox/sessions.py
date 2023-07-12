@@ -23,16 +23,18 @@ import pathlib
 import re
 import sys
 import unicodedata
-from types import TracebackType
-from typing import (
-    TYPE_CHECKING,
-    Any,
+from collections.abc import (
     Callable,
     Generator,
     Iterable,
     Mapping,
-    NoReturn,
     Sequence,
+)
+from types import TracebackType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    NoReturn,
 )
 
 import nox.command
@@ -85,7 +87,7 @@ def _normalize_path(envdir: str, path: str | bytes) -> str:
     return full_path
 
 
-def _dblquote_pkg_install_args(args: tuple[str, ...]) -> tuple[str, ...]:
+def _dblquote_pkg_install_args(args: Iterable[str]) -> tuple[str, ...]:
     """Double-quote package install arguments in case they contain '>' or '<' symbols"""
 
     # routine used to handle a single arg
@@ -271,8 +273,8 @@ class Session:
 
     def run(
         self,
-        *args: str,
-        env: dict[str, str] | None = None,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
         include_outer_env: bool = True,
         **kwargs: Any,
     ) -> Any | None:
@@ -390,8 +392,8 @@ class Session:
 
     def run_always(
         self,
-        *args: str,
-        env: dict[str, str] | None = None,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
         include_outer_env: bool = True,
         **kwargs: Any,
     ) -> Any | None:
@@ -456,15 +458,15 @@ class Session:
 
     def _run(
         self,
-        *args: str,
-        env: dict[str, str] | None = None,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
         include_outer_env: bool = True,
         **kwargs: Any,
     ) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
         if callable(args[0]):
-            return self._run_func(args[0], args[1:], kwargs)
+            return self._run_func(args[0], args[1:], kwargs)  # type: ignore[unreachable]
 
         # Combine the env argument with our virtualenv's env vars.
         if include_outer_env:
@@ -694,7 +696,7 @@ class SessionRunner:
     def __init__(
         self,
         name: str,
-        signatures: list[str],
+        signatures: Sequence[str],
         func: Func,
         global_config: argparse.Namespace,
         manifest: Manifest,

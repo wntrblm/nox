@@ -18,7 +18,8 @@ import os
 import shlex
 import shutil
 import sys
-from typing import Any, Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any
 
 from nox.logger import logger
 from nox.popen import popen
@@ -37,44 +38,46 @@ class CommandFailed(Exception):
         self.reason = reason
 
 
-def which(program: str, paths: list[str] | None) -> str:
+def which(program: str | os.PathLike[str], paths: Sequence[str] | None) -> str:
     """Finds the full path to an executable."""
     if paths is not None:
         full_path = shutil.which(program, path=os.pathsep.join(paths))
         if full_path:
-            return full_path
+            return os.fspath(full_path)
 
     full_path = shutil.which(program)
     if full_path:
-        return full_path
+        return os.fspath(full_path)
 
     logger.error(f"Program {program} not found.")
     raise CommandFailed(f"Program {program} not found")
 
 
-def _clean_env(env: dict[str, str] | None) -> dict[str, str]:
-    clean_env = {}
+def _clean_env(env: Mapping[str, str] | None) -> dict[str, str] | None:
+    if env is None:
+        return None
+
+    clean_env: dict[str, str] = {}
 
     # Ensure systemroot is passed down, otherwise Windows will explode.
-    if sys.platform == "win32":
+    if sys.platform == "win32":  # pragma: no cover
         clean_env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
 
-    if env is not None:
-        clean_env.update(env)
+    clean_env.update(env)
 
     return clean_env
 
 
-def _shlex_join(args: Sequence[str]) -> str:
+def _shlex_join(args: Sequence[str | os.PathLike[str]]) -> str:
     return " ".join(shlex.quote(os.fspath(arg)) for arg in args)
 
 
 def run(
-    args: Sequence[str],
+    args: Sequence[str | os.PathLike[str]],
     *,
-    env: dict[str, str] | None = None,
+    env: Mapping[str, str] | None = None,
     silent: bool = False,
-    paths: list[str] | None = None,
+    paths: Sequence[str] | None = None,
     success_codes: Iterable[int] | None = None,
     log: bool = True,
     external: Literal["error"] | bool = False,
@@ -88,7 +91,8 @@ def run(
     cmd, args = args[0], args[1:]
     full_cmd = f"{cmd} {_shlex_join(args)}"
 
-    cmd_path = which(cmd, paths)
+    cmd_path = which(os.fspath(cmd), paths)
+    str_args = [os.fspath(arg) for arg in args]
 
     if log:
         logger.info(full_cmd)
@@ -115,7 +119,7 @@ def run(
 
     try:
         return_code, output = popen(
-            [cmd_path, *list(args)], silent=silent, env=env, **popen_kws
+            [cmd_path, *str_args], silent=silent, env=env, **popen_kws
         )
 
         if return_code not in success_codes:

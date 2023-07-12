@@ -15,7 +15,8 @@
 from __future__ import annotations
 
 import argparse
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable
+from typing import Any
 
 
 def execute(

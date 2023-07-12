@@ -16,7 +16,8 @@ from __future__ import annotations
 
 import functools
 import itertools
-from typing import Any, Callable, Iterable, Sequence, Union
+from collections.abc import Callable, Sequence
+from typing import Any, Iterable, Union
 
 
 class Param:
@@ -80,7 +81,7 @@ class Param:
         raise NotImplementedError
 
 
-def _apply_param_specs(param_specs: list[Param], f: Any) -> Any:
+def _apply_param_specs(param_specs: Iterable[Param], f: Any) -> Any:
     previous_param_specs = getattr(f, "parametrize", None)
     new_param_specs = update_param_specs(previous_param_specs, param_specs)
     f.parametrize = new_param_specs
@@ -91,7 +92,7 @@ ArgValue = Union[Param, Iterable[Any]]
 
 
 def parametrize_decorator(
-    arg_names: str | list[str] | tuple[str],
+    arg_names: str | Sequence[str],
     arg_values_list: Iterable[ArgValue] | ArgValue,
     ids: Iterable[str | None] | None = None,
 ) -> Callable[[Any], Any]:
@@ -116,7 +117,7 @@ def parametrize_decorator(
     """
 
     # Allow args names to be specified as any of 'arg', 'arg,arg2' or ('arg', 'arg2')
-    if not isinstance(arg_names, (list, tuple)):
+    if isinstance(arg_names, str):
         arg_names = list(filter(None, [arg.strip() for arg in arg_names.split(",")]))
 
     # If there's only one arg_name, arg_values_list should be a single item
@@ -157,11 +158,11 @@ def parametrize_decorator(
 
 
 def update_param_specs(
-    param_specs: Iterable[Param] | None, new_specs: list[Param]
+    param_specs: Iterable[Param] | None, new_specs: Iterable[Param]
 ) -> list[Param]:
     """Produces all combinations of the given sets of specs."""
     if not param_specs:
-        return new_specs
+        return list(new_specs)
 
     # New specs must be combined with old specs by *multiplying* them.
     combined_specs = []
