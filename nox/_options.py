@@ -181,7 +181,7 @@ def _color_finalizer(value: bool, args: argparse.Namespace) -> bool:
     if args.forcecolor:
         return True
 
-    if args.nocolor:
+    if args.nocolor or "NO_COLOR" in os.environ:
         return False
 
     return sys.stdout.isatty()
