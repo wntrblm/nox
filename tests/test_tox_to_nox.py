@@ -19,7 +19,7 @@ import textwrap
 
 import pytest
 
-from nox import tox_to_nox
+tox_to_nox = pytest.importorskip("nox.tox_to_nox")
 
 
 @pytest.fixture

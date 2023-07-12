@@ -32,7 +32,7 @@ import nox.virtualenv
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 HAS_CONDA = shutil.which("conda") is not None
 RAISE_ERROR = "RAISE_ERROR"
-VIRTUALENV_VERSION = virtualenv.version.version
+VIRTUALENV_VERSION = virtualenv.__version__
 
 
 class TextProcessResult(NamedTuple):
