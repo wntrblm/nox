@@ -162,4 +162,4 @@ Nox knows what sessions it needs to run. Why not tell GitHub Actions what jobs t
         steps:
         - uses: actions/checkout@v3
         - uses: wntrblm/nox@main
-        - run: nox -s '${{ matrix.session }}'
+        - run: nox -s "${{ matrix.session }}"
