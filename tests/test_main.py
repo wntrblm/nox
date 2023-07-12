@@ -694,3 +694,56 @@ def test_main_reuse_existing_virtualenvs_no_install(monkeypatch):
             nox.__main__.main()
         config = execute.call_args[1]["global_config"]
     assert config.reuse_existing_virtualenvs and config.no_install
+
+
+@pytest.mark.parametrize(
+    ("should_set_ci_env_var", "noxfile_option_value", "expected_final_value"),
+    [
+        (True, None, True),
+        (True, True, True),
+        (True, False, False),
+        (False, None, False),
+        (False, True, True),
+        (False, False, False),
+    ],
+)
+def test_main_noxfile_options_with_ci_override(
+    monkeypatch,
+    tmp_path,
+    should_set_ci_env_var,
+    noxfile_option_value,
+    expected_final_value,
+):
+    monkeypatch.delenv("CI", raising=False)  # make sure we have a clean environment
+    if should_set_ci_env_var:
+        monkeypatch.setenv("CI", "True")
+    # Reload nox.options taking into consideration monkeypatch.{delenv|setenv}
+    monkeypatch.setattr(
+        nox._options, "noxfile_options", nox._options.options.noxfile_namespace()
+    )
+    monkeypatch.setattr(nox, "options", nox._options.noxfile_options)
+
+    noxfile_path = Path(RESOURCES) / "noxfile_options.py"
+    if noxfile_option_value is not None:
+        # Temp noxfile with error_on_missing_interpreters set
+        noxfile_text = noxfile_path.read_text()
+        noxfile_text = noxfile_text.replace("# nox", "nox")
+        noxfile_text = noxfile_text.format(
+            error_on_missing_interpreters=noxfile_option_value
+        )
+        noxfile_path = tmp_path / "noxfile.py"
+        noxfile_path.write_text(noxfile_text)
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["nox", "-l", "--noxfile", str(noxfile_path)],
+    )
+
+    with mock.patch(
+        "nox.tasks.honor_list_request", return_value=0
+    ) as honor_list_request:
+        with mock.patch("sys.exit"):
+            nox.__main__.main()
+        config = honor_list_request.call_args[1]["global_config"]
+    assert config.error_on_missing_interpreters == expected_final_value
