@@ -57,7 +57,7 @@ def _clean_env(env: Mapping[str, str] | None) -> dict[str, str] | None:
     if env is None:
         return None
 
-    clean_env = {}
+    clean_env: dict[str, str] = {}
 
     # Ensure systemroot is passed down, otherwise Windows will explode.
     if sys.platform == "win32":
