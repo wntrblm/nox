@@ -29,6 +29,8 @@ if sys.version_info < (3, 8):  # pragma: no cover
 else:  # pragma: no cover
     from typing import Literal
 
+ExternalType = Literal["error", True, False]
+
 
 class CommandFailed(Exception):
     """Raised when an executed command returns a non-success status code."""
@@ -53,7 +55,7 @@ def which(program: str | os.PathLike[str], paths: Sequence[str] | None) -> str:
     raise CommandFailed(f"Program {program} not found")
 
 
-def _clean_env(env: Mapping[str, str] | None) -> dict[str, str] | None:
+def _clean_env(env: Mapping[str, str] | None = None) -> dict[str, str] | None:
     if env is None:
         return None
 
@@ -80,7 +82,7 @@ def run(
     paths: Sequence[str] | None = None,
     success_codes: Iterable[int] | None = None,
     log: bool = True,
-    external: Literal["error"] | bool = False,
+    external: ExternalType = False,
     **popen_kws: Any,
 ) -> str | bool:
     """Run a command-line program."""

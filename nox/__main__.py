@@ -22,10 +22,32 @@ control to :meth:``nox.workflow.execute``.
 from __future__ import annotations
 
 import sys
+from typing import Any
 
 from nox import _options, tasks, workflow
 from nox._version import get_nox_version
 from nox.logger import setup_logging
+
+
+def execute_workflow(args: Any) -> int:
+    """
+    Execute the appropriate tasks.
+    """
+
+    return workflow.execute(
+        global_config=args,
+        workflow=(
+            tasks.load_nox_module,
+            tasks.merge_noxfile_options,
+            tasks.discover_manifest,
+            tasks.filter_manifest,
+            tasks.honor_list_request,
+            tasks.run_manifest,
+            tasks.print_summary,
+            tasks.create_report,
+            tasks.final_reduce,
+        ),
+    )
 
 
 def main() -> None:
@@ -43,21 +65,7 @@ def main() -> None:
         color=args.color, verbose=args.verbose, add_timestamp=args.add_timestamp
     )
 
-    # Execute the appropriate tasks.
-    exit_code = workflow.execute(
-        global_config=args,
-        workflow=(
-            tasks.load_nox_module,
-            tasks.merge_noxfile_options,
-            tasks.discover_manifest,
-            tasks.filter_manifest,
-            tasks.honor_list_request,
-            tasks.run_manifest,
-            tasks.print_summary,
-            tasks.create_report,
-            tasks.final_reduce,
-        ),
-    )
+    exit_code = execute_workflow(args)
 
     # Done; exit.
     sys.exit(exit_code)
