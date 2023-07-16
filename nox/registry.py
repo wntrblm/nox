@@ -36,12 +36,12 @@ def session_decorator(__func: F) -> F:
 @overload
 def session_decorator(
     __func: None = ...,
-    python: Python = ...,
-    py: Python = ...,
+    python: Python | None = ...,
+    py: Python | None = ...,
     reuse_venv: bool | None = ...,
     name: str | None = ...,
-    venv_backend: Any = ...,
-    venv_params: Any = ...,
+    venv_backend: Any | None = ...,
+    venv_params: Any | None = ...,
     tags: Sequence[str] | None = ...,
 ) -> Callable[[F], F]:
     ...
@@ -49,12 +49,12 @@ def session_decorator(
 
 def session_decorator(
     func: F | None = None,
-    python: Python = None,
-    py: Python = None,
+    python: Python | None = None,
+    py: Python | None = None,
     reuse_venv: bool | None = None,
     name: str | None = None,
-    venv_backend: Any = None,
-    venv_params: Any = None,
+    venv_backend: Any | None = None,
+    venv_params: Any | None = None,
     tags: Sequence[str] | None = None,
 ) -> F | Callable[[F], F]:
     """Designate the decorated function as a session."""
