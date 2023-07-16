@@ -236,24 +236,20 @@ def _posargs_finalizer(
 def _python_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
 ) -> Iterable[str]:
-    global_config = parsed_args
-    module = load_nox_module(global_config)
-    manifest = discover_manifest(module, global_config)
-    return (
-        session.func.python
-        for session, _ in manifest.list_all_sessions()
-        if session.func.python
+    module = load_nox_module(parsed_args)
+    manifest = discover_manifest(module, parsed_args)
+    return filter(
+        None, (session.func.python for session, _ in manifest.list_all_sessions())
     )
 
 
 def _session_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
 ) -> Iterable[str]:
-    global_config = parsed_args
-    global_config.list_sessions = True
-    module = load_nox_module(global_config)
-    manifest = discover_manifest(module, global_config)
-    filtered_manifest = filter_manifest(manifest, global_config)
+    parsed_args.list_sessions = True
+    module = load_nox_module(parsed_args)
+    manifest = discover_manifest(module, parsed_args)
+    filtered_manifest = filter_manifest(manifest, parsed_args)
     if isinstance(filtered_manifest, int):
         return []
     return (
@@ -264,11 +260,10 @@ def _session_completer(
 def _tag_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
 ) -> Iterable[str]:
-    global_config = parsed_args
-    module = load_nox_module(global_config)
-    manifest = discover_manifest(module, global_config)
+    module = load_nox_module(parsed_args)
+    manifest = discover_manifest(module, parsed_args)
     return itertools.chain.from_iterable(
-        session.tags for session, _ in manifest.list_all_sessions() if session.tags
+        filter(None, (session.tags for session, _ in manifest.list_all_sessions()))
     )
 
 
