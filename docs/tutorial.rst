@@ -42,7 +42,6 @@ If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/n
     # setup nox only for a given list of python versions
     # Limitations:
     # - Version specifiers shall be supported by actions/setup-python
-    # - You can specify up-to 20 versions
     # - There can only be one "major.minor" per interpreter i.e. "3.7.0, 3.7.1" is invalid
     # this uses version 2022.8.7 but any Nox tag will work here
     - uses: wntrblm/nox@2022.8.7
@@ -511,5 +510,28 @@ For this point you can:
 
 * Read more docs, such as :doc:`usage` and :doc:`config`.
 * Give us feedback or contribute, see :doc:`CONTRIBUTING`.
+
+For any projects using Nox, you may add its official badge somewhere prominent
+like the README.
+
+.. image:: https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg
+   :alt: Nox
+   :target: https://github.com/wntrblm/nox
+
+.. tabs::
+
+   .. tab:: Markdown
+
+      .. code-block:: markdown
+
+          [![Nox](https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg)](https://github.com/wntrblm/nox)
+
+   .. tab:: reStructuredText
+
+        .. code-block:: rst
+
+            .. image:: https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg
+               :alt: Nox
+               :target: https://github.com/wntrblm/nox
 
 Have fun! 💜

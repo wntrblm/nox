@@ -21,8 +21,9 @@ import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Mapping
 from socket import gethostbyname
-from typing import Any, ClassVar, Mapping
+from typing import Any, ClassVar
 
 import nox
 import nox.command

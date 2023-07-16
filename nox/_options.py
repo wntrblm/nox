@@ -74,11 +74,11 @@ options.add_groups(
 )
 
 
-def _sessions_and_keywords_merge_func(
+def _sessions_merge_func(
     key: str, command_args: argparse.Namespace, noxfile_args: argparse.Namespace
 ) -> list[str]:
-    """Only return the Noxfile value for sessions/keywords if neither sessions
-    or keywords are specified on the command-line.
+    """Only return the Noxfile value for sessions/keywords if neither sessions,
+    keywords or tags are specified on the command-line.
 
     Args:
         key (str): This function is used for both the "sessions" and "keywords"
@@ -88,7 +88,11 @@ def _sessions_and_keywords_merge_func(
             command-line.
         noxfile_Args (_option_set.Namespace): The options specified in the
             Noxfile."""
-    if not command_args.sessions and not command_args.keywords:
+    if (
+        not command_args.sessions
+        and not command_args.keywords
+        and not command_args.tags
+    ):
         return getattr(noxfile_args, key)  # type: ignore[no-any-return]
     return getattr(command_args, key)  # type: ignore[no-any-return]
 
@@ -185,7 +189,7 @@ def _color_finalizer(value: bool, args: argparse.Namespace) -> bool:
     if args.forcecolor:
         return True
 
-    if args.nocolor:
+    if args.nocolor or "NO_COLOR" in os.environ:
         return False
 
     return sys.stdout.isatty()
@@ -307,7 +311,7 @@ options.add_options(
         "--session",
         group=options.groups["sessions"],
         noxfile=True,
-        merge_func=functools.partial(_sessions_and_keywords_merge_func, "sessions"),
+        merge_func=functools.partial(_sessions_merge_func, "sessions"),
         nargs="*",
         default=default_env_var_list_factory("NOXSESSION"),
         help="Which sessions to run. By default, all sessions will run.",
@@ -331,7 +335,7 @@ options.add_options(
         "--keywords",
         group=options.groups["sessions"],
         noxfile=True,
-        merge_func=functools.partial(_sessions_and_keywords_merge_func, "keywords"),
+        merge_func=functools.partial(_sessions_merge_func, "keywords"),
         help="Only run sessions that match the given expression.",
         completer=ChoicesCompleter(()),
     ),
@@ -341,6 +345,7 @@ options.add_options(
         "--tags",
         group=options.groups["sessions"],
         noxfile=True,
+        merge_func=functools.partial(_sessions_merge_func, "tags"),
         nargs="*",
         help="Only run sessions with the given tags.",
         completer=_tag_completer,
@@ -487,7 +492,7 @@ options.add_options(
         ("--no-error-on-missing-interpreters",),
         group=options.groups["execution"],
         help="Error instead of skipping sessions if an interpreter can not be located.",
-        default="CI" in os.environ,
+        default=lambda: "CI" in os.environ,
     ),
     *_option_set.make_flag_pair(
         "error_on_external_run",

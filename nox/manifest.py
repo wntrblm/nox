@@ -18,7 +18,8 @@ import argparse
 import ast
 import itertools
 from collections import OrderedDict
-from typing import Any, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Sequence
+from typing import Any, Mapping
 
 from nox._decorators import Call, Func
 from nox.sessions import Session, SessionRunner
@@ -174,10 +175,10 @@ class Manifest:
         self._queue = [
             x
             for x in self._queue
-            if keyword_match(keywords, x.signatures + x.tags + [x.name])
+            if keyword_match(keywords, [*x.signatures, *x.tags, x.name])
         ]
 
-    def filter_by_tags(self, tags: list[str]) -> None:
+    def filter_by_tags(self, tags: Iterable[str]) -> None:
         """Filter sessions by their tags.
 
         Args:
@@ -280,7 +281,7 @@ class Manifest:
         return self.__next__()
 
     def notify(
-        self, session: str | SessionRunner, posargs: list[str] | None = None
+        self, session: str | SessionRunner, posargs: Iterable[str] | None = None
     ) -> bool:
         """Enqueue the specified session in the queue.
 
@@ -311,7 +312,7 @@ class Manifest:
         for s in self._all_sessions:
             if s == session or s.name == session or session in s.signatures:
                 if posargs is not None:
-                    s.posargs = posargs
+                    s.posargs = list(posargs)
                 self._queue.append(s)
                 return True
 

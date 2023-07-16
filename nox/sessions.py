@@ -23,16 +23,18 @@ import pathlib
 import re
 import sys
 import unicodedata
-from types import TracebackType
-from typing import (
-    TYPE_CHECKING,
-    Any,
+from collections.abc import (
     Callable,
     Generator,
     Iterable,
     Mapping,
-    NoReturn,
     Sequence,
+)
+from types import TracebackType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    NoReturn,
 )
 
 import nox.command
@@ -85,7 +87,7 @@ def _normalize_path(envdir: str, path: str | bytes) -> str:
     return full_path
 
 
-def _dblquote_pkg_install_args(args: tuple[str, ...]) -> tuple[str, ...]:
+def _dblquote_pkg_install_args(args: Iterable[str]) -> tuple[str, ...]:
     """Double-quote package install arguments in case they contain '>' or '<' symbols"""
 
     # routine used to handle a single arg
@@ -270,7 +272,11 @@ class Session:
             raise nox.command.CommandFailed() from e
 
     def run(
-        self, *args: str, env: Mapping[str, str] | None = None, **kwargs: Any
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
+        include_outer_env: bool = True,
+        **kwargs: Any,
     ) -> Any | None:
         """Run a command.
 
@@ -337,6 +343,10 @@ class Session:
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
         :type env: dict or None
+        :param include_outer_env: Boolean parameter that determines if the
+            environment variables from the nox invocation environment should
+            be passed to the command. ``True`` by default.
+        :type include_outer_env: bool
         :param bool silent: Silence command output, unless the command fails.
             If ``True``, returns the command output (unless the command fails).
             ``False`` by default.
@@ -373,10 +383,19 @@ class Session:
             logger.info(f"Skipping {args[0]} run, as --install-only is set.")
             return None
 
-        return self._run(*args, env=env, **kwargs)
+        return self._run(
+            *args,
+            env=env,
+            include_outer_env=include_outer_env,
+            **kwargs,
+        )
 
     def run_always(
-        self, *args: str, env: Mapping[str, str] | None = None, **kwargs: Any
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
+        include_outer_env: bool = True,
+        **kwargs: Any,
     ) -> Any | None:
         """Run a command **always**.
 
@@ -394,6 +413,10 @@ class Session:
         :param env: A dictionary of environment variables to expose to the
             command. By default, all environment variables are passed.
         :type env: dict or None
+        :param include_outer_env: Boolean parameter that determines if the
+            environment variables from the nox invocation environment should
+            be passed to the command. ``True`` by default.
+        :type include_outer_env: bool
         :param bool silent: Silence command output, unless the command fails.
             ``False`` by default.
         :param success_codes: A list of return codes that are considered
@@ -426,23 +449,31 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to run_always().")
 
-        return self._run(*args, env=env, **kwargs)
+        return self._run(
+            *args,
+            env=env,
+            include_outer_env=include_outer_env,
+            **kwargs,
+        )
 
     def _run(
-        self, *args: str, env: Mapping[str, str] | None = None, **kwargs: Any
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
+        include_outer_env: bool = True,
+        **kwargs: Any,
     ) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
         if callable(args[0]):
-            return self._run_func(args[0], args[1:], kwargs)
+            return self._run_func(args[0], args[1:], kwargs)  # type: ignore[unreachable]
 
         # Combine the env argument with our virtualenv's env vars.
-        if env is not None:
+        if include_outer_env:
             overlay_env = env
             env = self.env.copy()
-            env.update(overlay_env)
-        else:
-            env = self.env
+            if overlay_env is not None:
+                env.update(overlay_env)
 
         # If --error-on-external-run is specified, error on external programs.
         if self._runner.global_config.error_on_external_run:
@@ -665,7 +696,7 @@ class SessionRunner:
     def __init__(
         self,
         name: str,
-        signatures: list[str],
+        signatures: Sequence[str],
         func: Func,
         global_config: argparse.Namespace,
         manifest: Manifest,
