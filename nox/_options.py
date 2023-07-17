@@ -22,11 +22,7 @@ import sys
 from collections.abc import Iterable
 from typing import Any, Callable, Sequence
 
-from argcomplete.completers import (
-    ChoicesCompleter,
-    DirectoriesCompleter,
-    FilesCompleter,
-)
+import argcomplete
 
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
@@ -243,7 +239,11 @@ def _python_completer(
     module = load_nox_module(parsed_args)
     manifest = discover_manifest(module, parsed_args)
     return filter(
-        None, (session.func.python for session, _ in manifest.list_all_sessions())
+        None,
+        (
+            session.func.python  # type:ignore[misc] # str sequences flattened, other non-strs falsey and filtered out
+            for session, _ in manifest.list_all_sessions()
+        ),
     )
 
 
@@ -337,7 +337,7 @@ options.add_options(
         noxfile=True,
         merge_func=functools.partial(_sessions_merge_func, "keywords"),
         help="Only run sessions that match the given expression.",
-        completer=ChoicesCompleter(()),
+        completer=argcomplete.completers.ChoicesCompleter(()),
     ),
     _option_set.Option(
         "tags",
@@ -453,7 +453,7 @@ options.add_options(
         merge_func=_envdir_merge_func,
         group=options.groups["environment"],
         help="Directory where Nox will store virtualenvs, this is ``.nox`` by default.",
-        completer=DirectoriesCompleter(),
+        completer=argcomplete.completers.DirectoriesCompleter(),
     ),
     _option_set.Option(
         "extra_pythons",
@@ -529,7 +529,7 @@ options.add_options(
         group=options.groups["reporting"],
         noxfile=True,
         help="Output a report of all sessions to the given filename.",
-        completer=FilesCompleter(("json",)),
+        completer=argcomplete.completers.FilesCompleter(("json",)),
     ),
     _option_set.Option(
         "non_interactive",
