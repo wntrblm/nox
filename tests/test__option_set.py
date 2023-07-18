@@ -105,3 +105,27 @@ class TestOptionSet:
             prefix=None, parsed_args=parsed_args
         )
         assert len(all_nox_sessions) == 0
+
+    def test_python_completer(self):
+        parsed_args = _options.options.namespace(
+            posargs=[],
+            noxfile=str(RESOURCES.joinpath("noxfile_pythons.py")),
+        )
+        actual_pythons_from_file = _options._python_completer(
+            prefix=None, parsed_args=parsed_args
+        )
+
+        expected_pythons = {"3.6", "3.12"}
+        assert expected_pythons == set(actual_pythons_from_file)
+
+    def test_tag_completer(self):
+        parsed_args = _options.options.namespace(
+            posargs=[],
+            noxfile=str(RESOURCES.joinpath("noxfile_tags.py")),
+        )
+        actual_tags_from_file = _options._tag_completer(
+            prefix=None, parsed_args=parsed_args
+        )
+
+        expected_tags = {"tag1", "tag2", "tag3"}
+        assert expected_tags == set(actual_tags_from_file)
