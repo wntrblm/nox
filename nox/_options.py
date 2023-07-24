@@ -27,6 +27,13 @@ import argcomplete
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 
+if sys.version_info < (3, 8):  # pragma: no cover
+    from typing_extensions import Literal
+else:  # pragma: no cover
+    from typing import Literal
+
+ReuseVenvType = Literal["no", "yes", "never", "always"]
+
 """All of Nox's configuration options."""
 
 options = _option_set.OptionSet(
@@ -150,7 +157,7 @@ def _envdir_merge_func(
 
 def _reuse_venv_merge_func(
     command_args: argparse.Namespace, noxfile_args: argparse.Namespace
-) -> str:
+) -> ReuseVenvType:
     """Merge reuse_venv from command args and Noxfile while maintaining
     backwards compatibility with reuse_existing_virtualenvs. Default is "no".
 
