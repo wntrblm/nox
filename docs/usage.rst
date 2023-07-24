@@ -179,26 +179,36 @@ Finally note that the ``--no-venv`` flag is a shortcut for ``--force-venv-backen
     nox --no-venv
 
 .. _opt-reuse-existing-virtualenvs:
+.. _opt-reuse-venv:
 
 Re-using virtualenvs
 --------------------
 
-By default, Nox deletes and recreates virtualenvs every time it is run. This is usually fine for most projects and continuous integration environments as `pip's caching <https://pip.pypa.io/en/stable/cli/pip_install/#caching>`_ makes re-install rather quick. However, there are some situations where it is advantageous to reuse the virtualenvs between runs. Use ``-r`` or ``--reuse-existing-virtualenvs``:
+By default, Nox deletes and recreates virtualenvs every time it is run. This is
+usually fine for most projects and continuous integration environments as
+`pip's caching <https://pip.pypa.io/en/stable/cli/pip_install/#caching>`_ makes
+re-install rather quick.  However, there are some situations where it is
+advantageous to re-use the virtualenvs between runs.  Use ``-r`` or
+``--reuse-existing-virtualenvs`` or for fine-grained control use
+``--reuse-venv=yes|no|always|never``:
 
 .. code-block:: console
 
     nox -r
     nox --reuse-existing-virtualenvs
-
+    nox --reuse-venv=yes # preferred
 
 If the Noxfile sets ``nox.options.reuse_existing_virtualenvs``, you can override the Noxfile setting from the command line by using ``--no-reuse-existing-virtualenvs``.
+Similarly you can override ``nox.options.reuse_venvs`` from the Noxfile via the command line by using ``--reuse-venv=yes|no|always|never``.
 
-Additionally, you can skip the re-installation of packages when a virtualenv is reused. Use ``-R`` or ``--reuse-existing-virtualenvs --no-install``:
+Additionally, you can skip the re-installation of packages when a virtualenv is reused.
+Use ``-R`` or ``--reuse-existing-virtualenvs --no-install`` or ``--reuse-venv=yes --no-install``:
 
 .. code-block:: console
 
     nox -R
     nox --reuse-existing-virtualenvs --no-install
+    nox --reuse-venv=yes --no-install
 
 The ``--no-install`` option causes the following session methods to return early:
 
@@ -206,7 +216,10 @@ The ``--no-install`` option causes the following session methods to return early
 - :func:`session.conda_install <nox.sessions.Session.conda_install>`
 - :func:`session.run_install <nox.sessions.Session.run_install>`
 
-This option has no effect if the virtualenv is not being reused.
+The ``never`` and ``always`` options in ``--reuse-venv`` gives you more fine-grained control
+as it ignores when a ``@nox.session`` has ``reuse_venv=True|False`` defined.
+
+These options have no effect if the virtualenv is not being reused.
 
 .. _opt-running-extra-pythons:
 

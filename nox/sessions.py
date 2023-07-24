@@ -767,9 +767,7 @@ class SessionRunner:
             self.venv = PassthroughEnv()
             return
 
-        reuse_existing = (
-            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
-        )
+        reuse_existing = self.reuse_existing_venv()
 
         if backend is None or backend in {"virtualenv", "venv", "uv"}:
             self.venv = VirtualEnv(
@@ -794,6 +792,20 @@ class SessionRunner:
             )
 
         self.venv.create()
+
+    def reuse_existing_venv(self) -> bool:
+        return any(
+            (
+                # forces every session to re-use its env
+                self.global_config.reuse_venv == "always",
+                # sessions marked True will always be reused unless never is specified
+                self.func.reuse_venv is True
+                and self.global_config.reuse_venv != "never",
+                # session marked False will never be reused unless always is specified
+                self.func.reuse_venv is not False
+                and self.global_config.reuse_venv == "yes",
+            )
+        )
 
     def execute(self) -> Result:
         logger.warning(f"Running session {self.friendly_name}")

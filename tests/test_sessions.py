@@ -857,7 +857,7 @@ class TestSessionRunner:
                 noxfile=os.path.join(os.getcwd(), "noxfile.py"),
                 envdir="envdir",
                 posargs=[],
-                reuse_existing_virtualenvs=False,
+                reuse_venv="no",
                 error_on_missing_interpreters="CI" in os.environ,
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
@@ -960,9 +960,31 @@ class TestSessionRunner:
     def test__create_venv_unexpected_venv_backend(self):
         runner = self.make_runner()
         runner.func.venv_backend = "somenewenvtool"
-
         with pytest.raises(ValueError, match="venv_backend"):
             runner._create_venv()
+
+    @pytest.mark.parametrize(
+        ("reuse_venv", "reuse_venv_func", "should_reuse"),
+        [
+            ("yes", None, True),
+            ("yes", False, False),
+            ("yes", True, True),
+            ("no", None, False),
+            ("no", False, False),
+            ("no", True, True),
+            ("always", None, True),
+            ("always", False, True),
+            ("always", True, True),
+            ("never", None, False),
+            ("never", False, False),
+            ("never", True, False),
+        ],
+    )
+    def test__reuse_venv_outcome(self, reuse_venv, reuse_venv_func, should_reuse):
+        runner = self.make_runner()
+        runner.func.reuse_venv = reuse_venv_func
+        runner.global_config.reuse_venv = reuse_venv
+        assert runner.reuse_existing_venv() == should_reuse
 
     def make_runner_with_mock_venv(self):
         runner = self.make_runner()

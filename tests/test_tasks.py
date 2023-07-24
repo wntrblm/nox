@@ -24,6 +24,7 @@ from textwrap import dedent
 from unittest import mock
 
 import pytest
+from test_main import generate_noxfile_options  # noqa: F401
 
 import nox
 from nox import _options, sessions, tasks
@@ -320,7 +321,9 @@ def test_filter_manifest_tags_not_found(tags, caplog):
     assert "Tag selection caused no sessions to be selected." in caplog.text
 
 
-def test_merge_sessions_and_tags(reset_global_nox_options):
+def test_merge_sessions_and_tags(
+    reset_global_nox_options, generate_noxfile_options  # noqa: F811
+):
     @nox.session(tags=["foobar"])
     def test():
         pass
@@ -329,8 +332,9 @@ def test_merge_sessions_and_tags(reset_global_nox_options):
     def bar():
         pass
 
+    noxfile_path = generate_noxfile_options(reuse_existing_virtualenvs=True)
     config = _options.options.namespace(
-        noxfile=os.path.join(RESOURCES, "noxfile_options.py"),
+        noxfile=noxfile_path,
         sessions=None,
         pythons=(),
         posargs=[],
