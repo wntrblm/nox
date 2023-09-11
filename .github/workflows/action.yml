@@ -27,13 +27,13 @@ jobs:
             macos-13,
           ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./
       - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_default_tests
   action-all-tests:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v2
         with:
           python-version: 3.9
