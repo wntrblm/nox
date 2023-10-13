@@ -31,7 +31,7 @@ if shutil.which("conda"):
     nox.options.sessions.append("conda_tests")
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11"])
+@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"])
 def tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
     session.create_tmp()  # Fixes permission errors on Windows
@@ -133,7 +133,17 @@ def _check_python_version(session: nox.Session) -> None:
 
 
 @nox.session(
-    python=["3.7", "3.8", "3.9", "3.10", "3.11", "pypy3.7", "pypy3.8", "pypy3.9"]
+    python=[
+        "3.7",
+        "3.8",
+        "3.9",
+        "3.10",
+        "3.11",
+        "3.12",
+        "pypy3.7",
+        "pypy3.8",
+        "pypy3.9",
+    ]
 )
 def github_actions_default_tests(session: nox.Session) -> None:
     """Check default versions installed by the nox GHA Action"""
