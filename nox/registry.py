@@ -29,8 +29,7 @@ _REGISTRY: collections.OrderedDict[str, Func] = collections.OrderedDict()
 
 
 @overload
-def session_decorator(__func: F) -> F:
-    ...
+def session_decorator(__func: F) -> F: ...
 
 
 @overload
@@ -43,8 +42,7 @@ def session_decorator(
     venv_backend: Any | None = ...,
     venv_params: Any | None = ...,
     tags: Sequence[str] | None = ...,
-) -> Callable[[F], F]:
-    ...
+) -> Callable[[F], F]: ...
 
 
 def session_decorator(

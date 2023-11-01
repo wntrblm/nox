@@ -86,11 +86,9 @@ class Option:
         noxfile: bool = False,
         merge_func: Callable[[Namespace, Namespace], Any] | None = None,
         finalizer_func: Callable[[Any, Namespace], Any] | None = None,
-        default: bool
-        | str
-        | None
-        | list[str]
-        | Callable[[], bool | str | None | list[str]] = None,
+        default: (
+            bool | str | None | list[str] | Callable[[], bool | str | None | list[str]]
+        ) = None,
         hidden: bool = False,
         completer: Callable[..., Sequence[str]] | None = None,
         **kwargs: Any,
