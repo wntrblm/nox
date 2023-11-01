@@ -62,7 +62,8 @@ VALID_VERSION_LISTS = {
     ",".join(f"3.{minor}" for minor in range(20)): [
         f"3.{minor}"
         for i, minor in enumerate(minor_ for minor_ in range(20) if minor_ != 11)
-    ] + ["3.11"],
+    ]
+    + ["3.11"],
 }
 
 

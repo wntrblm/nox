@@ -8,8 +8,6 @@ repos:
     rev: "23.10.1"
     hooks:
       - id: black
-        args:
-          - "--preview"
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
