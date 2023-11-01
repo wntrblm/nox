@@ -48,10 +48,8 @@ options.add_groups(
     _option_set.OptionGroup(
         "environment",
         "Environment options",
-        (
-            "These arguments are used to control Nox's creation and usage of virtual"
-            " environments."
-        ),
+        "These arguments are used to control Nox's creation and usage of virtual"
+        " environments.",
     ),
     _option_set.OptionGroup(
         "execution",
@@ -394,7 +392,7 @@ options.add_options(
             "--no-reuse-existing-virtualenvs",
         ),
         group=options.groups["environment"],
-        help="Re-use existing virtualenvs instead of recreating them.",
+        help="Reuse existing virtualenvs instead of recreating them.",
     ),
     _option_set.Option(
         "R",
@@ -403,7 +401,7 @@ options.add_options(
         group=options.groups["environment"],
         action="store_true",
         help=(
-            "Re-use existing virtualenvs and skip package re-installation."
+            "Reuse existing virtualenvs and skip package re-installation."
             " This is an alias for '--reuse-existing-virtualenvs --no-install'."
         ),
         finalizer_func=_R_finalizer,
