@@ -123,7 +123,7 @@ class TestSession:
         with pytest.raises(
             ValueError, match=r"^The environment does not have a bin directory\.$"
         ):
-            session.bin
+            session.bin  # noqa: B018
         assert session.bin_paths is None
 
     def test_virtualenv_as_none(self):
@@ -799,7 +799,7 @@ class TestSession:
         with pytest.raises(AttributeError):
             session.foo = "bar"
         with pytest.raises(AttributeError):
-            session.quux
+            session.quux  # noqa: B018
 
     def test___dict__(self):
         session, _ = self.make_session_and_runner()
@@ -1057,10 +1057,8 @@ class TestSessionRunner:
             session.run(
                 sys.executable,
                 "-c",
-                (
-                    "import os; raise SystemExit(0 if"
-                    f' os.environ["NOX_CURRENT_SESSION"] == {session.name!r} else 0)'
-                ),
+                "import os; raise SystemExit(0 if"
+                f' os.environ["NOX_CURRENT_SESSION"] == {session.name!r} else 0)',
             )
 
         runner.func = func

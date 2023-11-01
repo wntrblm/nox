@@ -103,7 +103,7 @@ def test_process_env_constructor():
     with pytest.raises(
         ValueError, match=r"^The environment does not have a bin directory\.$"
     ):
-        penv.bin
+        penv.bin  # noqa: B018
 
     penv = nox.virtualenv.ProcessEnv(env={"SIGIL": "123"})
     assert penv.env["SIGIL"] == "123"
@@ -276,7 +276,7 @@ def test_blacklisted_env(monkeypatch, make_one):
 def test__clean_location(monkeypatch, make_one):
     venv, dir_ = make_one()
 
-    # Don't re-use existing, but doesn't currently exist.
+    # Don't reuse existing, but doesn't currently exist.
     # Should return True indicating that the venv needs to be created.
     monkeypatch.setattr(
         nox.virtualenv.VirtualEnv, "_check_reused_environment_type", mock.MagicMock()
@@ -290,14 +290,14 @@ def test__clean_location(monkeypatch, make_one):
     assert not dir_.check()
     assert venv._clean_location()
 
-    # Re-use existing, and currently exists.
+    # Reuse existing, and currently exists.
     # Should return False indicating that the venv doesn't need to be created.
     dir_.mkdir()
     assert dir_.check()
     venv.reuse_existing = True
     assert not venv._clean_location()
 
-    # Don't re-use existing, and currently exists.
+    # Don't reuse existing, and currently exists.
     # Should return True indicating the venv needs to be created.
     monkeypatch.undo()
     assert dir_.check()
@@ -305,7 +305,7 @@ def test__clean_location(monkeypatch, make_one):
     assert venv._clean_location()
     assert not dir_.check()
 
-    # Re-use existing, but doesn't exist.
+    # Reuse existing, but doesn't exist.
     # Should return True indicating the venv needs to be created.
     venv.reuse_existing = True
     assert venv._clean_location()
@@ -561,7 +561,7 @@ def test__resolved_interpreter_invalid_numerical_id(which, make_one, input_):
     venv, _ = make_one(interpreter=input_)
 
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        venv._resolved_interpreter
+        venv._resolved_interpreter  # noqa: B018
 
     which.assert_called_once_with(input_)
 
@@ -572,7 +572,7 @@ def test__resolved_interpreter_32_bit_non_windows(which, make_one):
     venv, _ = make_one(interpreter="3.6-32")
 
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        venv._resolved_interpreter
+        venv._resolved_interpreter  # noqa: B018
     which.assert_called_once_with("3.6-32")
 
 
@@ -654,7 +654,7 @@ def test__resolved_interpreter_windows_pyexe_fails(which, run, make_one):
 
     # Okay now run the test.
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        venv._resolved_interpreter
+        venv._resolved_interpreter  # noqa: B018
 
     which.assert_has_calls([mock.call("python3.6"), mock.call("py")])
 
@@ -700,7 +700,7 @@ def test__resolved_interpreter_windows_path_and_version_fails(
     patch_sysfind(("python", "python.exe"), sysfind_result, sysexec_result)
 
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        venv._resolved_interpreter
+        venv._resolved_interpreter  # noqa: B018
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
@@ -715,7 +715,7 @@ def test__resolved_interpreter_not_found(which, make_one):
 
     # Run the test.
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        venv._resolved_interpreter
+        venv._resolved_interpreter  # noqa: B018
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
@@ -725,7 +725,7 @@ def test__resolved_interpreter_nonstandard(make_one):
     venv, _ = make_one(interpreter="goofy")
 
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        venv._resolved_interpreter
+        venv._resolved_interpreter  # noqa: B018
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
@@ -749,12 +749,12 @@ def test__resolved_interpreter_cache_failure(which, make_one):
 
     assert venv._resolved is None
     with pytest.raises(nox.virtualenv.InterpreterNotFound) as exc_info:
-        venv._resolved_interpreter
+        venv._resolved_interpreter  # noqa: B018
     caught = exc_info.value
 
     which.assert_called_once_with("3.7-32")
     # Check the cache and call again to make sure it is used.
     assert venv._resolved is caught
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        venv._resolved_interpreter
+        venv._resolved_interpreter  # noqa: B018
     assert which.call_count == 1

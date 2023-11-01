@@ -113,12 +113,10 @@ def reset_global_nox_options():
 
 
 def test_load_nox_module_needs_version_static(reset_needs_version, tmp_path):
-    text = dedent(
-        """
+    text = dedent("""
         import nox
         nox.needs_version = ">=9999.99.99"
-        """
-    )
+        """)
     noxfile = tmp_path / "noxfile.py"
     noxfile.write_text(text)
     config = _options.options.namespace(noxfile=str(noxfile))
@@ -126,13 +124,11 @@ def test_load_nox_module_needs_version_static(reset_needs_version, tmp_path):
 
 
 def test_load_nox_module_needs_version_dynamic(reset_needs_version, tmp_path):
-    text = dedent(
-        """
+    text = dedent("""
         import nox
         NOX_NEEDS_VERSION = ">=9999.99.99"
         nox.needs_version = NOX_NEEDS_VERSION
-        """
-    )
+        """)
     noxfile = tmp_path / "noxfile.py"
     noxfile.write_text(text)
     config = _options.options.namespace(noxfile=str(noxfile))
