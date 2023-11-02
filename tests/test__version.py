@@ -56,32 +56,40 @@ def test_get_nox_version() -> None:
     [
         ("", None),
         (
-            dedent("""
+            dedent(
+                """
                 import nox
                 nox.needs_version = '>=2020.12.31'
-                """),
+                """
+            ),
             ">=2020.12.31",
         ),
         (
-            dedent("""
+            dedent(
+                """
                 import nox
                 nox.needs_version = 'bogus'
                 nox.needs_version = '>=2020.12.31'
-                """),
+                """
+            ),
             ">=2020.12.31",
         ),
         (
-            dedent("""
+            dedent(
+                """
                 import nox.sessions
                 nox.needs_version = '>=2020.12.31'
-                """),
+                """
+            ),
             ">=2020.12.31",
         ),
         (
-            dedent("""
+            dedent(
+                """
                 import nox as _nox
                 _nox.needs_version = '>=2020.12.31'
-                """),
+                """
+            ),
             None,
         ),
     ],
@@ -94,20 +102,24 @@ def test_parse_needs_version(text: str, expected: str | None) -> None:
 @pytest.mark.parametrize("specifiers", ["", ">=2020.12.31", ">=2020.12.31,<9999.99.99"])
 def test_check_nox_version_succeeds(temp_noxfile, specifiers: str) -> None:
     """It does not raise if the version specifiers are satisfied."""
-    text = dedent(f"""
+    text = dedent(
+        f"""
         import nox
         nox.needs_version = "{specifiers}"
-        """)
+        """
+    )
     check_nox_version(temp_noxfile(text))
 
 
 @pytest.mark.parametrize("specifiers", [">=9999.99.99"])
 def test_check_nox_version_fails(temp_noxfile, specifiers: str) -> None:
     """It raises an exception if the version specifiers are not satisfied."""
-    text = dedent(f"""
+    text = dedent(
+        f"""
         import nox
         nox.needs_version = "{specifiers}"
-        """)
+        """
+    )
     with pytest.raises(VersionCheckFailed):
         check_nox_version(temp_noxfile(text))
 
@@ -115,9 +127,11 @@ def test_check_nox_version_fails(temp_noxfile, specifiers: str) -> None:
 @pytest.mark.parametrize("specifiers", ["invalid", "2020.12.31"])
 def test_check_nox_version_invalid(temp_noxfile, specifiers: str) -> None:
     """It raises an exception if the version specifiers cannot be parsed."""
-    text = dedent(f"""
+    text = dedent(
+        f"""
         import nox
         nox.needs_version = "{specifiers}"
-        """)
+        """
+    )
     with pytest.raises(InvalidVersionSpecifier):
         check_nox_version(temp_noxfile(text))

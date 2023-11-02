@@ -205,9 +205,9 @@ class OptionSet:
         self.parser_args = args
         self.parser_kwargs = kwargs
         self.options: collections.OrderedDict[str, Option] = collections.OrderedDict()
-        self.groups: collections.OrderedDict[str, OptionGroup] = (
-            collections.OrderedDict()
-        )
+        self.groups: collections.OrderedDict[
+            str, OptionGroup
+        ] = collections.OrderedDict()
 
     def add_options(self, *args: Option) -> None:
         """Adds a sequence of Options to the OptionSet.

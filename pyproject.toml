@@ -81,6 +81,9 @@ extend-select = [
   "UP",          # pyupgrade
   "YTT",         # flake8-2020
 ]
+ignore = [
+  "ISC001", # Conflicts with formatter
+]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
