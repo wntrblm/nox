@@ -40,6 +40,7 @@ Enter the ``dev`` nox session:
 .. code-block:: python
 
     import os
+    from pathlib import Path
 
     import nox
 
@@ -50,7 +51,7 @@ Enter the ``dev`` nox session:
     # this VENV_DIR constant specifies the name of the dir that the `dev`
     # session will create, containing the virtualenv;
     # the `resolve()` makes it portable
-    VENV_DIR = pathlib.Path('./.venv').resolve()
+    VENV_DIR = Path('.').resolve() / ".venv"
 
     @nox.session
     def dev(session: nox.Session) -> None:
