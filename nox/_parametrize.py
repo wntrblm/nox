@@ -78,7 +78,7 @@ class Param:
         elif isinstance(other, dict):
             return dict(zip(self.arg_names, self.args)) == other
 
-        raise NotImplementedError
+        return NotImplemented
 
 
 def _apply_param_specs(param_specs: Iterable[Param], f: Any) -> Any:
