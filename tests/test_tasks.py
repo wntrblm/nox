@@ -322,7 +322,8 @@ def test_filter_manifest_tags_not_found(tags, caplog):
 
 
 def test_merge_sessions_and_tags(
-    reset_global_nox_options, generate_noxfile_options  # noqa: F811
+    reset_global_nox_options,
+    generate_noxfile_options,  # noqa: F811
 ):
     @nox.session(tags=["foobar"])
     def test():
