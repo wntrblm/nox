@@ -796,7 +796,7 @@ class SessionRunner:
     def reuse_existing_venv(self) -> bool:
         return any(
             (
-                # forces every session to re-use its env
+                # forces every session to reuse its env
                 self.global_config.reuse_venv == "always",
                 # sessions marked True will always be reused unless never is specified
                 self.func.reuse_venv is True
