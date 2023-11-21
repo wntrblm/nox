@@ -16,10 +16,8 @@ from __future__ import annotations
 
 import contextlib
 import os
-import re
 import sys
 from pathlib import Path
-from string import Template
 from unittest import mock
 
 import pytest
@@ -549,29 +547,6 @@ def test_main_noxfile_options_sessions(monkeypatch, generate_noxfile_options):
         # Verify that the config looks correct.
         config = honor_list_request.call_args[1]["global_config"]
         assert config.sessions == ["test"]
-
-
-@pytest.fixture
-def generate_noxfile_options(tmp_path):
-    """Generate noxfile.py with test and templated options.
-
-    The options are enabled (if disabled) and the values are applied
-    if a matching format string is encountered with the option name.
-    """
-
-    def generate_noxfile(**option_mapping: str | bool):
-        path = Path(RESOURCES) / "noxfile_options.py"
-        text = path.read_text(encoding="utf8")
-        if option_mapping:
-            for opt, _val in option_mapping.items():
-                # "uncomment" options with values provided
-                text = re.sub(rf"(# )?nox.options.{opt}", f"nox.options.{opt}", text)
-            text = Template(text).safe_substitute(**option_mapping)
-        path = tmp_path / "noxfile.py"
-        path.write_text(text)
-        return str(path)
-
-    return generate_noxfile
 
 
 @pytest.fixture
