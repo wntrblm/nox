@@ -20,8 +20,13 @@ import os
 import platform
 import shutil
 import sys
+from typing import Any
 
 import nox
+import nox.command
+from nox.logger import logger
+from nox.sessions import SessionRunner
+from nox.virtualenv import CondaEnv, VirtualEnv
 
 ON_WINDOWS_CI = "CI" in os.environ and platform.system() == "Windows"
 
@@ -166,3 +171,175 @@ def github_actions_default_tests(session: nox.Session) -> None:
 def github_actions_all_tests(session: nox.Session) -> None:
     """Check all versions installed by the nox GHA Action"""
     _check_python_version(session)
+
+
+################################################################################
+# testing custom backend
+################################################################################
+def create_conda_env(
+    location: str,
+    interpreter: str | None,
+    reuse_existing: bool,
+    venv_params: Any,
+    runner: SessionRunner,
+) -> CondaEnv:
+    if not interpreter:
+        raise ValueError("must supply interpreter for this backend")
+
+    venv = CondaEnv(
+        location=location,
+        interpreter=interpreter,
+        reuse_existing=reuse_existing,
+        venv_params=venv_params,
+    )
+
+    env_file = f"environment/py{interpreter}-conda-test.yaml"
+
+    assert os.path.exists(env_file)
+    # Custom creating (based on CondaEnv.create)
+    if not venv._clean_location():
+        logger.debug(f"Re-using existing conda env at {venv.location_name}.")
+        venv._reused = True
+
+    else:
+        cmd = ["conda", "env", "create", "--prefix", venv.location, "-f", env_file]
+
+        logger.info(
+            f"Creating conda env in {venv.location_name} with env file {env_file}"
+        )
+        nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
+
+    return venv
+
+
+# Note that it's on the end user/custom backend to make sure passing python=.... makes sense.
+@nox.session(
+    name="conda-env-backend",
+    python=["3.9", "3.10", "3.11"],
+    venv_backend=create_conda_env,
+)
+def conda_env_backend(session: nox.Session) -> None:
+    session.create_tmp()
+    session.install("-e", ".", "--no-deps")
+    # session.run("pytest", *session.posargs)
+
+    session.run("python", "-c", "import sys; print(sys.path)")
+    session.run("which", "python", external=True)
+
+
+# conda lock backend
+def create_conda_lock_env(
+    location: str,
+    interpreter: str | None,
+    reuse_existing: bool,
+    venv_params: Any,
+    runner: SessionRunner,
+) -> CondaEnv:
+    if not interpreter:
+        raise ValueError("must supply interpreter for this backend")
+
+    lock_file = f"./environment/py{interpreter}-conda-test-conda-lock.yml"
+    assert os.path.exists(lock_file)
+
+    venv = CondaEnv(
+        location=location,
+        interpreter=interpreter,
+        reuse_existing=reuse_existing,
+        venv_params=venv_params,
+    )
+
+    # Custom creating (based on CondaEnv.create)
+    if not venv._clean_location():
+        logger.debug(f"Re-using existing conda env at {venv.location_name}.")
+        venv._reused = True
+
+    else:
+        cmd = ["conda-lock", "install", "--prefix", venv.location, lock_file]
+
+        logger.info(
+            f"Creating conda env in {venv.location_name} with conda-lock {lock_file}"
+        )
+        nox.command.run(cmd, silent=False, log=nox.options.verbose or False)
+
+    return venv
+
+
+@nox.session(
+    name="conda-lock-backend",
+    python=["3.10"],
+    venv_backend=create_conda_lock_env,
+)
+def conda_lock_backend(session: nox.Session) -> None:
+    session.create_tmp()
+    session.install("-e", ".", "--no-deps")
+
+    session.run("python", "-c", "import sys; print(sys.path)")
+    session.run("which", "python", external=True)
+    session.run("which", "conda-lock", external=True)
+
+    session.run("pytest", *session.posargs)
+
+
+@nox.session(name="bootstrap-conda-lock")
+def bootstrap_conda_lock(session: nox.Session) -> None:
+    """Avoids need for conda-lock in requirements
+
+    Instead of needing conda-lock in base environment:
+
+        $ pipx install conda-lock
+        $ nox - s conda-lock-backed ....
+
+    You can just run:
+
+        $ nox -s bootstrap-conda-lock
+    """
+    session.install("conda-lock")
+    session.install("-e", ".")
+
+    session.run("nox", "-s", "conda-lock-backend", *session.posargs)
+
+
+# development .venv
+
+
+def create_venv_override_location(
+    location: str,
+    interpreter: str | None,
+    reuse_existing: bool,
+    venv_params: Any,
+    runner: SessionRunner,
+) -> VirtualEnv:
+    # force location to .nox/.venv
+
+    assert isinstance(venv_params, str), "supply location with venv_params"
+
+    location = venv_params
+    venv = VirtualEnv(
+        location=location,
+        interpreter=interpreter,
+        reuse_existing=True,
+        venv_params=venv_params,
+    )
+
+    venv.create()
+    return venv
+
+
+@nox.session(
+    name="dev-example",
+    python="3.11",
+    venv_backend=create_venv_override_location,
+    venv_params=".nox/.venv",
+)
+def dev_example(session: nox.Session) -> None:
+    """Easy way to create a development environment
+
+    Because this is for demonstration purposes, we place this
+    environment at `.nox/.venv`
+    """
+    session.install("-r", "requirements-dev.txt")
+    session.run("python", "-c", "import sys; print(sys.path)")
+    session.run("which", "python", external=True)
+
+    print(session.virtualenv.location)
+    print(session.virtualenv.venv_params)

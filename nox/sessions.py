@@ -734,11 +734,16 @@ class SessionRunner:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def _create_venv(self) -> None:
-        backend = (
-            self.global_config.force_venv_backend
-            or self.func.venv_backend
-            or self.global_config.default_venv_backend
-        )
+        if callable(self.func.venv_backend):
+            # if passed a callable backend, always use just that
+            # i.e., don't override
+            backend = self.func.venv_backend
+        else:
+            backend = (
+                self.global_config.force_venv_backend
+                or self.func.venv_backend
+                or self.global_config.default_venv_backend
+            )
 
         if backend == "none" or self.func.python is False:
             self.venv = PassthroughEnv()
@@ -748,7 +753,17 @@ class SessionRunner:
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
-        if backend is None or backend == "virtualenv":
+        if callable(backend):
+            self.venv = backend(
+                location=self.envdir,
+                interpreter=self.func.python,
+                reuse_existing=reuse_existing,
+                venv_params=self.func.venv_params,
+                runner=self,
+            )
+            return
+
+        elif backend is None or backend == "virtualenv":
             self.venv = VirtualEnv(
                 self.envdir,
                 interpreter=self.func.python,  # type: ignore[arg-type]
@@ -771,6 +786,7 @@ class SessionRunner:
                 venv=True,
                 venv_params=self.func.venv_params,
             )
+
         else:
             raise ValueError(
                 "Expected venv_backend one of ('virtualenv', 'conda', 'mamba',"
