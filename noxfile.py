@@ -321,7 +321,7 @@ def create_venv_override_location(
     name="dev-example",
     python="3.11",
     venv_backend=create_venv_override_location,
-    venv_params={"location": ".nox/.venv"},
+    venv_params={"location": ".venv2"},
 )
 def dev_example(session: nox.Session) -> None:
     """Easy way to create a development environment

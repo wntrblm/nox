@@ -410,6 +410,13 @@ incompatible versions of packages already installed with conda.
 use/require `mamba <https://github.com/mamba-org/mamba>`_ instead of conda.
 
 
+Customized virtual environment creation
+---------------------------------------
+
+If the builtin methods for creating virtual environments don't fit you exact
+needs, you can instead pass a callable for ``venv_backend``.  See :doc:`cookbook` for examples.
+
+
 Parametrization
 ---------------
 

@@ -739,9 +739,12 @@ class SessionRunner:
         )
 
         if callable(self.func.venv_backend):
-            logger.info("Using callable venv_backend")
             # if passed a callable backend, always use just that
-            # i.e., don't override
+
+            if self.global_config.force_venv_backend:
+                logger.warn("Cannot override callable venv_backend")
+
+            logger.info("Using callable venv_backend")
             self.venv = self.func.venv_backend(
                 location=self.envdir,
                 interpreter=self.func.python,
@@ -751,12 +754,11 @@ class SessionRunner:
             )
             return
 
-        else:
-            backend = (
-                self.global_config.force_venv_backend
-                or self.func.venv_backend
-                or self.global_config.default_venv_backend
-            )
+        backend = (
+            self.global_config.force_venv_backend
+            or self.func.venv_backend
+            or self.global_config.default_venv_backend
+        )
 
         if backend == "none" or self.func.python is False:
             self.venv = PassthroughEnv()

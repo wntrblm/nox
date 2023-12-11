@@ -78,6 +78,137 @@ Enter the ``dev`` nox session:
 With this, a user can simply run ``nox -s dev`` and have their entire environment set up automatically!
 
 
+Instant Dev Environment using callable venv_backend
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As an alternative to the above, you can instead invoke a custom callable for ``venv_backend`` to create a development nox session.
+
+.. code-block:: python
+
+    from nox.sessions import SessionRunner
+    from nox.virtualenv import VirtualEnv
+
+
+    def create_venv_override_location(
+        location: str,
+        interpreter: str | None,
+        reuse_existing: bool,
+        venv_params: Any,
+        runner: SessionRunner,
+    ) -> VirtualEnv:
+        """
+        Override location of virtualenv
+
+        To set the location, pass `venv_params = {"location": path/to/.venv, "venv_params": ...}`
+        where `venv_params[venv_params]` will be passed to `VirtualEnv` creation.
+        """
+
+        if not isinstance(venv_params, dict) or "location" not in venv_params:
+            raise ValueError("must supply `venv_backend = {'location': path, ...}")
+
+        # Override the virtual environment location
+        location = venv_params["location"]
+        assert isinstance(location, str)
+
+        venv = VirtualEnv(
+            location=location,
+            interpreter=interpreter,
+            reuse_existing=reuse_existing,
+            venv_params=venv_params.get("venv_params"),
+        )
+
+        venv.create()
+        return venv
+
+
+    @nox.session(
+        python="3.11",
+        venv_backend=create_venv_override_location,
+        venv_params={"location": ".venv"},
+    )
+    def dev(session: nox.Session) -> None:
+        """Easy way to create a development environment
+
+        This will place the development environment in the `.venv` directory
+        """
+        session.install("-e", ".[dev]")
+
+
+
+
+Create environment with ``conda env create``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It's common to create conda environments directly from an ``environment.yaml``
+file with ``conda env create``. To do this with nox, you can use a callable
+``venv_backend``. For example:
+
+.. code-block:: python
+
+    import os
+    from nox.sessions import SessionRunner
+    from nox.virtualenv import CondaEnv
+    from nox.logger import logger
+
+
+    def create_conda_env(
+        location: str,
+        interpreter: str | None,
+        reuse_existing: bool,
+        venv_params: Any,
+        runner: SessionRunner,
+    ) -> CondaEnv:
+        """
+        Custom venv_backend to create conda environment from `environment.yaml` file
+
+        This particular callable infers the file from the interpreter.  For example,
+        if `interpreter = "3.8"`, then the environment file will be `environment/py3.8-conda-test.yaml`
+
+
+        Also, we assume that the yaml files have the correct interpreter specified, and will
+        ensure that pip is installed (so we can install the package).
+        """
+        if not interpreter:
+            raise ValueError("must supply interpreter for this backend")
+
+        venv = CondaEnv(
+            location=location,
+            interpreter=interpreter,
+            reuse_existing=reuse_existing,
+            venv_params=venv_params,
+        )
+
+        env_file = f"environment/py{interpreter}-conda-test.yaml"
+        assert os.path.exists(env_file), f"Missing file {env_file}"
+
+        # Custom creating (based on CondaEnv.create)
+        if not venv._clean_location():
+            logger.debug(f"Re-using existing conda env at {venv.location_name}.")
+            venv._reused = True
+
+        else:
+            cmd = ["conda", "env", "create", "--prefix", venv.location, "-f", env_file]
+            logger.info(
+                f"Creating conda env in {venv.location_name} with env file {env_file}"
+            )
+            nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
+        return venv
+
+
+    @nox.session(python=["3.8"], venv_backend=create_conda_env)
+    def conda_tests(session: nox.Session) -> None:
+        """Run test suite with pytest."""
+
+        # Note that all extra dependencies are assumed to
+        # be installed during environment creation
+        session.install("-e", ".", "--no-deps")
+        session.run("pytest", *session.posargs)
+
+
+
+
+
+
 The Auto-Release
 ^^^^^^^^^^^^^^^^
 
