@@ -54,15 +54,7 @@ def tests(session: nox.Session) -> None:
     session.notify("cover")
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend="conda")
-def conda_tests(session: nox.Session) -> None:
-    """Run test suite with pytest."""
-    session.create_tmp()  # Fixes permission errors on Windows
-    session.conda_install(
-        "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
-    )
-    session.install("-e", ".", "--no-deps")
-    session.run("pytest", *session.posargs)
+# NOTE: moved tests to custom backend section below
 
 
 @nox.session
@@ -183,6 +175,12 @@ def create_conda_env(
     venv_params: Any,
     runner: SessionRunner,
 ) -> CondaEnv:
+    """
+    Custom venv_backend to create conda environment from `environment.yaml` file
+
+    This particular callable infers the file from the interpreter.  For example,
+    if `interpreter = "3.8"`, then the environment file will be `environment/py3.8-conda-test.yaml`
+    """
     if not interpreter:
         raise ValueError("must supply interpreter for this backend")
 
@@ -212,19 +210,12 @@ def create_conda_env(
     return venv
 
 
-# Note that it's on the end user/custom backend to make sure passing python=.... makes sense.
-@nox.session(
-    name="conda-env-backend",
-    python=["3.9", "3.10", "3.11"],
-    venv_backend=create_conda_env,
-)
-def conda_env_backend(session: nox.Session) -> None:
-    session.create_tmp()
+@nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend=create_conda_env)
+def conda_tests(session: nox.Session) -> None:
+    """Run test suite with pytest."""
+    session.create_tmp()  # Fixes permission errors on Windows
     session.install("-e", ".", "--no-deps")
-    # session.run("pytest", *session.posargs)
-
-    session.run("python", "-c", "import sys; print(sys.path)")
-    session.run("which", "python", external=True)
+    session.run("pytest", *session.posargs)
 
 
 # conda lock backend
@@ -265,29 +256,24 @@ def create_conda_lock_env(
 
 
 @nox.session(
-    name="conda-lock-backend",
-    python=["3.10"],
+    python=["3.11"],
     venv_backend=create_conda_lock_env,
 )
-def conda_lock_backend(session: nox.Session) -> None:
+def conda_lock_tests(session: nox.Session) -> None:
     session.create_tmp()
     session.install("-e", ".", "--no-deps")
-
-    session.run("python", "-c", "import sys; print(sys.path)")
-    session.run("which", "python", external=True)
-    session.run("which", "conda-lock", external=True)
 
     session.run("pytest", *session.posargs)
 
 
-@nox.session(name="bootstrap-conda-lock")
-def bootstrap_conda_lock(session: nox.Session) -> None:
+@nox.session
+def bootstrap_conda_lock_tests(session: nox.Session) -> None:
     """Avoids need for conda-lock in requirements
 
     Instead of needing conda-lock in base environment:
 
         $ pipx install conda-lock
-        $ nox - s conda-lock-backed ....
+        $ nox -s conda-lock-backed ....
 
     You can just run:
 
@@ -296,12 +282,10 @@ def bootstrap_conda_lock(session: nox.Session) -> None:
     session.install("conda-lock")
     session.install("-e", ".")
 
-    session.run("nox", "-s", "conda-lock-backend", *session.posargs)
+    session.run("nox", "-s", "conda_lock_tests", *session.posargs)
 
 
 # development .venv
-
-
 def create_venv_override_location(
     location: str,
     interpreter: str | None,
@@ -309,16 +293,24 @@ def create_venv_override_location(
     venv_params: Any,
     runner: SessionRunner,
 ) -> VirtualEnv:
-    # force location to .nox/.venv
+    """
+    Override location of virtualenv
 
-    assert isinstance(venv_params, str), "supply location with venv_params"
+    To set the location, pass `venv_params = {"location": path/to/.venv, "venv_params": ...}`
+    where `venv_params[venv_params]` will be passed to `VirtualEnv` creation.
+    """
 
-    location = venv_params
+    if not isinstance(venv_params, dict) or "location" not in venv_params:
+        raise ValueError("must supply `venv_backend = {'location': path, ...}")
+
+    location = venv_params["location"]
+    assert isinstance(location, str)
+
     venv = VirtualEnv(
         location=location,
         interpreter=interpreter,
-        reuse_existing=True,
-        venv_params=venv_params,
+        reuse_existing=reuse_existing,
+        venv_params=venv_params.get("venv_params"),
     )
 
     venv.create()
@@ -329,7 +321,7 @@ def create_venv_override_location(
     name="dev-example",
     python="3.11",
     venv_backend=create_venv_override_location,
-    venv_params=".nox/.venv",
+    venv_params={"location": ".nox/.venv"},
 )
 def dev_example(session: nox.Session) -> None:
     """Easy way to create a development environment

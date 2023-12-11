@@ -3,7 +3,8 @@ import os
 import sys
 from pathlib import Path
 
-PYTHON_VERSIONS = ["3.9", "3.10", "3.11"]
+PYTHON_VERSIONS = ["3.7", "3.8", "3.9", "3.10", "3.11"]
+LOCK_VERSIONS = ["3.11"]
 
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ def create_yaml_files():
     # create environment files
     for py in PYTHON_VERSIONS:
         yaml = Path(f"py{py}-conda-test.yaml")
+
         # make sure these have python and pip
         s = create_yaml(f"python={py}", *requirements, "pip")
         with yaml.open("w") as f:
@@ -41,7 +43,7 @@ def create_lock_files():
     import subprocess
 
     os.chdir(HERE)
-    for py in PYTHON_VERSIONS:
+    for py in LOCK_VERSIONS:
         subprocess.run(
             [
                 "conda-lock",

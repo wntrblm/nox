@@ -734,10 +734,23 @@ class SessionRunner:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def _create_venv(self) -> None:
+        reuse_existing = (
+            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
+        )
+
         if callable(self.func.venv_backend):
+            logger.info("Using callable venv_backend")
             # if passed a callable backend, always use just that
             # i.e., don't override
-            backend = self.func.venv_backend
+            self.venv = self.func.venv_backend(
+                location=self.envdir,
+                interpreter=self.func.python,
+                reuse_existing=reuse_existing,
+                venv_params=self.func.venv_params,
+                runner=self,
+            )
+            return
+
         else:
             backend = (
                 self.global_config.force_venv_backend
@@ -749,21 +762,7 @@ class SessionRunner:
             self.venv = PassthroughEnv()
             return
 
-        reuse_existing = (
-            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
-        )
-
-        if callable(backend):
-            self.venv = backend(
-                location=self.envdir,
-                interpreter=self.func.python,
-                reuse_existing=reuse_existing,
-                venv_params=self.func.venv_params,
-                runner=self,
-            )
-            return
-
-        elif backend is None or backend == "virtualenv":
+        if backend is None or backend == "virtualenv":
             self.venv = VirtualEnv(
                 self.envdir,
                 interpreter=self.func.python,  # type: ignore[arg-type]
