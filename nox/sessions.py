@@ -742,7 +742,7 @@ class SessionRunner:
             # if passed a callable backend, always use just that
 
             if self.global_config.force_venv_backend:
-                logger.warn("Cannot override callable venv_backend")
+                logger.info("Cannot override callable venv_backend")
 
             logger.info("Using callable venv_backend")
             self.venv = self.func.venv_backend(
