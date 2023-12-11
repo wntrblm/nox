@@ -26,7 +26,7 @@ import nox
 import nox.command
 from nox.logger import logger
 from nox.sessions import SessionRunner
-from nox.virtualenv import CondaEnv, VirtualEnv
+from nox.virtualenv import CondaEnv
 
 ON_WINDOWS_CI = "CI" in os.environ and platform.system() == "Windows"
 
@@ -283,55 +283,3 @@ def bootstrap_conda_lock_tests(session: nox.Session) -> None:
     session.install("-e", ".")
 
     session.run("nox", "-s", "conda_lock_tests", *session.posargs)
-
-
-# development .venv
-def create_venv_override_location(
-    location: str,
-    interpreter: str | None,
-    reuse_existing: bool,
-    venv_params: Any,
-    runner: SessionRunner,
-) -> VirtualEnv:
-    """
-    Override location of virtualenv
-
-    To set the location, pass `venv_params = {"location": path/to/.venv, "venv_params": ...}`
-    where `venv_params[venv_params]` will be passed to `VirtualEnv` creation.
-    """
-
-    if not isinstance(venv_params, dict) or "location" not in venv_params:
-        raise ValueError("must supply `venv_backend = {'location': path, ...}")
-
-    location = venv_params["location"]
-    assert isinstance(location, str)
-
-    venv = VirtualEnv(
-        location=location,
-        interpreter=interpreter,
-        reuse_existing=reuse_existing,
-        venv_params=venv_params.get("venv_params"),
-    )
-
-    venv.create()
-    return venv
-
-
-@nox.session(
-    name="dev-example",
-    python="3.11",
-    venv_backend=create_venv_override_location,
-    venv_params={"location": ".venv2"},
-)
-def dev_example(session: nox.Session) -> None:
-    """Easy way to create a development environment
-
-    Because this is for demonstration purposes, we place this
-    environment at `.nox/.venv`
-    """
-    session.install("-r", "requirements-dev.txt")
-    session.run("python", "-c", "import sys; print(sys.path)")
-    session.run("which", "python", external=True)
-
-    print(session.virtualenv.location)
-    print(session.virtualenv.venv_params)
