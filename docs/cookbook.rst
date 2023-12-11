@@ -206,6 +206,11 @@ file with ``conda env create``. To do this with nox, you can use a callable
 
 
 
+Note that this scheme can be extended to use, for example, `conda-lock
+<https://github.com/conda/conda-lock>`_ to install locked environments.
+
+
+
 
 
 
