@@ -952,6 +952,22 @@ class TestSessionRunner:
         with pytest.raises(ValueError, match="venv_backend"):
             runner._create_venv()
 
+    def test__create_venv_bad_callable(self):
+        def bad_backend(
+            location,
+            interpreter,
+            reuse_existing,
+            venv_params,
+            runner,
+        ):
+            return "hello"
+
+        runner = self.make_runner()
+        runner.func.venv_backend = bad_backend
+
+        with pytest.raises(ValueError, match="Callable venv_backend"):
+            runner._create_venv()
+
     @mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True)
     def test__create_venv_callable_venv_backend(self, create):
         def custom_backend(
