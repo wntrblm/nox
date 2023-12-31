@@ -433,6 +433,7 @@ options.add_options(
     ),
     _option_set.Option(
         "force_pythons",
+        "-P",
         "--force-pythons",
         "--force-python",
         group=options.groups["python"],
@@ -441,6 +442,7 @@ options.add_options(
         help=(
             "Run sessions with the given interpreters instead of those listed in the"
             " Noxfile. This is a shorthand for ``--python=X.Y --extra-python=X.Y``."
+            " It will also work on sessions that don't have any interpreter parametrized."
         ),
         finalizer_func=_force_pythons_finalizer,
     ),
