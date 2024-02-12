@@ -140,8 +140,8 @@ Create environment with ``conda env create``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 It's common to create conda environments directly from an ``environment.yaml``
-file with ``conda env create``. To do this with nox, you can use a callable
-``venv_backend``. For example:
+file with ``conda env create``. There are also cases where using ``micromamba`` is advantageous.
+To do this with nox, you can use a callable ``venv_backend``. For example:
 
 .. code-block:: python
 
@@ -151,60 +151,84 @@ file with ``conda env create``. To do this with nox, you can use a callable
     from nox.logger import logger
 
 
-    def create_conda_env(
-        location: str,
-        interpreter: str | None,
-        reuse_existing: bool,
-        venv_params: Any,
-        runner: SessionRunner,
-    ) -> CondaEnv:
-        """
-        Custom venv_backend to create conda environment from `environment.yaml` file
+    def factory_conda_env(backend: str):
+        """Create a callable backend with specified conda backend."""
+        # Override CondaEnv backend
+        CondaEnv.allowed_globals = ("conda", "mamba", "micromamba")  # type: ignore[assignment]
 
-        This particular callable infers the file from the interpreter.  For example,
-        if `interpreter = "3.8"`, then the environment file will be `environment/py3.8-conda-test.yaml`
+        if backend not in CondaEnv.allowed_globals:
+            msg = f"{backend=} must be in {CondaEnv.allowed_globals}"
+            raise ValueError(msg)
 
 
-        Also, we assume that the yaml files have the correct interpreter specified, and will
-        ensure that pip is installed (so we can install the package).
-        """
-        if not interpreter:
-            raise ValueError("must supply interpreter for this backend")
+        def create_conda_env(
+            location: str,
+            interpreter: str | None,
+            reuse_existing: bool,
+            venv_params: Any,
+            runner: SessionRunner,
+        ) -> CondaEnv:
+            """
+            Custom venv_backend to create conda environment from `environment.yaml` file
 
-        venv = CondaEnv(
-            location=location,
-            interpreter=interpreter,
-            reuse_existing=reuse_existing,
-            venv_params=venv_params,
-        )
+            This particular callable infers the file from the interpreter.  For example,
+            if `interpreter = "3.8"`, then the environment file will be `environment/py3.8-conda-test.yaml`
+            """
+            if not interpreter:
+                raise ValueError("must supply interpreter for this backend")
 
-        env_file = f"environment/py{interpreter}-conda-test.yaml"
-        assert os.path.exists(env_file), f"Missing file {env_file}"
-
-        # Custom creating (based on CondaEnv.create)
-        if not venv._clean_location():
-            logger.debug(f"Re-using existing conda env at {venv.location_name}.")
-            venv._reused = True
-
-        else:
-            cmd = ["conda", "env", "create", "--prefix", venv.location, "-f", env_file]
-            logger.info(
-                f"Creating conda env in {venv.location_name} with env file {env_file}"
+            venv = CondaEnv(
+                location=location,
+                interpreter=interpreter,
+                reuse_existing=reuse_existing,
+                venv_params=venv_params,
+                conda_cmd=backend,
             )
-            nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
-        return venv
+
+            env_file = f"environment/py{interpreter}-conda-test.yaml"
+
+            assert os.path.exists(env_file)
+            # Custom creating (based on CondaEnv.create)
+            if not venv._clean_location():
+                logger.debug(f"Re-using existing conda env at {venv.location_name}.")
+                venv._reused = True
+
+            else:
+                cmd = (
+                    [venv.conda_cmd]
+                    + (["--yes"] if venv.conda_cmd == "micromamba" else ["env"])
+                    + ["create", "--prefix", venv.location, "-f", env_file]
+                )
+                # cmd = ["conda", "env", "create", "--prefix", venv.location, "-f", env_file]
+
+                logger.info(
+                    f"Creating conda env in {venv.location_name} with env file {env_file}"
+                )
+                logger.info(f"{cmd}")
+                nox.command.run(cmd, silent=False, log=nox.options.verbose or False)
+
+            return venv
+
+        return create_conda_env
 
 
-    @nox.session(python=["3.8"], venv_backend=create_conda_env)
+
+    @nox.session(python=["3.8"], venv_backend=factory_conda_env("conda"))
     def conda_tests(session: nox.Session) -> None:
-        """Run test suite with pytest."""
-
+        """Run test suite in conda environment."""
         # Note that all extra dependencies are assumed to
         # be installed during environment creation
         session.install("-e", ".", "--no-deps")
         session.run("pytest", *session.posargs)
 
 
+    @nox.session(python=["3.8"], venv_backend=factory_conda_env("micromamba"))
+    def micromamba_tests(session: nox.Session) -> None:
+        """Run test suite in micromamba environment."""
+        # Note that all extra dependencies are assumed to
+        # be installed during environment creation
+        session.install("-e", ".", "--no-deps")
+        session.run("pytest", *session.posargs)
 
 Note that this scheme can be extended to use, for example, `conda-lock
 <https://github.com/conda/conda-lock>`_ to install locked environments.

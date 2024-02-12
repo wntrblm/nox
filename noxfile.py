@@ -168,50 +168,80 @@ def github_actions_all_tests(session: nox.Session) -> None:
 ################################################################################
 # testing custom backend
 ################################################################################
-def create_conda_env(
-    location: str,
-    interpreter: str | None,
-    reuse_existing: bool,
-    venv_params: Any,
-    runner: SessionRunner,
-) -> CondaEnv:
-    """
-    Custom venv_backend to create conda environment from `environment.yaml` file
+def factory_conda_env(backend: str):
+    """Create a callable backend with specified conda backend."""
+    # Override CondaEnv backend
+    CondaEnv.allowed_globals = ("conda", "mamba", "micromamba", "conda-lock")  # type: ignore[assignment]
 
-    This particular callable infers the file from the interpreter.  For example,
-    if `interpreter = "3.8"`, then the environment file will be `environment/py3.8-conda-test.yaml`
-    """
-    if not interpreter:
-        raise ValueError("must supply interpreter for this backend")
+    if backend not in CondaEnv.allowed_globals:
+        msg = f"{backend=} must be in {CondaEnv.allowed_globals}"
+        raise ValueError(msg)
 
-    venv = CondaEnv(
-        location=location,
-        interpreter=interpreter,
-        reuse_existing=reuse_existing,
-        venv_params=venv_params,
-    )
+    def create_conda_env(
+        location: str,
+        interpreter: str | None,
+        reuse_existing: bool,
+        venv_params: Any,
+        runner: SessionRunner,
+    ) -> CondaEnv:
+        """
+        Custom venv_backend to create conda environment from `environment.yaml` file
 
-    env_file = f"environment/py{interpreter}-conda-test.yaml"
+        This particular callable infers the file from the interpreter.  For example,
+        if `interpreter = "3.8"`, then the environment file will be `environment/py3.8-conda-test.yaml`
+        """
+        if not interpreter:
+            raise ValueError("must supply interpreter for this backend")
 
-    assert os.path.exists(env_file)
-    # Custom creating (based on CondaEnv.create)
-    if not venv._clean_location():
-        logger.debug(f"Re-using existing conda env at {venv.location_name}.")
-        venv._reused = True
-
-    else:
-        cmd = ["conda", "env", "create", "--prefix", venv.location, "-f", env_file]
-
-        logger.info(
-            f"Creating conda env in {venv.location_name} with env file {env_file}"
+        venv = CondaEnv(
+            location=location,
+            interpreter=interpreter,
+            reuse_existing=reuse_existing,
+            venv_params=venv_params,
+            conda_cmd=backend,
         )
-        nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
-    return venv
+        env_file = f"environment/py{interpreter}-conda-test.yaml"
+
+        assert os.path.exists(env_file)
+        # Custom creating (based on CondaEnv.create)
+        if not venv._clean_location():
+            logger.debug(f"Re-using existing conda env at {venv.location_name}.")
+            venv._reused = True
+
+        else:
+            cmd = (
+                [venv.conda_cmd]
+                + (["--yes"] if venv.conda_cmd == "micromamba" else ["env"])
+                + ["create", "--prefix", venv.location, "-f", env_file]
+            )
+            # cmd = ["conda", "env", "create", "--prefix", venv.location, "-f", env_file]
+
+            logger.info(
+                f"Creating conda env in {venv.location_name} with env file {env_file}"
+            )
+            logger.info(f"{cmd}")
+            nox.command.run(cmd, silent=False, log=nox.options.verbose or False)
+
+        return venv
+
+    return create_conda_env
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend=create_conda_env)
+@nox.session(
+    python=["3.7", "3.8", "3.9", "3.10"], venv_backend=factory_conda_env("conda")
+)
 def conda_tests(session: nox.Session) -> None:
+    """Run test suite with pytest."""
+    session.create_tmp()  # Fixes permission errors on Windows
+    session.install("-e", ".", "--no-deps")
+    session.run("pytest", *session.posargs)
+
+
+@nox.session(
+    python=["3.7", "3.8", "3.9", "3.10"], venv_backend=factory_conda_env("micromamba")
+)
+def micromamba_tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
     session.create_tmp()  # Fixes permission errors on Windows
     session.install("-e", ".", "--no-deps")
