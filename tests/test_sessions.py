@@ -123,7 +123,7 @@ class TestSession:
         with pytest.raises(
             ValueError, match=r"^The environment does not have a bin directory\.$"
         ):
-            session.bin
+            session.bin  # noqa: B018
         assert session.bin_paths is None
 
     def test_virtualenv_as_none(self):
@@ -272,6 +272,37 @@ class TestSession:
             silent=True,
         )
         assert result.strip() == "1 3"
+
+    def test_by_default_all_invocation_env_vars_are_passed(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv.env["I_SHOULD_BE_INCLUDED"] = "happy"
+        runner.venv.env["I_SHOULD_BE_INCLUDED_TOO"] = "happier"
+        runner.venv.env["EVERYONE_SHOULD_BE_INCLUDED_TOO"] = "happiest"
+        result = session.run(
+            sys.executable,
+            "-c",
+            "import os; print(os.environ)",
+            silent=True,
+        )
+        assert "happy" in result
+        assert "happier" in result
+        assert "happiest" in result
+
+    def test_no_included_invocation_env_vars_are_passed(self):
+        session, runner = self.make_session_and_runner()
+        runner.venv.env["I_SHOULD_NOT_BE_INCLUDED"] = "sad"
+        runner.venv.env["AND_NEITHER_SHOULD_I"] = "unhappy"
+        result = session.run(
+            sys.executable,
+            "-c",
+            "import os; print(os.environ)",
+            env={"I_SHOULD_BE_INCLUDED": "happy"},
+            include_outer_env=False,
+            silent=True,
+        )
+        assert "sad" not in result
+        assert "unhappy" not in result
+        assert "happy" in result
 
     def test_run_external_not_a_virtualenv(self):
         # Non-virtualenv sessions should always allow external programs.
@@ -768,7 +799,7 @@ class TestSession:
         with pytest.raises(AttributeError):
             session.foo = "bar"
         with pytest.raises(AttributeError):
-            session.quux
+            session.quux  # noqa: B018
 
     def test___dict__(self):
         session, _ = self.make_session_and_runner()
@@ -1026,10 +1057,8 @@ class TestSessionRunner:
             session.run(
                 sys.executable,
                 "-c",
-                (
-                    "import os; raise SystemExit(0 if"
-                    f' os.environ["NOX_CURRENT_SESSION"] == {session.name!r} else 0)'
-                ),
+                "import os; raise SystemExit(0 if"
+                f' os.environ["NOX_CURRENT_SESSION"] == {session.name!r} else 0)',
             )
 
         runner.func = func

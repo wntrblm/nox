@@ -30,6 +30,11 @@ To list all available sessions, including parametrized sessions:
     nox --list
     nox --list-sessions
 
+If you'd like to use the output in later processing, you can add ``--json`` to
+get json output for the selected session. Fields include ``session`` (pretty
+name), ``name``, ``description``, ``python`` (null if not specified), ``tags``,
+and ``call_spec`` (for parametrized sessions).
+
 
 .. _session_execution_order:
 
@@ -160,7 +165,7 @@ Finally note that the ``--no-venv`` flag is a shortcut for ``--force-venv-backen
 Re-using virtualenvs
 --------------------
 
-By default, Nox deletes and recreates virtualenvs every time it is run. This is usually fine for most projects and continuous integration environments as `pip's caching <https://pip.pypa.io/en/stable/cli/pip_install/#caching>`_ makes re-install rather quick. However, there are some situations where it is advantageous to re-use the virtualenvs between runs. Use ``-r`` or ``--reuse-existing-virtualenvs``:
+By default, Nox deletes and recreates virtualenvs every time it is run. This is usually fine for most projects and continuous integration environments as `pip's caching <https://pip.pypa.io/en/stable/cli/pip_install/#caching>`_ makes re-install rather quick. However, there are some situations where it is advantageous to reuse the virtualenvs between runs. Use ``-r`` or ``--reuse-existing-virtualenvs``:
 
 .. code-block:: console
 

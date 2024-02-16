@@ -4,15 +4,8 @@ ci:
   autofix_commit_msg: "style: pre-commit fixes"
 
 repos:
-  - repo: https://github.com/psf/black
-    rev: "23.1.0"
-    hooks:
-      - id: black
-        args:
-          - "--preview"
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -25,46 +18,20 @@ repos:
       - id: requirements-txt-fixer
       - id: trailing-whitespace
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-        args: ["-a", "from __future__ import annotations"]
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
-    hooks:
-      - id: pyupgrade
-        args: [--py37-plus]
-
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "0.7.0"
+    rev: "1.3.0"
     hooks:
       - id: pyproject-fmt
 
-  - repo: https://github.com/hadialqattan/pycln
-    rev: v2.1.3
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.3
     hooks:
-      - id: pycln
-        args: [--all]
-        stages: [manual]
-
-  - repo: https://github.com/asottile/yesqa
-    rev: v1.4.0
-    hooks:
-      - id: yesqa
-        additional_dependencies: &flake8-dependencies
-          - flake8-bugbear
-
-  - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-        exclude: docs/conf.py
-        additional_dependencies: *flake8-dependencies
+      - id: ruff
+        args: ["--fix", "--show-fixes"]
+      - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.0.0
+    rev: v1.6.1
     hooks:
       - id: mypy
         files: ^nox/
@@ -75,20 +42,15 @@ repos:
           - importlib_metadata
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.2
+    rev: v2.2.6
     hooks:
       - id: codespell
 
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
     hooks:
-      - id: python-check-blanket-noqa
-      - id: python-check-blanket-type-ignore
-      - id: python-no-log-warn
-        exclude: ^tests/test_sessions.py$
       - id: python-no-eval
         exclude: ^nox/manifest.py$
-      - id: python-use-type-annotations
       - id: rst-backticks
       - id: rst-directive-colons
       - id: rst-inline-touching-normal

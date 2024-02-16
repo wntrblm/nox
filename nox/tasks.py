@@ -21,6 +21,7 @@ import os
 import sys
 import types
 from argparse import Namespace
+from typing import Sequence, TypeVar
 
 from colorlog.escape_codes import parse_colors
 
@@ -179,6 +180,7 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
             logger.error("Error while collecting sessions.")
             logger.error(exc.args[0])
             return 3
+
     if not manifest and not global_config.list_sessions:
         print("No sessions selected. Please select a session with -s <session name>.\n")
         _produce_listing(manifest, global_config)
@@ -264,6 +266,23 @@ def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     )
 
 
+def _produce_json_listing(manifest: Manifest, global_config: Namespace) -> None:
+    report = []
+    for session, selected in manifest.list_all_sessions():
+        if selected:
+            report.append(
+                {
+                    "session": session.friendly_name,
+                    "name": session.name,
+                    "description": session.description or "",
+                    "python": session.func.python,
+                    "tags": session.tags,
+                    "call_spec": getattr(session.func, "call_spec", {}),
+                }
+            )
+    print(json.dumps(report))
+
+
 def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest | int:
     """If --list was passed, simply list the manifest and exit cleanly.
 
@@ -275,10 +294,18 @@ def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest
         Union[~.Manifest,int]: ``0`` if a listing is all that is requested,
             the manifest otherwise (to be sent to the next task).
     """
-    if not global_config.list_sessions:
+    if not (global_config.list_sessions or global_config.json):
         return manifest
 
-    _produce_listing(manifest, global_config)
+    # JSON output requires list sessions also be specified
+    if global_config.json and not global_config.list_sessions:
+        logger.error("Must specify --list-sessions with --json")
+        return 3
+
+    if global_config.json:
+        _produce_json_listing(manifest, global_config)
+    else:
+        _produce_listing(manifest, global_config)
 
     return 0
 
@@ -324,7 +351,12 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
     return results
 
 
-def print_summary(results: list[Result], global_config: Namespace) -> list[Result]:
+Sequence_Results_T = TypeVar("Sequence_Results_T", bound=Sequence[Result])
+
+
+def print_summary(
+    results: Sequence_Results_T, global_config: Namespace
+) -> Sequence_Results_T:
     """Print a summary of the results.
 
     Args:
@@ -351,7 +383,9 @@ def print_summary(results: list[Result], global_config: Namespace) -> list[Resul
     return results
 
 
-def create_report(results: list[Result], global_config: Namespace) -> list[Result]:
+def create_report(
+    results: Sequence_Results_T, global_config: Namespace
+) -> Sequence_Results_T:
     """Write a report to the location designated in the config, if any.
 
     Args:

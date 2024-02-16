@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -14,6 +15,7 @@ VALID_VERSIONS = {
     "3.9-dev": "3.9",
     "3.10": "3.10",
     "3.11": "3.11",
+    "~3.12.0-0": "3.12",
     "pypy-3.7": "3.7",
     "pypy-3.8-v7.3.9": "3.8",
     "pypy-3.9": "3.9",
@@ -43,45 +45,25 @@ def test_filter_version_invalid_minor():
 
 VALID_VERSION_LISTS = {
     "3.7, 3.8, 3.9, 3.10, 3.11, pypy-3.7, pypy-3.8, pypy-3.9": [
-        "interpreter_count=8",
-        "interpreter_0=pypy-3.7",
-        "interpreter_1=pypy-3.8",
-        "interpreter_2=pypy-3.9",
-        "interpreter_3=3.7",
-        "interpreter_4=3.8",
-        "interpreter_5=3.9",
-        "interpreter_6=3.10",
-        "interpreter_7=3.11",
+        "pypy-3.7",
+        "pypy-3.8",
+        "pypy-3.9",
+        "3.7",
+        "3.8",
+        "3.9",
+        "3.10",
+        "3.11",
     ],
-    "": [
-        "interpreter_count=1",
-        "interpreter_0=3.11",
-    ],
-    "3.11.4": [
-        "interpreter_count=1",
-        "interpreter_0=3.11.4",
-    ],
-    "3.9-dev,pypy3.9-nightly": [
-        "interpreter_count=3",
-        "interpreter_0=pypy3.9-nightly",
-        "interpreter_1=3.9-dev",
-        "interpreter_2=3.11",
-    ],
-    "3.11, 3.10, 3.9, 3.8": [
-        "interpreter_count=4",
-        "interpreter_0=3.10",
-        "interpreter_1=3.9",
-        "interpreter_2=3.8",
-        "interpreter_3=3.11",
-    ],
-    ",".join(f"3.{minor}" for minor in range(20)): (
-        ["interpreter_count=20"]
-        + [
-            f"interpreter_{i}=3.{minor}"
-            for i, minor in enumerate(minor_ for minor_ in range(20) if minor_ != 11)
-        ]
-        + ["interpreter_19=3.11"]
-    ),
+    "": ["3.11"],
+    "~3.12.0-0": ["~3.12.0-0", "3.11"],
+    "3.11.4": ["3.11.4"],
+    "3.9-dev,pypy3.9-nightly": ["pypy3.9-nightly", "3.9-dev", "3.11"],
+    "3.11, 3.10, 3.9, 3.8": ["3.10", "3.9", "3.8", "3.11"],
+    ",".join(f"3.{minor}" for minor in range(20)): [
+        f"3.{minor}"
+        for i, minor in enumerate(minor_ for minor_ in range(20) if minor_ != 11)
+    ]
+    + ["3.11"],
 }
 
 
@@ -90,7 +72,8 @@ def test_setup_action(capsys, version_list):
     setup_action(version_list)
     captured = capsys.readouterr()
     lines = captured.out.splitlines()
-    assert lines == VALID_VERSION_LISTS[version_list]
+    ordered_versions = VALID_VERSION_LISTS[version_list]
+    assert lines == [f"interpreters={json.dumps(ordered_versions)}"]
 
 
 def test_setup_action_multiple_pypy():
@@ -112,8 +95,3 @@ def test_setup_action_multiple_cpython():
         ),
     ):
         setup_action("3.10, 3.10.4")
-
-
-def test_setup_action_too_many_interpreters():
-    with pytest.raises(ValueError, match=r"too many interpreters to install: 21 > 20"):
-        setup_action(",".join(f"3.{minor}" for minor in range(21)))

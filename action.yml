@@ -4,7 +4,7 @@ inputs:
   python-versions:
     description: "comma-separated list of python versions to install"
     required: false
-    default: "3.7, 3.8, 3.9, 3.10, 3.11, pypy-3.7, pypy-3.8, pypy-3.9"
+    default: "3.7, 3.8, 3.9, 3.10, 3.11, 3.12, pypy-3.7, pypy-3.8, pypy-3.9"
 branding:
   icon: package
   color: blue
@@ -15,7 +15,7 @@ runs:
     - uses: actions/setup-python@v4
       id: localpython
       with:
-        python-version: "3.7 - 3.11"
+        python-version: "3.7 - 3.12"
         update-environment: false
 
     - name: "Validate input"
@@ -25,86 +25,11 @@ runs:
       shell: bash
 
     - uses: actions/setup-python@v4
+      id: allpython
       with:
-        python-version: "${{ steps.helper.outputs.interpreter_0 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 0 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_1 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 1 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_2 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 2 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_3 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 3 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_4 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 4 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_5 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 5 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_6 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 6 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_7 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 7 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_8 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 8 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_9 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 9 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_10 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 10 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_11 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 11 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_12 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 12 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_13 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 13 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_14 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 14 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_15 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 15 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_16 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 16 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_17 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 17 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_18 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 18 }}
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "${{ steps.helper.outputs.interpreter_19 }}"
-      if: ${{ steps.helper.outputs.interpreter_count > 19 }}
+        python-version: "${{ join(fromJSON(steps.helper.outputs.interpreters), '\n') }}"
+        allow-prereleases: true
 
     - name: "Install nox"
-      run: pipx install --python "${{ steps.localpython.outputs.python-path }}" '${{ github.action_path }}'
+      run: pipx install --python "${{ steps.allpython.outputs.python-path }}" '${{ github.action_path }}'
       shell: bash

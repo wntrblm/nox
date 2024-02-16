@@ -15,7 +15,8 @@
 from __future__ import annotations
 
 import argparse
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable
+from typing import Any
 
 
 def execute(
@@ -48,7 +49,8 @@ def execute(
             args: list[Any] = []
             if return_value is not None:
                 args.append(return_value)
-            return_value = function_(*args, global_config=global_config)
+            kwargs: dict[str, Any] = {"global_config": global_config}
+            return_value = function_(*args, **kwargs)
 
             # If we got an integer value as a result, abort task processing
             # and return it.

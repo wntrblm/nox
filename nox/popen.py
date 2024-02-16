@@ -18,7 +18,8 @@ import contextlib
 import locale
 import subprocess
 import sys
-from typing import IO, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import IO
 
 
 def shutdown_process(

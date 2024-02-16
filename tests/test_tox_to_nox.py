@@ -20,7 +20,7 @@ import textwrap
 import pytest
 from tox import __version__ as TOX_VERSION
 
-from nox import tox_to_nox
+tox_to_nox = pytest.importorskip("nox.tox_to_nox")
 
 TOX4 = TOX_VERSION[0] == "4"
 PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -313,8 +313,7 @@ def test_non_identifier_in_envname(makeconfig, capfd):
     out, _ = capfd.readouterr()
 
     assert (
-        out
-        == "Environment 'test_with_&' is not a valid nox session name.\n"
+        out == "Environment 'test_with_&' is not a valid nox session name.\n"
         "Manually update the session name in noxfile.py before running nox.\n"
     )
 

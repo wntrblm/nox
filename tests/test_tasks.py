@@ -38,7 +38,7 @@ def session_func():
 
 session_func.python = None
 session_func.venv_backend = None
-session_func.should_warn = dict()
+session_func.should_warn = {}
 session_func.tags = []
 
 
@@ -105,6 +105,11 @@ def reset_needs_version():
         yield
     finally:
         nox.needs_version = None
+
+
+@pytest.fixture
+def reset_global_nox_options():
+    nox.options = _options.options.noxfile_namespace()
 
 
 def test_load_nox_module_needs_version_static(reset_needs_version, tmp_path):
@@ -315,6 +320,31 @@ def test_filter_manifest_tags_not_found(tags, caplog):
     assert "Tag selection caused no sessions to be selected." in caplog.text
 
 
+def test_merge_sessions_and_tags(reset_global_nox_options):
+    @nox.session(tags=["foobar"])
+    def test():
+        pass
+
+    @nox.session(tags=["foobar"])
+    def bar():
+        pass
+
+    config = _options.options.namespace(
+        noxfile=os.path.join(RESOURCES, "noxfile_options.py"),
+        sessions=None,
+        pythons=(),
+        posargs=[],
+        tags=["foobar"],
+    )
+
+    nox_module = tasks.load_nox_module(config)
+    tasks.merge_noxfile_options(nox_module, config)
+    manifest = Manifest({"test": test, "bar": bar}, config)
+    return_value = tasks.filter_manifest(manifest, config)
+    assert return_value is manifest
+    assert len(manifest) == 2
+
+
 def test_honor_list_request_noop():
     config = _options.options.namespace(list_sessions=False)
     manifest = {"thing": mock.sentinel.THING}
@@ -399,6 +429,64 @@ def test_honor_list_request_doesnt_print_docstring_if_not_present(capsys):
     out = capsys.readouterr().out
 
     assert "Hello I'm a docstring" not in out
+
+
+def test_honor_list_json_request(capsys):
+    config = _options.options.namespace(
+        list_sessions=True, noxfile="noxfile.py", json=True
+    )
+    manifest = mock.create_autospec(Manifest)
+    manifest.list_all_sessions.return_value = [
+        (
+            argparse.Namespace(
+                name="bar",
+                friendly_name="foo",
+                description="simple",
+                func=argparse.Namespace(python="123"),
+                tags=[],
+            ),
+            True,
+        ),
+        (
+            argparse.Namespace(),
+            False,
+        ),
+    ]
+    return_value = tasks.honor_list_request(manifest, global_config=config)
+    assert return_value == 0
+    assert json.loads(capsys.readouterr().out) == [
+        {
+            "session": "foo",
+            "name": "bar",
+            "description": "simple",
+            "python": "123",
+            "tags": [],
+            "call_spec": {},
+        }
+    ]
+
+
+def test_refuse_json_nolist_request(caplog):
+    config = _options.options.namespace(
+        list_sessions=False, noxfile="noxfile.py", json=True
+    )
+    manifest = mock.create_autospec(Manifest)
+    manifest.list_all_sessions.return_value = [
+        (
+            argparse.Namespace(
+                name="bar",
+                friendly_name="foo",
+                description="simple",
+                func=argparse.Namespace(python="123"),
+                tags=[],
+            ),
+            True,
+        )
+    ]
+    return_value = tasks.honor_list_request(manifest, global_config=config)
+    assert return_value == 3
+    (record,) = caplog.records
+    assert record.message == "Must specify --list-sessions with --json"
 
 
 def test_empty_session_list_in_noxfile(capsys):

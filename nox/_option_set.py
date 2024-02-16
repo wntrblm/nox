@@ -23,7 +23,8 @@ import collections
 import functools
 from argparse import ArgumentError as ArgumentError
 from argparse import ArgumentParser, Namespace
-from typing import Any, Callable
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import argcomplete
 
@@ -85,13 +86,11 @@ class Option:
         noxfile: bool = False,
         merge_func: Callable[[Namespace, Namespace], Any] | None = None,
         finalizer_func: Callable[[Any, Namespace], Any] | None = None,
-        default: bool
-        | str
-        | None
-        | list[str]
-        | Callable[[], bool | str | None | list[str]] = None,
+        default: (
+            bool | str | None | list[str] | Callable[[], bool | str | None | list[str]]
+        ) = None,
         hidden: bool = False,
-        completer: Callable[..., list[str]] | None = None,
+        completer: Callable[..., Sequence[str]] | None = None,
         **kwargs: Any,
     ) -> None:
         self.name = name
@@ -115,6 +114,7 @@ class Option:
 
 def flag_pair_merge_func(
     enable_name: str,
+    enable_default: bool | Callable[[], bool],
     disable_name: str,
     command_args: Namespace,
     noxfile_args: Namespace,
@@ -155,6 +155,10 @@ def flag_pair_merge_func(
     noxfile_value = getattr(noxfile_args, enable_name)
     command_value = getattr(command_args, enable_name)
     disable_value = getattr(command_args, disable_name)
+    default_value = enable_default() if callable(enable_default) else enable_default
+    if default_value and disable_value is None and noxfile_value != default_value:
+        # Makes sure make_flag_pair with default=true can be overridden via noxfile
+        disable_value = True
 
     return (command_value or noxfile_value) and not disable_value
 
@@ -163,7 +167,7 @@ def make_flag_pair(
     name: str,
     enable_flags: tuple[str, str] | tuple[str],
     disable_flags: tuple[str, str] | tuple[str],
-    default: bool = False,
+    default: bool | Callable[[], bool] = False,
     **kwargs: Any,
 ) -> tuple[Option, Option]:
     """Returns two options - one to enable a behavior and another to disable it.
@@ -178,7 +182,7 @@ def make_flag_pair(
         name,
         *enable_flags,
         noxfile=True,
-        merge_func=functools.partial(flag_pair_merge_func, name, disable_name),
+        merge_func=functools.partial(flag_pair_merge_func, name, default, disable_name),
         default=default,
         **kwargs,
     )
@@ -201,9 +205,9 @@ class OptionSet:
         self.parser_args = args
         self.parser_kwargs = kwargs
         self.options: collections.OrderedDict[str, Option] = collections.OrderedDict()
-        self.groups: collections.OrderedDict[str, OptionGroup] = (
-            collections.OrderedDict()
-        )
+        self.groups: collections.OrderedDict[
+            str, OptionGroup
+        ] = collections.OrderedDict()
 
     def add_options(self, *args: Option) -> None:
         """Adds a sequence of Options to the OptionSet.

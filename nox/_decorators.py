@@ -18,26 +18,31 @@ import copy
 import functools
 import inspect
 import types
-from typing import TYPE_CHECKING, Any, Callable, Iterable, TypeVar, cast
+from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
 
 from . import _typing
 
 if TYPE_CHECKING:
     from ._parametrize import Param
 
-
-class FunctionDecorator:
-    def __new__(
-        cls, func: Callable[..., Any], *args: Any, **kwargs: Any
-    ) -> FunctionDecorator:
-        obj = super().__new__(cls)
-        return functools.wraps(func)(obj)
-
-
 T = TypeVar("T", bound=Callable[..., Any])
 
 
+class FunctionDecorator:
+    """This is a function decorator."""
+
+    def __new__(
+        cls: Any, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> FunctionDecorator:
+        obj = super().__new__(cls)
+        functools.update_wrapper(obj, func)
+        return cast(FunctionDecorator, obj)
+
+
 def _copy_func(src: T, name: str | None = None) -> T:
+    """This function copies another function, optionally with a new name."""
+
     dst = types.FunctionType(
         src.__code__,
         src.__globals__,
@@ -52,6 +57,8 @@ def _copy_func(src: T, name: str | None = None) -> T:
 
 
 class Func(FunctionDecorator):
+    """This is a function decorator that adds additional Nox-specific metadata."""
+
     def __init__(
         self,
         func: Callable[..., Any],
@@ -60,21 +67,24 @@ class Func(FunctionDecorator):
         name: str | None = None,
         venv_backend: Any = None,
         venv_params: Any = None,
-        should_warn: dict[str, Any] | None = None,
-        tags: list[str] | None = None,
-    ):
+        should_warn: Mapping[str, Any] | None = None,
+        tags: Sequence[str] | None = None,
+    ) -> None:
         self.func = func
         self.python = python
         self.reuse_venv = reuse_venv
+        self.name = name
         self.venv_backend = venv_backend
         self.venv_params = venv_params
-        self.should_warn = should_warn or {}
-        self.tags = tags or []
+        self.should_warn = dict(should_warn or {})
+        self.tags = list(tags or [])
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
 
     def copy(self, name: str | None = None) -> Func:
+        """Copy this function with a new name."""
+
         return Func(
             _copy_func(self.func, name),
             self.python,
@@ -88,6 +98,8 @@ class Func(FunctionDecorator):
 
 
 class Call(Func):
+    """This represents a call of a function with a particular set of arguments."""
+
     def __init__(self, func: Func, param_spec: Param) -> None:
         call_spec = param_spec.call_spec
         session_signature = f"({param_spec})"
@@ -122,5 +134,9 @@ class Call(Func):
         return super().__call__(*args, **kwargs)
 
     @classmethod
-    def generate_calls(cls, func: Func, param_specs: Iterable[Param]) -> list[Call]:
+    def generate_calls(
+        cls: type[Call], func: Func, param_specs: Iterable[Param]
+    ) -> list[Call]:
+        """Generates a list of calls based on the function and parameters."""
+
         return [cls(func, param_spec) for param_spec in param_specs]

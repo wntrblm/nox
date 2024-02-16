@@ -36,7 +36,7 @@ if shutil.which("conda"):
     "python, tox_version",
     [
         (python, tox_version)
-        for python in ("3.7", "3.8", "3.9", "3.10", "3.11")
+        for python in ("3.7", "3.8", "3.9", "3.10", "3.11", "3.12")
         for tox_version in ("latest", "<4")
     ],
 )
@@ -137,10 +137,8 @@ def _check_python_version(session: nox.Session) -> None:
     session.run(
         "python",
         "-c",
-        (
-            "import sys; assert '.'.join(str(v) for v in sys.version_info[:2]) =="
-            f" '{python_version}'"
-        ),
+        "import sys; assert '.'.join(str(v) for v in sys.version_info[:2]) =="
+        f" '{python_version}'",
     )
     if python_version[:2] != "2.":
         session.run(
@@ -151,7 +149,17 @@ def _check_python_version(session: nox.Session) -> None:
 
 
 @nox.session(
-    python=["3.7", "3.8", "3.9", "3.10", "3.11", "pypy3.7", "pypy3.8", "pypy3.9"]
+    python=[
+        "3.7",
+        "3.8",
+        "3.9",
+        "3.10",
+        "3.11",
+        "3.12",
+        "pypy3.7",
+        "pypy3.8",
+        "pypy3.9",
+    ]
 )
 def github_actions_default_tests(session: nox.Session) -> None:
     """Check default versions installed by the nox GHA Action"""
@@ -162,16 +170,12 @@ def github_actions_default_tests(session: nox.Session) -> None:
 # The following sessions are only to be run in CI to check the nox GHA action
 @nox.session(
     python=[
-        "2.7",
-        "3.4",
-        "3.5",
-        "3.6",
         "3.7",
         "3.8",
         "3.9",
         "3.10",
         "3.11",
-        "pypy2.7",
+        "3.12",
         "pypy3.7",
         "pypy3.8",
         "pypy3.9",

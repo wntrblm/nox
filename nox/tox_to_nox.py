@@ -20,6 +20,7 @@ import argparse
 import os
 import pkgutil
 import re
+from collections.abc import Iterator
 from configparser import ConfigParser
 from pathlib import Path
 from subprocess import check_output
@@ -43,11 +44,13 @@ else:
     )
 
 
-def wrapjoin(seq: Iterable[Any]) -> str:
+def wrapjoin(seq: Iterator[Any]) -> str:
+    """Wrap each item in single quotes and join them with a comma."""
     return ", ".join([f"'{item}'" for item in seq])
 
 
 def fixname(envname: str) -> str:
+    """Replace dashes with underscores and check if the result is a valid identifier."""
     envname = envname.replace("-", "_").replace("testenv:", "")
     if not envname.isidentifier():
         print(
@@ -55,6 +58,12 @@ def fixname(envname: str) -> str:
             "Manually update the session name in noxfile.py before running nox."
         )
     return envname
+
+
+def write_output_to_file(output: str, filename: str) -> None:
+    """Write output to a file."""
+    with open(filename, "w") as outfile:
+        outfile.write(output)
 
 
 def main() -> None:
@@ -120,5 +129,4 @@ def main() -> None:
 
     output = _TEMPLATE.render(config=config, wrapjoin=wrapjoin, fixname=fixname)
 
-    with open(args.output, "w") as outfile:
-        outfile.write(output)
+    write_output_to_file(output, args.output)

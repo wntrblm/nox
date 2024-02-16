@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "nox"
-version = "2022.11.21"
+version = "2023.04.22"
 description = "Flexible test automation."
 readme = "README.md"
 keywords = [
@@ -30,17 +30,17 @@ classifiers = [
   "Operating System :: POSIX",
   "Operating System :: Unix",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Topic :: Software Development :: Testing",
 ]
 dependencies = [
-  "argcomplete<3.0,>=1.9.4",
+  "argcomplete<4.0,>=1.9.4",
   "colorlog<7.0.0,>=2.6.1",
   'importlib-metadata; python_version < "3.8"',
   "packaging>=20.9",
@@ -52,21 +52,20 @@ tox_to_nox = [
   "jinja2",
   "tox",
 ]
-
 [project.urls]
 bug-tracker = "https://github.com/wntrblm/nox/issues"
 documentation = "https://nox.thea.codes"
 homepage = "https://github.com/wntrblm/nox"
 repository = "https://github.com/wntrblm/nox"
-
 [project.scripts]
 nox = "nox.__main__:main"
 tox-to-nox = "nox.tox_to_nox:main"
 
-
 [tool.hatch]
 metadata.allow-ambiguous-features = true # disable normalization (tox-to-nox) for back-compat
 
+[tool.ruff]
+target-version = "py37"
 
 [tool.isort]
 profile = "black"
@@ -79,6 +78,24 @@ omit = [ "nox/_typing.py" ]
 [tool.coverage.report]
 exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
 
+[tool.ruff.lint]
+extend-select = [
+  "B",           # flake8-bugbear
+  "I",           # isort
+  "C4",          # flake8-comprehensions
+  "ICN",         # flake8-import-conventions
+  "ISC",         # flake8-implicit-str-concat
+  "PGH",         # pygrep-hooks
+  "PIE",         # flake8-pie
+  "RUF",         # Ruff-specific
+  "SIM",         # flake8-simplify
+  "UP",          # pyupgrade
+  "YTT",         # flake8-2020
+]
+ignore = [
+  "ISC001", # Conflicts with formatter
+]
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = [ "-ra", "--strict-markers", "--strict-config" ]
@@ -86,6 +103,13 @@ xfail_strict = true
 filterwarnings = [ "error" ]
 log_cli_level = "info"
 testpaths = [ "tests" ]
+
+[tool.coverage.run]
+branch = true
+omit = [ "nox/_typing.py" ]
+
+[tool.coverage.report]
+exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.mypy]
 files = [ "nox/**/*.py", "noxfile.py" ]

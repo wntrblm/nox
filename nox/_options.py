@@ -48,10 +48,8 @@ options.add_groups(
     _option_set.OptionGroup(
         "environment",
         "Environment options",
-        (
-            "These arguments are used to control Nox's creation and usage of virtual"
-            " environments."
-        ),
+        "These arguments are used to control Nox's creation and usage of virtual"
+        " environments.",
     ),
     _option_set.OptionGroup(
         "execution",
@@ -66,11 +64,11 @@ options.add_groups(
 )
 
 
-def _sessions_and_keywords_merge_func(
+def _sessions_merge_func(
     key: str, command_args: argparse.Namespace, noxfile_args: argparse.Namespace
 ) -> list[str]:
-    """Only return the Noxfile value for sessions/keywords if neither sessions
-    or keywords are specified on the command-line.
+    """Only return the Noxfile value for sessions/keywords if neither sessions,
+    keywords or tags are specified on the command-line.
 
     Args:
         key (str): This function is used for both the "sessions" and "keywords"
@@ -80,7 +78,11 @@ def _sessions_and_keywords_merge_func(
             command-line.
         noxfile_Args (_option_set.Namespace): The options specified in the
             Noxfile."""
-    if not command_args.sessions and not command_args.keywords:
+    if (
+        not command_args.sessions
+        and not command_args.keywords
+        and not command_args.tags
+    ):
         return getattr(noxfile_args, key)  # type: ignore[no-any-return]
     return getattr(command_args, key)  # type: ignore[no-any-return]
 
@@ -177,7 +179,7 @@ def _color_finalizer(value: bool, args: argparse.Namespace) -> bool:
     if args.forcecolor:
         return True
 
-    if args.nocolor:
+    if args.nocolor or "NO_COLOR" in os.environ:
         return False
 
     return sys.stdout.isatty()
@@ -229,6 +231,7 @@ def _session_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
 ) -> list[str]:
     global_config = parsed_args
+    global_config.list_sessions = True
     module = load_nox_module(global_config)
     manifest = discover_manifest(module, global_config)
     filtered_manifest = filter_manifest(manifest, global_config)
@@ -265,6 +268,13 @@ options.add_options(
         help="List all available sessions and exit.",
     ),
     _option_set.Option(
+        "json",
+        "--json",
+        group=options.groups["sessions"],
+        action="store_true",
+        help="JSON output formatting. Requires list-sessions currently.",
+    ),
+    _option_set.Option(
         "sessions",
         "-s",
         "-e",
@@ -272,7 +282,7 @@ options.add_options(
         "--session",
         group=options.groups["sessions"],
         noxfile=True,
-        merge_func=functools.partial(_sessions_and_keywords_merge_func, "sessions"),
+        merge_func=functools.partial(_sessions_merge_func, "sessions"),
         nargs="*",
         default=default_env_var_list_factory("NOXSESSION"),
         help="Which sessions to run. By default, all sessions will run.",
@@ -295,7 +305,7 @@ options.add_options(
         "--keywords",
         group=options.groups["sessions"],
         noxfile=True,
-        merge_func=functools.partial(_sessions_and_keywords_merge_func, "keywords"),
+        merge_func=functools.partial(_sessions_merge_func, "keywords"),
         help="Only run sessions that match the given expression.",
     ),
     _option_set.Option(
@@ -304,6 +314,7 @@ options.add_options(
         "--tags",
         group=options.groups["sessions"],
         noxfile=True,
+        merge_func=functools.partial(_sessions_merge_func, "tags"),
         nargs="*",
         help="Only run sessions with the given tags.",
     ),
@@ -381,7 +392,7 @@ options.add_options(
             "--no-reuse-existing-virtualenvs",
         ),
         group=options.groups["environment"],
-        help="Re-use existing virtualenvs instead of recreating them.",
+        help="Reuse existing virtualenvs instead of recreating them.",
     ),
     _option_set.Option(
         "R",
@@ -390,7 +401,7 @@ options.add_options(
         group=options.groups["environment"],
         action="store_true",
         help=(
-            "Re-use existing virtualenvs and skip package re-installation."
+            "Reuse existing virtualenvs and skip package re-installation."
             " This is an alias for '--reuse-existing-virtualenvs --no-install'."
         ),
         finalizer_func=_R_finalizer,
@@ -446,7 +457,7 @@ options.add_options(
         ("--no-error-on-missing-interpreters",),
         group=options.groups["execution"],
         help="Error instead of skipping sessions if an interpreter can not be located.",
-        default="CI" in os.environ,
+        default=lambda: "CI" in os.environ,
     ),
     *_option_set.make_flag_pair(
         "error_on_external_run",

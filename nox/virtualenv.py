@@ -21,8 +21,9 @@ import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Mapping
 from socket import gethostbyname
-from typing import Any, ClassVar, Mapping
+from typing import Any, ClassVar
 
 import nox
 import nox.command
@@ -69,7 +70,7 @@ class ProcessEnv:
 
         if self.bin_paths:
             self.env["PATH"] = os.pathsep.join(
-                self.bin_paths + [self.env.get("PATH", "")]
+                [*self.bin_paths, self.env.get("PATH", "")]
             )
 
     @property
@@ -264,10 +265,7 @@ class CondaEnv(ProcessEnv):
         # Ensure the pip package is installed.
         cmd.append("pip")
 
-        if self.interpreter:
-            python_dep = f"python={self.interpreter}"
-        else:
-            python_dep = "python"
+        python_dep = f"python={self.interpreter}" if self.interpreter else "python"
         cmd.append(python_dep)
 
         logger.info(f"Creating conda env in {self.location_name} with {python_dep}")
