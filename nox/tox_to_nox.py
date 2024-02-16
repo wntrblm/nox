@@ -24,7 +24,7 @@ from collections.abc import Iterator
 from configparser import ConfigParser
 from pathlib import Path
 from subprocess import check_output
-from typing import Any, Iterable
+from typing import Any
 
 import jinja2
 import tox.config
