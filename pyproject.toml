@@ -70,14 +70,6 @@ target-version = "py37"
 [tool.isort]
 profile = "black"
 
-[tool.coverage.run]
-branch = true
-relative_files = true
-omit = [ "nox/_typing.py" ]
-
-[tool.coverage.report]
-exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
-
 [tool.ruff.lint]
 extend-select = [
   "B",           # flake8-bugbear
@@ -106,6 +98,7 @@ testpaths = [ "tests" ]
 
 [tool.coverage.run]
 branch = true
+relative_files = true
 omit = [ "nox/_typing.py" ]
 
 [tool.coverage.report]
