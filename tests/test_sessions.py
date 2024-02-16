@@ -79,6 +79,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         runner.venv.env = {}
         runner.venv.bin_paths = ["/no/bin/for/you"]
+        runner.venv.venv_backend = "venv"
         return nox.sessions.Session(runner=runner), runner
 
     def test_create_tmp(self):
@@ -633,6 +634,7 @@ class TestSession:
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         runner.venv.env = {}
+        runner.venv.venv_backend = "venv"
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -662,6 +664,7 @@ class TestSession:
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         runner.venv.env = {}
+        runner.venv.venv_backend = "venv"
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -797,6 +800,35 @@ class TestSession:
             session.install("eggs", "spam")
 
         assert run.called is run_called
+
+    def test_install_uv(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=[]),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.env = {}
+        runner.venv.venv_backend = "uv"
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.install("requests", "urllib3", silent=False)
+            run.assert_called_once_with(
+                "uv",
+                "pip",
+                "install",
+                "requests",
+                "urllib3",
+                silent=False,
+                external="error",
+            )
 
     def test___slots__(self):
         session, _ = self.make_session_and_runner()

@@ -312,6 +312,7 @@ class VirtualEnv(ProcessEnv):
     """
 
     is_sandboxed = True
+    allowed_globals = ("uv",)
 
     def __init__(
         self,
@@ -319,7 +320,7 @@ class VirtualEnv(ProcessEnv):
         interpreter: str | None = None,
         reuse_existing: bool = False,
         *,
-        venv: bool = False,
+        venv_backend: str = "virtualenv",
         venv_params: Any = None,
     ):
         self.location_name = location
@@ -327,7 +328,7 @@ class VirtualEnv(ProcessEnv):
         self.interpreter = interpreter
         self._resolved: None | str | InterpreterNotFound = None
         self.reuse_existing = reuse_existing
-        self.venv_or_virtualenv = "venv" if venv else "virtualenv"
+        self.venv_backend = venv_backend
         self.venv_params = venv_params or []
         super().__init__(env={"VIRTUAL_ENV": self.location})
 
@@ -349,17 +350,21 @@ class VirtualEnv(ProcessEnv):
 
     def _check_reused_environment_type(self) -> bool:
         """Check if reused environment type is the same."""
-        path = os.path.join(self.location, "pyvenv.cfg")
-        if not os.path.isfile(path):
+        try:
+            with open(os.path.join(self.location, "pyvenv.cfg")) as fp:
+                parts = (x.partition("=") for x in fp if "=" in x)
+                config = {k.strip(): v.strip() for k, _, v in parts}
+            if "uv" in config or "gourgeist" in config:
+                old_env = "uv"
+            elif "virtualenv" in config:
+                old_env = "virtualenv"
+            else:
+                old_env = "venv"
+        except FileNotFoundError:  # pragma: no cover
             # virtualenv < 20.0 does not create pyvenv.cfg
             old_env = "virtualenv"
-        else:
-            pattern = re.compile("virtualenv[ \t]*=")
-            with open(path) as fp:
-                old_env = (
-                    "virtualenv" if any(pattern.match(line) for line in fp) else "venv"
-                )
-        return old_env == self.venv_or_virtualenv
+
+        return old_env == self.venv_backend
 
     def _check_reused_environment_interpreter(self) -> bool:
         """Check if reused environment interpreter is the same."""
@@ -474,10 +479,18 @@ class VirtualEnv(ProcessEnv):
 
             return False
 
-        if self.venv_or_virtualenv == "virtualenv":
+        if self.venv_backend == "virtualenv":
             cmd = [sys.executable, "-m", "virtualenv", self.location]
             if self.interpreter:
                 cmd.extend(["-p", self._resolved_interpreter])
+        elif self.venv_backend == "uv":
+            cmd = [
+                "uv",
+                "venv",
+                "-p",
+                self._resolved_interpreter if self.interpreter else sys.executable,
+                self.location,
+            ]
         else:
             cmd = [self._resolved_interpreter, "-m", "venv", self.location]
         cmd.extend(self.venv_params)
@@ -485,7 +498,7 @@ class VirtualEnv(ProcessEnv):
         resolved_interpreter_name = os.path.basename(self._resolved_interpreter)
 
         logger.info(
-            f"Creating virtual environment ({self.venv_or_virtualenv}) using"
+            f"Creating virtual environment ({self.venv_backend}) using"
             f" {resolved_interpreter_name} in {self.location_name}"
         )
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)

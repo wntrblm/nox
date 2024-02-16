@@ -126,17 +126,35 @@ Then running ``nox --session tests`` will actually run all parametrized versions
 Changing the sessions default backend
 -------------------------------------
 
-By default Nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``conda``, ``mamba``, and ``venv`` as well as no backend (passthrough to whatever python environment Nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'virtualenv', 'conda', 'mamba', 'venv')``.
+By default Nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``uv``, ``conda``, ``mamba``, and ``venv`` as well as no backend (passthrough to whatever python environment Nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'uv', 'virtualenv', 'conda', 'mamba', 'venv')``.
 
 .. code-block:: console
 
     nox -db conda
     nox --default-venv-backend conda
 
+.. note::
+
+   The ``uv``, ``conda``, and ``mamba`` backends require their respective
+   programs be pre-installed. ``uv`` is distributed as a Python package
+   and can be installed with the ``nox[uv]`` extra.
 
 You can also set this option in the Noxfile with ``nox.options.default_venv_backend``. In case both are provided, the commandline argument takes precedence.
 
 Note that using this option does not change the backend for sessions where ``venv_backend`` is explicitly set.
+
+.. warning::
+
+   The ``uv`` backend does not install anything by default, including ``pip``,
+   as ``uv pip`` is used to install programs instead. If you need to manually
+   interact with pip, you should install it with ``session.install("pip")``.
+
+.. warning::
+
+   Currently the ``uv`` backend requires the ``<program name> @ .`` syntax to
+   install a local folder in non-editable mode; it does not (yet) compute the
+   name from the install process like pip does if the name is omitted. Editable
+   installs do not require a name.
 
 
 .. _opt-force-venv-backend:
@@ -144,7 +162,7 @@ Note that using this option does not change the backend for sessions where ``ven
 Forcing the sessions backend
 ----------------------------
 
-You might work in a different environment than a project's default continuous integration settings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current Nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and Noxfile configuration. Supported names are ``('none', 'virtualenv', 'conda', 'venv')``.
+You might work in a different environment than a project's default continuous integration settings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current Nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and Noxfile configuration. Supported names are ``('none', 'uv', 'virtualenv', 'conda', 'mamba', 'venv')``.
 
 .. code-block:: console
 
