@@ -64,12 +64,6 @@ tox-to-nox = "nox.tox_to_nox:main"
 [tool.hatch]
 metadata.allow-ambiguous-features = true # disable normalization (tox-to-nox) for back-compat
 
-[tool.ruff]
-target-version = "py37"
-
-[tool.isort]
-profile = "black"
-
 [tool.ruff.lint]
 extend-select = [
   "B",           # flake8-bugbear
@@ -87,6 +81,12 @@ extend-select = [
 ignore = [
   "ISC001", # Conflicts with formatter
 ]
+
+[tool.ruff]
+target-version = "py37"
+
+[tool.isort]
+profile = "black"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
