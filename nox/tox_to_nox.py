@@ -20,11 +20,10 @@ import argparse
 import os
 import pkgutil
 import re
-from collections.abc import Iterator
 from configparser import ConfigParser
 from pathlib import Path
 from subprocess import check_output
-from typing import Any
+from typing import Any, Iterable
 
 import jinja2
 import tox.config
@@ -44,7 +43,7 @@ else:
     )
 
 
-def wrapjoin(seq: Iterator[Any]) -> str:
+def wrapjoin(seq: Iterable[Any]) -> str:
     """Wrap each item in single quotes and join them with a comma."""
     return ", ".join([f"'{item}'" for item in seq])
 
