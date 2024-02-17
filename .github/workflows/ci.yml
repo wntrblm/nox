@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    # allow manual runs on branches without a PR
 
 env:
   FORCE_COLOR: "1"
