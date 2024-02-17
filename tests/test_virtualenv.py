@@ -31,6 +31,7 @@ import nox.virtualenv
 
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 HAS_CONDA = shutil.which("conda") is not None
+HAS_UV = shutil.which("uv") is not None
 RAISE_ERROR = "RAISE_ERROR"
 VIRTUALENV_VERSION = virtualenv.__version__
 
@@ -240,6 +241,17 @@ def test_condaenv_detection(make_conda):
     assert path_regex.search(output).group("env_dir") == dir_.strpath
 
 
+@pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
+def test_uv_creation(make_one):
+    venv, _ = make_one(venv_backend="uv")
+    assert venv.location
+    assert venv.interpreter is None
+    assert venv.reuse_existing is False
+    assert venv.venv_or_virtualenv == "uv"
+
+    venv.create()
+
+
 def test_constructor_defaults(make_one):
     venv, _ = make_one()
     assert venv.location
@@ -417,7 +429,7 @@ def test_create_reuse_stale_venv_environment(make_one):
 
 @enable_staleness_check
 def test_create_reuse_stale_virtualenv_environment(make_one):
-    venv, location = make_one(reuse_existing=True, venv=True)
+    venv, location = make_one(reuse_existing=True, venv_backend="venv")
     venv.create()
 
     # Drop a virtualenv-style pyvenv.cfg into the environment.
@@ -442,7 +454,7 @@ def test_create_reuse_stale_virtualenv_environment(make_one):
 
 @enable_staleness_check
 def test_create_reuse_venv_environment(make_one):
-    venv, location = make_one(reuse_existing=True, venv=True)
+    venv, location = make_one(reuse_existing=True, venv_backend="venv")
     venv.create()
 
     # Place a spurious occurrence of "virtualenv" in the pyvenv.cfg.
@@ -516,7 +528,7 @@ def test_create_reuse_python2_environment(make_one):
 
 
 def test_create_venv_backend(make_one):
-    venv, dir_ = make_one(venv=True)
+    venv, dir_ = make_one(venv_backend="venv")
     venv.create()
 
 

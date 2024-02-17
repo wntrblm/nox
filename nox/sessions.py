@@ -632,7 +632,12 @@ class Session:
         if "silent" not in kwargs:
             kwargs["silent"] = True
 
-        self._run("python", "-m", "pip", "install", *args, external="error", **kwargs)
+        if isinstance(venv, VirtualEnv) and venv.venv_or_virtualenv == "uv":
+            self._run("uv", "pip", "install", *args, external=True, **kwargs)
+        else:
+            self._run(
+                "python", "-m", "pip", "install", *args, external="error", **kwargs
+            )
 
     def notify(
         self,
@@ -748,11 +753,12 @@ class SessionRunner:
             self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
         )
 
-        if backend is None or backend == "virtualenv":
+        if backend is None or backend in ("virtualenv", "venv", "uv"):
             self.venv = VirtualEnv(
                 self.envdir,
                 interpreter=self.func.python,  # type: ignore[arg-type]
                 reuse_existing=reuse_existing,
+                venv_backend=backend,
                 venv_params=self.func.venv_params,
             )
         elif backend in {"conda", "mamba"}:
@@ -762,14 +768,6 @@ class SessionRunner:
                 reuse_existing=reuse_existing,
                 venv_params=self.func.venv_params,
                 conda_cmd=backend,
-            )
-        elif backend == "venv":
-            self.venv = VirtualEnv(
-                self.envdir,
-                interpreter=self.func.python,  # type: ignore[arg-type]
-                reuse_existing=reuse_existing,
-                venv=True,
-                venv_params=self.func.venv_params,
             )
         else:
             raise ValueError(

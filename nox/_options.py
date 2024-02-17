@@ -356,7 +356,7 @@ options.add_options(
             " ``'virtualenv'`` by default but any of ``('virtualenv', 'conda', 'mamba',"
             " 'venv')`` are accepted."
         ),
-        choices=["none", "virtualenv", "conda", "mamba", "venv"],
+        choices=["none", "virtualenv", "conda", "mamba", "venv", "uv"],
     ),
     _option_set.Option(
         "force_venv_backend",
@@ -371,7 +371,7 @@ options.add_options(
             " the default backend. Any of ``('virtualenv', 'conda', 'mamba', 'venv')``"
             " are accepted."
         ),
-        choices=["none", "virtualenv", "conda", "mamba", "venv"],
+        choices=["none", "virtualenv", "conda", "mamba", "venv", "uv"],
     ),
     _option_set.Option(
         "no_venv",

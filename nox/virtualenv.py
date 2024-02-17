@@ -319,7 +319,7 @@ class VirtualEnv(ProcessEnv):
         interpreter: str | None = None,
         reuse_existing: bool = False,
         *,
-        venv: bool = False,
+        venv_backend: str = "virtualenv",
         venv_params: Any = None,
     ):
         self.location_name = location
@@ -327,7 +327,7 @@ class VirtualEnv(ProcessEnv):
         self.interpreter = interpreter
         self._resolved: None | str | InterpreterNotFound = None
         self.reuse_existing = reuse_existing
-        self.venv_or_virtualenv = "venv" if venv else "virtualenv"
+        self.venv_or_virtualenv = venv_backend
         self.venv_params = venv_params or []
         super().__init__(env={"VIRTUAL_ENV": self.location})
 
@@ -359,7 +359,11 @@ class VirtualEnv(ProcessEnv):
                 old_env = (
                     "virtualenv" if any(pattern.match(line) for line in fp) else "venv"
                 )
-        return old_env == self.venv_or_virtualenv
+        # We can't distinguish a uv env from a venv env, so just treat them
+        # the same.
+        return old_env == self.venv_or_virtualenv or (
+            old_env == "venv" and self.venv_or_virtualenv == "uv"
+        )
 
     def _check_reused_environment_interpreter(self) -> bool:
         """Check if reused environment interpreter is the same."""
@@ -476,6 +480,10 @@ class VirtualEnv(ProcessEnv):
 
         if self.venv_or_virtualenv == "virtualenv":
             cmd = [sys.executable, "-m", "virtualenv", self.location]
+            if self.interpreter:
+                cmd.extend(["-p", self._resolved_interpreter])
+        elif self.venv_or_virtualenv == "uv":
+            cmd = ["uv", "venv", self.location]
             if self.interpreter:
                 cmd.extend(["-p", self._resolved_interpreter])
         else:
