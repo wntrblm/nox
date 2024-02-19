@@ -143,20 +143,20 @@ If your project is a Python package and you want to install it:
 
 In some cases such as Python binary extensions, your package may depend on
 code compiled outside of the Python ecosystem. To make sure a low-level
-dependency (e.g. ``libfoo``) is available during installation
+dependency (e.g. ``libfoo``) is available during installation:
 
 .. code-block:: python
 
     @nox.session
     def tests(session):
         ...
-        session.run_always(
+        session.run_install(
             "cmake", "-DCMAKE_BUILD_TYPE=Debug",
             "-S", libfoo_src_dir,
             "-B", build_dir,
             external=True,
         )
-        session.run_always(
+        session.run_install(
             "cmake",
             "--build", build_dir,
             "--config", "Debug",
@@ -165,6 +165,9 @@ dependency (e.g. ``libfoo``) is available during installation
         )
         session.install(".")
         ...
+
+These commands will run even if you are only installing, and will not run if
+the environment is being reused without reinstallation.
 
 Running commands
 ----------------

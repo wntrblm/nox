@@ -484,7 +484,7 @@ options.add_options(
         action="store_true",
         help=(
             "Skip invocations of session methods for installing packages"
-            " (session.install, session.conda_install, session.run_always)"
+            " (session.install, session.conda_install, session.run_install)"
             " when a virtualenv is being reused."
         ),
     ),

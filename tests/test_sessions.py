@@ -358,25 +358,25 @@ class TestSession:
         with pytest.raises(nox.command.CommandFailed, match="External"):
             session.run(sys.executable, "--version")
 
-    def test_run_always_bad_args(self):
+    def test_run_install_bad_args(self):
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError) as exc_info:
-            session.run_always()
+            session.run_install()
 
         exc_args = exc_info.value.args
-        assert exc_args == ("At least one argument required to run_always().",)
+        assert exc_args == ("At least one argument required to run_install().",)
 
-    def test_run_always_success(self):
+    def test_run_install_success(self):
         session, _ = self.make_session_and_runner()
 
-        assert session.run_always(operator.add, 1300, 37) == 1337
+        assert session.run_install(operator.add, 1300, 37) == 1337
 
-    def test_run_always_install_only(self, caplog):
+    def test_run_install_install_only(self, caplog):
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
 
-        assert session.run_always(operator.add, 23, 19) == 42
+        assert session.run_install(operator.add, 23, 19) == 42
 
     @pytest.mark.parametrize(
         (
@@ -437,13 +437,17 @@ class TestSession:
             (False, False, True),
         ],
     )
-    def test_run_always_no_install(self, no_install, reused, run_called):
+    @pytest.mark.parametrize("run_install_func", ["run_always", "run_install"])
+    def test_run_install_no_install(
+        self, no_install, reused, run_called, run_install_func
+    ):
         session, runner = self.make_session_and_runner()
         runner.global_config.no_install = no_install
         runner.venv._reused = reused
 
         with mock.patch.object(nox.command, "run") as run:
-            session.run_always("python", "-m", "pip", "install", "requests")
+            run_install = getattr(session, run_install_func)
+            run_install("python", "-m", "pip", "install", "requests")
 
         assert run.called is run_called
 
