@@ -50,7 +50,7 @@ dependencies = [
 [project.optional-dependencies]
 tox_to_nox = [
   "jinja2",
-  "tox<4",
+  "tox",
 ]
 [project.urls]
 bug-tracker = "https://github.com/wntrblm/nox/issues"
@@ -63,9 +63,6 @@ tox-to-nox = "nox.tox_to_nox:main"
 
 [tool.hatch]
 metadata.allow-ambiguous-features = true # disable normalization (tox-to-nox) for back-compat
-
-[tool.ruff]
-target-version = "py37"
 
 [tool.ruff.lint]
 extend-select = [
@@ -85,6 +82,12 @@ ignore = [
   "ISC001", # Conflicts with formatter
 ]
 
+[tool.ruff]
+target-version = "py37"
+
+[tool.isort]
+profile = "black"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = [ "-ra", "--strict-markers", "--strict-config" ]
@@ -95,6 +98,7 @@ testpaths = [ "tests" ]
 
 [tool.coverage.run]
 branch = true
+relative_files = true
 omit = [ "nox/_typing.py" ]
 
 [tool.coverage.report]

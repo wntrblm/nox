@@ -20,6 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-20.04, windows-latest, macos-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        tox-version: ["latest", "<4"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -37,7 +38,33 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }}
-        run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
+        run: nox --non-interactive --error-on-missing-interpreter --session "tests(python='${{ matrix.python-version }}', tox_version='${{ matrix.tox-version }}')" -- --full-trace
+      - name: Save coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage
+          path: .coverage.*
+
+  coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install Nox-under-test
+        run: |
+          python -m pip install --disable-pip-version-check .
+      - name: Download individual coverage reports
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage
+      - name: Display structure of downloaded files
+        run: ls -aR
+      - name: Run coverage
+        run: nox --non-interactive --session "cover"
 
   lint:
     runs-on: ubuntu-latest
