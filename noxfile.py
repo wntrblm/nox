@@ -33,6 +33,9 @@ if shutil.which("conda"):
     nox.options.sessions.append("conda_tests")
 
 
+# Because there is a dependency conflict between argcomplete and the latest tox
+# (both depend on a different version of importlibmetadata for Py 3.7) pip
+# installs tox 3 as the latest one for Py 3.7.
 @nox.session
 @nox.parametrize(
     "python, tox_version",
@@ -40,16 +43,11 @@ if shutil.which("conda"):
         (python, tox_version)
         for python in ("3.7", "3.8", "3.9", "3.10", "3.11", "3.12")
         for tox_version in ("latest", "<4")
+        if (python, tox_version) != ("3.7", "latest")
     ],
 )
 def tests(session: nox.Session, tox_version: str) -> None:
     """Run test suite with pytest."""
-    # Because there is a dependency conflict between
-    # argcomplete and the latest tox (both depend on
-    # a different version of importlibmetadata for Py 3.7)
-    # pip installs tox 3 as the latest one for Py 3.7.
-    if session.python == "3.7" and tox_version == "latest":
-        return
 
     coverage_file = (
         f".coverage.{sys.platform}.{session.python}.tox{tox_version.lstrip('<')}"
