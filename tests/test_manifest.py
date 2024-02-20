@@ -49,6 +49,7 @@ def create_mock_config():
     cfg.force_venv_backend = None
     cfg.default_venv_backend = None
     cfg.extra_pythons = None
+    cfg.force_pythons = None
     cfg.posargs = []
     return cfg
 
@@ -274,6 +275,41 @@ def test_add_session_multiple_pythons():
 def test_extra_pythons(python, extra_pythons, expected):
     cfg = create_mock_config()
     cfg.extra_pythons = extra_pythons
+
+    manifest = Manifest({}, cfg)
+
+    def session_func():
+        pass
+
+    func = Func(session_func, python=python)
+    for session in manifest.make_session("my_session", func):
+        manifest.add_session(session)
+
+    assert expected == [session.func.python for session in manifest._all_sessions]
+
+
+@pytest.mark.parametrize(
+    "python,force_pythons,expected",
+    [
+        (None, [], [None]),
+        (None, ["3.8"], ["3.8"]),
+        (None, ["3.8", "3.9"], ["3.8", "3.9"]),
+        (False, [], [False]),
+        (False, ["3.8"], ["3.8"]),
+        (False, ["3.8", "3.9"], ["3.8", "3.9"]),
+        ("3.5", [], ["3.5"]),
+        ("3.5", ["3.8"], ["3.5", "3.8"]),
+        ("3.5", ["3.8", "3.9"], ["3.5", "3.8", "3.9"]),
+        (["3.5", "3.9"], [], ["3.5", "3.9"]),
+        (["3.5", "3.9"], ["3.8"], ["3.5", "3.9", "3.8"]),
+        (["3.5", "3.9"], ["3.8", "3.4"], ["3.5", "3.9", "3.8", "3.4"]),
+        (["3.5", "3.9"], ["3.5", "3.9"], ["3.5", "3.9"]),
+    ],
+)
+def test_force_pythons(python, force_pythons, expected):
+    cfg = create_mock_config()
+    cfg.force_pythons = force_pythons
+    cfg.extra_pythons = force_pythons
 
     manifest = Manifest({}, cfg)
 

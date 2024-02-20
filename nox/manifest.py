@@ -230,6 +230,10 @@ class Manifest:
                 # Otherwise, add the extra specified python.
                 assert isinstance(func.python, str)
                 func.python = _unique_list(func.python, *extra_pythons)
+            elif not func.python and self._config.force_pythons:
+                # If a python is forced by the user, but the underlying function
+                # has no version parametrised, add it as sole occupant to func.python
+                func.python = _unique_list(*extra_pythons)
 
         # If the func has the python attribute set to a list, we'll need
         # to expand them.
