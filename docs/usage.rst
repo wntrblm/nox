@@ -186,7 +186,7 @@ The ``--no-install`` option causes the following session methods to return early
 
 - :func:`session.install <nox.sessions.Session.install>`
 - :func:`session.conda_install <nox.sessions.Session.conda_install>`
-- :func:`session.run_always <nox.sessions.Session.run_always>`
+- :func:`session.run_install <nox.sessions.Session.run_install>`
 
 This option has no effect if the virtualenv is not being reused.
 

@@ -390,18 +390,20 @@ class Session:
             **kwargs,
         )
 
-    def run_always(
+    def run_install(
         self,
         *args: str | os.PathLike[str],
         env: Mapping[str, str] | None = None,
         include_outer_env: bool = True,
         **kwargs: Any,
     ) -> Any | None:
-        """Run a command **always**.
+        """Run a command in the install step.
 
         This is a variant of :meth:`run` that runs even in the presence of
         ``--install-only``. This method returns early if ``--no-install`` is
-        specified and the virtualenv is being reused.
+        specified and the virtualenv is being reused. (In nox 2023.04.22 and
+        earlier, this was called ``run_always``, and that continues to be
+        available as an alias.)
 
         Here are some cases where this method is useful:
 
@@ -447,13 +449,29 @@ class Session:
             return None
 
         if not args:
-            raise ValueError("At least one argument required to run_always().")
+            raise ValueError("At least one argument required to run_install().")
 
         return self._run(
             *args,
             env=env,
             include_outer_env=include_outer_env,
             **kwargs,
+        )
+
+    def run_always(
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str] | None = None,
+        include_outer_env: bool = True,
+        **kwargs: Any,
+    ) -> Any | None:
+        """This is an alias to ``run_install``, which better describes the use case.
+
+        :meta private:
+        """
+
+        return self.run_install(
+            *args, env=env, include_outer_env=include_outer_env, **kwargs
         )
 
     def _run(
