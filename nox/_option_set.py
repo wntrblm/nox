@@ -23,7 +23,7 @@ import collections
 import functools
 from argparse import ArgumentError as ArgumentError
 from argparse import ArgumentParser, Namespace
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable
 from typing import Any
 
 import argcomplete
@@ -90,7 +90,7 @@ class Option:
             bool | str | None | list[str] | Callable[[], bool | str | None | list[str]]
         ) = None,
         hidden: bool = False,
-        completer: Callable[..., Sequence[str]] | None = None,
+        completer: Callable[..., Iterable[str]] | None = None,
         **kwargs: Any,
     ) -> None:
         self.name = name

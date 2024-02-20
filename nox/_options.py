@@ -16,9 +16,13 @@ from __future__ import annotations
 
 import argparse
 import functools
+import itertools
 import os
 import sys
+from collections.abc import Iterable
 from typing import Any, Callable, Sequence
+
+import argcomplete
 
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
@@ -227,19 +231,42 @@ def _posargs_finalizer(
     return posargs[dash_index + 1 :]
 
 
+def _python_completer(
+    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
+) -> Iterable[str]:
+    module = load_nox_module(parsed_args)
+    manifest = discover_manifest(module, parsed_args)
+    return filter(
+        None,
+        (
+            session.func.python  # type:ignore[misc] # str sequences flattened, other non-strs falsey and filtered out
+            for session, _ in manifest.list_all_sessions()
+        ),
+    )
+
+
 def _session_completer(
     prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
-) -> list[str]:
-    global_config = parsed_args
-    global_config.list_sessions = True
-    module = load_nox_module(global_config)
-    manifest = discover_manifest(module, global_config)
-    filtered_manifest = filter_manifest(manifest, global_config)
+) -> Iterable[str]:
+    parsed_args.list_sessions = True
+    module = load_nox_module(parsed_args)
+    manifest = discover_manifest(module, parsed_args)
+    filtered_manifest = filter_manifest(manifest, parsed_args)
     if isinstance(filtered_manifest, int):
         return []
-    return [
+    return (
         session.friendly_name for session, _ in filtered_manifest.list_all_sessions()
-    ]
+    )
+
+
+def _tag_completer(
+    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
+) -> Iterable[str]:
+    module = load_nox_module(parsed_args)
+    manifest = discover_manifest(module, parsed_args)
+    return itertools.chain.from_iterable(
+        filter(None, (session.tags for session, _ in manifest.list_all_sessions()))
+    )
 
 
 options.add_options(
@@ -298,6 +325,7 @@ options.add_options(
         nargs="*",
         default=default_env_var_list_factory("NOXPYTHON"),
         help="Only run sessions that use the given python interpreter versions.",
+        completer=_python_completer,
     ),
     _option_set.Option(
         "keywords",
@@ -307,6 +335,7 @@ options.add_options(
         noxfile=True,
         merge_func=functools.partial(_sessions_merge_func, "keywords"),
         help="Only run sessions that match the given expression.",
+        completer=argcomplete.completers.ChoicesCompleter(()),
     ),
     _option_set.Option(
         "tags",
@@ -317,6 +346,7 @@ options.add_options(
         merge_func=functools.partial(_sessions_merge_func, "tags"),
         nargs="*",
         help="Only run sessions with the given tags.",
+        completer=_tag_completer,
     ),
     _option_set.Option(
         "posargs",
@@ -421,6 +451,7 @@ options.add_options(
         merge_func=_envdir_merge_func,
         group=options.groups["environment"],
         help="Directory where Nox will store virtualenvs, this is ``.nox`` by default.",
+        completer=argcomplete.completers.DirectoriesCompleter(),
     ),
     _option_set.Option(
         "extra_pythons",
@@ -430,6 +461,7 @@ options.add_options(
         nargs="*",
         default=default_env_var_list_factory("NOXEXTRAPYTHON"),
         help="Additionally, run sessions using the given python interpreter versions.",
+        completer=_python_completer,
     ),
     _option_set.Option(
         "force_pythons",
@@ -445,6 +477,7 @@ options.add_options(
             " It will also work on sessions that don't have any interpreter parametrized."
         ),
         finalizer_func=_force_pythons_finalizer,
+        completer=_python_completer,
     ),
     *_option_set.make_flag_pair(
         "stop_on_first_error",
@@ -496,6 +529,7 @@ options.add_options(
         group=options.groups["reporting"],
         noxfile=True,
         help="Output a report of all sessions to the given filename.",
+        completer=argcomplete.completers.FilesCompleter(("json",)),
     ),
     _option_set.Option(
         "non_interactive",
