@@ -9,6 +9,8 @@ on:
       - ".github/workflows/action.yml"
       - ".github/action_helper.py"
       - "action.yml"
+  workflow_dispatch:
+    # allow manual runs on branches without a PR
 env:
   FORCE_COLOR: "1"
 jobs:
