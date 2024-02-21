@@ -380,6 +380,7 @@ options.add_options(
         "--default-venv-backend",
         group=options.groups["environment"],
         noxfile=True,
+        default=lambda: os.environ.get("NOX_DEFAULT_VENV_BACKEND"),
         merge_func=_default_venv_backend_merge_func,
         help=(
             "Virtual environment backend to use by default for Nox sessions, this is"

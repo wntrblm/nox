@@ -256,8 +256,33 @@ def test_main_list_option_from_nox_env_var(monkeypatch, var, option, env, values
         config = execute.call_args[1]["global_config"]
         config_values = getattr(config, option)
         assert len(config_values) == len(values)
-        for value in values:
-            assert value in config_values
+        assert all(value in config_values for value in values)
+
+
+@pytest.mark.parametrize(
+    "options,env,expected",
+    [
+        (["--default-venv-backend", "conda"], "", "conda"),
+        ([], "mamba", "mamba"),
+        (["--default-venv-backend", "conda"], "mamba", "conda"),
+    ],
+    ids=["option", "env", "option_over_env"],
+)
+def test_default_venv_backend_option(monkeypatch, options, env, expected):
+    monkeypatch.setenv("NOX_DEFAULT_VENV_BACKEND", env)
+    monkeypatch.setattr(sys, "argv", [sys.executable, *options])
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+
+        # Call the main function.
+        with mock.patch.object(sys, "exit") as exit:
+            nox.__main__.main()
+            exit.assert_called_once_with(0)
+        assert execute.called
+
+        # Verify that the default venv backend is set in the config.
+        config = execute.call_args[1]["global_config"]
+        assert config.default_venv_backend == expected
 
 
 def test_main_positional_args(capsys, monkeypatch):
