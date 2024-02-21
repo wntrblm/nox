@@ -20,7 +20,7 @@
 
 ## Overview
 
-`nox` is a command-line tool that automates testing in multiple Python environments, similar to [tox]. Unlike tox, Nox uses a standard Python file for configuration:
+`nox` is a command-line tool that automates testing in multiple Python environments, similar to [tox][]. Unlike tox, Nox uses a standard Python file for configuration:
 
 ```python
 import nox
@@ -41,19 +41,19 @@ def lint(session: nox.Session) -> None:
 
 Nox is designed to be installed globally (not in a project virtual environment), the recommended way of doing this is via [pipx], a tool designed to install python CLI programs whilst keeping them separate from your global or system python.
 
-To install Nox with [pipx]:
+To install Nox with [pipx][]:
 
 ```shell
 pipx install nox
 ```
 
-You can also use [pip] in your global python:
+You can also use [pip][] in your global python:
 
 ```shell
 python3 -m pip install nox
 ```
 
-You may want to user the [user-site] to avoid messing with your Global python install:
+You may want to user the [user-site][] to avoid messing with your Global python install:
 
 ```shell
 python3 -m pip install --user nox
