@@ -61,6 +61,24 @@ def test__normalize_path_give_up():
     assert "any-path" in norm_path
 
 
+def simple_custom_backend(
+    location,
+    interpreter,
+    reuse_existing,
+    venv_params,
+    runner,
+):
+    venv = nox.virtualenv.VirtualEnv(
+        location=location,
+        interpreter=interpreter,
+        reuse_existing=reuse_existing,
+        venv_params=venv_params.get("venv_params"),
+    )
+
+    venv.create()
+    return venv
+
+
 class TestSession:
     def make_session_and_runner(self):
         func = mock.Mock(spec=["python"], python="3.7")
@@ -909,6 +927,12 @@ class TestSessionRunner:
             ),
             ("nox.virtualenv.VirtualEnv.create", "venv", nox.virtualenv.VirtualEnv),
             ("nox.virtualenv.CondaEnv.create", "conda", nox.virtualenv.CondaEnv),
+            # callable
+            (
+                "nox.virtualenv.VirtualEnv.create",
+                simple_custom_backend,
+                nox.virtualenv.VirtualEnv,
+            ),
         ],
     )
     def test__create_venv_options(self, create_method, venv_backend, expected_backend):
@@ -931,6 +955,68 @@ class TestSessionRunner:
 
         with pytest.raises(ValueError, match="venv_backend"):
             runner._create_venv()
+
+    def test__create_venv_bad_callable(self):
+        def bad_backend(
+            location,
+            interpreter,
+            reuse_existing,
+            venv_params,
+            runner,
+        ):
+            return "hello"
+
+        runner = self.make_runner()
+        runner.func.venv_backend = bad_backend
+
+        with pytest.raises(ValueError, match="Callable venv_backend"):
+            runner._create_venv()
+
+    @mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True)
+    def test__create_venv_callable_venv_backend(self, create):
+        def custom_backend(
+            location,
+            interpreter,
+            reuse_existing,
+            venv_params,
+            runner,
+        ):
+            """
+            Override location of virtualenv
+
+            To set the location, pass `venv_params = {"location": path/to/.venv, "venv_params": ...}`
+            where `venv_params[venv_params]` will be passed to `VirtualEnv` creation.
+            """
+
+            if not isinstance(venv_params, dict) or "location" not in venv_params:
+                raise ValueError("must supply `venv_backend = {'location': path, ...}")
+
+            location = venv_params["location"]
+            assert isinstance(location, str)
+
+            venv = nox.virtualenv.VirtualEnv(
+                location=location,
+                interpreter=interpreter,
+                reuse_existing=reuse_existing,
+                venv_params=venv_params.get("venv_params"),
+            )
+
+            venv.create()
+            return venv
+
+        runner = self.make_runner()
+        runner.func.venv_backend = custom_backend
+        runner.func.venv_params = {"location": ".venv"}
+
+        # even with global config, you'll still use callable
+        runner.global_config.force_venv_backend = "virtualenv"
+        runner._create_venv()
+
+        create.assert_called_once_with(runner.venv)
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
+        assert runner.venv.location.endswith(".venv")
+        assert runner.venv.interpreter is None
+        assert runner.venv.reuse_existing is False
 
     def make_runner_with_mock_venv(self):
         runner = self.make_runner()

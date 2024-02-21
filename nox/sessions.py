@@ -752,6 +752,30 @@ class SessionRunner:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def _create_venv(self) -> None:
+        reuse_existing = (
+            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
+        )
+
+        if callable(self.func.venv_backend):
+            # if passed a callable backend, always use just that
+            if self.global_config.force_venv_backend:
+                logger.info("Cannot override callable venv_backend")
+            logger.info("Using callable venv_backend")
+
+            self.venv = self.func.venv_backend(
+                location=self.envdir,
+                interpreter=self.func.python,
+                reuse_existing=reuse_existing,
+                venv_params=self.func.venv_params,
+                runner=self,
+            )
+            if not isinstance(self.venv, ProcessEnv):
+                raise ValueError(
+                    "Callable venv_backend must return an instance of a ProcessEnv "
+                    "such as VirtualEnv or CondaEnv."
+                )
+            return
+
         backend = (
             self.global_config.force_venv_backend
             or self.func.venv_backend
@@ -761,10 +785,6 @@ class SessionRunner:
         if backend == "none" or self.func.python is False:
             self.venv = PassthroughEnv()
             return
-
-        reuse_existing = (
-            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
-        )
 
         if backend is None or backend == "virtualenv":
             self.venv = VirtualEnv(
@@ -789,6 +809,7 @@ class SessionRunner:
                 venv=True,
                 venv_params=self.func.venv_params,
             )
+
         else:
             raise ValueError(
                 "Expected venv_backend one of ('virtualenv', 'conda', 'mamba',"
