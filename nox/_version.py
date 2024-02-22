@@ -21,9 +21,9 @@ import sys
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
 
-if sys.version_info >= (3, 8):  # pragma: no cover
+if sys.version_info >= (3, 8):
     import importlib.metadata as metadata
-else:  # pragma: no cover
+else:
     import importlib_metadata as metadata
 
 

@@ -82,14 +82,10 @@ class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore[misc
     def success(self, msg: str, *args: Any, **kwargs: Any) -> None:
         if self.isEnabledFor(SUCCESS):
             self._log(SUCCESS, msg, args, **kwargs)
-        else:  # pragma: no cover
-            pass
 
     def output(self, msg: str, *args: Any, **kwargs: Any) -> None:
         if self.isEnabledFor(OUTPUT):
             self._log(OUTPUT, msg, args, **kwargs)
-        else:  # pragma: no cover
-            pass
 
 
 logging.setLoggerClass(LoggerWithSuccessAndOutput)
