@@ -100,14 +100,13 @@ testpaths = [ "tests" ]
 branch = true
 relative_files = true
 omit = [ "nox/_typing.py" ]
+source = ["nox"]
 
 [tool.coverage.report]
 exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.coverage.paths]
-source = [
-    'D:\a\nox\nox',  # Occasional error on GHA, shouldn't have happened with relative paths
-]
+source = ["nox", "*/site-packages"]
 
 [tool.mypy]
 files = [ "nox/**/*.py", "noxfile.py" ]
