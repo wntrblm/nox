@@ -85,7 +85,9 @@ def cover(session: nox.Session) -> None:
 
     session.install("coverage[toml]")
     session.run("coverage", "combine", "--debug=pathmap")
-    session.run("coverage", "report", "--fail-under=100", "--show-missing", "--debug=pathmap")
+    session.run(
+        "coverage", "report", "--fail-under=100", "--show-missing", "--debug=pathmap"
+    )
     session.run("coverage", "erase")
 
 
