@@ -64,7 +64,7 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -aR
       - name: Run coverage
-        run: nox --non-interactive --session "cover" -- --debug=pathmap
+        run: nox --non-interactive --session "cover"
 
   lint:
     runs-on: ubuntu-latest

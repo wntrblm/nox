@@ -51,7 +51,7 @@ def tests(session: nox.Session, tox_version: str) -> None:
 
     session.create_tmp()  # Fixes permission errors on Windows
     session.install("-r", "requirements-test.txt")
-    session.install("-e.[tox_to_nox]")
+    session.install(".[tox_to_nox]")
     if tox_version != "latest":
         session.install(f"tox{tox_version}")
     session.run(
@@ -59,6 +59,7 @@ def tests(session: nox.Session, tox_version: str) -> None:
         "--cov",
         "--cov-config",
         "pyproject.toml",
+        "--cov-report=",
         *session.posargs,
         env={
             "COVERAGE_FILE": f".coverage.{sys.platform}.{session.python}.tox{tox_version.lstrip('<')}",
@@ -84,10 +85,8 @@ def cover(session: nox.Session) -> None:
         return
 
     session.install("coverage[toml]>=5.3")
-    session.run("coverage", "combine", "--debug=pathmap")
-    session.run(
-        "coverage", "report", "--fail-under=100", "--show-missing", "--debug=pathmap"
-    )
+    session.run("coverage", "combine")
+    session.run("coverage", "report", "--fail-under=100", "--show-missing")
     session.run("coverage", "erase")
 
 
