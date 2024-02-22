@@ -104,6 +104,11 @@ omit = [ "nox/_typing.py" ]
 [tool.coverage.report]
 exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
 
+[tool.coverage.paths]
+source = [
+    'D:\a\nox\nox',  # Occasional error on GHA, shouldn't have happened with relative paths
+]
+
 [tool.mypy]
 files = [ "nox/**/*.py", "noxfile.py" ]
 python_version = "3.7"
