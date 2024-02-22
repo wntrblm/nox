@@ -51,7 +51,7 @@ def tests(session: nox.Session, tox_version: str) -> None:
 
     session.create_tmp()  # Fixes permission errors on Windows
     session.install("-r", "requirements-test.txt")
-    session.install(".[tox_to_nox]")
+    session.install("-e.[tox_to_nox]")
     if tox_version != "latest":
         session.install(f"tox{tox_version}")
     session.run(
