@@ -35,6 +35,9 @@ HAS_UV = shutil.which("uv") is not None
 RAISE_ERROR = "RAISE_ERROR"
 VIRTUALENV_VERSION = virtualenv.__version__
 
+has_uv = pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
+has_conda = pytest.mark.skipif(not HAS_UV, reason="Missing conda command.")
+
 
 class TextProcessResult(NamedTuple):
     stdout: str
@@ -43,9 +46,16 @@ class TextProcessResult(NamedTuple):
 
 @pytest.fixture
 def make_one(tmpdir):
-    def factory(*args, **kwargs):
+    def factory(*args, venv_backend: str = "virtualenv", **kwargs):
         location = tmpdir.join("venv")
-        venv = nox.virtualenv.VirtualEnv(location.strpath, *args, **kwargs)
+        if venv_backend in {"mamba", "conda"}:
+            venv = nox.virtualenv.CondaEnv(
+                location.strpath, *args, conda_cmd=venv_backend, **kwargs
+            )
+        else:
+            venv = nox.virtualenv.VirtualEnv(
+                location.strpath, *args, venv_backend=venv_backend, **kwargs
+            )
         return (venv, location)
 
     return factory
@@ -119,6 +129,11 @@ def test_process_env_create():
         penv.create()
 
 
+def test_invalid_venv_create(make_one):
+    with pytest.raises(ValueError):
+        make_one(venv_backend="invalid")
+
+
 def test_condaenv_constructor_defaults(make_conda):
     venv, _ = make_conda()
     assert venv.location
@@ -133,7 +148,7 @@ def test_condaenv_constructor_explicit(make_conda):
     assert venv.reuse_existing is True
 
 
-@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+@has_conda
 def test_condaenv_create(make_conda):
     venv, dir_ = make_conda()
     venv.create()
@@ -162,7 +177,7 @@ def test_condaenv_create(make_conda):
     assert venv._reused
 
 
-@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+@has_conda
 def test_condaenv_create_with_params(make_conda):
     venv, dir_ = make_conda(venv_params=["--verbose"])
     venv.create()
@@ -174,7 +189,7 @@ def test_condaenv_create_with_params(make_conda):
         assert dir_.join("bin", "pip").check()
 
 
-@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+@has_conda
 def test_condaenv_create_interpreter(make_conda):
     venv, dir_ = make_conda(interpreter="3.7")
     venv.create()
@@ -188,7 +203,7 @@ def test_condaenv_create_interpreter(make_conda):
         assert dir_.join("bin", "python3.7").check()
 
 
-@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+@has_conda
 def test_conda_env_create_verbose(make_conda):
     venv, dir_ = make_conda()
     with mock.patch("nox.virtualenv.nox.command.run") as mock_run:
@@ -218,13 +233,13 @@ def test_condaenv_bin_windows(make_conda):
     ] == venv.bin_paths
 
 
-@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+@has_conda
 def test_condaenv_(make_conda):
     venv, dir_ = make_conda()
     assert not venv.is_offline()
 
 
-@pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+@has_conda
 def test_condaenv_detection(make_conda):
     venv, dir_ = make_conda()
     venv.create()
@@ -241,7 +256,7 @@ def test_condaenv_detection(make_conda):
     assert path_regex.search(output).group("env_dir") == dir_.strpath
 
 
-@pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
+@has_uv
 def test_uv_creation(make_one):
     venv, _ = make_one(venv_backend="uv")
     assert venv.location
@@ -399,7 +414,7 @@ def test_create_reuse_environment_with_different_interpreter(make_one, monkeypat
     assert not location.join("marker").check()
 
 
-@pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
+@has_uv
 def test_create_reuse_stale_venv_environment(make_one):
     venv, location = make_one(reuse_existing=True)
     venv.create()
@@ -420,7 +435,73 @@ def test_create_reuse_stale_venv_environment(make_one):
     assert not reused
 
 
-@pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
+def test_stale_venv_to_conda_environment(make_one):
+    venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
+    venv.create()
+
+    venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
+    reused = venv.create()
+
+    # The environment is not reused because it is now venv style
+    # environment.
+    assert not reused
+
+
+@has_conda
+def test_stale_conda_to_venv_environment(make_one):
+    venv, location = make_one(reuse_existing=True, venv_backend="conda")
+    venv.create()
+
+    venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
+    reused = venv._check_reused_environment_type()
+
+    # The environment is not reused because it is now conda style
+    # environment.
+    assert not reused
+
+
+def test_stale_virtualenv_to_conda_environment(make_one):
+    venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
+    venv.create()
+
+    venv, location = make_one(reuse_existing=True, venv_backend="conda")
+    reused = not venv.create()
+
+    # The environment is not reused because it is now conda style
+    # environment.
+    assert not reused
+
+
+def test_reuse_conda_environment(make_one):
+    venv, location = make_one(reuse_existing=True, venv_backend="conda")
+    venv.create()
+
+    venv, location = make_one(reuse_existing=True, venv_backend="conda")
+    reused = not venv.create()
+
+    assert reused
+
+
+@pytest.mark.parametrize(
+    ("frm", "to", "result"),
+    [
+        ("virtualenv", "venv", True),
+        ("venv", "virtualenv", True),
+        ("virtualenv", "uv", True),
+        pytest.param("uv", "virtualenv", False, marks=has_uv),
+    ],
+)
+def test_stale_environment(make_one, frm, to, result):
+    venv, location = make_one(reuse_existing=True, venv_backend=frm)
+    venv.create()
+
+    venv.venv_backend = to
+    reused = venv._check_reused_environment_type()
+
+    assert reused == result
+
+
+@has_uv
 def test_create_reuse_stale_virtualenv_environment(make_one):
     venv, location = make_one(reuse_existing=True, venv_backend="venv")
     venv.create()
@@ -445,7 +526,7 @@ def test_create_reuse_stale_virtualenv_environment(make_one):
     assert not reused
 
 
-@pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
+@has_uv
 def test_create_reuse_uv_environment(make_one):
     venv, location = make_one(reuse_existing=True, venv_backend="uv")
     venv.create()

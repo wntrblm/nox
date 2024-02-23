@@ -213,9 +213,12 @@ class CondaEnv(ProcessEnv):
 
     def _clean_location(self) -> bool:
         """Deletes existing conda environment"""
+        is_conda = os.path.isdir(os.path.join(self.location, "conda-meta"))
         if os.path.exists(self.location):
-            if self.reuse_existing:
+            if self.reuse_existing and is_conda:
                 return False
+            if not is_conda:
+                shutil.rmtree(self.location)
             else:
                 cmd = [
                     self.conda_cmd,
@@ -226,9 +229,9 @@ class CondaEnv(ProcessEnv):
                     "--all",
                 ]
                 nox.command.run(cmd, silent=True, log=False)
-                # Make sure that location is clean
-                with contextlib.suppress(FileNotFoundError):
-                    shutil.rmtree(self.location)
+            # Make sure that location is clean
+            with contextlib.suppress(FileNotFoundError):
+                shutil.rmtree(self.location)
 
         return True
 
@@ -329,6 +332,9 @@ class VirtualEnv(ProcessEnv):
         self.reuse_existing = reuse_existing
         self.venv_backend = venv_backend
         self.venv_params = venv_params or []
+        if venv_backend not in {"virtualenv", "venv", "uv"}:
+            msg = f"venv_backend {venv_backend} not recognized"
+            raise ValueError(msg)
         super().__init__(env={"VIRTUAL_ENV": self.location})
 
     def _clean_location(self) -> bool:
@@ -359,15 +365,12 @@ class VirtualEnv(ProcessEnv):
             # virtualenv < 20.0 does not create pyvenv.cfg
             old_env = "virtualenv"
 
+        # Can't detect mamba separately, but shouldn't matter
         if os.path.isdir(os.path.join(self.location, "conda-meta")):
-            old_env = "conda"  # Can't detect mamba, but shouldn't matter
+            return False
 
         # Matching is always true
         if old_env == self.venv_backend:
-            return True
-
-        # conda family
-        if {old_env, self.venv_backend} <= {"conda", "mamba"}:
             return True
 
         # venv family with pip installed
