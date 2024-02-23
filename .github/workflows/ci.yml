@@ -38,8 +38,8 @@ jobs:
           python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }} (tox <4)
         run: nox --non-interactive --error-on-missing-interpreter --session "tests(python='${{ matrix.python-version }}', tox_version='<4')" -- --full-trace
-      - name: Run tests on ${{ matrix.os }} (tox latest)
-        run: nox --non-interactive --error-on-missing-interpreter --session "tests(python='${{ matrix.python-version }}', tox_version='latest')" -- --full-trace
+      - name: Run tox-to-nox tests on ${{ matrix.os }} (tox latest)
+        run: nox --non-interactive --error-on-missing-interpreter --session "tests(python='${{ matrix.python-version }}', tox_version='latest')" -- tests/test_tox_to_nox.py --full-trace
         if: matrix.python-version != '3.7'
       - name: Save coverage report
         uses: actions/upload-artifact@v4
