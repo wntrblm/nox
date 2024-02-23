@@ -28,9 +28,9 @@ import nox._options
 import nox.registry
 import nox.sessions
 
-try:
+if sys.version_info >= (3, 8):
     from importlib import metadata
-except ImportError:
+else:
     import importlib_metadata as metadata
 
 
