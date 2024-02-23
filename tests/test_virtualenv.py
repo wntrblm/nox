@@ -24,16 +24,20 @@ from typing import NamedTuple
 from unittest import mock
 
 import pytest
-import virtualenv
 from packaging import version
 
 import nox.virtualenv
+
+if sys.version_info < (3, 8):
+    import importlib_metadata as metadata
+else:
+    from importlib import metadata
 
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 HAS_CONDA = shutil.which("conda") is not None
 HAS_UV = shutil.which("uv") is not None
 RAISE_ERROR = "RAISE_ERROR"
-VIRTUALENV_VERSION = virtualenv.__version__
+VIRTUALENV_VERSION = metadata.version("virtualenv")
 
 
 class TextProcessResult(NamedTuple):
