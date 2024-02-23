@@ -15,10 +15,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import os
 import platform
 import shutil
+import sqlite3
 import sys
 
 import nox
@@ -65,8 +67,15 @@ def tests(session: nox.Session, tox_version: str) -> None:
         "pyproject.toml",
         "--cov-report=",
         *session.posargs,
-        env={"COVERAGE_FILE": coverage_file},
+        env={
+            "COVERAGE_FILE": coverage_file,
+        },
     )
+
+    if sys.platform.startswith("win"):
+        with contextlib.closing(sqlite3.connect(coverage_file)) as con, con:
+            con.execute("UPDATE file SET path = REPLACE(path, '\\', '/')")
+            con.execute("DELETE FROM file WHERE SUBSTR(path, 2, 1) == ':'")
 
 
 @nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend="conda")
