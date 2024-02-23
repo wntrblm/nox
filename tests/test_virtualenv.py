@@ -383,15 +383,6 @@ def test_create_reuse_environment(make_one):
     assert reused
 
 
-@pytest.fixture
-def _enable_staleness_check(monkeypatch):
-    monkeypatch.setattr("nox.virtualenv._ENABLE_STALENESS_CHECK", True)
-
-
-enable_staleness_check = pytest.mark.usefixtures("_enable_staleness_check")
-
-
-@enable_staleness_check
 def test_create_reuse_environment_with_different_interpreter(make_one, monkeypatch):
     venv, location = make_one(reuse_existing=True)
     venv.create()
@@ -408,37 +399,38 @@ def test_create_reuse_environment_with_different_interpreter(make_one, monkeypat
     assert not location.join("marker").check()
 
 
-@enable_staleness_check
+@pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
 def test_create_reuse_stale_venv_environment(make_one):
     venv, location = make_one(reuse_existing=True)
     venv.create()
 
-    # Drop a venv-style pyvenv.cfg into the environment.
+    # Drop a uv-style pyvenv.cfg into the environment.
     pyvenv_cfg = """\
     home = /usr/bin
     include-system-site-packages = false
     version = 3.9.6
+    uv = 0.1.9
     """
     location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
 
     reused = not venv.create()
 
-    # The environment is not reused because it does not look like a
-    # virtualenv-style environment.
+    # The environment is not reused because it is a uv-style
+    # environment.
     assert not reused
 
 
-@enable_staleness_check
+@pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
 def test_create_reuse_stale_virtualenv_environment(make_one):
     venv, location = make_one(reuse_existing=True, venv_backend="venv")
     venv.create()
 
-    # Drop a virtualenv-style pyvenv.cfg into the environment.
+    # Drop a uv-style pyvenv.cfg into the environment.
     pyvenv_cfg = """\
     home = /usr
     implementation = CPython
     version_info = 3.9.6.final.0
-    virtualenv = 20.4.6
+    uv = 0.1.9
     include-system-site-packages = false
     base-prefix = /usr
     base-exec-prefix = /usr
@@ -453,7 +445,21 @@ def test_create_reuse_stale_virtualenv_environment(make_one):
     assert not reused
 
 
-@enable_staleness_check
+@pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
+def test_create_reuse_uv_environment(make_one):
+    venv, location = make_one(reuse_existing=True, venv_backend="uv")
+    venv.create()
+
+    # Place a spurious occurrence of "uv" in the pyvenv.cfg.
+    pyvenv_cfg = location.join("pyvenv.cfg")
+    pyvenv_cfg.write(pyvenv_cfg.read() + "bogus = uv\n")
+
+    reused = not venv.create()
+
+    # The environment is reused because it looks like a uv environment
+    assert reused
+
+
 def test_create_reuse_venv_environment(make_one):
     venv, location = make_one(reuse_existing=True, venv_backend="venv")
     venv.create()
@@ -468,8 +474,6 @@ def test_create_reuse_venv_environment(make_one):
     assert reused
 
 
-@enable_staleness_check
-@pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
 def test_create_reuse_oldstyle_virtualenv_environment(make_one):
     venv, location = make_one(reuse_existing=True)
     venv.create()
@@ -487,8 +491,6 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
     assert reused
 
 
-@enable_staleness_check
-@pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
 def test_inner_functions_reusing_venv(make_one):
     venv, location = make_one(reuse_existing=True)
     venv.create()
@@ -510,7 +512,6 @@ def test_inner_functions_reusing_venv(make_one):
     assert not reused_interpreter
 
 
-@enable_staleness_check
 @pytest.mark.skipif(
     version.parse(VIRTUALENV_VERSION) >= version.parse("20.22.0"),
     reason="Python 2.7 unsupported for virtualenv>=20.22.0",

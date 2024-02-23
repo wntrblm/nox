@@ -35,7 +35,6 @@ _BLACKLISTED_ENV_VARS = frozenset(
     ["PIP_RESPECT_VIRTUALENV", "PIP_REQUIRE_VIRTUALENV", "__PYVENV_LAUNCHER__"]
 )
 _SYSTEM = platform.system()
-_ENABLE_STALENESS_CHECK = "NOX_ENABLE_STALENESS_CHECK" in os.environ
 
 
 class InterpreterNotFound(OSError):
@@ -335,21 +334,17 @@ class VirtualEnv(ProcessEnv):
     def _clean_location(self) -> bool:
         """Deletes any existing virtual environment"""
         if os.path.exists(self.location):
-            if self.reuse_existing and not _ENABLE_STALENESS_CHECK:
-                return False
             if (
                 self.reuse_existing
                 and self._check_reused_environment_type()
                 and self._check_reused_environment_interpreter()
             ):
                 return False
-            else:
-                shutil.rmtree(self.location)
-
+            shutil.rmtree(self.location)
         return True
 
     def _check_reused_environment_type(self) -> bool:
-        """Check if reused environment type is the same."""
+        """Check if reused environment type is the same or equivalent."""
         try:
             with open(os.path.join(self.location, "pyvenv.cfg")) as fp:
                 parts = (x.partition("=") for x in fp if "=" in x)
@@ -364,7 +359,26 @@ class VirtualEnv(ProcessEnv):
             # virtualenv < 20.0 does not create pyvenv.cfg
             old_env = "virtualenv"
 
-        return old_env == self.venv_backend
+        if os.path.isdir(os.path.join(self.location, "conda-meta")):
+            old_env = "conda"  # Can't detect mamba, but shouldn't matter
+
+        # Matching is always true
+        if old_env == self.venv_backend:
+            return True
+
+        # conda family
+        if {old_env, self.venv_backend} <= {"conda", "mamba"}:
+            return True
+
+        # venv family with pip installed
+        if {old_env, self.venv_backend} <= {"virtualenv", "venv"}:
+            return True
+
+        # Switching to "uv" is safe, but not the other direction (no pip)
+        if old_env in {"virtualenv", "venv"} and self.venv_backend == "uv":
+            return True
+
+        return False
 
     def _check_reused_environment_interpreter(self) -> bool:
         """Check if reused environment interpreter is the same."""
@@ -384,7 +398,11 @@ class VirtualEnv(ProcessEnv):
             ["python", "-c", program], silent=True, log=False, paths=self.bin_paths
         )
 
-        return original == created
+        return (
+            os.path.exists(original)
+            and os.path.exists(created)
+            and os.path.samefile(original, created)
+        )
 
     def _read_base_prefix_from_pyvenv_cfg(self) -> str | None:
         """Return the base-prefix entry from pyvenv.cfg, if present."""
