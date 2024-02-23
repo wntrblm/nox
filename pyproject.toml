@@ -52,6 +52,9 @@ tox_to_nox = [
   "jinja2",
   "tox",
 ]
+uv = [
+  "uv",
+]
 [project.urls]
 bug-tracker = "https://github.com/wntrblm/nox/issues"
 documentation = "https://nox.thea.codes"

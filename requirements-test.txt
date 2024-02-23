@@ -6,4 +6,5 @@ pytest-cov
 sphinx>=3.0
 sphinx-autobuild
 sphinx-tabs
+uv; python_version>='3.8'
 witchhazel

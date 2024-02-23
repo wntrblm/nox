@@ -383,10 +383,10 @@ options.add_options(
         merge_func=_default_venv_backend_merge_func,
         help=(
             "Virtual environment backend to use by default for Nox sessions, this is"
-            " ``'virtualenv'`` by default but any of ``('virtualenv', 'conda', 'mamba',"
-            " 'venv')`` are accepted."
+            " ``'virtualenv'`` by default but any of ``('uv, 'virtualenv',"
+            " 'conda', 'mamba', 'venv')`` are accepted."
         ),
-        choices=["none", "virtualenv", "conda", "mamba", "venv"],
+        choices=["none", "virtualenv", "conda", "mamba", "venv", "uv"],
     ),
     _option_set.Option(
         "force_venv_backend",
@@ -398,10 +398,10 @@ options.add_options(
         help=(
             "Virtual environment backend to force-use for all Nox sessions in this run,"
             " overriding any other venv backend declared in the Noxfile and ignoring"
-            " the default backend. Any of ``('virtualenv', 'conda', 'mamba', 'venv')``"
-            " are accepted."
+            " the default backend. Any of ``('uv', 'virtualenv', 'conda', 'mamba',"
+            " 'venv')`` are accepted."
         ),
-        choices=["none", "virtualenv", "conda", "mamba", "venv"],
+        choices=["none", "virtualenv", "conda", "mamba", "venv", "uv"],
     ),
     _option_set.Option(
         "no_venv",
