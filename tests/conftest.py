@@ -27,6 +27,7 @@ def reset_color_envvars(monkeypatch):
     monkeypatch.delenv("FORCE_COLOR", raising=False)
     monkeypatch.delenv("NO_COLOR", raising=False)
 
+
 RESOURCES = Path(__file__).parent.joinpath("resources")
 
 

@@ -188,7 +188,7 @@ By default, Nox deletes and recreates virtualenvs every time it is run. This is
 usually fine for most projects and continuous integration environments as
 `pip's caching <https://pip.pypa.io/en/stable/cli/pip_install/#caching>`_ makes
 re-install rather quick.  However, there are some situations where it is
-advantageous to re-use the virtualenvs between runs.  Use ``-r`` or
+advantageous to reuse the virtualenvs between runs.  Use ``-r`` or
 ``--reuse-existing-virtualenvs`` or for fine-grained control use
 ``--reuse-venv=yes|no|always|never``:
 
