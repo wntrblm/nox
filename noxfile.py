@@ -15,10 +15,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import os
 import platform
 import shutil
+import sqlite3
 import sys
 
 import nox
@@ -49,9 +51,13 @@ def tests(session: nox.Session, tox_version: str) -> None:
     if session.python == "3.7" and tox_version == "latest":
         return
 
+    coverage_file = (
+        f".coverage.{sys.platform}.{session.python}.tox{tox_version.lstrip('<')}"
+    )
+
     session.create_tmp()  # Fixes permission errors on Windows
     session.install("-r", "requirements-test.txt")
-    session.install(".[tox_to_nox]")
+    session.install("-e.[tox_to_nox]")
     if tox_version != "latest":
         session.install(f"tox{tox_version}")
     session.run(
@@ -62,9 +68,14 @@ def tests(session: nox.Session, tox_version: str) -> None:
         "--cov-report=",
         *session.posargs,
         env={
-            "COVERAGE_FILE": f".coverage.{sys.platform}.{session.python}.tox{tox_version.lstrip('<')}",
+            "COVERAGE_FILE": coverage_file,
         },
     )
+
+    if sys.platform.startswith("win"):
+        with contextlib.closing(sqlite3.connect(coverage_file)) as con, con:
+            con.execute("UPDATE file SET path = REPLACE(path, '\\', '/')")
+            con.execute("DELETE FROM file WHERE SUBSTR(path, 2, 1) == ':'")
 
 
 @nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend="conda")

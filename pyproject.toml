@@ -99,17 +99,11 @@ testpaths = [ "tests" ]
 [tool.coverage.run]
 branch = true
 omit = [ "nox/_typing.py" ]
+relative_files = true
 source_pkgs = [ "nox" ]
 
 [tool.coverage.report]
 exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
-
-[tool.coverage.paths]
-source = [
-   "nox",
-   "*.nox/*/lib*/python*/site-packages/nox",
-   "*.nox\\*\\Lib\\site-packages\\nox",
-]
 
 [tool.mypy]
 files = [ "nox/**/*.py", "noxfile.py" ]
