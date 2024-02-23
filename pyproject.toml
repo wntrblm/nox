@@ -98,8 +98,9 @@ testpaths = [ "tests" ]
 
 [tool.coverage.run]
 branch = true
-relative_files = true
 omit = [ "nox/_typing.py" ]
+relative_files = true
+source_pkgs = [ "nox" ]
 
 [tool.coverage.report]
 exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]

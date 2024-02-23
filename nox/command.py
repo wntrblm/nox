@@ -24,9 +24,9 @@ from typing import Any
 from nox.logger import logger
 from nox.popen import popen
 
-if sys.version_info < (3, 8):  # pragma: no cover
+if sys.version_info < (3, 8):
     from typing_extensions import Literal
-else:  # pragma: no cover
+else:
     from typing import Literal
 
 ExternalType = Literal["error", True, False]
@@ -62,7 +62,7 @@ def _clean_env(env: Mapping[str, str] | None = None) -> dict[str, str] | None:
     clean_env: dict[str, str] = {}
 
     # Ensure systemroot is passed down, otherwise Windows will explode.
-    if sys.platform == "win32":  # pragma: no cover
+    if sys.platform == "win32":
         clean_env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
 
     clean_env.update(env)
