@@ -98,7 +98,7 @@ testpaths = [ "tests" ]
 
 [tool.coverage.run]
 branch = true
-omit = [ "nox/_typing.py" ]
+omit = [ "nox/_typing.py", "?:*/**" ]
 relative_files = true
 source_pkgs = [ "nox" ]
 
