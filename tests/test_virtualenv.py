@@ -474,6 +474,7 @@ def test_create_reuse_venv_environment(make_one):
     assert reused
 
 
+@pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
 def test_create_reuse_oldstyle_virtualenv_environment(make_one):
     venv, location = make_one(reuse_existing=True)
     venv.create()
@@ -491,6 +492,7 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
     assert reused
 
 
+@pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
 def test_inner_functions_reusing_venv(make_one):
     venv, location = make_one(reuse_existing=True)
     venv.create()
