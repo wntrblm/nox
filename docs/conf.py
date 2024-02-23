@@ -17,7 +17,7 @@ import os
 import sys
 
 try:
-    import importlib.metadata as metadata
+    from importlib import metadata
 except ImportError:
     import importlib_metadata as metadata
 
