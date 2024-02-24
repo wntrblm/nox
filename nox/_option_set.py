@@ -21,7 +21,7 @@ from __future__ import annotations
 import argparse
 import collections
 import functools
-from argparse import ArgumentError as ArgumentError
+from argparse import ArgumentError as ArgumentError  # noqa: PLC0414
 from argparse import ArgumentParser, Namespace
 from collections.abc import Callable, Iterable
 from typing import Any

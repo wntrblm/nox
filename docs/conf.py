@@ -16,9 +16,9 @@ from __future__ import annotations
 import os
 import sys
 
-try:
-    import importlib.metadata as metadata
-except ImportError:
+if sys.version_info >= (3, 8):
+    from importlib import metadata
+else:
     import importlib_metadata as metadata
 
 # If extensions (or modules to document with autodoc) are in another directory,

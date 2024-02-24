@@ -168,7 +168,7 @@ def update_param_specs(
     combined_specs = []
     for new_spec in new_specs:
         for spec in param_specs:
-            spec = spec.copy()
-            spec.update(new_spec)
-            combined_specs.append(spec)
+            spec_copy = spec.copy()
+            spec_copy.update(new_spec)
+            combined_specs.append(spec_copy)
     return combined_specs
