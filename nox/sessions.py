@@ -794,14 +794,45 @@ class SessionRunner:
         self.venv.create()
 
     def reuse_existing_venv(self) -> bool:
+        """
+        Determines whether to reuse an existing virtual environment.
+
+        The decision matrix is as follows:
+
+        +--------------------------+-----------------+-------------+
+        | global_config.reuse_venv | func.reuse_venv | Reuse venv? |
+        +==========================+=================+=============+
+        | "always"                 | N/A             | Yes         |
+        +--------------------------+-----------------+-------------+
+        | "never"                  | N/A             | No          |
+        +--------------------------+-----------------+-------------+
+        | "yes"                    | True|None       | Yes         |
+        +--------------------------+-----------------+-------------+
+        | "yes"                    | False           | No          |
+        +--------------------------+-----------------+-------------+
+        | "no"                     | True            | Yes         |
+        +--------------------------+-----------------+-------------+
+        | "no"                     | False|None      | No          |
+        +--------------------------+-----------------+-------------+
+
+        Summary
+        ~~~~~~~
+        - "always" forces reuse regardless of `func.reuse_venv`.
+        - "never" forces recreation regardless of `func.reuse_venv`.
+        - "yes" and "no" respect `func.reuse_venv` being ``False`` or ``True`` respectively.
+
+        Returns:
+            bool: True if the existing virtual environment should be reused, False otherwise.
+        """
+
         return any(
             (
-                # forces every session to reuse its env
+                # "always" forces reuse regardless of func.reuse_venv
                 self.global_config.reuse_venv == "always",
-                # sessions marked True will always be reused unless never is specified
+                # Respect func.reuse_venv when it's explicitly True, unless global_config is "never"
                 self.func.reuse_venv is True
                 and self.global_config.reuse_venv != "never",
-                # session marked False will never be reused unless always is specified
+                # Delegate to reuse ("yes") when func.reuse_venv is not explicitly False
                 self.func.reuse_venv is not False
                 and self.global_config.reuse_venv == "yes",
             )
