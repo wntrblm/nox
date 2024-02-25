@@ -27,9 +27,9 @@ import argcomplete
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 
-if sys.version_info < (3, 8):  # pragma: no cover
+if sys.version_info < (3, 8):
     from typing_extensions import Literal
-else:  # pragma: no cover
+else:
     from typing import Literal
 
 ReuseVenvType = Literal["no", "yes", "never", "always"]
