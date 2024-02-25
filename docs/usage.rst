@@ -128,10 +128,17 @@ Changing the sessions default backend
 
 By default Nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``uv``, ``conda``, ``mamba``, and ``venv`` as well as no backend (passthrough to whatever python environment Nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'uv', 'virtualenv', 'conda', 'mamba', 'venv')``.
 
-.. code-block:: console
 
-    nox -db conda
-    nox --default-venv-backend conda
+.. tabs::
+
+   .. code-tab:: console CLI options
+
+         nox -db conda
+         nox --default-venv-backend conda
+
+   .. code-tab:: console Environment variables
+
+         NOX_DEFAULT_VENV_BACKEND=conda
 
 .. note::
 
@@ -139,7 +146,7 @@ By default Nox uses ``virtualenv`` as the virtual environment backend for the se
    programs be pre-installed. ``uv`` is distributed as a Python package
    and can be installed with the ``nox[uv]`` extra.
 
-You can also set this option in the Noxfile with ``nox.options.default_venv_backend``. In case both are provided, the commandline argument takes precedence.
+You can also set this option with the ``NOX_DEFAULT_VENV_BACKEND`` environment variable, or in the Noxfile with ``nox.options.default_venv_backend``. In case more than one is provided, the command line argument overrides the environment variable, which in turn overrides the Noxfile configuration.
 
 Note that using this option does not change the backend for sessions where ``venv_backend`` is explicitly set.
 
