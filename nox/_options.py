@@ -27,6 +27,13 @@ import argcomplete
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 
+if sys.version_info < (3, 8):
+    from typing_extensions import Literal
+else:
+    from typing import Literal
+
+ReuseVenvType = Literal["no", "yes", "never", "always"]
+
 """All of Nox's configuration options."""
 
 options = _option_set.OptionSet(
@@ -146,6 +153,30 @@ def _envdir_merge_func(
     return command_args.envdir or noxfile_args.envdir or ".nox"
 
 
+def _reuse_venv_merge_func(
+    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+) -> ReuseVenvType:
+    """Merge reuse_venv from command args and Noxfile while maintaining
+    backwards compatibility with reuse_existing_virtualenvs. Default is "no".
+
+    Args:
+        command_args (_option_set.Namespace): The options specified on the
+            command-line.
+        noxfile_Args (_option_set.Namespace): The options specified in the
+            Noxfile.
+    """
+    # back-compat scenario with no_reuse_existing_virtualenvs/reuse_existing_virtualenvs
+    if command_args.no_reuse_existing_virtualenvs:
+        return "no"
+    if (
+        command_args.reuse_existing_virtualenvs
+        or noxfile_args.reuse_existing_virtualenvs
+    ):
+        return "yes"
+    # regular option behavior
+    return command_args.reuse_venv or noxfile_args.reuse_venv or "no"
+
+
 def default_env_var_list_factory(env_var: str) -> Callable[[], list[str] | None]:
     """Looks at the env var to set the default value for a list of env vars.
 
@@ -197,9 +228,19 @@ def _force_pythons_finalizer(
 
 
 def _R_finalizer(value: bool, args: argparse.Namespace) -> bool:
-    """Propagate -R to --reuse-existing-virtualenvs and --no-install."""
+    """Propagate -R to --reuse-existing-virtualenvs and --no-install and --reuse-venv=yes."""
     if value:
+        args.reuse_venv = "yes"
         args.reuse_existing_virtualenvs = args.no_install = value
+    return value
+
+
+def _reuse_existing_virtualenvs_finalizer(
+    value: bool, args: argparse.Namespace
+) -> bool:
+    """Propagate --reuse-existing-virtualenvs to --reuse-venv=yes."""
+    if value:
+        args.reuse_venv = "yes"
     return value
 
 
@@ -412,6 +453,18 @@ options.add_options(
             " creating a venv. This is an alias for '--force-venv-backend none'."
         ),
     ),
+    _option_set.Option(
+        "reuse_venv",
+        "--reuse-venv",
+        group=options.groups["environment"],
+        noxfile=True,
+        merge_func=_reuse_venv_merge_func,
+        help=(
+            "Controls existing virtualenvs recreation. This is ``'no'`` by"
+            " default, but any of ``('yes', 'no', 'always', 'never')`` are accepted."
+        ),
+        choices=["yes", "no", "always", "never"],
+    ),
     *_option_set.make_flag_pair(
         "reuse_existing_virtualenvs",
         ("-r", "--reuse-existing-virtualenvs"),
@@ -420,7 +473,8 @@ options.add_options(
             "--no-reuse-existing-virtualenvs",
         ),
         group=options.groups["environment"],
-        help="Reuse existing virtualenvs instead of recreating them.",
+        help="This is an alias for '--reuse-venv=yes|no'.",
+        finalizer_func=_reuse_existing_virtualenvs_finalizer,
     ),
     _option_set.Option(
         "R",

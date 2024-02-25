@@ -767,9 +767,7 @@ class SessionRunner:
             self.venv = PassthroughEnv()
             return
 
-        reuse_existing = (
-            self.func.reuse_venv or self.global_config.reuse_existing_virtualenvs
-        )
+        reuse_existing = self.reuse_existing_venv()
 
         if backend is None or backend in {"virtualenv", "venv", "uv"}:
             self.venv = VirtualEnv(
@@ -794,6 +792,51 @@ class SessionRunner:
             )
 
         self.venv.create()
+
+    def reuse_existing_venv(self) -> bool:
+        """
+        Determines whether to reuse an existing virtual environment.
+
+        The decision matrix is as follows:
+
+        +--------------------------+-----------------+-------------+
+        | global_config.reuse_venv | func.reuse_venv | Reuse venv? |
+        +==========================+=================+=============+
+        | "always"                 | N/A             | Yes         |
+        +--------------------------+-----------------+-------------+
+        | "never"                  | N/A             | No          |
+        +--------------------------+-----------------+-------------+
+        | "yes"                    | True|None       | Yes         |
+        +--------------------------+-----------------+-------------+
+        | "yes"                    | False           | No          |
+        +--------------------------+-----------------+-------------+
+        | "no"                     | True            | Yes         |
+        +--------------------------+-----------------+-------------+
+        | "no"                     | False|None      | No          |
+        +--------------------------+-----------------+-------------+
+
+        Summary
+        ~~~~~~~
+        - "always" forces reuse regardless of `func.reuse_venv`.
+        - "never" forces recreation regardless of `func.reuse_venv`.
+        - "yes" and "no" respect `func.reuse_venv` being ``False`` or ``True`` respectively.
+
+        Returns:
+            bool: True if the existing virtual environment should be reused, False otherwise.
+        """
+
+        return any(
+            (
+                # "always" forces reuse regardless of func.reuse_venv
+                self.global_config.reuse_venv == "always",
+                # Respect func.reuse_venv when it's explicitly True, unless global_config is "never"
+                self.func.reuse_venv is True
+                and self.global_config.reuse_venv != "never",
+                # Delegate to reuse ("yes") when func.reuse_venv is not explicitly False
+                self.func.reuse_venv is not False
+                and self.global_config.reuse_venv == "yes",
+            )
+        )
 
     def execute(self) -> Result:
         logger.warning(f"Running session {self.friendly_name}")
