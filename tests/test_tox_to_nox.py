@@ -18,11 +18,10 @@ import sys
 import textwrap
 
 import pytest
-from tox import __version__ as TOX_VERSION
 
 tox_to_nox = pytest.importorskip("nox.tox_to_nox")
 
-TOX4 = TOX_VERSION[0] == "4"
+TOX4 = tox_to_nox.TOX4
 PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}"
 PYTHON_VERSION_NODOT = PYTHON_VERSION.replace(".", "")
 

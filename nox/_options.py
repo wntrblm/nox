@@ -135,10 +135,8 @@ def _force_venv_backend_merge_func(
             raise ValueError(
                 "You can not use `--no-venv` with a non-none `--force-venv-backend`"
             )
-        else:
-            return "none"
-    else:
-        return command_args.force_venv_backend or noxfile_args.force_venv_backend  # type: ignore[no-any-return]
+        return "none"
+    return command_args.force_venv_backend or noxfile_args.force_venv_backend  # type: ignore[no-any-return]
 
 
 def _envdir_merge_func(

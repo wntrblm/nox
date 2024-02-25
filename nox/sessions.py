@@ -562,7 +562,7 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install and venv._reused:
-            return None
+            return
 
         # Escape args that should be (conda-specific; pip install does not need this)
         args = _dblquote_pkg_install_args(args)
@@ -645,7 +645,7 @@ class Session:
             raise ValueError("At least one argument required to install().")
 
         if self._runner.global_config.no_install and venv._reused:
-            return None
+            return
 
         if "silent" not in kwargs:
             kwargs["silent"] = True

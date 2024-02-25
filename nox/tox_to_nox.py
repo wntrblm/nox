@@ -20,6 +20,7 @@ import argparse
 import os
 import pkgutil
 import re
+import sys
 from configparser import ConfigParser
 from pathlib import Path
 from subprocess import check_output
@@ -27,9 +28,15 @@ from typing import Any, Iterable
 
 import jinja2
 import tox.config
-from tox import __version__ as TOX_VERSION
 
-TOX4 = TOX_VERSION[0] == "4"
+if sys.version_info < (3, 8):
+    import importlib_metadata as metadata
+else:
+    from importlib import metadata
+
+TOX_VERSION = metadata.version("tox")
+
+TOX4 = int(TOX_VERSION.split(".")[0]) >= 4
 
 if TOX4:
     _TEMPLATE = jinja2.Template(

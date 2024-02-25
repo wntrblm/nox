@@ -22,7 +22,7 @@ from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
 
 if sys.version_info >= (3, 8):
-    import importlib.metadata as metadata
+    from importlib import metadata
 else:
     import importlib_metadata as metadata
 
