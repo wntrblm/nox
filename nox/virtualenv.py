@@ -384,7 +384,17 @@ class VirtualEnv(ProcessEnv):
         return False
 
     def _check_reused_environment_interpreter(self) -> bool:
-        """Check if reused environment interpreter is the same."""
+        """
+        Check if reused environment interpreter is the same. Currently only checks if
+        NOX_ENABLE_STALENESS_CHECK is set in the environment. See
+
+        * https://github.com/wntrblm/nox/issues/449#issuecomment-860030890
+        * https://github.com/wntrblm/nox/issues/441
+        * https://github.com/pypa/virtualenv/issues/2130
+        """
+        if not os.environ.get("NOX_ENABLE_STALENESS_CHECK", ""):
+            return True
+
         original = self._read_base_prefix_from_pyvenv_cfg()
         program = (
             "import sys; sys.stdout.write(getattr(sys, 'real_prefix', sys.base_prefix))"

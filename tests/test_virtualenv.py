@@ -574,7 +574,8 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
-def test_inner_functions_reusing_venv(make_one):
+def test_inner_functions_reusing_venv(make_one, monkeypatch):
+    monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
     venv, location = make_one(reuse_existing=True)
     venv.create()
 
