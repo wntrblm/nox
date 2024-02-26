@@ -399,6 +399,9 @@ def test_create_reuse_environment(make_one):
 
 
 def test_create_reuse_environment_with_different_interpreter(make_one, monkeypatch):
+    # Making the reuse requirement more strict
+    monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
+
     venv, location = make_one(reuse_existing=True)
     venv.create()
 
@@ -430,36 +433,23 @@ def test_create_reuse_stale_venv_environment(make_one):
 
     reused = not venv.create()
 
-    # The environment is not reused because it is a uv-style
-    # environment.
     assert not reused
 
 
-def test_stale_venv_to_conda_environment(make_one):
+def test_not_stale_virtualenv_environment(make_one, monkeypatch):
+    # Making the reuse requirement more strict
+    monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
+
     venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
     venv.create()
 
     venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
-    reused = venv.create()
+    reused = not venv.create()
 
-    # The environment is not reused because it is now venv style
-    # environment.
-    assert not reused
+    assert reused
 
 
 @has_conda
-def test_stale_conda_to_venv_environment(make_one):
-    venv, location = make_one(reuse_existing=True, venv_backend="conda")
-    venv.create()
-
-    venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
-    reused = venv._check_reused_environment_type()
-
-    # The environment is not reused because it is now conda style
-    # environment.
-    assert not reused
-
-
 def test_stale_virtualenv_to_conda_environment(make_one):
     venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
     venv.create()
@@ -472,11 +462,12 @@ def test_stale_virtualenv_to_conda_environment(make_one):
     assert not reused
 
 
+@has_conda
 def test_reuse_conda_environment(make_one):
-    venv, location = make_one(reuse_existing=True, venv_backend="conda")
+    venv, _ = make_one(reuse_existing=True, venv_backend="conda")
     venv.create()
 
-    venv, location = make_one(reuse_existing=True, venv_backend="conda")
+    venv, _ = make_one(reuse_existing=True, venv_backend="conda")
     reused = not venv.create()
 
     assert reused
@@ -489,20 +480,23 @@ def test_reuse_conda_environment(make_one):
         ("venv", "virtualenv", True),
         ("virtualenv", "uv", True),
         pytest.param("uv", "virtualenv", False, marks=has_uv),
+        pytest.param("conda", "virtualenv", False, marks=has_conda),
     ],
 )
-def test_stale_environment(make_one, frm, to, result):
-    venv, location = make_one(reuse_existing=True, venv_backend=frm)
+def test_stale_environment(make_one, frm, to, result, monkeypatch):
+    monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
+    venv, _ = make_one(reuse_existing=True, venv_backend=frm)
     venv.create()
 
-    venv.venv_backend = to
+    venv, _ = make_one(reuse_existing=True, venv_backend=to)
     reused = venv._check_reused_environment_type()
 
     assert reused == result
 
 
 @has_uv
-def test_create_reuse_stale_virtualenv_environment(make_one):
+def test_create_reuse_stale_virtualenv_environment(make_one, monkeypatch):
+    monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
     venv, location = make_one(reuse_existing=True, venv_backend="venv")
     venv.create()
 
@@ -541,7 +535,10 @@ def test_create_reuse_uv_environment(make_one):
     assert reused
 
 
-def test_create_reuse_venv_environment(make_one):
+def test_create_reuse_venv_environment(make_one, monkeypatch):
+    # Making the reuse requirement more strict
+    monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
+
     venv, location = make_one(reuse_existing=True, venv_backend="venv")
     venv.create()
 
