@@ -110,7 +110,28 @@ class TestSession:
             assert tmpdir.startswith(root)
 
     @pytest.mark.parametrize("pre_run", [0, 1])
-    def test_create_tmp_with_venv_location(self, change_to_tmp_path, pre_run):
+    def test_create_tmp_with_venv_location(self, pre_run):
+        # for testing, also set envdir
+        with tempfile.TemporaryDirectory() as new_location:
+            session, runner = self.make_session_and_runner(
+                venv_location=os.path.join(new_location, "my-location")
+            )
+            # for testing, also set envdir
+            with tempfile.TemporaryDirectory() as root:
+                runner.global_config.envdir = root
+                for _ in range(pre_run):
+                    session.create_tmp()
+
+                tmpdir = session.create_tmp()
+
+                assert tmpdir == os.path.join(new_location, "my-location", "tmp")
+                assert os.path.abspath(tmpdir) == os.path.join(
+                    new_location, "my-location", "tmp"
+                )
+                assert session.env["TMPDIR"] == os.path.abspath(tmpdir)
+
+    @pytest.mark.parametrize("pre_run", [0, 1])
+    def test_create_tmp_with_venv_location2(self, change_to_tmp_path, pre_run):
         session, runner = self.make_session_and_runner(venv_location="my-location")
         # for testing, also set envdir
         with tempfile.TemporaryDirectory() as root:
@@ -126,21 +147,16 @@ class TestSession:
             )
             assert session.env["TMPDIR"] == os.path.abspath(tmpdir)
 
-    @pytest.mark.parametrize("pre_run", [0, 1])
-    def test_create_tmp_with_venv_location_home_path(self, change_to_tmp_path, pre_run):
-        """Test that this works with absolute path..."""
-        session, runner = self.make_session_and_runner(venv_location="~/my-location")
-        # for testing, also set envdir
-        with tempfile.TemporaryDirectory() as root:
-            runner.global_config.envdir = root
-            for _ in range(pre_run):
-                session.create_tmp()
-
-            tmpdir = session.create_tmp()
-
-            assert tmpdir == os.path.join(os.path.expanduser("~/my-location"), "tmp")
-            assert tmpdir == os.path.abspath(tmpdir)
-            assert session.env["TMPDIR"] == os.path.abspath(tmpdir)
+    @pytest.mark.parametrize(
+        ("venv_location", "envdir"),
+        [
+            ("my-location", "my-location"),
+            ("~/my-location", os.path.expanduser("~/my-location")),
+        ],
+    )
+    def test_envdir(self, venv_location, envdir):
+        session, runner = self.make_session_and_runner(venv_location=venv_location)
+        assert runner.envdir == envdir
 
     def test_properties(self):
         session, runner = self.make_session_and_runner()
@@ -973,7 +989,7 @@ class TestSessionRunner:
         assert runner.venv.interpreter is None
         assert runner.venv.reuse_existing is False
 
-    @pytest.mark.parametrize("venv_location", [None, "my-location", "~/my-location"])
+    @pytest.mark.parametrize("venv_location", [None, "my-location"])
     @pytest.mark.parametrize(
         "create_method,venv_backend,expected_backend",
         [
@@ -1015,9 +1031,6 @@ class TestSessionRunner:
         assert runner.venv.location_name == location_name
         assert runner.venv.location == os.path.abspath(location_name)
         assert runner.envdir == location_name
-
-        if venv_location and "~/" in venv_location:
-            assert runner.venv.location_name == runner.venv.location
 
     def test__create_venv_unexpected_venv_backend(self):
         runner = self.make_runner()
