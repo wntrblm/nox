@@ -754,8 +754,11 @@ class SessionRunner:
 
     @property
     def envdir(self) -> str:
-        return self.func.venv_location or _normalize_path(
-            self.global_config.envdir, self.friendly_name
+        if self.func.venv_location:
+            return os.path.expanduser(self.func.venv_location)
+        return _normalize_path(
+            self.global_config.envdir,
+            self.friendly_name,
         )
 
     def _create_venv(self) -> None:
