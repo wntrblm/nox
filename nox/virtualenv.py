@@ -349,21 +349,27 @@ class VirtualEnv(ProcessEnv):
             shutil.rmtree(self.location)
         return True
 
+    def _read_pyvenv_cfg(self) -> dict[str, str] | None:
+        """Read a pyvenv.cfg file into dict, returns None if missing."""
+        path = os.path.join(self.location, "pyvenv.cfg")
+        with contextlib.suppress(FileNotFoundError), open(path) as fp:
+            parts = (x.partition("=") for x in fp if "=" in x)
+            return {k.strip(): v.strip() for k, _, v in parts}
+        return None
+
     def _check_reused_environment_type(self) -> bool:
         """Check if reused environment type is the same or equivalent."""
-        try:
-            with open(os.path.join(self.location, "pyvenv.cfg")) as fp:
-                parts = (x.partition("=") for x in fp if "=" in x)
-                config = {k.strip(): v.strip() for k, _, v in parts}
-            if "uv" in config or "gourgeist" in config:
-                old_env = "uv"
-            elif "virtualenv" in config:
-                old_env = "virtualenv"
-            else:
-                old_env = "venv"
-        except FileNotFoundError:  # pragma: no cover
-            # virtualenv < 20.0 does not create pyvenv.cfg
+
+        config = self._read_pyvenv_cfg()
+        # virtualenv < 20.0 does not create pyvenv.cfg
+        if config is None:
             old_env = "virtualenv"
+        elif "uv" in config or "gourgeist" in config:
+            old_env = "uv"
+        elif "virtualenv" in config:
+            old_env = "virtualenv"
+        else:
+            old_env = "venv"
 
         # Can't detect mamba separately, but shouldn't matter
         if os.path.isdir(os.path.join(self.location, "conda-meta")):
@@ -395,7 +401,9 @@ class VirtualEnv(ProcessEnv):
         if not os.environ.get("NOX_ENABLE_STALENESS_CHECK", ""):
             return True
 
-        original = self._read_base_prefix_from_pyvenv_cfg()
+        config = self._read_pyvenv_cfg() or {}
+        original = config.get("base-prefix", None)
+
         program = (
             "import sys; sys.stdout.write(getattr(sys, 'real_prefix', sys.base_prefix))"
         )
@@ -416,17 +424,6 @@ class VirtualEnv(ProcessEnv):
             and os.path.exists(created)
             and os.path.samefile(original, created)
         )
-
-    def _read_base_prefix_from_pyvenv_cfg(self) -> str | None:
-        """Return the base-prefix entry from pyvenv.cfg, if present."""
-        path = os.path.join(self.location, "pyvenv.cfg")
-        if os.path.isfile(path):
-            with open(path) as io:
-                for line in io:
-                    key, _, value = line.partition("=")
-                    if key.strip() == "base-prefix":
-                        return value.strip()
-        return None
 
     @property
     def _resolved_interpreter(self) -> str:

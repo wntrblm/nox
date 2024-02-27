@@ -585,7 +585,7 @@ def test_inner_functions_reusing_venv(make_one, monkeypatch):
     """
     location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
 
-    base_prefix = venv._read_base_prefix_from_pyvenv_cfg()
+    base_prefix = venv._read_pyvenv_cfg()["base-prefix"]
     assert base_prefix == "foo"
 
     reused_interpreter = venv._check_reused_environment_interpreter()
