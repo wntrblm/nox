@@ -34,6 +34,15 @@ from nox import _options
 from nox.logger import logger
 
 
+@pytest.fixture()
+def change_to_tmp_path(tmp_path):
+    old_cwd = Path.cwd()
+    os.chdir(tmp_path)
+    yield tmp_path
+    # Cleanup?
+    os.chdir(old_cwd)
+
+
 def test__normalize_path():
     envdir = "envdir"
     normalize = nox.sessions._normalize_path
@@ -62,8 +71,8 @@ def test__normalize_path_give_up():
 
 
 class TestSession:
-    def make_session_and_runner(self):
-        func = mock.Mock(spec=["python"], python="3.7")
+    def make_session_and_runner(self, venv_location=None):
+        func = mock.Mock(spec=["python"], python="3.7", venv_location=venv_location)
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -99,6 +108,23 @@ class TestSession:
             tmpdir = session.create_tmp()
             assert session.env["TMPDIR"] == os.path.abspath(tmpdir)
             assert tmpdir.startswith(root)
+
+    @pytest.mark.parametrize("pre_run", [0, 1])
+    def test_create_tmp_with_venv_location(self, change_to_tmp_path, pre_run):
+        session, runner = self.make_session_and_runner(venv_location="my-location")
+        # for testing, also set envdir
+        with tempfile.TemporaryDirectory() as root:
+            runner.global_config.envdir = root
+            for _ in range(pre_run):
+                session.create_tmp()
+
+            tmpdir = session.create_tmp()
+
+            assert tmpdir == os.path.join("my-location", "tmp")
+            assert os.path.abspath(tmpdir) == os.path.join(
+                change_to_tmp_path, "my-location", "tmp"
+            )
+            assert session.env["TMPDIR"] == os.path.abspath(tmpdir)
 
     def test_properties(self):
         session, runner = self.make_session_and_runner()
@@ -849,6 +875,7 @@ class TestSessionRunner:
         func.python = None
         func.venv_backend = None
         func.reuse_venv = False
+        func.venv_location = None
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test(1, 2)"],
@@ -930,6 +957,7 @@ class TestSessionRunner:
         assert runner.venv.interpreter is None
         assert runner.venv.reuse_existing is False
 
+    @pytest.mark.parametrize("venv_location", [None, "my-location"])
     @pytest.mark.parametrize(
         "create_method,venv_backend,expected_backend",
         [
@@ -943,11 +971,14 @@ class TestSessionRunner:
             ("nox.virtualenv.CondaEnv.create", "conda", nox.virtualenv.CondaEnv),
         ],
     )
-    def test__create_venv_options(self, create_method, venv_backend, expected_backend):
+    def test__create_venv_options(
+        self, venv_location, create_method, venv_backend, expected_backend
+    ):
         runner = self.make_runner()
         runner.func.python = "coolpython"
         runner.func.reuse_venv = True
         runner.func.venv_backend = venv_backend
+        runner.func.venv_location = venv_location
 
         with mock.patch(create_method, autospec=True) as create:
             runner._create_venv()
@@ -956,6 +987,13 @@ class TestSessionRunner:
         assert isinstance(runner.venv, expected_backend)
         assert runner.venv.interpreter == "coolpython"
         assert runner.venv.reuse_existing is True
+
+        location_name = venv_location or nox.sessions._normalize_path(
+            runner.global_config.envdir, runner.friendly_name
+        )
+        assert runner.venv.location_name == location_name
+        assert runner.venv.location == os.path.abspath(location_name)
+        assert runner.envdir == location_name
 
     def test__create_venv_unexpected_venv_backend(self):
         runner = self.make_runner()

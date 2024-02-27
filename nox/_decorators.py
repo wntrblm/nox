@@ -67,6 +67,7 @@ class Func(FunctionDecorator):
         name: str | None = None,
         venv_backend: Any = None,
         venv_params: Any = None,
+        venv_location: str | None = None,
         should_warn: Mapping[str, Any] | None = None,
         tags: Sequence[str] | None = None,
     ) -> None:
@@ -76,6 +77,7 @@ class Func(FunctionDecorator):
         self.name = name
         self.venv_backend = venv_backend
         self.venv_params = venv_params
+        self.venv_location = venv_location
         self.should_warn = dict(should_warn or {})
         self.tags = list(tags or [])
 
@@ -92,6 +94,7 @@ class Func(FunctionDecorator):
             name,
             self.venv_backend,
             self.venv_params,
+            self.venv_location,
             self.should_warn,
             self.tags,
         )
@@ -123,6 +126,7 @@ class Call(Func):
             None,
             func.venv_backend,
             func.venv_params,
+            func.venv_location,
             func.should_warn,
             func.tags,
         )

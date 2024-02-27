@@ -192,3 +192,9 @@ def github_actions_default_tests(session: nox.Session) -> None:
 def github_actions_all_tests(session: nox.Session) -> None:
     """Check all versions installed by the nox GHA Action"""
     _check_python_version(session)
+
+
+@nox.session(venv_location=".venv")
+def dev(session: nox.Session) -> None:
+    """Create development environment `./.venv` using `nox -s dev`"""
+    session.install("-r", "requirements-dev.txt")

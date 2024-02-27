@@ -175,13 +175,23 @@ You are not limited to virtualenv, there is a selection of backends you can choo
     def tests(session):
         pass
 
-Finally, custom backend parameters are supported:
+Custom backend parameters are supported:
 
 .. code-block:: python
 
     @nox.session(venv_params=['--no-download'])
     def tests(session):
         pass
+
+Finally, you can specify the exact location of an environment:
+
+.. code-block:: python
+
+   @nox.session(venv_location=".venv")
+   def dev(session):
+       pass
+
+This places the environment in the folder ``./.venv`` instead of the default ``./.nox/dev``.
 
 
 Passing arguments into sessions
