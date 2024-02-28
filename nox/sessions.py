@@ -379,7 +379,7 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to run().")
 
-        if len(args) == 1 and isinstance(args[0], list):
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
             raise ValueError("First argument to `session.run` is a list. "
                                "Did you mean to use `session.run(*args)`?")
 
