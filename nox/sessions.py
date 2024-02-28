@@ -379,6 +379,10 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to run().")
 
+        if len(args) == 1 and isinstance(args[0], list):
+            raise ValueError("First argument to `session.run` is a list. "
+                               "Did you mean to use `session.run(*args)`?")
+
         if self._runner.global_config.install_only:
             logger.info(f"Skipping {args[0]} run, as --install-only is set.")
             return None
