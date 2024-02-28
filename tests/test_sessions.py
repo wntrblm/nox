@@ -152,6 +152,8 @@ class TestSession:
         [
             ("my-location", "my-location"),
             ("~/my-location", os.path.expanduser("~/my-location")),
+            (Path("my-location"), "my-location"),
+            (Path("~/my-location"), os.path.expanduser("~/my-location")),
         ],
     )
     def test_envdir(self, venv_location, envdir):
@@ -989,7 +991,9 @@ class TestSessionRunner:
         assert runner.venv.interpreter is None
         assert runner.venv.reuse_existing is False
 
-    @pytest.mark.parametrize("venv_location", [None, "my-location"])
+    @pytest.mark.parametrize(
+        "venv_location", [None, "my-location", Path("my-location")]
+    )
     @pytest.mark.parametrize(
         "create_method,venv_backend,expected_backend",
         [

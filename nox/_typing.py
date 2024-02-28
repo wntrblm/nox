@@ -14,8 +14,11 @@
 
 from __future__ import annotations
 
-__all__ = ["Python"]
+import os
+
+__all__ = ["Python", "StrPath"]
 
 from typing import Sequence, Union
 
 Python = Union[str, Sequence[str], bool, None]
+StrPath = Union[str, os.PathLike[str]]

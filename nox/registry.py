@@ -21,7 +21,7 @@ from collections.abc import Sequence
 from typing import Any, Callable, TypeVar, overload
 
 from ._decorators import Func
-from ._typing import Python
+from ._typing import Python, StrPath
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -42,7 +42,7 @@ def session_decorator(
     name: str | None = ...,
     venv_backend: Any | None = ...,
     venv_params: Any | None = ...,
-    venv_location: str | None = ...,
+    venv_location: StrPath | None = ...,
     tags: Sequence[str] | None = ...,
 ) -> Callable[[F], F]:
     ...
@@ -56,7 +56,7 @@ def session_decorator(
     name: str | None = None,
     venv_backend: Any | None = None,
     venv_params: Any | None = None,
-    venv_location: str | None = None,
+    venv_location: StrPath | None = None,
     tags: Sequence[str] | None = None,
 ) -> F | Callable[[F], F]:
     """Designate the decorated function as a session."""

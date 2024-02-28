@@ -64,10 +64,10 @@ class Func(FunctionDecorator):
         func: Callable[..., Any],
         python: _typing.Python = None,
         reuse_venv: bool | None = None,
-        name: str | None = None,
+        name: _typing.StrPath | None = None,
         venv_backend: Any = None,
         venv_params: Any = None,
-        venv_location: str | None = None,
+        venv_location: _typing.StrPath | None = None,
         should_warn: Mapping[str, Any] | None = None,
         tags: Sequence[str] | None = None,
     ) -> None:
