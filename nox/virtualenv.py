@@ -35,7 +35,6 @@ _BLACKLISTED_ENV_VARS = frozenset(
     ["PIP_RESPECT_VIRTUALENV", "PIP_REQUIRE_VIRTUALENV", "__PYVENV_LAUNCHER__"]
 )
 _SYSTEM = platform.system()
-_ENABLE_STALENESS_CHECK = "NOX_ENABLE_STALENESS_CHECK" in os.environ
 
 
 class InterpreterNotFound(OSError):
@@ -214,9 +213,12 @@ class CondaEnv(ProcessEnv):
 
     def _clean_location(self) -> bool:
         """Deletes existing conda environment"""
+        is_conda = os.path.isdir(os.path.join(self.location, "conda-meta"))
         if os.path.exists(self.location):
-            if self.reuse_existing:
+            if self.reuse_existing and is_conda:
                 return False
+            if not is_conda:
+                shutil.rmtree(self.location)
             else:
                 cmd = [
                     self.conda_cmd,
@@ -227,9 +229,9 @@ class CondaEnv(ProcessEnv):
                     "--all",
                 ]
                 nox.command.run(cmd, silent=True, log=False)
-                # Make sure that location is clean
-                with contextlib.suppress(FileNotFoundError):
-                    shutil.rmtree(self.location)
+            # Make sure that location is clean
+            with contextlib.suppress(FileNotFoundError):
+                shutil.rmtree(self.location)
 
         return True
 
@@ -330,45 +332,78 @@ class VirtualEnv(ProcessEnv):
         self.reuse_existing = reuse_existing
         self.venv_backend = venv_backend
         self.venv_params = venv_params or []
+        if venv_backend not in {"virtualenv", "venv", "uv"}:
+            msg = f"venv_backend {venv_backend} not recognized"
+            raise ValueError(msg)
         super().__init__(env={"VIRTUAL_ENV": self.location})
 
     def _clean_location(self) -> bool:
         """Deletes any existing virtual environment"""
         if os.path.exists(self.location):
-            if self.reuse_existing and not _ENABLE_STALENESS_CHECK:
-                return False
             if (
                 self.reuse_existing
                 and self._check_reused_environment_type()
                 and self._check_reused_environment_interpreter()
             ):
                 return False
-            else:
-                shutil.rmtree(self.location)
-
+            shutil.rmtree(self.location)
         return True
 
-    def _check_reused_environment_type(self) -> bool:
-        """Check if reused environment type is the same."""
-        try:
-            with open(os.path.join(self.location, "pyvenv.cfg")) as fp:
-                parts = (x.partition("=") for x in fp if "=" in x)
-                config = {k.strip(): v.strip() for k, _, v in parts}
-            if "uv" in config or "gourgeist" in config:
-                old_env = "uv"
-            elif "virtualenv" in config:
-                old_env = "virtualenv"
-            else:
-                old_env = "venv"
-        except FileNotFoundError:  # pragma: no cover
-            # virtualenv < 20.0 does not create pyvenv.cfg
-            old_env = "virtualenv"
+    def _read_pyvenv_cfg(self) -> dict[str, str] | None:
+        """Read a pyvenv.cfg file into dict, returns None if missing."""
+        path = os.path.join(self.location, "pyvenv.cfg")
+        with contextlib.suppress(FileNotFoundError), open(path) as fp:
+            parts = (x.partition("=") for x in fp if "=" in x)
+            return {k.strip(): v.strip() for k, _, v in parts}
+        return None
 
-        return old_env == self.venv_backend
+    def _check_reused_environment_type(self) -> bool:
+        """Check if reused environment type is the same or equivalent."""
+
+        config = self._read_pyvenv_cfg()
+        # virtualenv < 20.0 does not create pyvenv.cfg
+        if config is None:
+            old_env = "virtualenv"
+        elif "uv" in config or "gourgeist" in config:
+            old_env = "uv"
+        elif "virtualenv" in config:
+            old_env = "virtualenv"
+        else:
+            old_env = "venv"
+
+        # Can't detect mamba separately, but shouldn't matter
+        if os.path.isdir(os.path.join(self.location, "conda-meta")):
+            return False
+
+        # Matching is always true
+        if old_env == self.venv_backend:
+            return True
+
+        # venv family with pip installed
+        if {old_env, self.venv_backend} <= {"virtualenv", "venv"}:
+            return True
+
+        # Switching to "uv" is safe, but not the other direction (no pip)
+        if old_env in {"virtualenv", "venv"} and self.venv_backend == "uv":
+            return True
+
+        return False
 
     def _check_reused_environment_interpreter(self) -> bool:
-        """Check if reused environment interpreter is the same."""
-        original = self._read_base_prefix_from_pyvenv_cfg()
+        """
+        Check if reused environment interpreter is the same. Currently only checks if
+        NOX_ENABLE_STALENESS_CHECK is set in the environment. See
+
+        * https://github.com/wntrblm/nox/issues/449#issuecomment-860030890
+        * https://github.com/wntrblm/nox/issues/441
+        * https://github.com/pypa/virtualenv/issues/2130
+        """
+        if not os.environ.get("NOX_ENABLE_STALENESS_CHECK", ""):
+            return True
+
+        config = self._read_pyvenv_cfg() or {}
+        original = config.get("base-prefix", None)
+
         program = (
             "import sys; sys.stdout.write(getattr(sys, 'real_prefix', sys.base_prefix))"
         )
@@ -384,18 +419,11 @@ class VirtualEnv(ProcessEnv):
             ["python", "-c", program], silent=True, log=False, paths=self.bin_paths
         )
 
-        return original == created
-
-    def _read_base_prefix_from_pyvenv_cfg(self) -> str | None:
-        """Return the base-prefix entry from pyvenv.cfg, if present."""
-        path = os.path.join(self.location, "pyvenv.cfg")
-        if os.path.isfile(path):
-            with open(path) as io:
-                for line in io:
-                    key, _, value = line.partition("=")
-                    if key.strip() == "base-prefix":
-                        return value.strip()
-        return None
+        return (
+            os.path.exists(original)
+            and os.path.exists(created)
+            and os.path.samefile(original, created)
+        )
 
     @property
     def _resolved_interpreter(self) -> str:
