@@ -163,6 +163,7 @@ Note that using this option does not change the backend for sessions where ``ven
    name from the install process like pip does if the name is omitted. Editable
    installs do not require a name.
 
+Backends that could be missing (``uv``, ``conda``, and ``mamba``) can have a fallback using ``|``, such as ``uv|virtualenv`` or ``mamba|conda``. This will use the first item that is available on the users system.
 
 .. _opt-force-venv-backend:
 

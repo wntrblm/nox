@@ -760,27 +760,41 @@ class SessionRunner:
     def _create_venv(self) -> None:
         reuse_existing = self.reuse_existing_venv()
 
-        backend = (
+        backends = (
             self.global_config.force_venv_backend
             or self.func.venv_backend
             or self.global_config.default_venv_backend
             or "virtualenv"
-        )
+        ).split("|")
 
-        if backend not in nox.virtualenv.ALL_VENVS:
-            msg = f"Expected venv_backend one of {list(nox.virtualenv.ALL_VENVS)!r}, but got {backend!r}."
+        # Support fallback backends
+        for bk in backends:
+            if bk not in nox.virtualenv.ALL_VENVS:
+                msg = f"Expected venv_backend one of {list(nox.virtualenv.ALL_VENVS)!r}, but got {bk!r}."
+                raise ValueError(msg)
+
+        for bk in backends[:-1]:
+            if bk not in nox.virtualenv.OPTIONAL_VENVS:
+                msg = f"Only optional backends ({list(nox.virtualenv.OPTIONAL_VENVS)!r}) may have a fallback, {bk!r} is not optional."
+                raise ValueError(msg)
+
+        for bk in backends:
+            if nox.virtualenv.OPTIONAL_VENVS.get(bk, True):
+                backend = bk
+                break
+        else:
+            msg = f"No backends present, looked for {backends!r}."
             raise ValueError(msg)
 
         if backend == "none" or self.func.python is False:
             self.venv = nox.virtualenv.ALL_VENVS["none"]()
-            return
-
-        self.venv = nox.virtualenv.ALL_VENVS[backend](
-            self.envdir,
-            interpreter=self.func.python,
-            reuse_existing=reuse_existing,
-            venv_params=self.func.venv_params,
-        )
+        else:
+            self.venv = nox.virtualenv.ALL_VENVS[backend](
+                self.envdir,
+                interpreter=self.func.python,
+                reuse_existing=reuse_existing,
+                venv_params=self.func.venv_params,
+            )
 
         self.venv.create()
 
