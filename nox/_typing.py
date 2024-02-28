@@ -21,4 +21,4 @@ __all__ = ["Python", "StrPath"]
 from typing import Sequence, Union
 
 Python = Union[str, Sequence[str], bool, None]
-StrPath = Union[str, os.PathLike[str]]
+StrPath = Union[str, "os.PathLike[str]"]
