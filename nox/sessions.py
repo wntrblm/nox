@@ -38,6 +38,7 @@ from typing import (
 )
 
 import nox.command
+import nox.virtualenv
 from nox._decorators import Func
 from nox.logger import logger
 from nox.virtualenv import CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
@@ -757,39 +758,29 @@ class SessionRunner:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def _create_venv(self) -> None:
+        reuse_existing = self.reuse_existing_venv()
+
         backend = (
             self.global_config.force_venv_backend
             or self.func.venv_backend
             or self.global_config.default_venv_backend
+            or "virtualenv"
         )
 
+        if backend not in nox.virtualenv.ALL_VENVS:
+            msg = f"Expected venv_backend one of {list(nox.virtualenv.ALL_VENVS)!r}, but got {backend!r}."
+            raise ValueError(msg)
+
         if backend == "none" or self.func.python is False:
-            self.venv = PassthroughEnv()
+            self.venv = nox.virtualenv.ALL_VENVS["none"]()
             return
 
-        reuse_existing = self.reuse_existing_venv()
-
-        if backend is None or backend in {"virtualenv", "venv", "uv"}:
-            self.venv = VirtualEnv(
-                self.envdir,
-                interpreter=self.func.python,  # type: ignore[arg-type]
-                reuse_existing=reuse_existing,
-                venv_backend=backend or "virtualenv",
-                venv_params=self.func.venv_params,
-            )
-        elif backend in {"conda", "mamba"}:
-            self.venv = CondaEnv(
-                self.envdir,
-                interpreter=self.func.python,  # type: ignore[arg-type]
-                reuse_existing=reuse_existing,
-                venv_params=self.func.venv_params,
-                conda_cmd=backend,
-            )
-        else:
-            raise ValueError(
-                "Expected venv_backend one of ('virtualenv', 'conda', 'mamba',"
-                f" 'venv'), but got '{backend}'."
-            )
+        self.venv = nox.virtualenv.ALL_VENVS[backend](
+            self.envdir,
+            interpreter=self.func.python,
+            reuse_existing=reuse_existing,
+            venv_params=self.func.venv_params,
+        )
 
         self.venv.create()
 

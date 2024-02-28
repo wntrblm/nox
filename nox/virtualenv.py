@@ -15,13 +15,14 @@
 from __future__ import annotations
 
 import contextlib
+import functools
 import os
 import platform
 import re
 import shutil
 import subprocess
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from socket import gethostbyname
 from typing import Any, ClassVar
 
@@ -532,3 +533,13 @@ class VirtualEnv(ProcessEnv):
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
+
+
+ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {
+    "conda": functools.partial(CondaEnv, conda_cmd="conda"),
+    "mamba": functools.partial(CondaEnv, conda_cmd="mamba"),
+    "virtualenv": functools.partial(VirtualEnv, venv_backend="virtualenv"),
+    "venv": functools.partial(VirtualEnv, venv_backend="venv"),
+    "uv": functools.partial(VirtualEnv, venv_backend="uv"),
+    "none": PassthroughEnv,
+}
