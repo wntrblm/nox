@@ -774,6 +774,11 @@ class SessionRunner:
 
         reuse_existing = self.reuse_existing_venv()
 
+        if self.func.venv_location:
+            logger.warning(
+                f"Using user defined venv_location={self.func.venv_location} for virtual environment."
+            )
+
         if backend is None or backend in {"virtualenv", "venv", "uv"}:
             self.venv = VirtualEnv(
                 self.envdir,

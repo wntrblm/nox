@@ -194,7 +194,25 @@ def github_actions_all_tests(session: nox.Session) -> None:
     _check_python_version(session)
 
 
-@nox.session(venv_location=".venv")
+@nox.session(venv_location=".venv-dev")
 def dev(session: nox.Session) -> None:
     """Create development environment `./.venv` using `nox -s dev`"""
     session.install("-r", "requirements-dev.txt")
+
+
+# # # @nox.session(venv_location=".venv", python=["3.10", "3.11"])
+# @nox.session(venv_location=".venv-tmp")
+# @nox.parametrize("thing", [1, 2])
+# def tmp(session: nox.Session, thing: int) -> None:
+#     """Create development environment `./.venv` using `nox -s dev`"""
+
+
+# @nox.session(python="3.8", venv_backend=None)
+# def tmpnox(session: nox.Session) -> None:
+#     print(session.virtualenv.venv_backend)
+#     print(nox.options.default_venv_backend)
+
+
+# @nox.session(venv_location="hello", python="3.8")
+# def hello(session: nox.Session) -> None:
+#     pass

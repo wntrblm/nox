@@ -32,6 +32,10 @@ def _unique_list(*args: str) -> list[str]:
     return list(OrderedDict.fromkeys(args))
 
 
+class NoVenvLocationWithParametrize(Exception):
+    """Cannot specify ``venv_location`` with parametrized values."""
+
+
 class Manifest:
     """Session manifest.
 
@@ -212,7 +216,7 @@ class Manifest:
         )
         if backend == "none" and isinstance(func.python, (list, tuple, set)):
             # we can not log a warning here since the session is maybe deselected.
-            # instead let's set a flag, to warn later when session is actually run.
+            # instead let's set a flag, to warn later when session is actually run
             func.should_warn[WARN_PYTHONS_IGNORED] = func.python
             func.python = False
 
@@ -220,7 +224,11 @@ class Manifest:
             # If extra python is provided, expand the func.python list to
             # include additional python interpreters
             extra_pythons: list[str] = self._config.extra_pythons
-            if isinstance(func.python, (list, tuple, set)):
+
+            if func.venv_location is not None:
+                # special case. If set venv_location, then ignore extra pythons
+                func.should_warn[WARN_PYTHONS_IGNORED] = extra_pythons
+            elif isinstance(func.python, (list, tuple, set)):
                 func.python = _unique_list(*func.python, *extra_pythons)
             elif not multi and func.python:
                 # If this is multi, but there is only a single interpreter, it
@@ -238,6 +246,10 @@ class Manifest:
         # If the func has the python attribute set to a list, we'll need
         # to expand them.
         if isinstance(func.python, (list, tuple, set)):
+            if func.venv_location is not None:
+                msg = f"Cannot specify venv_location={func.venv_location} with multiple pythons"
+                raise NoVenvLocationWithParametrize(msg)
+
             for python in func.python:
                 single_func = func.copy()
                 single_func.python = python
@@ -258,6 +270,10 @@ class Manifest:
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
+        if func.venv_location is not None:
+            msg = f"Cannot specify venv_location={func.venv_location} with parametrized session."
+            raise NoVenvLocationWithParametrize(msg)
+
         parametrize = func.parametrize
         calls = Call.generate_calls(func, parametrize)
         for call in calls:
