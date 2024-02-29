@@ -47,33 +47,12 @@ Enter the ``dev`` nox session:
     # so it's not run twice accidentally
     nox.options.sessions = [...] # Sessions other than 'dev'
 
-    # this VENV_DIR constant specifies the name of the dir that the `dev`
-    # session will create, containing the virtualenv;
-    # the `resolve()` makes it portable
-    VENV_DIR = pathlib.Path('./.venv').resolve()
+    VENV_DIR = "./.venv"
 
-    @nox.session
+    @nox.session(venv_location=VENV_DIR)
     def dev(session: nox.Session) -> None:
-        """
-        Sets up a python development environment for the project.
-
-        This session will:
-        - Create a python virtualenv for the session
-        - Install the `virtualenv` cli tool into this environment
-        - Use `virtualenv` to create a global project virtual environment
-        - Invoke the python interpreter from the global project environment to install
-          the project and all it's development dependencies.
-        """
-
-        session.install("virtualenv")
-        # the VENV_DIR constant is explained above
-        session.run("virtualenv", os.fsdecode(VENV_DIR), silent=True)
-
-        python = os.fsdecode(VENV_DIR.joinpath("bin/python"))
-
-        # Use the venv's interpreter to install the project along with
-        # all it's dev dependencies, this ensures it's installed in the right way
-        session.run(python, "-m", "pip", "install", "-e", ".[dev]", external=True)
+        """Sets up a python development environment for the project."""
+        session.install("-e", ".[dev]")
 
 With this, a user can simply run ``nox -s dev`` and have their entire environment set up automatically!
 

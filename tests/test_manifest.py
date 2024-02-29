@@ -26,6 +26,7 @@ from nox.manifest import (
     WARN_PYTHONS_IGNORED,
     KeywordLocals,
     Manifest,
+    NoVenvLocationWithParametrize,
     _normalize_arg,
     _normalized_session_match,
     _null_session_func,
@@ -289,6 +290,56 @@ def test_extra_pythons(python, extra_pythons, expected):
 
 
 @pytest.mark.parametrize(
+    "python,extra_pythons,expected",
+    [
+        (None, [], [None]),
+        (None, ["3.8"], [None]),
+        (None, ["3.8", "3.9"], [None]),
+        (False, [], [False]),
+        (False, ["3.8"], [False]),
+        (False, ["3.8", "3.9"], [False]),
+        ("3.5", [], ["3.5"]),
+        ("3.5", ["3.8"], ["3.5"]),
+        ("3.5", ["3.8", "3.9"], ["3.5"]),
+        (["3.5", "3.9"], [], "error"),
+        (["3.5", "3.9"], ["3.8"], "error"),
+        (["3.5", "3.9"], ["3.8", "3.4"], "error"),
+        (["3.5", "3.9"], ["3.5", "3.9"], "error"),
+    ],
+)
+def test_extra_pythons_with_venv_location(python, extra_pythons, expected):
+    cfg = create_mock_config()
+    cfg.extra_pythons = extra_pythons
+
+    manifest = Manifest({}, cfg)
+
+    def session_func():
+        pass
+
+    func = Func(session_func, python=python, venv_location="my-location")
+
+    if expected == "error":
+        with pytest.raises(NoVenvLocationWithParametrize):
+            for session in manifest.make_session("my_session", func):
+                manifest.add_session(session)
+
+    else:
+        for session in manifest.make_session("my_session", func):
+            manifest.add_session(session)
+
+        assert len(manifest._all_sessions) == 1
+
+        assert expected == [session.func.python for session in manifest._all_sessions]
+
+        session = manifest._all_sessions[0]
+
+        if extra_pythons:
+            assert session.func.should_warn == {WARN_PYTHONS_IGNORED: extra_pythons}
+        else:
+            assert session.func.should_warn == {}
+
+
+@pytest.mark.parametrize(
     "python,force_pythons,expected",
     [
         (None, [], [None]),
@@ -339,6 +390,20 @@ def test_add_session_parametrized():
     assert len(manifest) == 3
 
 
+def test_add_session_parametrized_venv_location():
+    manifest = Manifest({}, create_mock_config())
+
+    # Define a session with parameters.
+    @nox.parametrize("param", ("a", "b", "c"))
+    def my_session(session, param):
+        pass
+
+    func = Func(my_session, python=None, venv_location="my-location")
+
+    with pytest.raises(NoVenvLocationWithParametrize):
+        manifest.make_session("my_session", func)
+
+
 def test_add_session_parametrized_multiple_pythons():
     manifest = Manifest({}, create_mock_config())
 
@@ -365,6 +430,7 @@ def test_add_session_parametrized_noop():
 
     my_session.python = None
     my_session.venv_backend = None
+    my_session.venv_location = None
 
     # Add the session to the manifest.
     for session in manifest.make_session("my_session", my_session):

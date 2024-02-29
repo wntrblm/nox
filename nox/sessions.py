@@ -758,7 +758,12 @@ class SessionRunner:
 
     @property
     def envdir(self) -> str:
-        return _normalize_path(self.global_config.envdir, self.friendly_name)
+        if self.func.venv_location:
+            return os.path.expanduser(self.func.venv_location)
+        return _normalize_path(
+            self.global_config.envdir,
+            self.friendly_name,
+        )
 
     def _create_venv(self) -> None:
         backend = (
@@ -772,6 +777,11 @@ class SessionRunner:
             return
 
         reuse_existing = self.reuse_existing_venv()
+
+        if self.func.venv_location:
+            logger.warning(
+                f"Using user defined venv_location={self.func.venv_location} for virtual environment."
+            )
 
         if backend is None or backend in {"virtualenv", "venv", "uv"}:
             self.venv = VirtualEnv(

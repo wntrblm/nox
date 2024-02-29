@@ -38,6 +38,7 @@ def session_func():
 
 session_func.python = None
 session_func.venv_backend = None
+session_func.venv_location = None
 session_func.should_warn = {}
 session_func.tags = []
 
@@ -56,7 +57,21 @@ def session_func_venv_pythons_warning():
 
 session_func_venv_pythons_warning.python = ["3.7"]
 session_func_venv_pythons_warning.venv_backend = "none"
+session_func_venv_pythons_warning.venv_location = None
 session_func_venv_pythons_warning.should_warn = {WARN_PYTHONS_IGNORED: ["3.7"]}
+
+
+# Mimic passing --extra-python ["3.8", "3.9"]
+def session_func_venv_pythons_warning_venv_location():
+    pass
+
+
+session_func_venv_pythons_warning_venv_location.python = "3.7"
+session_func_venv_pythons_warning_venv_location.venv_backend = None
+session_func_venv_pythons_warning_venv_location.venv_location = "my-location"
+session_func_venv_pythons_warning_venv_location.should_warn = {
+    WARN_PYTHONS_IGNORED: ["3.8", "3.9"]
+}
 
 
 def test_load_nox_module():
@@ -527,7 +542,9 @@ def test_verify_manifest_list(capsys):
     assert "Please select a session" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("with_warnings", [False, True], ids="with_warnings={}".format)
+@pytest.mark.parametrize(
+    "with_warnings", [False, True, "venv_location"], ids="with_warnings={}".format
+)
 def test_run_manifest(with_warnings):
     # Set up a valid manifest.
     config = _options.options.namespace(stop_on_first_error=False)
@@ -544,7 +561,10 @@ def test_run_manifest(with_warnings):
             session=mock_session, status=sessions.Status.SUCCESS
         )
         # we need the should_warn attribute, add some func
-        if with_warnings:
+        if with_warnings == "venv_location":
+            mock_session.name = "hello"
+            mock_session.func = session_func_venv_pythons_warning_venv_location
+        elif with_warnings:
             mock_session.name = "hello"
             mock_session.func = session_func_venv_pythons_warning
         else:
