@@ -309,7 +309,7 @@ class TestSession:
         # Non-virtualenv sessions should always allow external programs.
         session, runner = self.make_session_and_runner()
 
-        runner.venv = nox.virtualenv.ProcessEnv()
+        runner.venv = nox.virtualenv.PassthroughEnv()
 
         with mock.patch("nox.command.run", autospec=True) as run:
             session.run(sys.executable, "--version")
@@ -402,7 +402,7 @@ class TestSession:
     ):
         session, runner = self.make_session_and_runner()
 
-        runner.venv = nox.virtualenv.ProcessEnv()
+        runner.venv = nox.virtualenv.PassthroughEnv()
 
         subp_popen_instance = mock.Mock()
         subp_popen_instance.communicate.side_effect = KeyboardInterrupt()
@@ -967,6 +967,44 @@ class TestSessionRunner:
         runner = self.make_runner()
         runner.func.venv_backend = "somenewenvtool"
         with pytest.raises(ValueError, match="venv_backend"):
+            runner._create_venv()
+
+    @pytest.mark.parametrize(
+        "venv_backend",
+        ["uv|virtualenv", "conda|virtualenv", "mamba|conda|venv"],
+    )
+    def test_fallback_venv(self, venv_backend, monkeypatch):
+        runner = self.make_runner()
+        runner.func.venv_backend = venv_backend
+        monkeypatch.setattr(
+            nox.virtualenv,
+            "OPTIONAL_VENVS",
+            {"uv": False, "conda": False, "mamba": False},
+        )
+        with mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True):
+            runner._create_venv()
+        assert runner.venv.venv_backend == venv_backend.split("|")[-1]
+
+    @pytest.mark.parametrize(
+        "venv_backend",
+        [
+            "uv|virtualenv|unknown",
+            "conda|unknown|virtualenv",
+            "virtualenv|venv",
+            "conda|mamba",
+        ],
+    )
+    def test_invalid_fallback_venv(self, venv_backend, monkeypatch):
+        runner = self.make_runner()
+        runner.func.venv_backend = venv_backend
+        monkeypatch.setattr(
+            nox.virtualenv,
+            "OPTIONAL_VENVS",
+            {"uv": False, "conda": False, "mamba": False},
+        )
+        with mock.patch(
+            "nox.virtualenv.VirtualEnv.create", autospec=True
+        ), pytest.raises(ValueError):
             runner._create_venv()
 
     @pytest.mark.parametrize(

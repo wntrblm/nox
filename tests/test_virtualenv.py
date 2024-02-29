@@ -113,24 +113,23 @@ def patch_sysfind(monkeypatch):
 
 
 def test_process_env_constructor():
-    penv = nox.virtualenv.ProcessEnv()
+    penv = nox.virtualenv.PassthroughEnv()
     assert not penv.bin_paths
     with pytest.raises(
         ValueError, match=r"^The environment does not have a bin directory\.$"
     ):
         print(penv.bin)
 
-    penv = nox.virtualenv.ProcessEnv(env={"SIGIL": "123"})
+    penv = nox.virtualenv.PassthroughEnv(env={"SIGIL": "123"})
     assert penv.env["SIGIL"] == "123"
 
-    penv = nox.virtualenv.ProcessEnv(bin_paths=["/bin"])
+    penv = nox.virtualenv.PassthroughEnv(bin_paths=["/bin"])
     assert penv.bin == "/bin"
 
 
 def test_process_env_create():
-    penv = nox.virtualenv.ProcessEnv()
-    with pytest.raises(NotImplementedError):
-        penv.create()
+    with pytest.raises(TypeError):
+        nox.virtualenv.ProcessEnv()
 
 
 def test_invalid_venv_create(make_one):

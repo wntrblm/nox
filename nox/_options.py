@@ -26,6 +26,7 @@ import argcomplete
 
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
+from nox.virtualenv import ALL_VENVS
 
 if sys.version_info < (3, 8):
     from typing_extensions import Literal
@@ -423,10 +424,9 @@ options.add_options(
         merge_func=_default_venv_backend_merge_func,
         help=(
             "Virtual environment backend to use by default for Nox sessions, this is"
-            " ``'virtualenv'`` by default but any of ``('uv, 'virtualenv',"
-            " 'conda', 'mamba', 'venv')`` are accepted."
+            " ``'virtualenv'`` by default but any of ``{list(ALL_VENVS)!r}`` are accepted."
         ),
-        choices=["none", "virtualenv", "conda", "mamba", "venv", "uv"],
+        choices=list(ALL_VENVS),
     ),
     _option_set.Option(
         "force_venv_backend",
@@ -438,10 +438,9 @@ options.add_options(
         help=(
             "Virtual environment backend to force-use for all Nox sessions in this run,"
             " overriding any other venv backend declared in the Noxfile and ignoring"
-            " the default backend. Any of ``('uv', 'virtualenv', 'conda', 'mamba',"
-            " 'venv')`` are accepted."
+            " the default backend. Any of ``{list(ALL_VENVS)!r}`` are accepted."
         ),
-        choices=["none", "virtualenv", "conda", "mamba", "venv", "uv"],
+        choices=list(ALL_VENVS),
     ),
     _option_set.Option(
         "no_venv",

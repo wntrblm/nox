@@ -14,14 +14,16 @@
 
 from __future__ import annotations
 
+import abc
 import contextlib
+import functools
 import os
 import platform
 import re
 import shutil
 import subprocess
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from socket import gethostbyname
 from typing import Any, ClassVar
 
@@ -43,7 +45,7 @@ class InterpreterNotFound(OSError):
         self.interpreter = interpreter
 
 
-class ProcessEnv:
+class ProcessEnv(abc.ABC):
     """An environment with a 'bin' directory and a set of 'env' vars."""
 
     location: str
@@ -84,8 +86,12 @@ class ProcessEnv:
             raise ValueError("The environment does not have a bin directory.")
         return paths[0]
 
+    @abc.abstractmethod
     def create(self) -> bool:
-        raise NotImplementedError("ProcessEnv.create should be overwritten in subclass")
+        """Create a new environment.
+
+        Returns True if the environment is new, and False if it was reused.
+        """
 
 
 def locate_via_py(version: str) -> str | None:
@@ -168,6 +174,11 @@ class PassthroughEnv(ProcessEnv):
     def is_offline() -> bool:
         """As of now this is only used in conda_install"""
         return CondaEnv.is_offline()  # pragma: no cover
+
+    def create(self) -> bool:
+        """Does nothing, since this is an existing environment. Always returns
+        False since it's always reused."""
+        return False
 
 
 class CondaEnv(ProcessEnv):
@@ -532,3 +543,22 @@ class VirtualEnv(ProcessEnv):
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
+
+
+ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {
+    "conda": functools.partial(CondaEnv, conda_cmd="conda"),
+    "mamba": functools.partial(CondaEnv, conda_cmd="mamba"),
+    "virtualenv": functools.partial(VirtualEnv, venv_backend="virtualenv"),
+    "venv": functools.partial(VirtualEnv, venv_backend="venv"),
+    "uv": functools.partial(VirtualEnv, venv_backend="uv"),
+    "none": PassthroughEnv,
+}
+
+# Any environment in this dict could be missing, and is only available if the
+# value is True. If an environment is always available, it should not be in this
+# dict. "virtualenv" is not considered optional since it's a dependency of nox.
+OPTIONAL_VENVS = {
+    "conda": shutil.which("conda") is not None,
+    "mamba": shutil.which("mamba") is not None,
+    "uv": shutil.which("uv") is not None,
+}
