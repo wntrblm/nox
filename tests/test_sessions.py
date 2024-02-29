@@ -842,6 +842,12 @@ class TestSession:
         expected = {name: getattr(session, name) for name in session.__slots__}
         assert session.__dict__ == expected
 
+    def test_first_arg_list(self):
+        session, _ = self.make_session_and_runner()
+
+        with pytest.raises(ValueError):
+            session.run(["ls", "-al"])
+
 
 class TestSessionRunner:
     def make_runner(self):
