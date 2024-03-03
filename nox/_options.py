@@ -424,7 +424,7 @@ options.add_options(
         merge_func=_default_venv_backend_merge_func,
         help=(
             "Virtual environment backend to use by default for Nox sessions, this is"
-            " ``'virtualenv'`` by default but any of ``{list(ALL_VENVS)!r}`` are accepted."
+            f" ``'virtualenv'`` by default but any of ``{list(ALL_VENVS)!r}`` are accepted."
         ),
         choices=list(ALL_VENVS),
     ),
@@ -438,7 +438,7 @@ options.add_options(
         help=(
             "Virtual environment backend to force-use for all Nox sessions in this run,"
             " overriding any other venv backend declared in the Noxfile and ignoring"
-            " the default backend. Any of ``{list(ALL_VENVS)!r}`` are accepted."
+            f" the default backend. Any of ``{list(ALL_VENVS)!r}`` are accepted."
         ),
         choices=list(ALL_VENVS),
     ),
