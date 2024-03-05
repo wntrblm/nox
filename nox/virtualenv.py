@@ -39,6 +39,24 @@ _BLACKLISTED_ENV_VARS = frozenset(
 _SYSTEM = platform.system()
 
 
+def find_uv() -> tuple[bool, str]:
+    # Look for uv in Nox's environment, to handle `pipx install nox[uv]`.
+    with contextlib.suppress(ImportError, FileNotFoundError):
+        from uv import find_uv_bin
+
+        return True, find_uv_bin()
+
+    # Fall back to PATH.
+    uv = shutil.which("uv")
+    if uv is not None:
+        return True, uv
+
+    return False, "uv"
+
+
+HAS_UV, UV = find_uv()
+
+
 class InterpreterNotFound(OSError):
     def __init__(self, interpreter: str) -> None:
         super().__init__(f"Python interpreter {interpreter} not found")
@@ -325,7 +343,7 @@ class VirtualEnv(ProcessEnv):
     """
 
     is_sandboxed = True
-    allowed_globals = ("uv",)
+    allowed_globals = (UV,)
 
     def __init__(
         self,
@@ -524,7 +542,7 @@ class VirtualEnv(ProcessEnv):
                 cmd.extend(["-p", self._resolved_interpreter])
         elif self.venv_backend == "uv":
             cmd = [
-                "uv",
+                UV,
                 "venv",
                 "-p",
                 self._resolved_interpreter if self.interpreter else sys.executable,
@@ -560,5 +578,5 @@ ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {
 OPTIONAL_VENVS = {
     "conda": shutil.which("conda") is not None,
     "mamba": shutil.which("mamba") is not None,
-    "uv": shutil.which("uv") is not None,
+    "uv": HAS_UV,
 }

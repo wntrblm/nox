@@ -53,7 +53,7 @@ tox_to_nox = [
   "tox",
 ]
 uv = [
-  "uv",
+  "uv>=0.1.6",
 ]
 [project.urls]
 bug-tracker = "https://github.com/wntrblm/nox/issues"

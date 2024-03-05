@@ -41,7 +41,7 @@ import nox.command
 import nox.virtualenv
 from nox._decorators import Func
 from nox.logger import logger
-from nox.virtualenv import CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
+from nox.virtualenv import UV, CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
 
 if TYPE_CHECKING:
     from nox.manifest import Manifest
@@ -656,7 +656,7 @@ class Session:
             kwargs["silent"] = True
 
         if isinstance(venv, VirtualEnv) and venv.venv_backend == "uv":
-            self._run("uv", "pip", "install", *args, external="error", **kwargs)
+            self._run(UV, "pip", "install", *args, external="error", **kwargs)
         else:
             self._run(
                 "python", "-m", "pip", "install", *args, external="error", **kwargs
