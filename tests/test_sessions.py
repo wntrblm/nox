@@ -18,6 +18,7 @@ import argparse
 import logging
 import operator
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -32,6 +33,9 @@ import nox.sessions
 import nox.virtualenv
 from nox import _options
 from nox.logger import logger
+
+HAS_CONDA = shutil.which("conda") is not None
+has_conda = pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
 
 
 def test__normalize_path():
@@ -946,7 +950,12 @@ class TestSessionRunner:
                 nox.virtualenv.VirtualEnv,
             ),
             ("nox.virtualenv.VirtualEnv.create", "venv", nox.virtualenv.VirtualEnv),
-            ("nox.virtualenv.CondaEnv.create", "conda", nox.virtualenv.CondaEnv),
+            pytest.param(
+                "nox.virtualenv.CondaEnv.create",
+                "conda",
+                nox.virtualenv.CondaEnv,
+                marks=has_conda,
+            ),
         ],
     )
     def test__create_venv_options(self, create_method, venv_backend, expected_backend):
