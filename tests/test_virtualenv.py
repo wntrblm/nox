@@ -490,9 +490,11 @@ def test_stale_environment(make_one, frm, to, result, monkeypatch):
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
     venv, _ = make_one(reuse_existing=True, venv_backend=frm)
     venv.create()
+    assert venv.venv_backend == frm
 
     venv, _ = make_one(reuse_existing=True, venv_backend=to)
     reused = venv._check_reused_environment_type()
+    assert venv.venv_backend == to
 
     assert reused == result
 

@@ -135,6 +135,8 @@ class TestSession:
         with pytest.raises(ValueError, match="virtualenv"):
             _ = session.virtualenv
 
+        assert session.venv_backend == "none"
+
     def test_interactive(self):
         session, runner = self.make_session_and_runner()
 
