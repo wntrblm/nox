@@ -641,6 +641,8 @@ class TestSession:
 
         session = SessionNoSlots(runner=runner)
 
+        assert session.venv_backend == "venv"
+
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3")
             run.assert_called_once_with(
