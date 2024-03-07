@@ -56,7 +56,9 @@ def make_one(tmpdir):
         try:
             venv_fn = nox.virtualenv.ALL_VENVS[venv_backend]
         except KeyError:
-            venv_fn = functools.partial(nox.virtualenv.VirtualEnv, venv_backend=venv_backend)
+            venv_fn = functools.partial(
+                nox.virtualenv.VirtualEnv, venv_backend=venv_backend
+            )
         venv = venv_fn(location.strpath, *args, **kwargs)
         return (venv, location)
 
