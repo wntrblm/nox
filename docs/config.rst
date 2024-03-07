@@ -167,13 +167,18 @@ You can also specify that the virtualenv should *always* be reused instead of re
     def tests(session):
         pass
 
-You are not limited to virtualenv, there is a selection of backends you can choose from as venv, conda, mamba, or virtualenv (default):
+You are not limited to virtualenv, there is a selection of backends you can choose from as venv, uv, conda, mamba, or virtualenv (default):
 
 .. code-block:: python
 
     @nox.session(venv_backend='venv')
     def tests(session):
         pass
+
+You can chain together optional backends with ``|``, such as ``uv|virtualenv``
+or ``mamba|conda``, and the first available backend will be selected. You
+cannot put anything after a backend that can't be missing like ``venv`` or
+``virtualenv``.
 
 Finally, custom backend parameters are supported:
 
@@ -182,6 +187,9 @@ Finally, custom backend parameters are supported:
     @nox.session(venv_params=['--no-download'])
     def tests(session):
         pass
+
+If you need to check to see which backend was selected, you can access it via
+``session.venv_backend``.
 
 
 Passing arguments into sessions
