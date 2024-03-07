@@ -497,7 +497,7 @@ def test_stale_environment(make_one, frm, to, result, monkeypatch):
     assert reused == result
 
 
-def test_passthrough_environment_venv_backend():
+def test_passthrough_environment_venv_backend(make_one):
     venv, _ = make_one(reuse_existing=True, venv_backend="none")
     venv.create()
     assert venv.venv_backend == "none"
