@@ -42,4 +42,5 @@ jobs:
       - uses: ./
         with:
           python-versions: "3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, pypy-2.7, pypy-3.7, pypy-3.8, pypy-3.9, pypy-3.10"
-      - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_all_tests
+          extras: uv
+      - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_all_tests --default-venv-backend uv

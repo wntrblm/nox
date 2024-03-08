@@ -5,6 +5,10 @@ inputs:
     description: "comma-separated list of python versions to install"
     required: false
     default: "3.8, 3.9, 3.10, 3.11, 3.12, pypy-3.9, pypy-3.10"
+  extras:
+    description: "comma-separated list of extras to install"
+    required: false
+    default: ""
 branding:
   icon: package
   color: blue
@@ -31,5 +35,5 @@ runs:
         allow-prereleases: true
 
     - name: "Install nox"
-      run: pipx install --python "${{ steps.allpython.outputs.python-path }}" '${{ github.action_path }}'
+      run: pipx install --python "${{ steps.allpython.outputs.python-path }}" "${{ github.action_path }}${{ inputs.extras != '' && format('[{0}]', inputs.extras) || ''}}"
       shell: bash
