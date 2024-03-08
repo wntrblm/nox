@@ -829,7 +829,7 @@ class TestSession:
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3", silent=False)
             run.assert_called_once_with(
-                "uv",
+                nox.virtualenv.UV,
                 "pip",
                 "install",
                 "requests",

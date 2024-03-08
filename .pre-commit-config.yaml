@@ -40,6 +40,7 @@ repos:
           - jinja2
           - packaging
           - importlib_metadata
+          - uv
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6

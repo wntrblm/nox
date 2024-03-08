@@ -20,6 +20,7 @@ import re
 import shutil
 import subprocess
 import sys
+import types
 from textwrap import dedent
 from typing import NamedTuple
 from unittest import mock
@@ -544,6 +545,32 @@ def test_create_reuse_uv_environment(make_one):
 
     # The environment is reused because it looks like a uv environment
     assert reused
+
+
+UV_IN_PIPX_VENV = "/home/user/.local/pipx/venvs/nox/bin/uv"
+
+
+@pytest.mark.parametrize(
+    ["which_result", "find_uv_bin_result", "expected"],
+    [
+        ("/usr/bin/uv", UV_IN_PIPX_VENV,   (True,  UV_IN_PIPX_VENV)),
+        ("/usr/bin/uv", FileNotFoundError, (True,  "/usr/bin/uv")),
+        (None,          UV_IN_PIPX_VENV,   (True,  UV_IN_PIPX_VENV)),
+        (None,          FileNotFoundError, (False, "uv")),
+    ],
+)  # fmt: skip
+def test_find_uv(monkeypatch, which_result, find_uv_bin_result, expected):
+    def find_uv_bin():
+        if find_uv_bin_result is FileNotFoundError:
+            raise FileNotFoundError
+        return find_uv_bin_result
+
+    monkeypatch.setattr(shutil, "which", lambda _: which_result)
+    monkeypatch.setitem(
+        sys.modules, "uv", types.SimpleNamespace(find_uv_bin=find_uv_bin)
+    )
+
+    assert nox.virtualenv.find_uv() == expected
 
 
 def test_create_reuse_venv_environment(make_one, monkeypatch):
