@@ -93,6 +93,13 @@ class ProcessEnv(abc.ABC):
         Returns True if the environment is new, and False if it was reused.
         """
 
+    @property
+    @abc.abstractmethod
+    def venv_backend(self) -> str:
+        """
+        Returns the string used to select this environment.
+        """
+
 
 def locate_via_py(version: str) -> str | None:
     """Find the Python executable using the Windows Launcher.
@@ -179,6 +186,10 @@ class PassthroughEnv(ProcessEnv):
         """Does nothing, since this is an existing environment. Always returns
         False since it's always reused."""
         return False
+
+    @property
+    def venv_backend(self) -> str:
+        return "none"
 
 
 class CondaEnv(ProcessEnv):
@@ -303,6 +314,10 @@ class CondaEnv(ProcessEnv):
         except BaseException:  # pragma: no cover
             return True
 
+    @property
+    def venv_backend(self) -> str:
+        return self.conda_cmd
+
 
 class VirtualEnv(ProcessEnv):
     """Virtualenv management class.
@@ -341,7 +356,7 @@ class VirtualEnv(ProcessEnv):
         self.interpreter = interpreter
         self._resolved: None | str | InterpreterNotFound = None
         self.reuse_existing = reuse_existing
-        self.venv_backend = venv_backend
+        self._venv_backend = venv_backend
         self.venv_params = venv_params or []
         if venv_backend not in {"virtualenv", "venv", "uv"}:
             msg = f"venv_backend {venv_backend} not recognized"
@@ -543,6 +558,10 @@ class VirtualEnv(ProcessEnv):
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
+
+    @property
+    def venv_backend(self) -> str:
+        return self._venv_backend
 
 
 ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {

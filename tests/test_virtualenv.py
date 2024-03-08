@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import functools
 import os
 import re
 import shutil
@@ -52,14 +53,13 @@ class TextProcessResult(NamedTuple):
 def make_one(tmpdir):
     def factory(*args, venv_backend: str = "virtualenv", **kwargs):
         location = tmpdir.join("venv")
-        if venv_backend in {"mamba", "conda"}:
-            venv = nox.virtualenv.CondaEnv(
-                location.strpath, *args, conda_cmd=venv_backend, **kwargs
+        try:
+            venv_fn = nox.virtualenv.ALL_VENVS[venv_backend]
+        except KeyError:
+            venv_fn = functools.partial(
+                nox.virtualenv.VirtualEnv, venv_backend=venv_backend
             )
-        else:
-            venv = nox.virtualenv.VirtualEnv(
-                location.strpath, *args, venv_backend=venv_backend, **kwargs
-            )
+        venv = venv_fn(location.strpath, *args, **kwargs)
         return (venv, location)
 
     return factory
@@ -490,11 +490,19 @@ def test_stale_environment(make_one, frm, to, result, monkeypatch):
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
     venv, _ = make_one(reuse_existing=True, venv_backend=frm)
     venv.create()
+    assert venv.venv_backend == frm
 
     venv, _ = make_one(reuse_existing=True, venv_backend=to)
     reused = venv._check_reused_environment_type()
+    assert venv.venv_backend == to
 
     assert reused == result
+
+
+def test_passthrough_environment_venv_backend(make_one):
+    venv, _ = make_one(venv_backend="none")
+    venv.create()
+    assert venv.venv_backend == "none"
 
 
 @has_uv

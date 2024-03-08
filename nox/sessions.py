@@ -194,6 +194,14 @@ class Session:
         return venv
 
     @property
+    def venv_backend(self) -> str:
+        """The venv_backend selected."""
+        venv = self._runner.venv
+        if venv is None:
+            return "none"
+        return venv.venv_backend
+
+    @property
     def python(self) -> str | Sequence[str] | bool | None:
         """The python version passed into ``@nox.session``."""
         return self._runner.func.python

@@ -139,6 +139,8 @@ class TestSession:
         with pytest.raises(ValueError, match="virtualenv"):
             _ = session.virtualenv
 
+        assert session.venv_backend == "none"
+
     def test_interactive(self):
         session, runner = self.make_session_and_runner()
 
@@ -644,6 +646,8 @@ class TestSession:
             pass
 
         session = SessionNoSlots(runner=runner)
+
+        assert session.venv_backend == "venv"
 
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3")
