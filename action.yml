@@ -31,5 +31,48 @@ runs:
         allow-prereleases: true
 
     - name: "Install nox"
-      run: pipx install --python "${{ steps.allpython.outputs.python-path }}" '${{ github.action_path }}'
+      run: |
+        # Install nox
+        "${{ steps.allpython.outputs.python-path }}" -u << "EOF"
+        import os
+        import shutil
+        import sys
+        import venv
+
+        from pathlib import Path
+        from subprocess import run
+
+
+        class EnvBuilder(venv.EnvBuilder):
+            def __init__(self):
+                super().__init__()
+
+            def setup_scripts(self, context):
+                pass
+
+            def post_setup(self, context):
+                super().post_setup(context)
+                self.bin_path = Path(context.env_exe).parent
+                run([sys.executable, "-m", "pip", "--python", context.env_exe, "install", r"${{ github.action_path }}"], check=True)
+
+
+        print("::group::Install nox")
+        nox_bin_path = Path(r"${{ runner.temp }}") / "nox"
+        if nox_bin_path.exists():
+            shutil.rmtree(nox_bin_path)
+        venv_path = Path(r"${{ runner.temp }}") / "nox-venv"
+        if venv_path.exists():
+            shutil.rmtree(venv_path)
+        builder = EnvBuilder()
+        builder.create(venv_path)
+        nox_path = [path for path in builder.bin_path.glob("nox*") if path.stem == "nox"][0]
+        nox_bin_path.mkdir()
+        try:
+            os.symlink(nox_path, nox_bin_path / nox_path.name)
+        except OSError:
+            shutil.copyfile(nox_path, nox_bin_path / nox_path.name)
+        with open(os.environ["GITHUB_PATH"], "at") as f:
+            f.write(f"{nox_bin_path}\n")
+        print("::endgroup::")
+        EOF
       shell: bash
