@@ -32,8 +32,6 @@ runs:
 
     - name: "Install nox"
       run: |
-        # Install nox
-        "${{ steps.allpython.outputs.python-path }}" -u << "EOF"
         import os
         import shutil
         import sys
@@ -74,5 +72,4 @@ runs:
         with open(os.environ["GITHUB_PATH"], "at") as f:
             f.write(f"{nox_bin_path}\n")
         print("::endgroup::")
-        EOF
-      shell: bash
+      shell: "${{ steps.localpython.outputs.python-path }}" -u
