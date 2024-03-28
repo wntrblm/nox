@@ -72,4 +72,4 @@ runs:
         with open(os.environ["GITHUB_PATH"], "at") as f:
             f.write(f"{nox_bin_path}\n")
         print("::endgroup::")
-      shell: "${{ steps.localpython.outputs.python-path }}" -u
+      shell: "${{ steps.localpython.outputs.python-path }} -u"
