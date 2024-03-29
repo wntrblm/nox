@@ -27,6 +27,9 @@ import nox
 
 ON_WINDOWS_CI = "CI" in os.environ and platform.system() == "Windows"
 
+nox.needs_version = ">=2024.3.2"
+nox.options.default_venv_backend = "uv|virtualenv"
+
 # Skip 'conda_tests' if user doesn't have conda installed
 nox.options.sessions = ["tests", "cover", "lint", "docs"]
 if shutil.which("conda"):
@@ -76,7 +79,7 @@ def tests(session: nox.Session, tox_version: str) -> None:
             con.execute("DELETE FROM file WHERE SUBSTR(path, 2, 1) == ':'")
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10"], venv_backend="conda")
+@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"], venv_backend="conda")
 def conda_tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
     session.create_tmp()  # Fixes permission errors on Windows
