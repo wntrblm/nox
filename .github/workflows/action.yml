@@ -32,6 +32,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./
       - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_default_tests
+
   action-all-tests:
     runs-on: windows-latest
     steps:
@@ -43,3 +44,12 @@ jobs:
         with:
           python-versions: "3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, pypy-2.7, pypy-3.7, pypy-3.8, pypy-3.9, pypy-3.10"
       - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_all_tests
+
+  action-macos14-tests:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          python-versions: "3.10, 3.11, 3.12, pypy-3.8, pypy-3.9, pypy-3.10"
+      - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_macos_14
