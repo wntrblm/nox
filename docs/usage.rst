@@ -156,13 +156,6 @@ Note that using this option does not change the backend for sessions where ``ven
    as ``uv pip`` is used to install programs instead. If you need to manually
    interact with pip, you should install it with ``session.install("pip")``.
 
-.. warning::
-
-   Currently the ``uv`` backend requires the ``<program name> @ .`` syntax to
-   install a local folder in non-editable mode; it does not (yet) compute the
-   name from the install process like pip does if the name is omitted. Editable
-   installs do not require a name.
-
 Backends that could be missing (``uv``, ``conda``, and ``mamba``) can have a fallback using ``|``, such as ``uv|virtualenv`` or ``mamba|conda``. This will use the first item that is available on the users system.
 
 If you need to check to see which backend was selected, you can access it via
