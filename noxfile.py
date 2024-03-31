@@ -56,15 +56,20 @@ def tests(session: nox.Session, tox_version: str) -> None:
     session.create_tmp()  # Fixes permission errors on Windows
     session.install("-r", "requirements-test.txt")
     session.install("-e.[tox_to_nox]")
+    args = session.posargs
     if tox_version != "latest":
         session.install(f"tox{tox_version}")
+    elif not args:
+        # this ensures consistent behavior locally and in CI
+        args = ["tests/test_tox_to_nox.py"]
+
     session.run(
         "pytest",
         "--cov",
         "--cov-config",
         "pyproject.toml",
         "--cov-report=",
-        *session.posargs,
+        *args,
         env={
             "COVERAGE_FILE": coverage_file,
         },
