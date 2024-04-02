@@ -75,14 +75,18 @@ class ProcessEnv(abc.ABC):
     allowed_globals: ClassVar[tuple[Any, ...]] = ()
 
     def __init__(
-        self, bin_paths: None = None, env: Mapping[str, str] | None = None
+        self, bin_paths: None = None, env: Mapping[str, str | None] | None = None
     ) -> None:
         self._bin_paths = bin_paths
         self.env = os.environ.copy()
         self._reused = False
+        env = env or {}
 
-        if env is not None:
-            self.env.update(env)
+        for k, v in env.items():
+            if v is None:
+                self.env.pop(k, None)
+            else:
+                self.env[k] = v
 
         for key in _BLACKLISTED_ENV_VARS:
             self.env.pop(key, None)
@@ -249,7 +253,7 @@ class CondaEnv(ProcessEnv):
         self.reuse_existing = reuse_existing
         self.venv_params = venv_params or []
         self.conda_cmd = conda_cmd
-        super().__init__(env={"CONDA_PREFIX": self.location})
+        super().__init__(env={"CONDA_PREFIX": self.location, "VIRTUAL_ENV": None})
 
     def _clean_location(self) -> bool:
         """Deletes existing conda environment"""
@@ -379,7 +383,7 @@ class VirtualEnv(ProcessEnv):
         if venv_backend not in {"virtualenv", "venv", "uv"}:
             msg = f"venv_backend {venv_backend} not recognized"
             raise ValueError(msg)
-        super().__init__(env={"VIRTUAL_ENV": self.location})
+        super().__init__(env={"VIRTUAL_ENV": self.location, "CONDA_PREFIX": None})
 
     def _clean_location(self) -> bool:
         """Deletes any existing virtual environment"""

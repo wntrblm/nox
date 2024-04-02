@@ -364,8 +364,14 @@ def test_bin_windows(make_one):
 
 
 def test_create(monkeypatch, make_one):
+    monkeypatch.setenv("CONDA_PREFIX", "no-prefix-allowed")
+    monkeypatch.setenv("NOT_CONDA_PREFIX", "something-else")
+
     venv, dir_ = make_one()
     venv.create()
+
+    assert "CONDA_PREFIX" not in venv.env
+    assert "NOT_CONDA_PREFIX" in venv.env
 
     if IS_WINDOWS:
         assert dir_.join("Scripts", "python.exe").check()
