@@ -34,6 +34,10 @@ nox.options.default_venv_backend = "uv|virtualenv"
 nox.options.sessions = ["tests", "cover", "lint", "docs"]
 if shutil.which("conda"):
     nox.options.sessions.append("conda_tests")
+if shutil.which("mamba"):
+    nox.options.sessions.append("mamba_tests")
+if shutil.which("micromamba"):
+    nox.options.sessions.append("micromamba_tests")
 
 
 # Because there is a dependency conflict between argcomplete and the latest tox
@@ -79,12 +83,31 @@ def tests(session: nox.Session, tox_version: str) -> None:
             con.execute("DELETE FROM file WHERE SUBSTR(path, 2, 1) == ':'")
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"], venv_backend="conda")
+@nox.session(venv_backend="conda")
 def conda_tests(session: nox.Session) -> None:
-    """Run test suite with pytest."""
-    session.create_tmp()  # Fixes permission errors on Windows
+    """Run test suite set up with conda."""
     session.conda_install(
-        "--file", "requirements-conda-test.txt", "--channel", "conda-forge"
+        "--file", "requirements-conda-test.txt", channel="conda-forge"
+    )
+    session.install("-e", ".", "--no-deps")
+    session.run("pytest", *session.posargs)
+
+
+@nox.session(venv_backend="mamba")
+def mamba_tests(session: nox.Session) -> None:
+    """Run test suite set up with mamba."""
+    session.conda_install(
+        "--file", "requirements-conda-test.txt", channel="conda-forge"
+    )
+    session.install("-e", ".", "--no-deps")
+    session.run("pytest", *session.posargs)
+
+
+@nox.session(venv_backend="micromamba")
+def micromamba_tests(session: nox.Session) -> None:
+    """Run test suite set up with micromamba."""
+    session.conda_install(
+        "--file", "requirements-conda-test.txt", channel="conda-forge"
     )
     session.install("-e", ".", "--no-deps")
     session.run("pytest", *session.posargs)

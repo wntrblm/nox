@@ -397,12 +397,13 @@ Install packages with conda:
 
 .. code-block:: python
 
-    session.conda_install("pytest")
+    session.conda_install("pytest", channels=["conda-forge"])
 
 It is possible to install packages with pip into the conda environment, but
 it's a best practice only install pip packages with the ``--no-deps`` option.
-This prevents pip from breaking the conda environment by installing
-incompatible versions of packages already installed with conda.
+This prevents pip from breaking the conda environment by installing incompatible
+versions of packages already installed with conda. You should always specify
+channels for consistency; default channels can vary (and ``micromamba`` has none).
 
 .. code-block:: python
 
@@ -412,6 +413,9 @@ incompatible versions of packages already installed with conda.
 ``"mamba"`` is also allowed as a choice for ``venv_backend``, which will
 use/require `mamba <https://github.com/mamba-org/mamba>`_ instead of conda.
 
+``"micromamba"`` is also allowed as a choice for ``venv_backend``, which will
+use/require `micromamba <https://mamba.readthedocs.io/en/latest/user_guide/micromamba.html#>`_
+instead of conda.
 
 Parametrization
 ---------------

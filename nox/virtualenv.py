@@ -236,7 +236,7 @@ class CondaEnv(ProcessEnv):
     """
 
     is_sandboxed = True
-    allowed_globals = ("conda", "mamba")
+    allowed_globals = ("conda", "mamba", "micromamba")
 
     def __init__(
         self,
@@ -305,6 +305,9 @@ class CondaEnv(ProcessEnv):
             return False
 
         cmd = [self.conda_cmd, "create", "--yes", "--prefix", self.location]
+        if self.conda_cmd == "micromamba":
+            # Micromamba doesn't have any default channels
+            cmd.append("--channel=conda-forge")
 
         cmd.extend(self.venv_params)
 
@@ -314,7 +317,9 @@ class CondaEnv(ProcessEnv):
         python_dep = f"python={self.interpreter}" if self.interpreter else "python"
         cmd.append(python_dep)
 
-        logger.info(f"Creating conda env in {self.location_name} with {python_dep}")
+        logger.info(
+            f"Creating {self.conda_cmd} env in {self.location_name} with {python_dep}"
+        )
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
@@ -589,6 +594,7 @@ class VirtualEnv(ProcessEnv):
 ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {
     "conda": functools.partial(CondaEnv, conda_cmd="conda"),
     "mamba": functools.partial(CondaEnv, conda_cmd="mamba"),
+    "micromamba": functools.partial(CondaEnv, conda_cmd="micromamba"),
     "virtualenv": functools.partial(VirtualEnv, venv_backend="virtualenv"),
     "venv": functools.partial(VirtualEnv, venv_backend="venv"),
     "uv": functools.partial(VirtualEnv, venv_backend="uv"),
@@ -601,5 +607,6 @@ ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {
 OPTIONAL_VENVS = {
     "conda": shutil.which("conda") is not None,
     "mamba": shutil.which("mamba") is not None,
+    "micromamba": shutil.which("micromamba") is not None,
     "uv": HAS_UV,
 }

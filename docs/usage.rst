@@ -126,7 +126,7 @@ Then running ``nox --session tests`` will actually run all parametrized versions
 Changing the sessions default backend
 -------------------------------------
 
-By default Nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``uv``, ``conda``, ``mamba``, and ``venv`` as well as no backend (passthrough to whatever python environment Nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'uv', 'virtualenv', 'conda', 'mamba', 'venv')``.
+By default Nox uses ``virtualenv`` as the virtual environment backend for the sessions, but it also supports ``uv``, ``conda``, ``mamba``, ``micromamba``, and ``venv`` as well as no backend (passthrough to whatever python environment Nox is running on). You can change the default behaviour by using ``-db <backend>`` or ``--default-venv-backend <backend>``. Supported names are ``('none', 'uv', 'virtualenv', 'conda', 'mamba', 'venv')``.
 
 
 .. tabs::
@@ -142,9 +142,9 @@ By default Nox uses ``virtualenv`` as the virtual environment backend for the se
 
 .. note::
 
-   The ``uv``, ``conda``, and ``mamba`` backends require their respective
-   programs be pre-installed. ``uv`` is distributed as a Python package
-   and can be installed with the ``nox[uv]`` extra.
+   The ``uv``, ``conda``, ``mamba``, and ``micromamba`` backends require their
+   respective programs be pre-installed. ``uv`` is distributed as a Python
+   package and can be installed with the ``nox[uv]`` extra.
 
 You can also set this option with the ``NOX_DEFAULT_VENV_BACKEND`` environment variable, or in the Noxfile with ``nox.options.default_venv_backend``. In case more than one is provided, the command line argument overrides the environment variable, which in turn overrides the Noxfile configuration.
 
@@ -156,7 +156,7 @@ Note that using this option does not change the backend for sessions where ``ven
    as ``uv pip`` is used to install programs instead. If you need to manually
    interact with pip, you should install it with ``session.install("pip")``.
 
-Backends that could be missing (``uv``, ``conda``, and ``mamba``) can have a fallback using ``|``, such as ``uv|virtualenv`` or ``mamba|conda``. This will use the first item that is available on the users system.
+Backends that could be missing (``uv``, ``conda``, ``mamba``, and ``micromamba``) can have a fallback using ``|``, such as ``uv|virtualenv`` or ``micromamba|mamba|conda``. This will use the first item that is available on the users system.
 
 If you need to check to see which backend was selected, you can access it via
 ``session.venv_backend`` in your noxfile.
@@ -166,7 +166,7 @@ If you need to check to see which backend was selected, you can access it via
 Forcing the sessions backend
 ----------------------------
 
-You might work in a different environment than a project's default continuous integration settings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current Nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and Noxfile configuration. Supported names are ``('none', 'uv', 'virtualenv', 'conda', 'mamba', 'venv')``.
+You might work in a different environment than a project's default continuous integration settings, and might wish to get a quick way to execute the same tasks but on a different venv backend. For this purpose, you can temporarily force the backend used by **all** sessions in the current Nox execution by using ``-fb <backend>`` or ``--force-venv-backend <backend>``. No exceptions are made, the backend will be forced for all sessions run whatever the other options values and Noxfile configuration. Supported names are ``('none', 'uv', 'virtualenv', 'conda', 'mamba', 'micromamba', 'venv')``.
 
 .. code-block:: console
 
