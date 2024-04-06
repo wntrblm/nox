@@ -495,7 +495,8 @@ def test_micromamba_environment(make_one, monkeypatch):
     monkeypatch.setattr(nox.command, "run", run)
     venv.create()
     run.assert_called_once()
-    (args,) = run.call_args.args
+    # .args requires Python 3.8+
+    ((args,), _) = run.call_args
     assert args[0] == "micromamba"
     assert "--channel=conda-forge" in args
 
