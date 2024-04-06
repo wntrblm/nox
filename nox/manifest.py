@@ -155,6 +155,11 @@ class Manifest:
         if missing_sessions:
             raise KeyError(f"Sessions not found: {', '.join(missing_sessions)}")
 
+    def filter_by_default(self) -> None:
+        """Filter sessions in the queue based on the default flag."""
+
+        self._queue = [x for x in self._queue if x.func.default]
+
     def filter_by_python_interpreter(self, specified_pythons: Sequence[str]) -> None:
         """Filter sessions in the queue based on the user-specified
         python interpreter versions.

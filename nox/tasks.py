@@ -173,7 +173,9 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
     # This can raise KeyError if a specified session does not exist;
     # log this if it happens. The sessions does not come from the Noxfile
     # if keywords is not empty.
-    if global_config.sessions is not None:
+    if global_config.sessions is None:
+        manifest.filter_by_default()
+    else:
         try:
             manifest.filter_by_name(global_config.sessions)
         except KeyError as exc:
