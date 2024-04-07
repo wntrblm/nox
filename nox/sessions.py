@@ -565,7 +565,7 @@ class Session:
         prefix_args: tuple[str, ...] = ()
         if isinstance(venv, CondaEnv):
             prefix_args = ("--prefix", venv.location)
-        elif not isinstance(venv, PassthroughEnv):  # pragma: no cover
+        elif not isinstance(venv, PassthroughEnv):
             raise ValueError(
                 "A session without a conda environment can not install dependencies"
                 " from conda."
@@ -574,7 +574,9 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to install().")
 
-        if self._runner.global_config.no_install and venv._reused:
+        if self._runner.global_config.no_install and (
+            isinstance(venv, PassthroughEnv) or venv._reused
+        ):
             return
 
         # Escape args that should be (conda-specific; pip install does not need this)
@@ -648,6 +650,8 @@ class Session:
                 "A session without a virtualenv can not install dependencies."
             )
         if isinstance(venv, PassthroughEnv):
+            if self._runner.global_config.no_install:
+                return
             raise ValueError(
                 f"Session {self.name} does not have a virtual environment, so use of"
                 " session.install() is no longer allowed since it would modify the"
