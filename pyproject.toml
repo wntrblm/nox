@@ -44,6 +44,7 @@ dependencies = [
   "colorlog<7.0.0,>=2.6.1",
   'importlib-metadata; python_version < "3.8"',
   "packaging>=20.9",
+  'tomli>=1; python_version < "3.11"',
   'typing-extensions>=3.7.4; python_version < "3.8"',
   "virtualenv>=20.14.1",
 ]
