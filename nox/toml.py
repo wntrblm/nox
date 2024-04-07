@@ -14,6 +14,14 @@ if sys.version_info < (3, 11):
 else:
     import tomllib
 
+
+__all__ = ["load"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 # Note: the implementation (including this regex) taken from PEP 723
 # https://peps.python.org/pep-0723
 
@@ -22,7 +30,7 @@ REGEX = re.compile(
 )
 
 
-def load_toml(filename: os.PathLike[str] | str) -> dict[str, Any]:
+def load(filename: os.PathLike[str] | str) -> dict[str, Any]:
     """
     Load a toml file or a script with a PEP 723 script block.
 
