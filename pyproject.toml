@@ -108,7 +108,7 @@ relative_files = true
 source_pkgs = [ "nox" ]
 
 [tool.coverage.report]
-exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
+exclude_also = [ "def __dir__()", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.mypy]
 files = [ "nox/**/*.py", "noxfile.py" ]

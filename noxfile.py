@@ -96,7 +96,7 @@ def cover(session: nox.Session) -> None:
     if ON_WINDOWS_CI:
         return
 
-    session.install("coverage[toml]>=5.3")
+    session.install("coverage[toml]>=7.3")
     session.run("coverage", "combine")
     session.run("coverage", "report", "--fail-under=100", "--show-missing")
     session.run("coverage", "erase")
