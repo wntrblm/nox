@@ -483,6 +483,7 @@ def test_reuse_conda_environment(make_one):
     assert reused
 
 
+# This mocks micromamba so that it doesn't need to be installed.
 @has_conda
 def test_micromamba_environment(make_one, monkeypatch):
     conda_path = shutil.which("conda")
@@ -499,6 +500,32 @@ def test_micromamba_environment(make_one, monkeypatch):
     ((args,), _) = run.call_args
     assert args[0] == "micromamba"
     assert "--channel=conda-forge" in args
+
+
+# This mocks micromamba so that it doesn't need to be installed.
+@pytest.mark.parametrize(
+    "params",
+    [["--channel=default"], ["-cdefault"], ["-c", "default"], ["--channel", "default"]],
+)
+@has_conda
+def test_micromamba_channel_environment(make_one, monkeypatch, params):
+    conda_path = shutil.which("conda")
+    which = shutil.which
+    monkeypatch.setattr(
+        shutil, "which", lambda x: conda_path if x == "micromamba" else which(x)
+    )
+    venv, _ = make_one(reuse_existing=True, venv_backend="micromamba")
+    run = mock.Mock()
+    monkeypatch.setattr(nox.command, "run", run)
+    venv.venv_params = params
+    venv.create()
+    run.assert_called_once()
+    # .args requires Python 3.8+
+    ((args,), _) = run.call_args
+    assert args[0] == "micromamba"
+    for p in params:
+        assert p in args
+    assert "--channel=conda-forge" not in args
 
 
 @pytest.mark.parametrize(

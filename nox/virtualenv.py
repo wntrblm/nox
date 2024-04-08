@@ -305,7 +305,10 @@ class CondaEnv(ProcessEnv):
             return False
 
         cmd = [self.conda_cmd, "create", "--yes", "--prefix", self.location]
-        if self.conda_cmd == "micromamba":
+        if self.conda_cmd == "micromamba" and not any(
+            v.startswith(("--channel=", "-c")) or v == "--channel"
+            for v in self.venv_params
+        ):
             # Micromamba doesn't have any default channels
             cmd.append("--channel=conda-forge")
 
