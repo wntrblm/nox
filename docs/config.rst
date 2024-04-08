@@ -26,6 +26,10 @@ with ``@nox.session``. For example:
 
 You can also configure sessions to run against multiple Python versions as described in :ref:`virtualenv config` and  parametrize sessions as described in :ref:`parametrized sessions <parametrized>`.
 
+By default, all sessions will be run if no sessions are specified. You can
+remove sessions from this default list by passing ``default=False`` in the
+``@nox.session(...)`` decorator. You can also specify a list of sessions to run by
+default using the ``nox.options.sessions = [...]`` configuration option.
 
 Session description
 -------------------
@@ -421,7 +425,7 @@ Nox has various :doc:`command line arguments <usage>` that can be used to modify
     def tests(session):
         ...
 
-Or, if you wanted to provide a set of sessions that are run by default:
+Or, if you wanted to provide a set of sessions that are run by default (this overrides the ``default=`` argument to sessions):
 
 .. code-block:: python
 

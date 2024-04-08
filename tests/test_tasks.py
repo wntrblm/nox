@@ -40,6 +40,7 @@ session_func.python = None
 session_func.venv_backend = None
 session_func.should_warn = {}
 session_func.tags = []
+session_func.default = True
 
 
 def session_func_with_python():
@@ -48,6 +49,7 @@ def session_func_with_python():
 
 session_func_with_python.python = "3.8"
 session_func_with_python.venv_backend = None
+session_func_with_python.default = True
 
 
 def session_func_venv_pythons_warning():
@@ -344,6 +346,40 @@ def test_merge_sessions_and_tags(reset_global_nox_options, generate_noxfile_opti
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
     assert len(manifest) == 2
+
+
+@pytest.mark.parametrize("selection", [None, ["qux"], ["quuz"], ["qux", "quuz"]])
+def test_default_false(selection):
+    @nox.session()
+    def qux():
+        pass
+
+    @nox.session()
+    def quux():
+        pass
+
+    @nox.session(default=False)
+    def quuz():
+        pass
+
+    @nox.session(default=False)
+    def corge():
+        pass
+
+    config = _options.options.namespace(sessions=selection, pythons=(), posargs=[])
+    manifest = Manifest(
+        {
+            "qux": qux,
+            "quux": quux,
+            "quuz": quuz,
+            "corge": corge,
+        },
+        config,
+    )
+    return_value = tasks.filter_manifest(manifest, config)
+    assert return_value is manifest
+    expected = 2 if selection is None else len(selection)
+    assert len(manifest) == expected
 
 
 def test_honor_list_request_noop():
