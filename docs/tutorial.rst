@@ -176,9 +176,9 @@ Loading dependencies from pyproject.toml or scripts
 One common need is loading a dependency list from a ``pyproject.toml`` file
 (say to prepare an environment without installing the package) or supporting
 `PEP 723 <https://peps.python.org/pep-0723>`_ scripts. Nox provides a helper to
-load these with ``nox.toml.load``. It can be passed a filepath to a toml file
-or to a script file following PEP 723. For example, if you have the following
-``peps.py``:
+load these with ``nox.project.load_toml``. It can be passed a filepath to a toml
+file or to a script file following PEP 723. For example, if you have the
+following ``peps.py``:
 
 
 .. code-block:: python
@@ -204,7 +204,7 @@ You can make a session for it like this:
 
    @nox.session
    def peps(session):
-       requirements = nox.toml.load("peps.py")["dependencies"]
+       requirements = nox.project.load_toml("peps.py")["dependencies"]
        session.install(*requirements)
        session.run("peps.py")
 

@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from nox import toml
+from nox import project
 from nox._options import noxfile_options as options
 from nox._parametrize import Param as param
 from nox._parametrize import parametrize_decorator as parametrize
@@ -30,5 +30,5 @@ __all__ = [
     "session",
     "options",
     "Session",
-    "toml",
+    "project",
 ]

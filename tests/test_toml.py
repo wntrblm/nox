@@ -17,7 +17,7 @@ def test_load_pyproject(tmp_path: Path) -> None:
         """
     )
 
-    toml = nox.toml.load(filepath)
+    toml = nox.project.load_toml(filepath)
     assert toml["project"]["dependencies"] == ["numpy", "requests"]
 
 
@@ -46,7 +46,7 @@ def test_load_script_block(tmp_path: Path, example: str) -> None:
         )
     )
 
-    toml = nox.toml.load(filepath)
+    toml = nox.project.load_toml(filepath)
     assert toml["dependencies"] == ["requests<3", "rich"]
 
 
@@ -68,7 +68,7 @@ def test_load_no_script_block(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ValueError, match="No script block found"):
-        nox.toml.load(filepath)
+        nox.project.load_toml(filepath)
 
 
 def test_load_multiple_script_block(tmp_path: Path) -> None:
@@ -98,10 +98,10 @@ def test_load_multiple_script_block(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ValueError, match="Multiple script blocks found"):
-        nox.toml.load(filepath)
+        nox.project.load_toml(filepath)
 
 
 def test_load_non_recongnised_extension():
     msg = "Extension must be .py or .toml, got .txt"
     with pytest.raises(ValueError, match=msg):
-        nox.toml.load("some.txt")
+        nox.project.load_toml("some.txt")

@@ -15,7 +15,7 @@ else:
     import tomllib
 
 
-__all__ = ["load"]
+__all__ = ["load_toml"]
 
 
 def __dir__() -> list[str]:
@@ -30,7 +30,7 @@ REGEX = re.compile(
 )
 
 
-def load(filename: os.PathLike[str] | str) -> dict[str, Any]:
+def load_toml(filename: os.PathLike[str] | str) -> dict[str, Any]:
     """
     Load a toml file or a script with a PEP 723 script block.
 
