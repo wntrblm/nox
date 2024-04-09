@@ -78,15 +78,13 @@ class ProcessEnv(abc.ABC):
         self, bin_paths: None = None, env: Mapping[str, str | None] | None = None
     ) -> None:
         self._bin_paths = bin_paths
-        self.env = os.environ.copy()
         self._reused = False
-        env = env or {}
 
-        for k, v in env.items():
-            if v is None:
-                self.env.pop(k, None)
-            else:
-                self.env[k] = v
+        # Filter envs now so `.env` is dict[str, str] (easier to use)
+        # even though .command's env supports None.
+        env = env or {}
+        env = {**os.environ, **env}
+        self.env = {k: v for k, v in env.items() if v is not None}
 
         for key in _BLACKLISTED_ENV_VARS:
             self.env.pop(key, None)

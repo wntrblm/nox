@@ -283,7 +283,7 @@ class Session:
     def run(
         self,
         *args: str | os.PathLike[str],
-        env: Mapping[str, str] | None = None,
+        env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
         **kwargs: Any,
     ) -> Any | None:
@@ -350,7 +350,9 @@ class Session:
             print("Current Git commit is", out.strip())
 
         :param env: A dictionary of environment variables to expose to the
-            command. By default, all environment variables are passed.
+            command. By default, all environment variables are passed. You
+            can block an environment variable from the outer environment by
+            setting it to None.
         :type env: dict or None
         :param include_outer_env: Boolean parameter that determines if the
             environment variables from the nox invocation environment should
@@ -406,7 +408,7 @@ class Session:
     def run_install(
         self,
         *args: str | os.PathLike[str],
-        env: Mapping[str, str] | None = None,
+        env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
         **kwargs: Any,
     ) -> Any | None:
@@ -474,7 +476,7 @@ class Session:
     def run_always(
         self,
         *args: str | os.PathLike[str],
-        env: Mapping[str, str] | None = None,
+        env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
         **kwargs: Any,
     ) -> Any | None:
@@ -490,7 +492,7 @@ class Session:
     def _run(
         self,
         *args: str | os.PathLike[str],
-        env: Mapping[str, str] | None = None,
+        env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
         **kwargs: Any,
     ) -> Any:
@@ -501,10 +503,8 @@ class Session:
 
         # Combine the env argument with our virtualenv's env vars.
         if include_outer_env:
-            overlay_env = env
-            env = self.env.copy()
-            if overlay_env is not None:
-                env.update(overlay_env)
+            overlay_env = env or {}
+            env = {**self.env, **overlay_env}
 
         # If --error-on-external-run is specified, error on external programs.
         if self._runner.global_config.error_on_external_run:
