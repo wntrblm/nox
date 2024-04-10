@@ -21,6 +21,7 @@ import hashlib
 import os
 import pathlib
 import re
+import subprocess
 import sys
 import unicodedata
 from collections.abc import (
@@ -41,9 +42,13 @@ import nox.command
 import nox.virtualenv
 from nox._decorators import Func
 from nox.logger import logger
+from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT
 from nox.virtualenv import UV, CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
 
 if TYPE_CHECKING:
+    from typing import IO
+
+    from nox.command import ExternalType
     from nox.manifest import Manifest
 
 
@@ -269,13 +274,11 @@ class Session:
     cd = chdir
     """An alias for :meth:`chdir`."""
 
-    def _run_func(
-        self, func: Callable[..., Any], args: Iterable[Any], kwargs: Mapping[str, Any]
-    ) -> Any:
+    def _run_func(self, func: Callable[..., Any], args: Iterable[Any]) -> Any:
         """Legacy support for running a function through :func`run`."""
-        self.log(f"{func}(args={args!r}, kwargs={kwargs!r})")
+        self.log(f"{func}(args={args!r})")
         try:
-            return func(*args, **kwargs)
+            return func(*args)
         except Exception as e:
             logger.exception(f"Function {func!r} raised {e!r}.")
             raise nox.command.CommandFailed() from e
@@ -285,7 +288,14 @@ class Session:
         *args: str | os.PathLike[str],
         env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
-        **kwargs: Any,
+        silent: bool = False,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        external: ExternalType | None = None,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> Any | None:
         """Run a command.
 
@@ -402,7 +412,14 @@ class Session:
             *args,
             env=env,
             include_outer_env=include_outer_env,
-            **kwargs,
+            silent=silent,
+            success_codes=success_codes,
+            log=log,
+            external=external,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
         )
 
     def run_install(
@@ -410,7 +427,14 @@ class Session:
         *args: str | os.PathLike[str],
         env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
-        **kwargs: Any,
+        silent: bool = False,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        external: ExternalType | None = None,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> Any | None:
         """Run a command in the install step.
 
@@ -470,7 +494,14 @@ class Session:
             *args,
             env=env,
             include_outer_env=include_outer_env,
-            **kwargs,
+            silent=silent,
+            success_codes=success_codes,
+            log=log,
+            external=external,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
         )
 
     def run_always(
@@ -478,7 +509,14 @@ class Session:
         *args: str | os.PathLike[str],
         env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
-        **kwargs: Any,
+        silent: bool = False,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        external: ExternalType | None = None,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> Any | None:
         """This is an alias to ``run_install``, which better describes the use case.
 
@@ -486,20 +524,37 @@ class Session:
         """
 
         return self.run_install(
-            *args, env=env, include_outer_env=include_outer_env, **kwargs
+            *args,
+            env=env,
+            include_outer_env=include_outer_env,
+            silent=silent,
+            success_codes=success_codes,
+            log=log,
+            external=external,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
         )
 
     def _run(
         self,
         *args: str | os.PathLike[str],
         env: Mapping[str, str | None] | None = None,
-        include_outer_env: bool = True,
-        **kwargs: Any,
+        include_outer_env: bool,
+        silent: bool,
+        success_codes: Iterable[int] | None,
+        log: bool,
+        external: ExternalType | None,
+        stdout: int | IO[str] | None,
+        stderr: int | IO[str],
+        interrupt_timeout: float | None,
+        terminate_timeout: float | None,
     ) -> Any:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
         if callable(args[0]):
-            return self._run_func(args[0], args[1:], kwargs)  # type: ignore[unreachable]
+            return self._run_func(args[0], args[1:])  # type: ignore[unreachable]
 
         # Combine the env argument with our virtualenv's env vars.
         if include_outer_env:
@@ -507,25 +562,48 @@ class Session:
             env = {**self.env, **overlay_env}
 
         # If --error-on-external-run is specified, error on external programs.
-        if self._runner.global_config.error_on_external_run:
-            kwargs.setdefault("external", "error")
+        if self._runner.global_config.error_on_external_run and external is None:
+            external = "error"
 
         # Allow all external programs when running outside a sandbox.
-        if not self.virtualenv.is_sandboxed:
-            kwargs["external"] = True
+        if (
+            not self.virtualenv.is_sandboxed
+            or args[0] in self.virtualenv.allowed_globals
+        ):
+            external = True
 
-        if args[0] in self.virtualenv.allowed_globals:
-            kwargs["external"] = True
+        if external is None:
+            external = False
 
         # Run a shell command.
-        return nox.command.run(args, env=env, paths=self.bin_paths, **kwargs)
+        return nox.command.run(
+            args,
+            env=env,
+            paths=self.bin_paths,
+            silent=silent,
+            success_codes=success_codes,
+            log=log,
+            external=external,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
+        )
 
     def conda_install(
         self,
         *args: str,
         auto_offline: bool = True,
         channel: str | Sequence[str] = "",
-        **kwargs: Any,
+        env: Mapping[str, str] | None = None,
+        include_outer_env: bool = True,
+        silent: bool | None = None,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> None:
         """Install invokes `conda install`_ to install packages inside of the
         session's environment.
@@ -584,8 +662,8 @@ class Session:
         # Escape args that should be (conda-specific; pip install does not need this)
         args = _dblquote_pkg_install_args(args)
 
-        if "silent" not in kwargs:
-            kwargs["silent"] = True
+        if silent is None:
+            silent = True
 
         extraopts: list[str] = []
         if auto_offline and venv.is_offline():
@@ -608,11 +686,32 @@ class Session:
             *extraopts,
             *prefix_args,
             *args,
+            env=env,
+            include_outer_env=include_outer_env,
+            silent=silent,
+            success_codes=success_codes,
+            log=log,
             external="error",
-            **kwargs,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
         )
 
-    def install(self, *args: str, **kwargs: Any) -> None:
+    def install(
+        self,
+        *args: str,
+        env: Mapping[str, str] | None = None,
+        include_outer_env: bool = True,
+        silent: bool | None = None,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        external: ExternalType | None = None,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> None:
         """Install invokes `pip`_ to install packages inside of the session's
         virtualenv.
 
@@ -666,15 +765,27 @@ class Session:
         if self._runner.global_config.no_install and venv._reused:
             return
 
-        if "silent" not in kwargs:
-            kwargs["silent"] = True
+        if silent is None:
+            silent = True
 
         if isinstance(venv, VirtualEnv) and venv.venv_backend == "uv":
-            self._run(UV, "pip", "install", *args, external="error", **kwargs)
+            cmd = [UV, "pip", "install"]
         else:
-            self._run(
-                "python", "-m", "pip", "install", *args, external="error", **kwargs
-            )
+            cmd = ["python", "-m", "pip", "install"]
+        self._run(
+            *cmd,
+            *args,
+            env=env,
+            include_outer_env=include_outer_env,
+            external="error",
+            silent=silent,
+            success_codes=success_codes,
+            log=log,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
+        )
 
     def notify(
         self,

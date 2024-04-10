@@ -195,7 +195,15 @@ def test_run_path_existent(tmp_path: Path):
     with mock.patch("nox.command.popen") as mock_command:
         mock_command.return_value = (0, "")
         nox.command.run([executable_name], silent=True, paths=[str(tmp_path)])
-        mock_command.assert_called_with([str(executable)], env=mock.ANY, silent=True)
+        mock_command.assert_called_with(
+            [str(executable)],
+            env=None,
+            silent=True,
+            stdout=None,
+            stderr=subprocess.STDOUT,
+            interrupt_timeout=0.3,
+            terminate_timeout=0.2,
+        )
 
 
 def test_run_external_warns(tmpdir, caplog):
