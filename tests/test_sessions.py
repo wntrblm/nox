@@ -849,8 +849,7 @@ class TestSession:
 
         assert run.called is run_called
 
-    @pytest.mark.parametrize("uv", [None, "/some/uv"])
-    def test_install_uv(self, uv, monkeypatch):
+    def test_install_uv(self):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -867,18 +866,48 @@ class TestSession:
 
         session = SessionNoSlots(runner=runner)
 
-        if uv is not None:
-            monkeypatch.setattr(nox.virtualenv, "UV", uv)
-
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3", silent=False)
             run.assert_called_once_with(
-                nox.virtualenv.UV,
+                "uv",
                 "pip",
                 "install",
                 "requests",
                 "urllib3",
                 **_run_with_defaults(silent=False, external="error"),
+            )
+
+    def test_install_uv_command(self, monkeypatch):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=[]),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.env = {}
+        runner.venv.venv_backend = "uv"
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        monkeypatch.setattr(nox.virtualenv, "UV", "/some/uv")
+        monkeypatch.setattr(shutil, "which", lambda x: None)
+
+        with mock.patch.object(nox.command, "run", autospec=True) as run:
+            session.install("requests", "urllib3", silent=False)
+            run.assert_called_once()
+
+            ((call_args,), _) = run.call_args
+            assert call_args == (
+                "/some/uv",
+                "pip",
+                "install",
+                "requests",
+                "urllib3",
             )
 
     def test___slots__(self):

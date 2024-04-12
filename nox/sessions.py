@@ -557,8 +557,12 @@ class Session:
             return self._run_func(args[0], args[1:])  # type: ignore[unreachable]
 
         # Using `"uv"` when `uv` is the backend is guaranteed to work, even if it was co-installed with nox.
-        if self.virtualenv.venv_backend == "uv" and args[0] == "uv" and nox.virtualenv.UV != "uv":
-            args = (nox.virualenv.UV, *args[1:])
+        if (
+            self.virtualenv.venv_backend == "uv"
+            and args[0] == "uv"
+            and nox.virtualenv.UV != "uv"
+        ):
+            args = (nox.virtualenv.UV, *args[1:])
 
         # Combine the env argument with our virtualenv's env vars.
         if include_outer_env:
