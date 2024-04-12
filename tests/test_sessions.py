@@ -849,7 +849,8 @@ class TestSession:
 
         assert run.called is run_called
 
-    def test_install_uv(self):
+    @pytest.mark.parametrize("uv", [None, "/some/uv"])
+    def test_install_uv(self, uv, monkeypatch):
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -865,6 +866,9 @@ class TestSession:
             pass
 
         session = SessionNoSlots(runner=runner)
+
+        if uv is not None:
+            monkeypatch.setattr(nox.virtualenv, "UV", uv)
 
         with mock.patch.object(session, "_run", autospec=True) as run:
             session.install("requests", "urllib3", silent=False)

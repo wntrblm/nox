@@ -43,7 +43,7 @@ import nox.virtualenv
 from nox._decorators import Func
 from nox.logger import logger
 from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT
-from nox.virtualenv import UV, CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
+from nox.virtualenv import CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
 
 if TYPE_CHECKING:
     from typing import IO
@@ -557,8 +557,8 @@ class Session:
             return self._run_func(args[0], args[1:])  # type: ignore[unreachable]
 
         # Using `"uv"` when `uv` is the backend is guaranteed to work, even if it was co-installed with nox.
-        if self.virtualenv.venv_backend == "uv" and args[0] == "uv" and UV != "uv":
-            args = (UV, *args[1:])
+        if self.virtualenv.venv_backend == "uv" and args[0] == "uv" and nox.virtualenv.UV != "uv":
+            args = (nox.virualenv.UV, *args[1:])
 
         # Combine the env argument with our virtualenv's env vars.
         if include_outer_env:
