@@ -17,17 +17,22 @@ from __future__ import annotations
 import os
 import shlex
 import shutil
+import subprocess
 import sys
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any
 
 from nox.logger import logger
-from nox.popen import popen
+from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT, popen
 
 if sys.version_info < (3, 8):
     from typing_extensions import Literal
 else:
     from typing import Literal
+
+TYPE_CHECKING = False
+
+if TYPE_CHECKING:
+    from typing import IO
 
 ExternalType = Literal["error", True, False]
 
@@ -81,7 +86,10 @@ def run(
     success_codes: Iterable[int] | None = None,
     log: bool = True,
     external: ExternalType = False,
-    **popen_kws: Any,
+    stdout: int | IO[str] | None = None,
+    stderr: int | IO[str] = subprocess.STDOUT,
+    interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+    terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
 ) -> str | bool:
     """Run a command-line program."""
 
@@ -119,7 +127,13 @@ def run(
 
     try:
         return_code, output = popen(
-            [cmd_path, *str_args], silent=silent, env=env, **popen_kws
+            [cmd_path, *str_args],
+            silent=silent,
+            env=env,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
         )
 
         if return_code not in success_codes:

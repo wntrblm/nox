@@ -19,6 +19,7 @@ import logging
 import operator
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -28,6 +29,7 @@ import pytest
 
 import nox.command
 import nox.manifest
+import nox.popen
 import nox.registry
 import nox.sessions
 import nox.virtualenv
@@ -36,6 +38,38 @@ from nox.logger import logger
 
 HAS_CONDA = shutil.which("conda") is not None
 has_conda = pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+
+
+def run_with_defaults(**kwargs):
+    return {
+        "env": None,
+        "silent": False,
+        "paths": None,
+        "success_codes": None,
+        "log": True,
+        "external": False,
+        "stdout": None,
+        "stderr": subprocess.STDOUT,
+        "interrupt_timeout": nox.popen.DEFAULT_INTERRUPT_TIMEOUT,
+        "terminate_timeout": nox.popen.DEFAULT_TERMINATE_TIMEOUT,
+        **kwargs,
+    }
+
+
+def _run_with_defaults(**kwargs):
+    return {
+        "env": None,
+        "include_outer_env": True,
+        "silent": False,
+        "success_codes": None,
+        "log": True,
+        "external": False,
+        "stdout": None,
+        "stderr": subprocess.STDOUT,
+        "interrupt_timeout": nox.popen.DEFAULT_INTERRUPT_TIMEOUT,
+        "terminate_timeout": nox.popen.DEFAULT_TERMINATE_TIMEOUT,
+        **kwargs,
+    }
 
 
 def test__normalize_path():
@@ -250,10 +284,7 @@ class TestSession:
 
         run.assert_called_once_with(
             ("python", "-m", "pip", "install", "spam"),
-            env=mock.ANY,
-            external=mock.ANY,
-            paths=mock.ANY,
-            silent=mock.ANY,
+            **run_with_defaults(paths=mock.ANY, silent=True, env={}, external="error"),
         )
 
     def test_run_success(self):
@@ -323,9 +354,7 @@ class TestSession:
 
         run.assert_called_once_with(
             (sys.executable, "--version"),
-            external=True,
-            env=mock.ANY,
-            paths=None,
+            **run_with_defaults(external=True, env=mock.ANY),
         )
 
     def test_run_external_condaenv(self):
@@ -342,9 +371,9 @@ class TestSession:
 
         run.assert_called_once_with(
             ("conda", "--version"),
-            external=True,
-            env=mock.ANY,
-            paths=["/path/to/env/bin"],
+            **run_with_defaults(
+                external=True, env=mock.ANY, paths=["/path/to/env/bin"]
+            ),
         )
 
     def test_run_external_with_error_on_external_run(self):
@@ -552,8 +581,7 @@ class TestSession:
                 "/path/to/conda/env",
                 "requests",
                 "urllib3",
-                silent=True,
-                external="error",
+                **_run_with_defaults(silent=True, external="error"),
             )
 
     @pytest.mark.parametrize(
@@ -627,8 +655,7 @@ class TestSession:
                 "requests",
                 # this will be double quoted if unquoted constraint is present
                 passed_arg,
-                silent=False,
-                external="error",
+                **_run_with_defaults(silent=False, external="error"),
             )
 
     def test_install_bad_args_no_arg(self):
@@ -673,8 +700,7 @@ class TestSession:
                 "install",
                 "requests",
                 "urllib3",
-                silent=True,
-                external="error",
+                **_run_with_defaults(silent=True, external="error"),
             )
 
     def test_install_non_default_kwargs(self):
@@ -703,8 +729,7 @@ class TestSession:
                 "install",
                 "requests",
                 "urllib3",
-                silent=False,
-                external="error",
+                **_run_with_defaults(silent=False, external="error"),
             )
 
     def test_install_no_venv_failure(self):
@@ -849,8 +874,7 @@ class TestSession:
                 "install",
                 "requests",
                 "urllib3",
-                silent=False,
-                external="error",
+                **_run_with_defaults(silent=False, external="error"),
             )
 
     def test___slots__(self):
