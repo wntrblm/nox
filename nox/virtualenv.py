@@ -52,9 +52,8 @@ def find_uv() -> tuple[bool, str]:
         return True, find_uv_bin()
 
     # Fall back to PATH.
-    uv = shutil.which("uv")
-    if uv is not None:
-        return True, uv
+    if shutil.which("uv") is not None:
+        return True, "uv"
 
     return False, "uv"
 

@@ -605,7 +605,7 @@ UV_IN_PIPX_VENV = "/home/user/.local/pipx/venvs/nox/bin/uv"
     ["which_result", "find_uv_bin_result", "expected"],
     [
         ("/usr/bin/uv", UV_IN_PIPX_VENV,   (True,  UV_IN_PIPX_VENV)),
-        ("/usr/bin/uv", FileNotFoundError, (True,  "/usr/bin/uv")),
+        ("/usr/bin/uv", FileNotFoundError, (True,  "uv")),
         (None,          UV_IN_PIPX_VENV,   (True,  UV_IN_PIPX_VENV)),
         (None,          FileNotFoundError, (False, "uv")),
     ],

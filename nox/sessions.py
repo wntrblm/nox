@@ -556,6 +556,10 @@ class Session:
         if callable(args[0]):
             return self._run_func(args[0], args[1:])  # type: ignore[unreachable]
 
+        # Using `"uv"` when `uv` is the backend is guaranteed to work, even if it was co-installed with nox.
+        if self.virtualenv.venv_backend == "uv" and args[0] == "uv" and UV != "uv":
+            args = (UV, *args[1:])
+
         # Combine the env argument with our virtualenv's env vars.
         if include_outer_env:
             overlay_env = env or {}
@@ -769,7 +773,7 @@ class Session:
             silent = True
 
         if isinstance(venv, VirtualEnv) and venv.venv_backend == "uv":
-            cmd = [UV, "pip", "install"]
+            cmd = ["uv", "pip", "install"]
         else:
             cmd = ["python", "-m", "pip", "install"]
         self._run(
