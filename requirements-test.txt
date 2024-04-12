@@ -1,4 +1,4 @@
-coverage[toml]>=5.3
+coverage[toml]>=7.2
 flask
 myst-parser
 pytest>=6.0

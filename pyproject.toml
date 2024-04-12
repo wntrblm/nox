@@ -44,6 +44,7 @@ dependencies = [
   "colorlog<7.0.0,>=2.6.1",
   'importlib-metadata; python_version < "3.8"',
   "packaging>=20.9",
+  'tomli>=1; python_version < "3.11"',
   'typing-extensions>=3.7.4; python_version < "3.8"',
   "virtualenv>=20.14.1",
 ]
@@ -107,7 +108,7 @@ relative_files = true
 source_pkgs = [ "nox" ]
 
 [tool.coverage.report]
-exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "@overload" ]
+exclude_also = [ "def __dir__()", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.mypy]
 files = [ "nox/**/*.py", "noxfile.py" ]
