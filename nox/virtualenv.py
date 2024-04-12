@@ -34,7 +34,12 @@ from nox.logger import logger
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
 _BLACKLISTED_ENV_VARS = frozenset(
-    ["PIP_RESPECT_VIRTUALENV", "PIP_REQUIRE_VIRTUALENV", "__PYVENV_LAUNCHER__"]
+    [
+        "PIP_RESPECT_VIRTUALENV",
+        "PIP_REQUIRE_VIRTUALENV",
+        "__PYVENV_LAUNCHER__",
+        "UV_SYSTEM_PYTHON",
+    ]
 )
 _SYSTEM = platform.system()
 
