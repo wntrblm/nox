@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Callable, Mapping
+from pathlib import Path
 from socket import gethostbyname
 from typing import Any, ClassVar
 
@@ -45,17 +46,21 @@ _SYSTEM = platform.system()
 
 
 def find_uv() -> tuple[bool, str]:
+    uv_on_path = shutil.which("uv")
+
     # Look for uv in Nox's environment, to handle `pipx install nox[uv]`.
     with contextlib.suppress(ImportError, FileNotFoundError):
         from uv import find_uv_bin
 
-        return True, find_uv_bin()
+        uv_bin = find_uv_bin()
+
+        if uv_on_path and Path(uv_bin).samefile(uv_on_path):
+            return True, "uv"
+
+        return True, uv_bin
 
     # Fall back to PATH.
-    if shutil.which("uv") is not None:
-        return True, "uv"
-
-    return False, "uv"
+    return uv_on_path is not None, "uv"
 
 
 HAS_UV, UV = find_uv()

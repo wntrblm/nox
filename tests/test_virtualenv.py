@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import types
+from pathlib import Path
 from textwrap import dedent
 from typing import NamedTuple
 from unittest import mock
@@ -602,26 +603,27 @@ UV_IN_PIPX_VENV = "/home/user/.local/pipx/venvs/nox/bin/uv"
 
 
 @pytest.mark.parametrize(
-    ["which_result", "find_uv_bin_result", "expected"],
+    ["which_result", "find_uv_bin_result", "found", "path"],
     [
-        ("/usr/bin/uv", UV_IN_PIPX_VENV,   (True,  UV_IN_PIPX_VENV)),
-        ("/usr/bin/uv", FileNotFoundError, (True,  "uv")),
-        (None,          UV_IN_PIPX_VENV,   (True,  UV_IN_PIPX_VENV)),
-        (None,          FileNotFoundError, (False, "uv")),
+        ("/usr/bin/uv", UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV),
+        ("/usr/bin/uv", FileNotFoundError, True, "uv"),
+        (None, UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV),
+        (None, FileNotFoundError, False, "uv"),
     ],
-)  # fmt: skip
-def test_find_uv(monkeypatch, which_result, find_uv_bin_result, expected):
+)
+def test_find_uv(monkeypatch, which_result, find_uv_bin_result, found, path):
     def find_uv_bin():
         if find_uv_bin_result is FileNotFoundError:
             raise FileNotFoundError
         return find_uv_bin_result
 
     monkeypatch.setattr(shutil, "which", lambda _: which_result)
+    monkeypatch.setattr(Path, "samefile", lambda a, b: a == b)
     monkeypatch.setitem(
         sys.modules, "uv", types.SimpleNamespace(find_uv_bin=find_uv_bin)
     )
 
-    assert nox.virtualenv.find_uv() == expected
+    assert nox.virtualenv.find_uv() == (found, path)
 
 
 def test_create_reuse_venv_environment(make_one, monkeypatch):
