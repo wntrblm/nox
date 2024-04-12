@@ -55,17 +55,15 @@ def which(program: str | os.PathLike[str], paths: Sequence[str] | None) -> str:
     raise CommandFailed(f"Program {program} not found")
 
 
-def _clean_env(env: Mapping[str, str] | None = None) -> dict[str, str] | None:
+def _clean_env(env: Mapping[str, str | None] | None = None) -> dict[str, str] | None:
     if env is None:
         return None
 
-    clean_env: dict[str, str] = {}
+    clean_env = {k: v for k, v in env.items() if v is not None}
 
     # Ensure systemroot is passed down, otherwise Windows will explode.
     if sys.platform == "win32":
-        clean_env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", "")
-
-    clean_env.update(env)
+        clean_env.setdefault("SYSTEMROOT", os.environ.get("SYSTEMROOT", ""))
 
     return clean_env
 
@@ -77,7 +75,7 @@ def _shlex_join(args: Sequence[str | os.PathLike[str]]) -> str:
 def run(
     args: Sequence[str | os.PathLike[str]],
     *,
-    env: Mapping[str, str] | None = None,
+    env: Mapping[str, str | None] | None = None,
     silent: bool = False,
     paths: Sequence[str] | None = None,
     success_codes: Iterable[int] | None = None,

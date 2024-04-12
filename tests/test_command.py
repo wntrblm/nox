@@ -144,6 +144,19 @@ def test_run_env_unicode():
     assert "123" in result
 
 
+def test_run_env_remove(monkeypatch):
+    monkeypatch.setenv("EMPTY", "notempty")
+    nox.command.run(
+        [PYTHON, "-c", 'import os; assert "EMPTY" in os.environ'],
+        silent=True,
+    )
+    nox.command.run(
+        [PYTHON, "-c", 'import os; assert "EMPTY" not in os.environ'],
+        silent=True,
+        env={"EMPTY": None},
+    )
+
+
 @mock.patch("sys.platform", "win32")
 def test_run_env_systemroot():
     systemroot = os.environ.setdefault("SYSTEMROOT", "sigil")
