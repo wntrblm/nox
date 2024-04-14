@@ -22,6 +22,7 @@ import os
 import pathlib
 import re
 import subprocess
+import shutil
 import sys
 import unicodedata
 from collections.abc import (
@@ -561,6 +562,7 @@ class Session:
             self.virtualenv.venv_backend == "uv"
             and args[0] == "uv"
             and nox.virtualenv.UV != "uv"
+            and shutil.which("uv", path=self.bin) is None
         ):
             args = (nox.virtualenv.UV, *args[1:])
 
