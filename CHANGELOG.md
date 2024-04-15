@@ -1,5 +1,32 @@
 # Changelog
 
+## 2024.04.15
+
+We'd like to thank the following folks who contributed to this release:
+- @cjolowicz
+- @henryiii
+- @mayeut
+
+New features:
+* Added support for [PEP 723](https://peps.python.org/pep-0723/) (inline script metadata) with `nox.project.load_toml` by @henryiii in https://github.com/wntrblm/nox/pull/811
+* Added support for `micromamba` by @henryiii in https://github.com/wntrblm/nox/pull/807
+* Added `venv_backend` property to sessions by @henryiii in https://github.com/wntrblm/nox/pull/798
+* Added the ability to use `None` to remove environment variables by @henryiii in https://github.com/wntrblm/nox/pull/812
+* Added support for skipping sessions by default using `default=False` by @henryiii in https://github.com/wntrblm/nox/pull/810
+
+## Bugfixes
+
+* Use static arguments instead of `**kwargs` by @henryiii in https://github.com/wntrblm/nox/pull/815
+* Do not depend on `pipx` in Nox GitHub action by @mayeut in https://github.com/wntrblm/nox/pull/768
+* Disallow `UV_SYSTEM_PYTHON` by @henryiii in https://github.com/wntrblm/nox/pull/817
+* Ensure 'uv' always works in a uv venv by @henryiii in https://github.com/wntrblm/nox/pull/818
+* Look for `uv` next to `python` if it's not on `PATH` by @cjolowicz in https://github.com/wntrblm/nox/pull/795
+* Fixed missing f-string in `--help` message by @cjolowicz in https://github.com/wntrblm/nox/pull/790
+* Don't error if not installing to passthrough by @henryiii in https://github.com/wntrblm/nox/pull/809
+* Avoid mixing `venv` and `conda` from environment by @henryiii in https://github.com/wntrblm/nox/pull/804
+* Skip test for conda env when `conda` isn't installed by @cjolowicz in https://github.com/wntrblm/nox/pull/794
+
+
 ## 2024.03.02
 
 We'd like to thank the following folks who contributed to this release:

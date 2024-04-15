@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "nox"
-version = "2024.03.02"
+version = "2024.04.15"
 description = "Flexible test automation."
 readme = "README.md"
 keywords = [
