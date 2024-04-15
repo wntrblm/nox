@@ -21,6 +21,7 @@ import hashlib
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import unicodedata
@@ -43,7 +44,7 @@ import nox.virtualenv
 from nox._decorators import Func
 from nox.logger import logger
 from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT
-from nox.virtualenv import UV, CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
+from nox.virtualenv import CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
 
 if TYPE_CHECKING:
     from typing import IO
@@ -556,6 +557,15 @@ class Session:
         if callable(args[0]):
             return self._run_func(args[0], args[1:])  # type: ignore[unreachable]
 
+        # Using `"uv"` when `uv` is the backend is guaranteed to work, even if it was co-installed with nox.
+        if (
+            self.virtualenv.venv_backend == "uv"
+            and args[0] == "uv"
+            and nox.virtualenv.UV != "uv"
+            and shutil.which("uv", path=self.bin) is None  # Session uv takes priority
+        ):
+            args = (nox.virtualenv.UV, *args[1:])
+
         # Combine the env argument with our virtualenv's env vars.
         if include_outer_env:
             overlay_env = env or {}
@@ -769,7 +779,7 @@ class Session:
             silent = True
 
         if isinstance(venv, VirtualEnv) and venv.venv_backend == "uv":
-            cmd = [UV, "pip", "install"]
+            cmd = ["uv", "pip", "install"]
         else:
             cmd = ["python", "-m", "pip", "install"]
         self._run(
