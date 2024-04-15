@@ -21,8 +21,8 @@ import hashlib
 import os
 import pathlib
 import re
-import subprocess
 import shutil
+import subprocess
 import sys
 import unicodedata
 from collections.abc import (
@@ -562,7 +562,7 @@ class Session:
             self.virtualenv.venv_backend == "uv"
             and args[0] == "uv"
             and nox.virtualenv.UV != "uv"
-            and shutil.which("uv", path=self.bin) is None
+            and shutil.which("uv", path=self.bin) is None  # Session uv takes priority
         ):
             args = (nox.virtualenv.UV, *args[1:])
 

@@ -54,6 +54,8 @@ def find_uv() -> tuple[bool, str]:
 
         uv_bin = find_uv_bin()
 
+        # If the returned value is the same as calling "uv" already, don't
+        # expand (simpler logging)
         if uv_on_path and Path(uv_bin).samefile(uv_on_path):
             return True, "uv"
 

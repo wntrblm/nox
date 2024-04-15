@@ -895,7 +895,7 @@ class TestSession:
         session = SessionNoSlots(runner=runner)
 
         monkeypatch.setattr(nox.virtualenv, "UV", "/some/uv")
-        monkeypatch.setattr(shutil, "which", lambda x: None)
+        monkeypatch.setattr(shutil, "which", lambda x, path=None: None)
 
         with mock.patch.object(nox.command, "run", autospec=True) as run:
             session.install("requests", "urllib3", silent=False)
@@ -904,6 +904,24 @@ class TestSession:
             ((call_args,), _) = run.call_args
             assert call_args == (
                 "/some/uv",
+                "pip",
+                "install",
+                "requests",
+                "urllib3",
+            )
+
+        # user installs uv in the session venv
+        monkeypatch.setattr(
+            shutil, "which", lambda x, path="": path + "/uv" if x == "uv" else None
+        )
+
+        with mock.patch.object(nox.command, "run", autospec=True) as run:
+            session.install("requests", "urllib3", silent=False)
+            run.assert_called_once()
+
+            ((call_args,), _) = run.call_args
+            assert call_args == (
+                "uv",
                 "pip",
                 "install",
                 "requests",
