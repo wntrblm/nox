@@ -196,16 +196,16 @@ def test_condaenv_create_with_params(make_conda):
 
 @has_conda
 def test_condaenv_create_interpreter(make_conda):
-    venv, dir_ = make_conda(interpreter="3.7")
+    venv, dir_ = make_conda(interpreter="3.8")
     venv.create()
     if IS_WINDOWS:
         assert dir_.join("python.exe").check()
-        assert dir_.join("python37.dll").check()
-        assert dir_.join("python37.pdb").check()
-        assert not dir_.join("python37.exe").check()
+        assert dir_.join("python38.dll").check()
+        assert dir_.join("python38.pdb").check()
+        assert not dir_.join("python38.exe").check()
     else:
         assert dir_.join("bin", "python").check()
-        assert dir_.join("bin", "python3.7").check()
+        assert dir_.join("bin", "python3.8").check()
 
 
 @has_conda
