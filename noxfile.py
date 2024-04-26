@@ -40,17 +40,13 @@ if shutil.which("micromamba"):
     nox.options.sessions.append("micromamba_tests")
 
 
-# Because there is a dependency conflict between argcomplete and the latest tox
-# (both depend on a different version of importlibmetadata for Py 3.7) pip
-# installs tox 3 as the latest one for Py 3.7.
 @nox.session
 @nox.parametrize(
     "python, tox_version",
     [
         (python, tox_version)
-        for python in ("3.7", "3.8", "3.9", "3.10", "3.11", "3.12")
+        for python in ("3.8", "3.9", "3.10", "3.11", "3.12")
         for tox_version in ("latest", "<4")
-        if (python, tox_version) != ("3.7", "latest")
     ],
 )
 def tests(session: nox.Session, tox_version: str) -> None:
@@ -125,7 +121,7 @@ def cover(session: nox.Session) -> None:
     session.run("coverage", "erase")
 
 
-@nox.session(python="3.9")
+@nox.session(python="3.12")
 def lint(session: nox.Session) -> None:
     """Run pre-commit linting."""
     session.install("pre-commit")
@@ -202,13 +198,11 @@ def github_actions_default_tests(session: nox.Session) -> None:
 
 @nox.session(
     python=[
-        "3.7",
         "3.8",
         "3.9",
         "3.10",
         "3.11",
         "3.12",
-        "pypy3.7",
         "pypy3.8",
         "pypy3.9",
         "pypy3.10",

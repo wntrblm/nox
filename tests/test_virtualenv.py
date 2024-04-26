@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import types
+from importlib import metadata
 from pathlib import Path
 from textwrap import dedent
 from typing import NamedTuple
@@ -30,11 +31,6 @@ import pytest
 from packaging import version
 
 import nox.virtualenv
-
-if sys.version_info < (3, 8):
-    import importlib_metadata as metadata
-else:
-    from importlib import metadata
 
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 HAS_CONDA = shutil.which("conda") is not None
@@ -497,8 +493,7 @@ def test_micromamba_environment(make_one, monkeypatch):
     monkeypatch.setattr(nox.command, "run", run)
     venv.create()
     run.assert_called_once()
-    # .args requires Python 3.8+
-    ((args,), _) = run.call_args
+    (args,) = run.call_args.args
     assert args[0] == "micromamba"
     assert "--channel=conda-forge" in args
 
@@ -521,8 +516,7 @@ def test_micromamba_channel_environment(make_one, monkeypatch, params):
     venv.venv_params = params
     venv.create()
     run.assert_called_once()
-    # .args requires Python 3.8+
-    ((args,), _) = run.call_args
+    (args,) = run.call_args.args
     assert args[0] == "micromamba"
     for p in params:
         assert p in args

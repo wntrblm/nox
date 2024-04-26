@@ -16,15 +16,10 @@ from __future__ import annotations
 
 import ast
 import contextlib
-import sys
+from importlib import metadata
 
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
-
-if sys.version_info >= (3, 8):
-    from importlib import metadata
-else:
-    import importlib_metadata as metadata
 
 
 class VersionCheckFailed(Exception):
@@ -42,10 +37,7 @@ def get_nox_version() -> str:
 
 def _parse_string_constant(node: ast.AST) -> str | None:  # pragma: no cover
     """Return the value of a string constant."""
-    if sys.version_info < (3, 8):
-        if isinstance(node, ast.Str) and isinstance(node.s, str):
-            return node.s
-    elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
     return None
 

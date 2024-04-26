@@ -20,18 +20,13 @@ import itertools
 import os
 import sys
 from collections.abc import Iterable
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Literal, Sequence
 
 import argcomplete
 
 from nox import _option_set
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 from nox.virtualenv import ALL_VENVS
-
-if sys.version_info < (3, 8):
-    from typing_extensions import Literal
-else:
-    from typing import Literal
 
 ReuseVenvType = Literal["no", "yes", "never", "always"]
 

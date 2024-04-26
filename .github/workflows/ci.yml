@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, windows-latest, macos-13]
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         include:
           - os: macos-14
             python-version: "3.12"
@@ -32,7 +32,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Setup uv
         uses: yezz123/setup-uv@v4
-        if: matrix.python-version != '3.7'
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -41,16 +40,11 @@ jobs:
           miniforge-variant: Mambaforge
           use-mamba: true
       - name: Install Nox-under-test (uv)
-        if: matrix.python-version != '3.7'
         run:  uv pip install --system .
-      - name: Install Nox-under-test (pip)
-        if: matrix.python-version == '3.7'
-        run: python -m pip install --disable-pip-version-check .
       - name: Run tests on ${{ matrix.os }} (tox <4)
         run: nox --non-interactive --error-on-missing-interpreter --session "tests(python='${{ matrix.python-version }}', tox_version='<4')" -- --full-trace
       - name: Run tox-to-nox tests on ${{ matrix.os }} (tox latest)
         run: nox --non-interactive --error-on-missing-interpreter --session "tests(python='${{ matrix.python-version }}', tox_version='latest')" -- tests/test_tox_to_nox.py --full-trace
-        if: matrix.python-version != '3.7'
       - name: Save coverage report
         uses: actions/upload-artifact@v4
         with:
@@ -62,10 +56,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Setup uv
         uses: yezz123/setup-uv@v4
       - name: Install Nox-under-test
@@ -84,10 +78,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.9
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: "3.12"
       - name: Install Nox-under-test
         run: python -m pip install --disable-pip-version-check .
       - name: Lint
@@ -96,10 +90,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.9
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: "3.12"
       - name: Setup uv
         uses: yezz123/setup-uv@v4
       - name: Install Nox-under-test
