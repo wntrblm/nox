@@ -217,19 +217,3 @@ def github_actions_default_tests(session: nox.Session) -> None:
 def github_actions_all_tests(session: nox.Session) -> None:
     """Check all versions installed by the nox GHA Action"""
     _check_python_version(session)
-
-
-@nox.session(
-    python=[
-        "3.10",
-        "3.11",
-        "3.12",
-        "pypy3.8",
-        "pypy3.9",
-        "pypy3.10",
-    ]
-)
-def github_actions_macos_14(session: nox.Session) -> None:
-    """Check default versions installed by the nox GHA Action"""
-    assert sys.version_info[:2] == (3, 11)
-    _check_python_version(session)
