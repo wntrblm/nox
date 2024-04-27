@@ -626,6 +626,13 @@ options.add_options(
         hidden=True,
         default=os.getcwd,
     ),
+    _option_set.Option(
+        "dry_run",
+        "--dry-run",
+        group=options.groups["execution"],
+        action="store_true",
+        help="Print the commands that would run without running them.",
+    ),
 )
 
 

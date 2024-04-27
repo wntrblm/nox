@@ -405,6 +405,10 @@ class Session:
             msg = "First argument to `session.run` is a list. Did you mean to use `session.run(*args)`?"
             raise ValueError(msg)
 
+        if self._runner.global_config.dry_run:
+            logger.info(f"Would run: {args}, but --dry-run is set.")
+            return None
+
         if self._runner.global_config.install_only:
             logger.info(f"Skipping {args[0]} run, as --install-only is set.")
             return None
@@ -481,6 +485,11 @@ class Session:
             Default: ``0.2``
         :type terminate_timeout: float or None
         """
+
+        if self._runner.global_config.dry_run:
+            logger.info(f"Would run: {args}, but --dry-run is set.")
+            return None
+
         if (
             self._runner.global_config.no_install
             and self._runner.venv is not None
@@ -664,6 +673,10 @@ class Session:
         if not args:
             raise ValueError("At least one argument required to install().")
 
+        if self._runner.global_config.dry_run:
+            logger.info(f"Would run: {args}, but --dry-run is set.")
+            return None
+
         if self._runner.global_config.no_install and (
             isinstance(venv, PassthroughEnv) or venv._reused
         ):
@@ -761,6 +774,9 @@ class Session:
                 "A session without a virtualenv can not install dependencies."
             )
         if isinstance(venv, PassthroughEnv):
+            if self._runner.global_config.dry_run:
+                logger.info(f"Would run: {args}, but --dry-run is set.")
+                return None
             if self._runner.global_config.no_install:
                 return
             raise ValueError(
@@ -771,6 +787,10 @@ class Session:
             )
         if not args:
             raise ValueError("At least one argument required to install().")
+
+        if self._runner.global_config.dry_run:
+            logger.info(f"Would run: {args}, but --dry-run is set.")
+            return
 
         if self._runner.global_config.no_install and venv._reused:
             return

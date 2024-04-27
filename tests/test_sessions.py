@@ -287,6 +287,14 @@ class TestSession:
             **run_with_defaults(paths=mock.ANY, silent=True, env={}, external="error"),
         )
 
+    def test_run_dry_run(self):
+        session, _ = self.make_session_and_runner()
+
+        with mock.patch("nox.command.run", autospec=True) as run:
+            session.run(sys.executable, "--version", dry_run=True)
+
+        run.assert_not_called()
+
     def test_run_success(self):
         session, _ = self.make_session_and_runner()
         result = session.run(sys.executable, "-c", "print(123)")

@@ -383,6 +383,22 @@ Would run both ``install`` commands, but skip the ``run`` command:
     nox > Skipping pytest run, as --install-only is set.
     nox > Session tests was successful.
 
+Skipping every command and only outputting the commands that would be run
+-------------------------------------------------------------------------
+
+If you want to see what commands would be run without actually running them, you can use ``--dry-run``:
+
+.. code-block:: console
+
+    nox --dry-run
+    nox > Would run session tests but --dry-run is set.
+    nox > Running session tests
+    nox > Creating virtualenv using python3.7 in ./.nox/tests
+    nox > python -m pip install pytest
+    nox > python -m pip install .
+    nox > python -m pytest
+    nox > Session tests was successful.
+
 
 Forcing non-interactive behavior
 --------------------------------
