@@ -35,16 +35,16 @@ If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/n
 
     # setup nox with all active CPython and PyPY versions provided by
     # the GitHub Actions environment i.e.
-    # python-versions: "3.7, 3.8, 3.9, 3.10, pypy-3.7, pypy-3.8, pypy-3.9"
-    # this uses version 2022.8.7 but any Nox tag will work here
-    - uses: wntrblm/nox@2022.8.7
+    # python-versions: "3.8, 3.9, 3.10, 3.11, 3.12, pypy-3.8, pypy-3.9, pypy-3.10"
+    # Any Nox tag will work here
+    - uses: wntrblm/nox@2024.04.15
 
     # setup nox only for a given list of python versions
     # Limitations:
     # - Version specifiers shall be supported by actions/setup-python
-    # - There can only be one "major.minor" per interpreter i.e. "3.7.0, 3.7.1" is invalid
-    # this uses version 2022.8.7 but any Nox tag will work here
-    - uses: wntrblm/nox@2022.8.7
+    # - There can only be one "major.minor" per interpreter i.e. "3.12.0, 3.12.1" is invalid
+    # Any Nox tag will work here
+    - uses: wntrblm/nox@2024.04.15
       with:
           python-versions: "2.7, 3.5, 3.11, pypy-3.9"
 
@@ -388,7 +388,7 @@ If you want your session to specifically run against a single version of Python 
 
 .. code-block:: python
 
-    @nox.session(python="3.7")
+    @nox.session(python="3.12")
     def test(session):
         ...
 
@@ -396,7 +396,7 @@ If you want your session to run against multiple versions of Python:
 
 .. code-block:: python
 
-    @nox.session(python=["2.7", "3.6", "3.7"])
+    @nox.session(python=["3.10", "3.11", "3.12"])
     def test(session):
         ...
 
@@ -407,13 +407,13 @@ been expanded into three distinct sessions:
 
     Sessions defined in noxfile.py:
 
-    * test-2.7
-    * test-3.6
-    * test-3.7
+    * test-3.10
+    * test-3.11
+    * test-3.12
 
 You can run all of the ``test`` sessions using ``nox --sessions test`` or run
 an individual one using the full name as displayed in the list, for example,
-``nox --sessions test-3.5``. More details on selecting sessions can be found
+``nox --sessions test-3.12``. More details on selecting sessions can be found
 over in the :doc:`usage` documentation.
 
 You can read more about configuring the virtual environment used by your
