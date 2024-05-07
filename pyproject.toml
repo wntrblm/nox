@@ -19,7 +19,7 @@ authors = [
   { name = "Alethea Katherine Flowers" },
   { email = "me@thea.codes" },
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
@@ -31,7 +31,6 @@ classifiers = [
   "Operating System :: Unix",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -42,10 +41,8 @@ classifiers = [
 dependencies = [
   "argcomplete<4.0,>=1.9.4",
   "colorlog<7.0.0,>=2.6.1",
-  'importlib-metadata; python_version < "3.8"',
   "packaging>=20.9",
   'tomli>=1; python_version < "3.11"',
-  'typing-extensions>=3.7.4; python_version < "3.8"',
   "virtualenv>=20.14.1",
 ]
 [project.optional-dependencies]
@@ -112,7 +109,7 @@ exclude_also = [ "def __dir__()", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.mypy]
 files = [ "nox/**/*.py", "noxfile.py" ]
-python_version = "3.7"
+python_version = "3.8"
 strict = true
 warn_unreachable = true
 enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]

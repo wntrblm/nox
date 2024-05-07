@@ -20,14 +20,10 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Iterable, Mapping, Sequence
+from typing import Literal
 
 from nox.logger import logger
 from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT, popen
-
-if sys.version_info < (3, 8):
-    from typing_extensions import Literal
-else:
-    from typing import Literal
 
 TYPE_CHECKING = False
 

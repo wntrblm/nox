@@ -20,19 +20,14 @@ import argparse
 import os
 import pkgutil
 import re
-import sys
 from configparser import ConfigParser
+from importlib import metadata
 from pathlib import Path
 from subprocess import check_output
 from typing import Any, Iterable
 
 import jinja2
 import tox.config
-
-if sys.version_info < (3, 8):
-    import importlib_metadata as metadata
-else:
-    from importlib import metadata
 
 TOX_VERSION = metadata.version("tox")
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 import contextlib
 import os
 import sys
+from importlib import metadata
 from pathlib import Path
 from unittest import mock
 
@@ -27,12 +28,6 @@ import nox.__main__
 import nox._options
 import nox.registry
 import nox.sessions
-
-if sys.version_info >= (3, 8):
-    from importlib import metadata
-else:
-    import importlib_metadata as metadata
-
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 VERSION = metadata.version("nox")

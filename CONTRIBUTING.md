@@ -42,10 +42,11 @@ To just check for lint errors, run:
 
 To run against a particular Python version:
 
-    nox --session tests-3.6
-    nox --session tests-3.7
     nox --session tests-3.8
     nox --session tests-3.9
+    nox --session tests-3.10
+    nox --session tests-3.11
+    nox --session tests-3.12
 
 When you send a pull request the CI will handle running everything, but it is
 recommended to test as much as possible locally before pushing.

@@ -368,11 +368,11 @@ These two examples are equivalent:
 .. code-block:: python
 
     @nox.session
-    @nox.parametrize("python", ["3.6", "3.7", "3.8"])
+    @nox.parametrize("python", ["3.10", "3.11", "3.12"])
     def tests(session):
         ...
 
-    @nox.session(python=["3.6", "3.7", "3.8"])
+    @nox.session(python=["3.10", "3.11", "3.12"])
     def tests(session):
         ...
 
@@ -388,9 +388,9 @@ Pythons:
         "python,dependency",
         [
             (python, dependency)
-            for python in ("3.6", "3.7", "3.8")
+            for python in ("3.10", "3.11", "3.12")
             for dependency in ("1.0", "2.0")
-            if (python, dependency) != ("3.6", "2.0")
+            if (python, dependency) != ("3.10", "2.0")
         ],
     )
     def tests(session, dependency):

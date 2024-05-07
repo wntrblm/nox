@@ -79,13 +79,13 @@ If you have a :ref:`configured session's virtualenv <virtualenv config>`, you ca
 
    .. code-tab:: console CLI options
 
-         nox --python 3.8
-         nox -p 3.7 3.8
+         nox --python 3.12
+         nox -p 3.11 3.12
 
    .. code-tab:: console Environment variables
 
-         NOXPYTHON=3.8 nox
-         NOXPYTHON=3.7,3.8 nox
+         NOXPYTHON=3.12 nox
+         NOXPYTHON=3.11,3.12 nox
 
 You can also use `pytest-style keywords`_ using ``-k`` or ``--keywords``, and
 tags using ``-t`` or ``--tags`` to filter test sessions:
@@ -377,7 +377,7 @@ Would run both ``install`` commands, but skip the ``run`` command:
 .. code-block:: console
 
     nox > Running session tests
-    nox > Creating virtualenv using python3.7 in ./.nox/tests
+    nox > Creating virtualenv using python3.12 in ./.nox/tests
     nox > python -m pip install pytest
     nox > python -m pip install .
     nox > Skipping pytest run, as --install-only is set.
