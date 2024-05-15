@@ -45,7 +45,7 @@ if shutil.which("micromamba"):
     "python, tox_version",
     [
         (python, tox_version)
-        for python in ("3.8", "3.9", "3.10", "3.11", "3.12")
+        for python in ("3.8", "3.9", "3.10", "3.11", "3.12", "3.13")
         for tox_version in ("latest", "<4")
     ],
 )
@@ -186,6 +186,7 @@ def _check_python_version(session: nox.Session) -> None:
         "3.10",
         "3.11",
         "3.12",
+        "3.13",
         "pypy3.9",
         "pypy3.10",
     ]
@@ -203,6 +204,7 @@ def github_actions_default_tests(session: nox.Session) -> None:
         "3.10",
         "3.11",
         "3.12",
+        "3.13",
         "pypy3.8",
         "pypy3.9",
         "pypy3.10",
