@@ -84,7 +84,7 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     global_config_noxfile = os.path.expandvars(global_config.noxfile)
 
     # Make sure we only expand the parent dir just in case the noxfile is a symlink
-    noxfile_parent_dir = os.path.realpath(os.path.dirname(global_config.noxfile))
+    noxfile_parent_dir = os.path.realpath(os.path.dirname(global_config_noxfile))
 
     # Save the absolute path to the Noxfile.
     # This will inoculate it if Nox changes paths because of an implicit
