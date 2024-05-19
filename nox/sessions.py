@@ -750,6 +750,12 @@ class Session:
             is no longer supported. If you still want to do that, please
             use ``session.run("pip", "install", ...)`` instead.
 
+        .. warning::
+
+           The ``uv`` backend does not reinstall, even for local packages, so
+           you need to include ``--reinstall-package <pkg-name>`` (uv-only) if
+           reusing the environment.
+
         .. _pip: https://pip.readthedocs.org
         """
         venv = self._runner.venv
