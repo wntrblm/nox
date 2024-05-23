@@ -31,6 +31,7 @@ jobs:
           ]
     steps:
       - uses: actions/checkout@v4
+      - uses: yezz123/setup-uv@v4
       - uses: ./
       - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_default_tests
 

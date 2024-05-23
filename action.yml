@@ -51,7 +51,10 @@ runs:
             def post_setup(self, context):
                 super().post_setup(context)
                 self.bin_path = Path(context.env_exe).parent
-                run([sys.executable, "-m", "pip", "--python", context.env_exe, "install", r"${{ github.action_path }}"], check=True)
+                if shutil.which("uv") is None:
+                    run([sys.executable, "-m", "pip", "--python", context.env_exe, "install", r"${{ github.action_path }}"], check=True)
+                else:
+                    run(["uv", "pip", "install", "--python", context.env_exe, r"${{ github.action_path }}"], check=True)
 
 
         print("::group::Install nox")
