@@ -127,5 +127,5 @@ class TestOptionSet:
             prefix=None, parsed_args=parsed_args
         )
 
-        expected_tags = {"tag1", "tag2", "tag3"}
+        expected_tags = {f"tag{n}" for n in range(1, 8)}
         assert expected_tags == set(actual_tags_from_file)

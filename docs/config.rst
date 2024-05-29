@@ -397,6 +397,63 @@ Pythons:
         ...
 
 
+Assigning tags to parametrized sessions
+---------------------------------------
+
+Just as tags can be :ref:`assigned to normal sessions <session tags>`, they can also be assigned to parametrized sessions.  The following examples are both equivalent:
+
+.. code-block:: python
+
+    @nox.session
+    @nox.parametrize('dependency',
+        ['1.0', '2.0'],
+        tags=[['old'], ['new']])
+    @nox.parametrize('database'
+        ['postgres', 'mysql'],
+        tags=[['psql'], ['mysql']])
+    def tests(session, dependency, database):
+        ...
+
+.. code-block:: python
+
+    @nox.session
+    @nox.parametrize('dependency', [
+        nox.param('1.0', tags=['old']),
+        nox.param('2.0', tags=['new']),
+    ])
+    @nox.parametrize('database', [
+        nox.param('postgres', tags=['psql']),
+        nox.param('mysql', tags=['mysql']),
+    ])
+    def tests(session, dependency, database):
+        ...
+
+In either case, running ``nox --tags old`` will run the tests using version 1.0 of the dependency against both database backends, while running ``nox --tags psql`` will run the tests using both versions of the dependency, but only against PostgreSQL.
+
+More sophisticated tag assignment can be performed by passing a generator to the ``@nox.parametrize`` decorator, as seen in the following example:
+
+.. code-block:: python
+
+    def generate_params():
+        for dependency in ["1.0", "1.1", "2.0"]:
+            for database in ["sqlite", "postgresql", "mysql"]:
+                tags = []
+                if dependency == "2.0" and database == "sqlite":
+                    tags.append("quick")
+                if dependency == "2.0" or database == "sqlite":
+                    tags.append("standard")
+                yield nox.param((dependency, database), tags)
+
+    @nox.session
+    @nox.parametrize(
+        ["dependency", "database"], generate_params(),
+    )
+    def tests(session, dependency, database):
+        ...
+
+In this example, the ``quick`` tag is assigned to the single combination of the latest version of the dependency along with the SQLite database backend, allowing a developer to run the tests in a single configuration as a basic sanity test.  The ``standard`` tag, in contrast, selects combinations targeting either the latest version of the dependency *or* the SQLite database backend.  If the developer runs ``tox --tags standard``, the tests will be run against all supported versions of the dependency with the SQLite backend, as well as against all supported database backends under the latest version of the dependency, giving much more comprehensive test coverage while using only five of the potential nine test matrix combinations.
+
+
 The session object
 ------------------
 

@@ -254,13 +254,14 @@ def test_filter_manifest_keywords_syntax_error():
 @pytest.mark.parametrize(
     "tags,session_count",
     [
-        (None, 4),
-        (["foo"], 3),
-        (["bar"], 3),
-        (["baz"], 1),
-        (["foo", "bar"], 4),
-        (["foo", "baz"], 3),
-        (["foo", "bar", "baz"], 4),
+        (None, 8),
+        (["foo"], 7),
+        (["bar"], 5),
+        (["baz"], 3),
+        (["foo", "bar"], 8),
+        (["foo", "baz"], 7),
+        (["bar", "baz"], 6),
+        (["foo", "bar", "baz"], 8),
     ],
 )
 def test_filter_manifest_tags(tags, session_count):
@@ -280,6 +281,12 @@ def test_filter_manifest_tags(tags, session_count):
     def corge():
         pass
 
+    @nox.session(tags=["foo"])
+    @nox.parametrize("a", [1, nox.param(2, tags=["bar"])])
+    @nox.parametrize("b", [3, 4], tags=[["baz"]])
+    def grault():
+        pass
+
     config = _options.options.namespace(
         sessions=None, pythons=(), posargs=[], tags=tags
     )
@@ -289,6 +296,7 @@ def test_filter_manifest_tags(tags, session_count):
             "quux": quux,
             "quuz": quuz,
             "corge": corge,
+            "grault": grault,
         },
         config,
     )
