@@ -128,7 +128,7 @@ class Call(Func):
             func.venv_backend,
             func.venv_params,
             func.should_warn,
-            func.tags,
+            func.tags + param_spec.tags,
             default=func.default,
         )
         self.call_spec = call_spec
