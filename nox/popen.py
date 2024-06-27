@@ -66,7 +66,7 @@ def popen(
     env: Mapping[str, str] | None = None,
     silent: bool = False,
     stdout: int | IO[str] | None = None,
-    stderr: int | IO[str] = subprocess.STDOUT,
+    stderr: int | IO[str] | None = subprocess.STDOUT,
     interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
     terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
 ) -> tuple[int, str]:

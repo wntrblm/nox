@@ -294,7 +294,7 @@ class Session:
         log: bool = True,
         external: ExternalType | None = None,
         stdout: int | IO[str] | None = None,
-        stderr: int | IO[str] = subprocess.STDOUT,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> Any | None:
@@ -433,7 +433,7 @@ class Session:
         log: bool = True,
         external: ExternalType | None = None,
         stdout: int | IO[str] | None = None,
-        stderr: int | IO[str] = subprocess.STDOUT,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> Any | None:
@@ -515,7 +515,7 @@ class Session:
         log: bool = True,
         external: ExternalType | None = None,
         stdout: int | IO[str] | None = None,
-        stderr: int | IO[str] = subprocess.STDOUT,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> Any | None:
@@ -548,7 +548,7 @@ class Session:
         log: bool,
         external: ExternalType | None,
         stdout: int | IO[str] | None,
-        stderr: int | IO[str],
+        stderr: int | IO[str] | None,
         interrupt_timeout: float | None,
         terminate_timeout: float | None,
     ) -> Any:
@@ -611,7 +611,7 @@ class Session:
         success_codes: Iterable[int] | None = None,
         log: bool = True,
         stdout: int | IO[str] | None = None,
-        stderr: int | IO[str] = subprocess.STDOUT,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> None:
@@ -718,7 +718,7 @@ class Session:
         log: bool = True,
         external: ExternalType | None = None,
         stdout: int | IO[str] | None = None,
-        stderr: int | IO[str] = subprocess.STDOUT,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> None:
