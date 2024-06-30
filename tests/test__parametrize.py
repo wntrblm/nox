@@ -197,7 +197,7 @@ def test_generate_calls_simple():
 
 
 def test_generate_calls_multiple_args():
-    f = mock.Mock(should_warn=None, tags=None)
+    f = mock.Mock(should_warn=None, tags=[])
     f.__name__ = "f"
 
     arg_names = ("foo", "abc")
@@ -242,6 +242,44 @@ def test_generate_calls_ids():
     f.assert_called_with(foo=1)
     calls[1]()
     f.assert_called_with(foo=2)
+
+
+def test_generate_calls_tags():
+    f = mock.Mock(should_warn={}, tags=[])
+    f.__name__ = "f"
+
+    arg_names = ("foo",)
+    call_specs = [
+        _parametrize.Param(1, arg_names=arg_names, tags=["tag3"]),
+        _parametrize.Param(1, arg_names=arg_names),
+        _parametrize.Param(2, arg_names=arg_names, tags=["tag4", "tag5"]),
+    ]
+
+    calls = _decorators.Call.generate_calls(f, call_specs)
+
+    assert len(calls) == 3
+    assert calls[0].tags == ["tag3"]
+    assert calls[1].tags == []
+    assert calls[2].tags == ["tag4", "tag5"]
+
+
+def test_generate_calls_merge_tags():
+    f = mock.Mock(should_warn={}, tags=["tag1", "tag2"])
+    f.__name__ = "f"
+
+    arg_names = ("foo",)
+    call_specs = [
+        _parametrize.Param(1, arg_names=arg_names, tags=["tag3"]),
+        _parametrize.Param(1, arg_names=arg_names),
+        _parametrize.Param(2, arg_names=arg_names, tags=["tag4", "tag5"]),
+    ]
+
+    calls = _decorators.Call.generate_calls(f, call_specs)
+
+    assert len(calls) == 3
+    assert calls[0].tags == ["tag1", "tag2", "tag3"]
+    assert calls[1].tags == ["tag1", "tag2"]
+    assert calls[2].tags == ["tag1", "tag2", "tag4", "tag5"]
 
 
 def test_generate_calls_session_python():
