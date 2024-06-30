@@ -47,6 +47,7 @@ def run_with_defaults(**kwargs):
         "paths": None,
         "success_codes": None,
         "log": True,
+        "max_log_args": None,
         "external": False,
         "stdout": None,
         "stderr": subprocess.STDOUT,
