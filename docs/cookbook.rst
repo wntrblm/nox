@@ -8,7 +8,7 @@ A lot of people and a lot of projects use Nox for their python automation powers
 
 Some of these sessions are the classic "run pytest and linting", some are more unique and more interesting!
 
-The Nox cookbook is a collection of these such sessions.
+The Nox cookbook is a collection of these sessions.
 
 Nox is super easy to get started with, and super powerful right out of the box. But when things get complex or you want to chain together some more powerful tasks, often the only examples can be found hunting around GitHub for novel sessions.
 
