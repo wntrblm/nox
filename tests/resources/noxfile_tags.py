@@ -14,5 +14,5 @@ def one_tag(unused_session):
 
 
 @nox.session(tags=["tag1", "tag2", "tag3"])
-def moar_tags(unused_session):
+def more_tags(unused_session):
     print("Some more tags here.")
