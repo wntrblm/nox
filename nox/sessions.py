@@ -644,7 +644,7 @@ class Session:
         not change the current channels. You can specify a list of channels if
         needed. It is highly recommended to specify this; micromamba does not
         set default channels, and default channels vary for conda. Note that
-        "defaults" is also not permissivly licenced like "conda-forge" is.
+        "defaults" is also not permissively licensed like "conda-forge" is.
 
         Additional keyword args are the same as for :meth:`run`.
 

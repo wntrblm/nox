@@ -358,7 +358,7 @@ def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
 
 
 def _null_session_func_(session: Session) -> None:
-    """A no-op session for patemetrized sessions with no available params."""
+    """A no-op session for parametrized sessions with no available params."""
     session.skip("This session had no parameters available.")
 
 
