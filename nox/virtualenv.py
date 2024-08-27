@@ -28,6 +28,8 @@ from pathlib import Path
 from socket import gethostbyname
 from typing import Any, ClassVar
 
+from packaging import version
+
 import nox
 import nox.command
 from nox.logger import logger
@@ -65,7 +67,21 @@ def find_uv() -> tuple[bool, str]:
     return uv_on_path is not None, "uv"
 
 
+def uv_version():
+    """"""
+    ret = subprocess.run(
+        [UV, "--version"],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if ret.returncode == 0 and ret.stdout:
+        return ret.stdout.strip().lstrip("uv ")
+
+
 HAS_UV, UV = find_uv()
+if HAS_UV:
+    UV_PYTHON_SUPPORT = version.Version(uv_version()) >= version.Version("0.3")
 
 
 class InterpreterNotFound(OSError):
@@ -526,6 +542,9 @@ class VirtualEnv(ProcessEnv):
             self._resolved = cleaned_interpreter
             return self._resolved
 
+        if HAS_UV and UV_PYTHON_SUPPORT:
+            self._resolved = cleaned_interpreter
+            return self._resolved
         # The rest of this is only applicable to Windows, so if we don't have
         # an interpreter by now, raise.
         if _SYSTEM != "Windows":
