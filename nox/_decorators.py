@@ -114,9 +114,11 @@ class Func(FunctionDecorator):
         self._requires = list(value)
 
     def format_dependency(self, dependency: str) -> str:
-        if isinstance(self.python, (bool, str)):
+        if isinstance(self.python, (bool, str)) or self.python is None:
             formatted = dependency.format(python=self.python, py=self.python)
-            if isinstance(self.python, bool) and formatted != dependency:
+            if (
+                self.python is None or isinstance(self.python, bool)
+            ) and formatted != dependency:
                 msg = "Cannot parametrize requires with {python} when python is None or a bool."
                 raise ValueError(msg)
             return formatted
