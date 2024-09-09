@@ -46,6 +46,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           miniforge-variant: Mambaforge
           use-mamba: true
+          channels: conda-forge/label/python_rc,conda-forge
       - name: Install Nox-under-test (uv)
         run:  uv pip install --system .
       - name: Run tests on ${{ matrix.os }} (tox <4)
