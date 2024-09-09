@@ -59,6 +59,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: .coverage.*
           include-hidden-files: true
+          if-no-files-found: error
 
   coverage:
     needs: build
