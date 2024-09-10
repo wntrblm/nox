@@ -228,6 +228,7 @@ class Manifest:
             ~nox._resolver.CycleError: If a dependency cycle is encountered.
         """
         sessions_by_id = self.all_sessions_by_signature
+
         # For each session that was parametrized from a list of Pythons, create a fake
         # parent session that depends on it.
         parent_sessions: set[SessionRunner] = set()
