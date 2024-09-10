@@ -915,6 +915,12 @@ class SessionRunner:
         self.result: Result | None = None
         self.multi = multi
 
+        if getattr(func, "parametrize", None):
+            self.multi = True
+
+    def __repr__(self) -> str:
+        return f"<SessionRunner {self.name}: {self.signatures!r} {self.multi}>"
+
     @property
     def description(self) -> str | None:
         doc = self.func.__doc__

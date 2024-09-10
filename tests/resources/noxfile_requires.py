@@ -126,3 +126,19 @@ def s(session):
 @nox.session(requires=["r"])
 def t(session):
     print(session.name)
+
+
+@nox.parametrize("django", ["1.9", "2.0"])
+@nox.session
+def u(session, django):
+    print(session.name)
+
+
+@nox.session(requires=["u(django='1.9')", "u(django='2.0')"])
+def v(session):
+    print(session.name)
+
+
+@nox.session(requires=["u"])
+def w(session):
+    print(session.name)
