@@ -42,7 +42,7 @@ To just check for lint errors, run:
 
 To run against a particular Python version:
 
-    nox --session "tests(python='3.12', tox_version='latest')
+    nox --session "tests(python='3.12', tox_version='latest')"
     nox --session conda_tests
     nox --session mamba_tests
     nox --session micromamba_tests
