@@ -20,7 +20,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04, windows-latest, macos-13]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version:
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
         include:
           - os: macos-14
             python-version: "3.12"
@@ -30,6 +36,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
       - name: Setup uv
         uses: yezz123/setup-uv@v4
       - name: Set up Miniconda
@@ -39,6 +46,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           miniforge-variant: Mambaforge
           use-mamba: true
+          channels: conda-forge/label/python_rc,conda-forge
       - name: Install Nox-under-test (uv)
         run:  uv pip install --system .
       - name: Run tests on ${{ matrix.os }} (tox <4)
@@ -50,6 +58,8 @@ jobs:
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: .coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
 
   coverage:
     needs: build

@@ -20,12 +20,10 @@ jobs:
       matrix:
         os:
           [
-            ubuntu-20.04,
             ubuntu-22.04,
+            ubuntu-24.04,
             windows-2019,
             windows-2022,
-            macos-11,
-            macos-12,
             macos-13,
             macos-14,
           ]
@@ -44,5 +42,5 @@ jobs:
           python-version: 3.9
       - uses: ./
         with:
-          python-versions: "3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, pypy-2.7, pypy-3.7, pypy-3.8, pypy-3.9, pypy-3.10"
+          python-versions: "3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, pypy-2.7, pypy-3.7, pypy-3.8, pypy-3.9, pypy-3.10"
       - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_all_tests
