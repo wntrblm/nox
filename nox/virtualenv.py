@@ -67,7 +67,7 @@ def find_uv() -> tuple[bool, str]:
     return uv_on_path is not None, "uv"
 
 
-def uv_version() -> str:
+def uv_version() -> version.Version:
     ret = subprocess.run(
         [UV, "--version"],
         check=False,
@@ -75,10 +75,13 @@ def uv_version() -> str:
         capture_output=True,
     )
     if ret.returncode == 0 and ret.stdout:
-        return ret.stdout.strip().lstrip("uv ")
+        return version.Version(ret.stdout.strip().lstrip("uv "))
+    else:
+        logger.info("Failed to establish uv's version.")
+        return version.Version("0.0")
 
 
-def uv_install_python(python_version) -> bool:
+def uv_install_python(python_version: str) -> bool:
     """Attempts to install a given python version with uv"""
     ret = subprocess.run(
         [UV, "python", "install", python_version],
@@ -89,7 +92,7 @@ def uv_install_python(python_version) -> bool:
 
 HAS_UV, UV = find_uv()
 if HAS_UV:
-    UV_PYTHON_SUPPORT = version.Version(uv_version()) >= version.Version("0.3")
+    UV_PYTHON_SUPPORT = uv_version() >= version.Version("0.3")
 
 
 class InterpreterNotFound(OSError):

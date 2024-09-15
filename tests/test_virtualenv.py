@@ -269,6 +269,11 @@ def test_uv_creation(make_one):
     assert venv._check_reused_environment_type()
 
 
+@has_uv
+def test_uv_managed_python(make_one):
+    make_one(interpreter="cpython3.12", venv_backend="uv")
+
+
 def test_constructor_defaults(make_one):
     venv, _ = make_one()
     assert venv.location
@@ -618,6 +623,42 @@ def test_find_uv(monkeypatch, which_result, find_uv_bin_result, found, path):
     )
 
     assert nox.virtualenv.find_uv() == (found, path)
+
+
+@pytest.mark.parametrize(
+    ["return_code", "stdout", "expected_result"],
+    [
+        (0, "uv 0.2.3", "0.2.3"),
+        (1, None, "0.0"),
+        (1, "uv 9.9.9", "0.0"),
+    ],
+)
+def test_uv_version_error(monkeypatch, return_code, stdout, expected_result):
+    def mock_run(*args, **kwargs):
+        return subprocess.CompletedProcess(
+            args=["uv", "--version"],
+            stdout=stdout,
+            returncode=return_code,
+        )
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    assert nox.virtualenv.uv_version() == version.Version(expected_result)
+
+
+@pytest.mark.parametrize(
+    ["requested_python", "expected_result"],
+    [
+        ("3.11", True),
+        ("pypy3.8", True),
+        ("cpython3.9", True),
+        ("python3.12", True),
+        ("nonpython9.22", False),
+        ("java11", False),
+    ],
+)
+@has_uv
+def test_uv_install(requested_python, expected_result):
+    assert nox.virtualenv.uv_install_python(requested_python) == expected_result
 
 
 def test_create_reuse_venv_environment(make_one, monkeypatch):
