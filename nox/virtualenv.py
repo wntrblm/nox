@@ -67,8 +67,7 @@ def find_uv() -> tuple[bool, str]:
     return uv_on_path is not None, "uv"
 
 
-def uv_version():
-    """"""
+def uv_version() -> str:
     ret = subprocess.run(
         [UV, "--version"],
         check=False,
@@ -77,6 +76,15 @@ def uv_version():
     )
     if ret.returncode == 0 and ret.stdout:
         return ret.stdout.strip().lstrip("uv ")
+
+
+def uv_install_python(python_version) -> bool:
+    """Attempts to install a given python version with uv"""
+    ret = subprocess.run(
+        [UV, "python", "install", python_version],
+        check=False,
+    )
+    return ret.returncode == 0
 
 
 HAS_UV, UV = find_uv()
@@ -543,8 +551,11 @@ class VirtualEnv(ProcessEnv):
             return self._resolved
 
         if HAS_UV and UV_PYTHON_SUPPORT:
-            self._resolved = cleaned_interpreter
-            return self._resolved
+            uv_python_success = uv_install_python(self.interpreter)
+            if uv_python_success:
+                self._resolved = self.interpreter
+                return self._resolved
+
         # The rest of this is only applicable to Windows, so if we don't have
         # an interpreter by now, raise.
         if _SYSTEM != "Windows":
