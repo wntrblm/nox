@@ -881,6 +881,7 @@ def test__resolved_interpreter_windows_pyexe_fails(which, run, make_one):
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
 def test__resolved_interpreter_windows_path_and_version(make_one, patch_sysfind):
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the path on Windows.
@@ -906,6 +907,7 @@ def test__resolved_interpreter_windows_path_and_version(make_one, patch_sysfind)
 @pytest.mark.parametrize("sysfind_result", [r"c:\python37-x64\python.exe", None])
 @pytest.mark.parametrize("sysexec_result", ["3.7.3\\n", RAISE_ERROR])
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
 def test__resolved_interpreter_windows_path_and_version_fails(
     input_, sysfind_result, sysexec_result, make_one, patch_sysfind
 ):
