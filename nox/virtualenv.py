@@ -17,6 +17,7 @@ from __future__ import annotations
 import abc
 import contextlib
 import functools
+import json
 import os
 import platform
 import re
@@ -69,13 +70,13 @@ def find_uv() -> tuple[bool, str]:
 
 def uv_version() -> version.Version:
     ret = subprocess.run(
-        [UV, "--version"],
+        [UV, "version", "--output-format", "json"],
         check=False,
         text=True,
         capture_output=True,
     )
     if ret.returncode == 0 and ret.stdout:
-        return version.Version(ret.stdout.strip().lstrip("uv "))
+        return version.Version(json.loads(ret.stdout).get("version"))
     else:
         logger.info("Failed to establish uv's version.")
         return version.Version("0.0")

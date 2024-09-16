@@ -628,15 +628,15 @@ def test_find_uv(monkeypatch, which_result, find_uv_bin_result, found, path):
 @pytest.mark.parametrize(
     ["return_code", "stdout", "expected_result"],
     [
-        (0, "uv 0.2.3", "0.2.3"),
+        (0, '{"version": "0.2.3", "commit_info": null}', "0.2.3"),
         (1, None, "0.0"),
-        (1, "uv 9.9.9", "0.0"),
+        (1, '{"version": "9.9.9", "commit_info": null}', "0.0"),
     ],
 )
 def test_uv_version_error(monkeypatch, return_code, stdout, expected_result):
     def mock_run(*args, **kwargs):
         return subprocess.CompletedProcess(
-            args=["uv", "--version"],
+            args=["uv", "version", "--output-format", "json"],
             stdout=stdout,
             returncode=return_code,
         )
