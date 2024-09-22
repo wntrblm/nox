@@ -555,9 +555,9 @@ class VirtualEnv(ProcessEnv):
             return self._resolved
 
         if HAS_UV and UV_PYTHON_SUPPORT:
-            uv_python_success = uv_install_python(self.interpreter)
+            uv_python_success = uv_install_python(cleaned_interpreter)
             if uv_python_success:
-                self._resolved = self.interpreter
+                self._resolved = cleaned_interpreter
                 return self._resolved
 
         # The rest of this is only applicable to Windows, so if we don't have
