@@ -93,7 +93,9 @@ def uv_install_python(python_version: str) -> bool:
 
 HAS_UV, UV = find_uv()
 if HAS_UV:
-    UV_PYTHON_SUPPORT = uv_version() >= version.Version("0.3")
+    # supported since uv 0.3 but 0.4.16 is the first version that doesn't cause
+    # issues for nox with pypy/cpython confusion
+    UV_PYTHON_SUPPORT = uv_version() >= version.Version("0.4.16")
 
 
 class InterpreterNotFound(OSError):
