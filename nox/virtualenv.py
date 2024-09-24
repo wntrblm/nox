@@ -69,7 +69,7 @@ def find_uv() -> tuple[bool, str]:
 
 
 def uv_version() -> version.Version:
-    """Returns uv's version defaulting to 0.0 if uv is not availble"""
+    """Returns uv's version defaulting to 0.0 if uv is not available"""
     try:
         ret = subprocess.run(
             [UV, "version", "--output-format", "json"],
