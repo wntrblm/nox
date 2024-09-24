@@ -69,12 +69,18 @@ def find_uv() -> tuple[bool, str]:
 
 
 def uv_version() -> version.Version:
-    ret = subprocess.run(
-        [UV, "version", "--output-format", "json"],
-        check=False,
-        text=True,
-        capture_output=True,
-    )
+    """Returns uv's version defaulting to 0.0 if uv is not availble"""
+    try:
+        ret = subprocess.run(
+            [UV, "version", "--output-format", "json"],
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+    except FileNotFoundError:
+        logger.info("uv binary not found.")
+        return version.Version("0.0")
+
     if ret.returncode == 0 and ret.stdout:
         return version.Version(json.loads(ret.stdout).get("version"))
     else:
@@ -92,11 +98,9 @@ def uv_install_python(python_version: str) -> bool:
 
 
 HAS_UV, UV = find_uv()
+# supported since uv 0.3 but 0.4.16 is the first version that doesn't cause
+# issues for nox with pypy/cpython confusion
 UV_PYTHON_SUPPORT = uv_version() >= version.Version("0.4.16")
-# if HAS_UV:
-#     # supported since uv 0.3 but 0.4.16 is the first version that doesn't cause
-#     # issues for nox with pypy/cpython confusion
-#     UV_PYTHON_SUPPORT = uv_version() >= version.Version("0.4.16")
 
 
 class InterpreterNotFound(OSError):
