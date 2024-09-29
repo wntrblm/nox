@@ -449,7 +449,7 @@ class VirtualEnv(ProcessEnv):
             return True
 
         # Switching to "uv" is safe, but not the other direction (no pip)
-        if old_env in {"virtualenv", "venv"} and self.venv_backend == "uv":
+        if old_env in {"virtualenv", "venv"} and self.venv_backend == "uv":  # noqa: SIM103
             return True
 
         return False
