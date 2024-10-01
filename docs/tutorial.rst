@@ -496,6 +496,8 @@ read more about parametrization and see more examples over at
 .. _pytest's parametrize: https://pytest.org/latest/parametrize.html#_pytest.python.Metafunc.parametrize
 
 
+.. _session tags:
+
 Session tags
 ------------
 

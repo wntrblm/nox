@@ -29,6 +29,8 @@ class Param:
         arg_names (Sequence[str]): The names of the args.
         id (str): An optional ID for this set of parameters. If unspecified,
             it will be generated from the parameters.
+        tags (Sequence[str]): Optional tags to associate with this set of
+            parameters.
     """
 
     def __init__(
@@ -36,6 +38,7 @@ class Param:
         *args: Any,
         arg_names: Sequence[str] | None = None,
         id: str | None = None,
+        tags: Sequence[str] | None = None,
     ) -> None:
         self.args = args
         self.id = id
@@ -44,6 +47,11 @@ class Param:
             arg_names = ()
 
         self.arg_names = tuple(arg_names)
+
+        if tags is None:
+            tags = []
+
+        self.tags = list(tags)
 
     @property
     def call_spec(self) -> dict[str, Any]:
@@ -60,13 +68,16 @@ class Param:
     __repr__ = __str__
 
     def copy(self) -> Param:
-        new = self.__class__(*self.args, arg_names=self.arg_names, id=self.id)
+        new = self.__class__(
+            *self.args, arg_names=self.arg_names, id=self.id, tags=self.tags
+        )
         return new
 
     def update(self, other: Param) -> None:
         self.id = ", ".join([str(self), str(other)])
         self.args = self.args + other.args
         self.arg_names = self.arg_names + other.arg_names
+        self.tags = self.tags + other.tags
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, self.__class__):
@@ -74,6 +85,7 @@ class Param:
                 self.args == other.args
                 and self.arg_names == other.arg_names
                 and self.id == other.id
+                and self.tags == other.tags
             )
         elif isinstance(other, dict):
             return dict(zip(self.arg_names, self.args)) == other
@@ -95,6 +107,7 @@ def parametrize_decorator(
     arg_names: str | Sequence[str],
     arg_values_list: Iterable[ArgValue] | ArgValue,
     ids: Iterable[str | None] | None = None,
+    tags: Iterable[Sequence[str]] | None = None,
 ) -> Callable[[Any], Any]:
     """Parametrize a session.
 
@@ -114,6 +127,8 @@ def parametrize_decorator(
             argument name, for example ``[(1, 'a'), (2, 'b')]``.
         ids (Sequence[str]): Optional sequence of test IDs to use for the
             parametrized arguments.
+        tags (Iterable[Sequence[str]]): Optional iterable of tags to associate
+            with the parametrized arguments.
     """
 
     # Allow args names to be specified as any of 'arg', 'arg,arg2' or ('arg', 'arg2')
@@ -143,14 +158,21 @@ def parametrize_decorator(
     if not ids:
         ids = []
 
+    if tags is None:
+        tags = []
+
     # Generate params for each item in the param_args_values list.
     param_specs: list[Param] = []
-    for param_arg_values, param_id in itertools.zip_longest(_arg_values_list, ids):
+    for param_arg_values, param_id, param_tags in itertools.zip_longest(
+        _arg_values_list, ids, tags
+    ):
         if isinstance(param_arg_values, Param):
             param_spec = param_arg_values
             param_spec.arg_names = tuple(arg_names)
         else:
-            param_spec = Param(*param_arg_values, arg_names=arg_names, id=param_id)
+            param_spec = Param(
+                *param_arg_values, arg_names=arg_names, id=param_id, tags=param_tags
+            )
 
         param_specs.append(param_spec)
 
