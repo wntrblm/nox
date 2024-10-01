@@ -89,7 +89,6 @@ Even more so with a sprinkling of Nox:
 .. code-block:: python
 
     import argparse
-    
     import nox
 
     @nox.session
