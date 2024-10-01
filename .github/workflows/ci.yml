@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-13]
+        os: [ubuntu-22.04, windows-latest, macos-13]
         python-version:
           - "3.8"
           - "3.9"
@@ -38,13 +38,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - name: Setup uv
-        uses: yezz123/setup-uv@v4
+        uses: astral-sh/setup-uv@v3
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          miniforge-variant: Mambaforge
           use-mamba: true
           channels: conda-forge/label/python_rc,conda-forge
       - name: Install Nox-under-test (uv)
@@ -71,7 +70,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Setup uv
-        uses: yezz123/setup-uv@v4
+        uses: astral-sh/setup-uv@v3
       - name: Install Nox-under-test
         run:  uv pip install --system .
       - name: Download individual coverage reports
@@ -105,7 +104,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Setup uv
-        uses: yezz123/setup-uv@v4
+        uses: astral-sh/setup-uv@v3
       - name: Install Nox-under-test
         run:  uv pip install --system .
       - name: Docs
