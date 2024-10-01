@@ -40,6 +40,7 @@ Enter the ``dev`` nox session:
 .. code-block:: python
 
     import os
+    import pathlib
 
     import nox
 
@@ -87,6 +88,7 @@ Even more so with a sprinkling of Nox:
 
 .. code-block:: python
 
+    import argparse
     import nox
 
     @nox.session
