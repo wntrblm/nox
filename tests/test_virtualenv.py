@@ -269,6 +269,11 @@ def test_uv_creation(make_one):
     assert venv._check_reused_environment_type()
 
 
+@has_uv
+def test_uv_managed_python(make_one):
+    make_one(interpreter="cpython3.12", venv_backend="uv")
+
+
 def test_constructor_defaults(make_one):
     venv, _ = make_one()
     assert venv.location
@@ -620,6 +625,50 @@ def test_find_uv(monkeypatch, which_result, find_uv_bin_result, found, path):
     assert nox.virtualenv.find_uv() == (found, path)
 
 
+@pytest.mark.parametrize(
+    ["return_code", "stdout", "expected_result"],
+    [
+        (0, '{"version": "0.2.3", "commit_info": null}', "0.2.3"),
+        (1, None, "0.0"),
+        (1, '{"version": "9.9.9", "commit_info": null}', "0.0"),
+    ],
+)
+def test_uv_version(monkeypatch, return_code, stdout, expected_result):
+    def mock_run(*args, **kwargs):
+        return subprocess.CompletedProcess(
+            args=["uv", "version", "--output-format", "json"],
+            stdout=stdout,
+            returncode=return_code,
+        )
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    assert nox.virtualenv.uv_version() == version.Version(expected_result)
+
+
+def test_uv_version_no_uv(monkeypatch):
+    def mock_exception(*args, **kwargs):
+        raise FileNotFoundError
+
+    monkeypatch.setattr(subprocess, "run", mock_exception)
+    assert nox.virtualenv.uv_version() == version.Version("0.0")
+
+
+@pytest.mark.parametrize(
+    ["requested_python", "expected_result"],
+    [
+        ("3.11", True),
+        ("pypy3.8", True),
+        ("cpython3.9", True),
+        ("python3.12", True),
+        ("nonpython9.22", False),
+        ("java11", False),
+    ],
+)
+@has_uv
+def test_uv_install(requested_python, expected_result):
+    assert nox.virtualenv.uv_install_python(requested_python) == expected_result
+
+
 def test_create_reuse_venv_environment(make_one, monkeypatch):
     # Making the reuse requirement more strict
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
@@ -840,6 +889,7 @@ def test__resolved_interpreter_windows_pyexe_fails(which, run, make_one):
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
 def test__resolved_interpreter_windows_path_and_version(make_one, patch_sysfind):
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the path on Windows.
@@ -865,6 +915,7 @@ def test__resolved_interpreter_windows_path_and_version(make_one, patch_sysfind)
 @pytest.mark.parametrize("sysfind_result", [r"c:\python37-x64\python.exe", None])
 @pytest.mark.parametrize("sysexec_result", ["3.7.3\\n", RAISE_ERROR])
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
 def test__resolved_interpreter_windows_path_and_version_fails(
     input_, sysfind_result, sysexec_result, make_one, patch_sysfind
 ):

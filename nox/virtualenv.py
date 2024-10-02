@@ -17,6 +17,7 @@ from __future__ import annotations
 import abc
 import contextlib
 import functools
+import json
 import os
 import platform
 import re
@@ -27,6 +28,8 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from socket import gethostbyname
 from typing import Any, ClassVar
+
+from packaging import version
 
 import nox
 import nox.command
@@ -65,7 +68,39 @@ def find_uv() -> tuple[bool, str]:
     return uv_on_path is not None, "uv"
 
 
+def uv_version() -> version.Version:
+    """Returns uv's version defaulting to 0.0 if uv is not available"""
+    try:
+        ret = subprocess.run(
+            [UV, "version", "--output-format", "json"],
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+    except FileNotFoundError:
+        logger.info("uv binary not found.")
+        return version.Version("0.0")
+
+    if ret.returncode == 0 and ret.stdout:
+        return version.Version(json.loads(ret.stdout).get("version"))
+    else:
+        logger.info("Failed to establish uv's version.")
+        return version.Version("0.0")
+
+
+def uv_install_python(python_version: str) -> bool:
+    """Attempts to install a given python version with uv"""
+    ret = subprocess.run(
+        [UV, "python", "install", python_version],
+        check=False,
+    )
+    return ret.returncode == 0
+
+
 HAS_UV, UV = find_uv()
+# supported since uv 0.3 but 0.4.16 is the first version that doesn't cause
+# issues for nox with pypy/cpython confusion
+UV_PYTHON_SUPPORT = uv_version() >= version.Version("0.4.16")
 
 
 class InterpreterNotFound(OSError):
@@ -525,6 +560,12 @@ class VirtualEnv(ProcessEnv):
         if shutil.which(cleaned_interpreter):
             self._resolved = cleaned_interpreter
             return self._resolved
+
+        if HAS_UV and UV_PYTHON_SUPPORT:
+            uv_python_success = uv_install_python(cleaned_interpreter)
+            if uv_python_success:
+                self._resolved = cleaned_interpreter
+                return self._resolved
 
         # The rest of this is only applicable to Windows, so if we don't have
         # an interpreter by now, raise.
