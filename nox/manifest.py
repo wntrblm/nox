@@ -319,7 +319,7 @@ class Manifest:
         # Locate the session in the list of all sessions, and place it at
         # the end of the queue.
         for s in self._all_sessions:
-            if s == session or s.name == session or session in s.signatures:
+            if s == session or s.name == session or session in s.signatures:  # noqa: PLR1714
                 if posargs is not None:
                     s.posargs = list(posargs)
                 self._queue.append(s)
@@ -354,7 +354,7 @@ class KeywordLocals(Mapping[str, bool]):
 def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
     """See if an expression matches the given set of keywords."""
     locals = KeywordLocals(set(keywords))
-    return eval(expression, {}, locals)  # noqa: PGH001
+    return eval(expression, {}, locals)
 
 
 def _null_session_func_(session: Session) -> None:

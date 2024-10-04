@@ -51,7 +51,7 @@ def _copy_func(src: T, name: str | None = None) -> T:
         closure=src.__closure__,
     )
     dst.__dict__.update(copy.deepcopy(src.__dict__))
-    dst = functools.update_wrapper(dst, src)
+    dst = functools.update_wrapper(dst, src)  # type: ignore[assignment]
     dst.__kwdefaults__ = src.__kwdefaults__
     return cast(T, dst)
 
