@@ -407,7 +407,6 @@ options.add_options(
         group=options.groups["reporting"],
         action="store_true",
         help="Adds a timestamp to logged output.",
-        noxfile=True,
     ),
     _option_set.Option(
         "default_venv_backend",
