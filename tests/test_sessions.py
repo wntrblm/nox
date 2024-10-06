@@ -928,6 +928,40 @@ class TestSession:
                 "urllib3",
             )
 
+    def test_sync_uv(self):
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=[]),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        runner.venv.env = {}
+        runner.venv.venv_backend = "uv"
+        runner.venv.location = "/project/.nox"
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.sync(packages=["myproject"], silent=False)
+            run.assert_called_once_with(
+                "uv",
+                "sync",
+                "--package",
+                "myproject",
+                "--frozen",
+                "--inexact",
+                **_run_with_defaults(
+                    silent=False,
+                    external="error",
+                    env={"UV_PROJECT_ENVIRONMENT": "/project/.nox"},
+                ),
+            )
+
     def test___slots__(self):
         session, _ = self.make_session_and_runner()
         with pytest.raises(AttributeError):

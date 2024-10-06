@@ -252,6 +252,32 @@ You can also pass environment variables:
 See :func:`nox.sessions.Session.run` for more options and examples for running
 programs.
 
+Using uv to manage your project
+-------------------------------
+
+While the ``session.run_install`` can use ``uv`` as backend, it is also
+possible to sync your project with ``session.sync()``. Nox will handle
+the virtual env for you.
+
+A sync will not remove extraneous packages present in the environment.
+
+.. code-block:: python
+
+    @nox.session
+    def tests(session):
+        session.sync()
+        session.install("pytest")
+        session.run("pytest")
+
+If you work with workspaces, install only given packages.
+
+.. code-block:: python
+
+    @nox.session
+    def tests(session):
+        session.sync(package="mypackage")
+        session.run("mypackage")
+
 Selecting which sessions to run
 -------------------------------
 
