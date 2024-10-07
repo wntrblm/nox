@@ -19,17 +19,15 @@ jobs:
     strategy:
       matrix:
         os:
-          [
-            ubuntu-22.04,
-            ubuntu-24.04,
-            windows-2019,
-            windows-2022,
-            macos-13,
-            macos-14,
-          ]
+          - ubuntu-22.04
+          - ubuntu-24.04
+          - windows-2019
+          - windows-2022
+          - macos-13
+          - macos-14
     steps:
       - uses: actions/checkout@v4
-      - uses: yezz123/setup-uv@v4
+      - uses: astral-sh/setup-uv@v3
       - uses: ./
       - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_default_tests
 
