@@ -208,6 +208,15 @@ You can make a session for it like this:
        session.install(*requirements)
        session.run("peps.py")
 
+This is a common structure for scripts following this PEP, so a helper for it
+is provided:
+
+.. code-block:: python
+
+   @nox.session
+   def peps(session):
+       session.install_and_run_script("peps.py")
+
 
 Running commands
 ----------------
