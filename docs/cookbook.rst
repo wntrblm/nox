@@ -135,6 +135,30 @@ Even more so with a sprinkling of Nox:
 Now a simple ``nox -s release -- patch`` will automate your release (provided you have Bump2Version set up to change your files). This is especially powerful if you have a CI/CD pipeline set up!
 
 
+Using a lockfile
+^^^^^^^^^^^^^^^^
+
+If you use a tool like ``uv`` to lock your dependencies, you can use that inside a nox session. Here's an example:
+
+.. code-block:: python
+
+    @nox.session(venv_backend="uv")
+    def tests(session: nox.Session) -> None:
+        """
+        Run the unit and regular tests.
+        """
+        session.run_install(
+            "uv",
+            "sync",
+            "--extra=test",
+            env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
+        )
+        session.run("pytest", *session.posargs)
+
+
+Here we run ``uv sync`` on the nox virtual environment. Other useful flags might include ``--frozen`` (won't touch the lockfile) and ``--inexact`` (will allow you to install other packages as well).
+
+
 Generating a matrix with GitHub Actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
