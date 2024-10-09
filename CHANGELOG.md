@@ -1,5 +1,53 @@
 # Changelog
 
+## 2024.10.09
+
+
+This release adds explicit support for Python 3.13 and drops support for running Nox itself under Python 3.7. Note that you can still use 3.7 in your Nox sessions, we just dropped support for installing & running `nox` itself in 3.7.
+
+We'd like to thank the following folks who conributed to this release:
+- @edgarrmondragon
+- @ember91
+- @henryiii
+- @hmd101
+- @KasperZutterman
+- @living180
+- @mayeut
+- @saucoide
+- @Wurstnase
+
+New features:
+* Allow setting tags on parametrized sessions by @living180 in https://github.com/wntrblm/nox/pull/832
+* Added support for `uv`-installed pythons by @saucoide in https://github.com/wntrblm/nox/pull/842
+* Added `session.install_and_run_script` by @henryiii in https://github.com/wntrblm/nox/pull/847
+
+Bugfixes:
+* Updated type annotation of `stderr` parameter to make it optional by @edgarrmondragon in https://github.com/wntrblm/nox/pull/835
+* Removed `add_timestamp` from `noxfile.options` by @Wurstnase in https://github.com/wntrblm/nox/pull/856
+
+Documentation:
+* Added warning about uv and local packages by @henryiii in https://github.com/wntrblm/nox/pull/830
+* Fixed contribution guidelines by @Wurstnase in https://github.com/wntrblm/nox/pull/850
+* Fixed typos by @ember91 in https://github.com/wntrblm/nox/pull/839
+* Fixed typoss in cookbook by @hmd101 in https://github.com/wntrblm/nox/pull/837
+* Added missing cookbook recipe snippet imports by @KasperZutterman in https://github.com/wntrblm/nox/pull/853
+* Cleaned up `dev` recipe by @henryiii in https://github.com/wntrblm/nox/pull/862
+* Added note about `uv reinstall` by @henryiii in https://github.com/wntrblm/nox/pull/863
+* Added `uv sync` example by @henryiii in https://github.com/wntrblm/nox/pull/864
+
+Internal changes:
+* Use default action tests for macos-14 by @mayeut in https://github.com/wntrblm/nox/pull/824
+* Added 3.13 to the action defaults by @henryiii in https://github.com/wntrblm/nox/pull/846
+* Dropped Python 3.7 by @henryiii in https://github.com/wntrblm/nox/pull/822
+* Included 3.13 in classifiers by @henryiii in https://github.com/wntrblm/nox/pull/851
+* Use `uv` if available in action by @henryiii in https://github.com/wntrblm/nox/pull/831
+* Run tests with Python 3.13 by @edgarrmondragon in https://github.com/wntrblm/nox/pull/834
+* Updated `macos-latest` to `macos-14` by @henryiii in https://github.com/wntrblm/nox/pull/821
+* Use `miniforge` by @henryiii in https://github.com/wntrblm/nox/pull/854
+* Use `astral-sh/setup-uv` by @henryiii in https://github.com/wntrblm/nox/pull/859
+* Dropped PyPy 3.9 from test matrix by @henryiii in https://github.com/wntrblm/nox/pull/858
+
+
 ## 2024.04.15
 
 We'd like to thank the following folks who contributed to this release:
@@ -14,8 +62,7 @@ New features:
 * Added the ability to use `None` to remove environment variables by @henryiii in https://github.com/wntrblm/nox/pull/812
 * Added support for skipping sessions by default using `default=False` by @henryiii in https://github.com/wntrblm/nox/pull/810
 
-## Bugfixes
-
+Bugfixes:
 * Use static arguments instead of `**kwargs` by @henryiii in https://github.com/wntrblm/nox/pull/815
 * Do not depend on `pipx` in Nox GitHub action by @mayeut in https://github.com/wntrblm/nox/pull/768
 * Disallow `UV_SYSTEM_PYTHON` by @henryiii in https://github.com/wntrblm/nox/pull/817
