@@ -79,16 +79,18 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     Returns:
         module: The module designated by the Noxfile path.
     """
-    try:
-        # Save the absolute path to the Noxfile.
-        # This will inoculate it if Nox changes paths because of an implicit
-        # or explicit chdir (like the one below).
-        global_config.noxfile = os.path.realpath(
-            # Be sure to expand variables
-            os.path.expandvars(global_config.noxfile)
-        )
-        noxfile_parent_dir = os.path.realpath(os.path.dirname(global_config.noxfile))
+    # Be sure to expand variables
+    global_config_noxfile = os.path.expandvars(global_config.noxfile)
 
+    # Save the absolute path to the Noxfile.
+    # This will inoculate it if Nox changes paths because of an implicit
+    # or explicit chdir (like the one below).
+    global_config.noxfile = os.path.realpath(global_config_noxfile)
+
+    # Make sure we only expand the parent dir just in case the noxfile is a symlink
+    noxfile_parent_dir = os.path.realpath(os.path.dirname(global_config.noxfile))
+
+    try:
         # Check ``nox.needs_version`` by parsing the AST.
         check_nox_version(global_config.noxfile)
 
@@ -110,8 +112,8 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     except OSError:
         logger.exception(f"Failed to load Noxfile {global_config.noxfile}")
         return 2
-    else:
-        return _load_and_exec_nox_module(global_config)
+
+    return _load_and_exec_nox_module(global_config)
 
 
 def merge_noxfile_options(
