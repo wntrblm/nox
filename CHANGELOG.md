@@ -5,7 +5,7 @@
 
 This release adds explicit support for Python 3.13 and drops support for running Nox itself under Python 3.7. Note that you can still use 3.7 in your Nox sessions, we just dropped support for installing & running `nox` itself in 3.7.
 
-We'd like to thank the following folks who conributed to this release:
+We'd like to thank the following folks who contributed to this release:
 - @edgarrmondragon
 - @ember91
 - @henryiii
