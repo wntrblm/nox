@@ -57,9 +57,6 @@ def h(session):
     print(session.name)
 
 
-#
-
-
 @nox.session(requires=["j"])
 def i(session):
     print(session.name)
@@ -68,9 +65,6 @@ def i(session):
 @nox.session(requires=["i"])
 def j(session):
     print(session.name)
-
-
-#
 
 
 @nox.session(python=["3.9", "3.10"])
@@ -88,15 +82,9 @@ def n(session):
     print(session.name)
 
 
-#
-
-
 @nox.session(requires=["does_not_exist"])
 def o(session):
     print(session.name)
-
-
-#
 
 
 @nox.session(python=["3.9", "3.10"])
@@ -107,9 +95,6 @@ def p(session):
 @nox.session(python=None, requires=["p-{python}"])
 def q(session):
     print(session.name)
-
-
-#
 
 
 @nox.session

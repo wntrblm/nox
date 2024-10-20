@@ -122,9 +122,7 @@ class Func(FunctionDecorator):
                 msg = "Cannot parametrize requires with {python} when python is None or a bool."
                 raise ValueError(msg)
             return formatted
-        msg = (
-            "The requires of a not-yet-parametrized session cannot be parametrized."
-        )  # pragma: no cover
+        msg = "The requires of a not-yet-parametrized session cannot be parametrized."  # pragma: no cover
         raise TypeError(msg)  # pragma: no cover
 
 

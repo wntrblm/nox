@@ -45,8 +45,7 @@ def session_decorator(
     *,
     default: bool = ...,
     requires: Sequence[str] | None = ...,
-) -> Callable[[F], F]:
-    ...
+) -> Callable[[F], F]: ...
 
 
 def session_decorator(

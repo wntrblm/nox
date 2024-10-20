@@ -248,7 +248,7 @@ def test_generate_calls_ids():
 
 
 def test_generate_calls_tags():
-    f = mock.Mock(should_warn={}, tags=[])
+    f = mock.Mock(should_warn={}, tags=[], requires=[])
     f.__name__ = "f"
 
     arg_names = ("foo",)
@@ -267,7 +267,7 @@ def test_generate_calls_tags():
 
 
 def test_generate_calls_merge_tags():
-    f = mock.Mock(should_warn={}, tags=["tag1", "tag2"])
+    f = mock.Mock(should_warn={}, tags=["tag1", "tag2"], requires=[])
     f.__name__ = "f"
 
     arg_names = ("foo",)

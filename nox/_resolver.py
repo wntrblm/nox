@@ -201,5 +201,4 @@ def lazy_stable_topo_sort(
         return filter(
             lambda node: not (node == root and hash(node) == hash(root)), sort
         )
-    else:
-        return sort
+    return sort
