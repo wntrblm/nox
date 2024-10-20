@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import functools
+import operator
 import os
 import re
 import shutil
@@ -617,7 +618,7 @@ def test_find_uv(monkeypatch, which_result, find_uv_bin_result, found, path):
         return find_uv_bin_result
 
     monkeypatch.setattr(shutil, "which", lambda _: which_result)
-    monkeypatch.setattr(Path, "samefile", lambda a, b: a == b)
+    monkeypatch.setattr(Path, "samefile", operator.eq)
     monkeypatch.setitem(
         sys.modules, "uv", types.SimpleNamespace(find_uv_bin=find_uv_bin)
     )

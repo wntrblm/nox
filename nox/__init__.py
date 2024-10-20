@@ -24,11 +24,11 @@ from nox.sessions import Session
 needs_version: str | None = None
 
 __all__ = [
-    "needs_version",
-    "parametrize",
-    "param",
-    "session",
-    "options",
     "Session",
+    "needs_version",
+    "options",
+    "param",
+    "parametrize",
     "project",
+    "session",
 ]
