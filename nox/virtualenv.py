@@ -83,9 +83,8 @@ def uv_version() -> version.Version:
 
     if ret.returncode == 0 and ret.stdout:
         return version.Version(json.loads(ret.stdout).get("version"))
-    else:
-        logger.info("Failed to establish uv's version.")
-        return version.Version("0.0")
+    logger.info("Failed to establish uv's version.")
+    return version.Version("0.0")
 
 
 def uv_install_python(python_version: str) -> bool:

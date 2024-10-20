@@ -60,18 +60,16 @@ class Param:
     def __str__(self) -> str:
         if self.id:
             return self.id
-        else:
-            call_spec = self.call_spec
-            args = [f"{k}={call_spec[k]!r}" for k in call_spec]
-            return ", ".join(args)
+        call_spec = self.call_spec
+        args = [f"{k}={call_spec[k]!r}" for k in call_spec]
+        return ", ".join(args)
 
     __repr__ = __str__
 
     def copy(self) -> Param:
-        new = self.__class__(
+        return self.__class__(
             *self.args, arg_names=self.arg_names, id=self.id, tags=self.tags
         )
-        return new
 
     def update(self, other: Param) -> None:
         self.id = ", ".join([str(self), str(other)])
@@ -87,7 +85,7 @@ class Param:
                 and self.id == other.id
                 and self.tags == other.tags
             )
-        elif isinstance(other, dict):
+        if isinstance(other, dict):
             return dict(zip(self.arg_names, self.args)) == other
 
         return NotImplemented

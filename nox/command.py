@@ -112,7 +112,7 @@ def run(
                     " this."
                 )
                 raise CommandFailed("External program disallowed.")
-            elif external is False:
+            if external is False:
                 logger.warning(
                     f"Warning: {cmd} is not installed into the virtualenv, it is"
                     f" located at {cmd_path}. This might cause issues! Pass"
