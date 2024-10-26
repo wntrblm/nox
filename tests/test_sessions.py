@@ -965,7 +965,7 @@ class TestSessionRunner:
         func.python = None
         func.venv_backend = None
         func.reuse_venv = False
-        runner = nox.sessions.SessionRunner(
+        return nox.sessions.SessionRunner(
             name="test",
             signatures=["test(1, 2)"],
             func=func,
@@ -978,7 +978,6 @@ class TestSessionRunner:
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
-        return runner
 
     def test_properties(self):
         runner = self.make_runner()

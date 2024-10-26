@@ -109,14 +109,12 @@ def _dblquote_pkg_install_args(args: Iterable[str]) -> tuple[str, ...]:
             if pkg_req_str[0] == pkg_req_str[-1] == '"':
                 # already double-quoted string
                 return pkg_req_str
-            else:
-                # need to double-quote string
-                if '"' in pkg_req_str:
-                    raise ValueError(f"Cannot escape requirement string: {pkg_req_str}")
-                return f'"{pkg_req_str}"'
-        else:
-            # no dangerous char: no need to double-quote string
-            return pkg_req_str
+            # need to double-quote string
+            if '"' in pkg_req_str:
+                raise ValueError(f"Cannot escape requirement string: {pkg_req_str}")
+            return f'"{pkg_req_str}"'
+        # no dangerous char: no need to double-quote string
+        return pkg_req_str
 
     # double-quote all args that need to be and return the result
     return tuple(_dblquote_pkg_install_arg(a) for a in args)
@@ -917,8 +915,7 @@ class SessionRunner:
     def description(self) -> str | None:
         doc = self.func.__doc__
         if doc:
-            first_line = doc.strip().split("\n")[0]
-            return first_line
+            return doc.strip().split("\n")[0]
         return None
 
     def __str__(self) -> str:
@@ -1041,11 +1038,8 @@ class SessionRunner:
         except nox.virtualenv.InterpreterNotFound as exc:
             if self.global_config.error_on_missing_interpreters:
                 return Result(self, Status.FAILED, reason=str(exc))
-            else:
-                logger.warning(
-                    "Missing interpreters will error by default on CI systems."
-                )
-                return Result(self, Status.SKIPPED, reason=str(exc))
+            logger.warning("Missing interpreters will error by default on CI systems.")
+            return Result(self, Status.SKIPPED, reason=str(exc))
 
         except _SessionQuit as exc:
             return Result(self, Status.ABORTED, reason=str(exc))
