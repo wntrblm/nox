@@ -867,3 +867,9 @@ def test_noxfile_options_cant_be_set():
     msg = "reuse_venvs is not a known noxfile option! Perhaps you meant reuse_venv?"
     with pytest.raises(AttributeError, match=re.escape(msg)):
         nox.options.reuse_venvs = True
+
+
+def test_noxfile_options_cant_be_set_long():
+    msg = "i_am_clearly_not_an_option is not a known noxfile option!"
+    with pytest.raises(AttributeError, match=re.escape(msg)):
+        nox.options.i_am_clearly_not_an_option = True
