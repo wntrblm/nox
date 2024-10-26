@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import re
 import sys
 from importlib import metadata
 from pathlib import Path
@@ -860,3 +861,9 @@ def test_main_noxfile_options_reuse_venv_compat_check(
             nox.__main__.main()
         config = honor_list_request.call_args[1]["global_config"]
     assert config.reuse_venv == expected
+
+
+def test_noxfile_options_cant_be_set():
+    msg = "reuse_venvs is not a known noxfile option! Perhaps you meant reuse_venv?"
+    with pytest.raises(AttributeError, match=re.escape(msg)):
+        nox.options.reuse_venvs = True

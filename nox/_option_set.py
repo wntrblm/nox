@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import difflib
 import functools
 from argparse import ArgumentError as ArgumentError  # noqa: PLC0414
 from argparse import ArgumentParser, Namespace
@@ -27,6 +28,21 @@ from collections.abc import Callable, Iterable
 from typing import Any
 
 import argcomplete
+
+
+class RestrictedNamespace(Namespace):
+    def __init__(self, **kwargs: object):
+        for key, value in kwargs.items():
+            object.__setattr__(self, key, value)
+
+    def __setattr__(self, key: str, value: object) -> None:
+        if not hasattr(self, key):
+            msg = f"{key} is not a known noxfile option!"
+            suggestions = difflib.get_close_matches(key, self.__dict__, n=2)
+            if suggestions:
+                msg += f" Perhaps you meant {' or '.join(suggestions)}?"
+            raise AttributeError(msg)
+        super().__setattr__(key, value)
 
 
 class OptionGroup:
@@ -305,10 +321,10 @@ class OptionSet:
 
         return argparse.Namespace(**args)
 
-    def noxfile_namespace(self) -> Namespace:
+    def noxfile_namespace(self) -> RestrictedNamespace:
         """Returns a namespace of options that can be set in the configuration
         file."""
-        return argparse.Namespace(
+        return RestrictedNamespace(
             **{
                 option.name: option.default
                 for option in self.options.values()
