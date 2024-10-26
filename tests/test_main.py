@@ -495,6 +495,8 @@ def test_main_with_bad_session_names(run_nox, session):
         (("g", "a", "d"), ("b", "c", "h", "g", "a", "e", "d")),
         (("m",), ("k-3.9", "k-3.10", "m")),
         (("n",), ("k-3.10", "n")),
+        (("v",), ("u(django='1.9')", "u(django='2.0')", "v")),
+        (("w",), ("u(django='1.9')", "u(django='2.0')", "w")),
     ],
 )
 def test_main_requires(run_nox, sessions, expected_order):
@@ -537,6 +539,13 @@ def test_main_requires_chain_fail(run_nox, session):
     returncode, _, stderr = run_nox(f"--noxfile={noxfile}", f"--session={session}")
     assert returncode != 0
     assert "Prerequisite session r was not successful" in stderr
+
+
+@pytest.mark.parametrize("session", ("w", "u"))
+def test_main_requries_modern_param(run_nox, session):
+    noxfile = os.path.join(RESOURCES, "noxfile_requires.py")
+    returncode, _, stderr = run_nox(f"--noxfile={noxfile}", f"--session={session}")
+    assert returncode == 0
 
 
 def test_main_noxfile_options(monkeypatch, generate_noxfile_options):
