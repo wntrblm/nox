@@ -56,7 +56,7 @@ def tests(session: nox.Session, tox_version: str) -> None:
     )
 
     session.create_tmp()  # Fixes permission errors on Windows
-    session.install(*PYPROJECT["dependency-groups"]["test"])
+    session.install(*PYPROJECT["dependency-groups"]["test"], "uv")
     session.install("-e.[tox_to_nox]")
     if tox_version != "latest":
         session.install(f"tox{tox_version}")
