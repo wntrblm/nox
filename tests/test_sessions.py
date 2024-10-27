@@ -125,6 +125,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.bin_paths = ["/no/bin/for/you"]  # type: ignore[misc]
         runner.venv.venv_backend = "venv"  # type: ignore[misc]
         return nox.sessions.Session(runner=runner), runner
@@ -302,7 +303,9 @@ class TestSession:
 
         run.assert_called_once_with(
             ("python", "-m", "pip", "install", "spam"),
-            **run_with_defaults(paths=mock.ANY, silent=True, env={}, external="error"),
+            **run_with_defaults(
+                paths=mock.ANY, silent=True, env=dict(os.environ), external="error"
+            ),
         )
 
     def test_run_success(self) -> None:
@@ -377,6 +380,23 @@ class TestSession:
         assert "unhappy" not in result
         assert "happy" in result
 
+    def test_no_included_invocation_env_vars_are_passed_empty(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("I_SHOULD_NOT_BE_INCLUDED", "sad")
+        monkeypatch.setenv("AND_NEITHER_SHOULD_I", "unhappy")
+        session, runner = self.make_session_and_runner()
+        result = session.run(
+            sys.executable,
+            "-c",
+            "import os; print(os.environ)",
+            include_outer_env=False,
+            silent=True,
+        )
+        assert result
+        assert "sad" not in result
+        assert "unhappy" not in result
+
     def test_run_external_not_a_virtualenv(self) -> None:
         # Non-virtualenv sessions should always allow external programs.
         session, runner = self.make_session_and_runner()
@@ -398,6 +418,7 @@ class TestSession:
         assert runner.venv
         runner.venv.allowed_globals = ("conda",)  # type: ignore[misc]
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.bin_paths = ["/path/to/env/bin"]  # type: ignore[misc]
         runner.venv.create.return_value = True  # type: ignore[attr-defined]
 
@@ -424,6 +445,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         assert runner.venv
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.bin_paths = ["/path/to/env/bin"]  # type: ignore[misc]
 
         runner.global_config.error_on_external_run = True
@@ -597,6 +619,7 @@ class TestSession:
         assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.is_offline = lambda: offline  # type: ignore[attr-defined]
         runner.venv.conda_cmd = conda  # type: ignore[attr-defined]
 
@@ -644,6 +667,7 @@ class TestSession:
         assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.is_offline = lambda: True  # type: ignore[attr-defined]
         runner.venv.conda_cmd = "conda"  # type: ignore[attr-defined]
 
@@ -672,6 +696,7 @@ class TestSession:
         assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.is_offline = lambda: False  # type: ignore[attr-defined]
         runner.venv.conda_cmd = "conda"  # type: ignore[attr-defined]
 
@@ -729,6 +754,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.venv_backend = "venv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
@@ -761,6 +787,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.venv_backend = "venv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
@@ -791,6 +818,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.PassthroughEnv)
         assert runner.venv
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -915,6 +943,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.venv_backend = "uv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
@@ -944,6 +973,7 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         runner.venv.venv_backend = "uv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
@@ -1220,6 +1250,7 @@ class TestSessionRunner:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
+        runner.venv.outer_env = dict(os.environ)
         return runner
 
     def test_execute_noop_success(self, caplog: pytest.LogCaptureFixture) -> None:

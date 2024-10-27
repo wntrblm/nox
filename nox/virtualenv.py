@@ -164,11 +164,12 @@ class ProcessEnv(abc.ABC):
         # Filter envs now so `.env` is dict[str, str] (easier to use)
         # even though .command's env supports None.
         env = env or {}
-        env = {**os.environ, **env}
         self.env = {k: v for k, v in env.items() if v is not None}
-
-        for key in _BLACKLISTED_ENV_VARS:
-            self.env.pop(key, None)
+        self.outer_env = {
+            k: v
+            for k, v in os.environ.items()
+            if k not in _BLACKLISTED_ENV_VARS and k not in env
+        }
 
         if self.bin_paths:
             self.env["PATH"] = os.pathsep.join(
