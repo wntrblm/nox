@@ -281,7 +281,7 @@ def test_condaenv_detection(make_conda: Callable[..., tuple[CondaEnv, Any]]) -> 
 
     proc_result = subprocess.run(
         [conda, "list"],
-        env=venv.env,
+        env={**venv.outer_env, **venv.env},
         check=True,
         capture_output=True,
     )
@@ -340,7 +340,7 @@ def test_env(
 ) -> None:
     monkeypatch.setenv("SIGIL", "123")
     venv, _ = make_one()
-    assert venv.env["SIGIL"] == "123"
+    assert venv.outer_env["SIGIL"] == "123"
     assert len(venv.bin_paths) == 1
     assert venv.bin_paths[0] in venv.env["PATH"]
     assert venv.bin_paths[0] not in os.environ["PATH"]
@@ -434,8 +434,8 @@ def test_create(
     venv, dir_ = make_one()
     venv.create()
 
-    assert "CONDA_PREFIX" not in venv.env
-    assert "NOT_CONDA_PREFIX" in venv.env
+    assert "CONDA_PREFIX" not in venv.outer_env
+    assert venv.outer_env["NOT_CONDA_PREFIX"] == "something-else"
 
     if IS_WINDOWS:
         assert dir_.join("Scripts", "python.exe").check()
