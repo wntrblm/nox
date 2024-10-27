@@ -1,3 +1,0 @@
--e .
--r requirements-test.txt
--r requirements-conda-test.txt
