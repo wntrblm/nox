@@ -559,6 +559,28 @@ the tags, so all three sessions:
     * flake8
 
 
+Running without nox
+-------------------
+
+With a few small additions to your noxfile, you can support running using only
+a generalized Python runner, such as ``pipx run noxfile.py``, ``uv run
+noxfile.py``, ``pdm run noxfile.py``, or ``hatch run noxfile.py``. You need to
+have the following comment in your noxfile:
+
+.. code-block:: python
+
+   # /// script
+   # dependencies = ["nox"]
+   # ///
+
+And the following block of code:
+
+.. code-block:: python
+
+   if __name__ == "__main__":
+       nox.main()
+
+
 Next steps
 ----------
 

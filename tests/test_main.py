@@ -24,7 +24,6 @@ from unittest import mock
 import pytest
 
 import nox
-import nox.__main__
 import nox._options
 import nox.registry
 import nox.sessions
@@ -46,7 +45,7 @@ def test_main_no_args(monkeypatch):
 
         # Call the function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -84,7 +83,7 @@ def test_main_long_form_args():
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -118,7 +117,7 @@ def test_main_no_venv(monkeypatch, capsys):
     )
 
     with mock.patch("sys.exit") as sys_exit:
-        nox.__main__.main()
+        nox.main()
         stdout, stderr = capsys.readouterr()
         assert stdout == "Noms, cheddar so good!\n"
         assert (
@@ -140,7 +139,7 @@ def test_main_no_venv_error():
         "--no-venv",
     ]
     with pytest.raises(ValueError, match="You can not use"):
-        nox.__main__.main()
+        nox.main()
 
 
 def test_main_short_form_args(monkeypatch):
@@ -166,7 +165,7 @@ def test_main_short_form_args(monkeypatch):
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -187,7 +186,7 @@ def test_main_explicit_sessions(monkeypatch):
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -205,7 +204,7 @@ def test_main_explicit_sessions_with_spaces_in_names(monkeypatch):
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -246,7 +245,7 @@ def test_main_list_option_from_nox_env_var(monkeypatch, var, option, env, values
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -274,7 +273,7 @@ def test_default_venv_backend_option(monkeypatch, options, env, expected):
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -290,7 +289,7 @@ def test_main_positional_args(capsys, monkeypatch):
     with mock.patch.object(sys, "exit", fake_exit), pytest.raises(
         ValueError, match="asdf!"
     ):
-        nox.__main__.main()
+        nox.main()
     _, stderr = capsys.readouterr()
     assert "Unknown argument(s) '1 2 3'" in stderr
     fake_exit.assert_called_once_with(2)
@@ -300,7 +299,7 @@ def test_main_positional_args(capsys, monkeypatch):
     with mock.patch.object(sys, "exit", fake_exit), pytest.raises(
         ValueError, match="asdf!"
     ):
-        nox.__main__.main()
+        nox.main()
     _, stderr = capsys.readouterr()
     assert "Unknown argument(s) '1 2 3'" in stderr
     fake_exit.assert_called_once_with(2)
@@ -313,7 +312,7 @@ def test_main_positional_with_double_hyphen(monkeypatch):
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -331,7 +330,7 @@ def test_main_positional_flag_like_with_double_hyphen(monkeypatch):
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(0)
         assert execute.called
 
@@ -346,7 +345,7 @@ def test_main_version(capsys, monkeypatch):
     with contextlib.ExitStack() as stack:
         execute = stack.enter_context(mock.patch("nox.workflow.execute"))
         exit_mock = stack.enter_context(mock.patch("sys.exit"))
-        nox.__main__.main()
+        nox.main()
         _, err = capsys.readouterr()
         assert VERSION in err
         exit_mock.assert_not_called()
@@ -359,7 +358,7 @@ def test_main_help(capsys, monkeypatch):
     with contextlib.ExitStack() as stack:
         execute = stack.enter_context(mock.patch("nox.workflow.execute"))
         exit_mock = stack.enter_context(mock.patch("sys.exit"))
-        nox.__main__.main()
+        nox.main()
         out, _ = capsys.readouterr()
         assert "help" in out
         exit_mock.assert_not_called()
@@ -371,7 +370,7 @@ def test_main_failure(monkeypatch):
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 1
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_once_with(1)
 
 
@@ -389,7 +388,7 @@ def test_main_nested_config(capsys, monkeypatch):
     )
 
     with mock.patch("sys.exit") as sys_exit:
-        nox.__main__.main()
+        nox.main()
         stdout, stderr = capsys.readouterr()
         assert stdout == "Noms, cheddar so good!\n"
         assert "Session snack(cheese='cheddar') was successful." in stderr
@@ -410,7 +409,7 @@ def test_main_session_with_names(capsys, monkeypatch):
     )
 
     with mock.patch("sys.exit") as sys_exit:
-        nox.__main__.main()
+        nox.main()
         stdout, stderr = capsys.readouterr()
         assert stdout == "Noms, cheddar so good!\n"
         assert "Session cheese list(cheese='cheddar') was successful." in stderr
@@ -423,7 +422,7 @@ def run_nox(capsys, monkeypatch):
         monkeypatch.setattr(sys, "argv", ["nox", *args])
 
         with mock.patch("sys.exit") as sys_exit:
-            nox.__main__.main()
+            nox.main()
             stdout, stderr = capsys.readouterr()
             returncode = sys_exit.call_args[0][0]
 
@@ -508,7 +507,7 @@ def test_main_noxfile_options(monkeypatch, generate_noxfile_options):
         honor_list_request.return_value = 0
 
         with mock.patch("sys.exit"):
-            nox.__main__.main()
+            nox.main()
 
         assert honor_list_request.called
 
@@ -538,7 +537,7 @@ def test_main_noxfile_options_disabled_by_flag(monkeypatch, generate_noxfile_opt
         honor_list_request.return_value = 0
 
         with mock.patch("sys.exit"):
-            nox.__main__.main()
+            nox.main()
 
         assert honor_list_request.called
 
@@ -560,7 +559,7 @@ def test_main_noxfile_options_sessions(monkeypatch, generate_noxfile_options):
         honor_list_request.return_value = 0
 
         with mock.patch("sys.exit"):
-            nox.__main__.main()
+            nox.main()
 
         assert honor_list_request.called
 
@@ -611,7 +610,7 @@ def test_main_noxfile_options_with_pythons_override(
     )
 
     with mock.patch("sys.exit") as sys_exit:
-        nox.__main__.main()
+        nox.main()
         _, stderr = capsys.readouterr()
         sys_exit.assert_called_once_with(0)
 
@@ -638,7 +637,7 @@ def test_main_noxfile_options_with_sessions_override(
     )
 
     with mock.patch("sys.exit") as sys_exit:
-        nox.__main__.main()
+        nox.main()
         _, stderr = capsys.readouterr()
         sys_exit.assert_called_once_with(0)
 
@@ -662,7 +661,7 @@ def test_main_color_from_isatty(monkeypatch, isatty_value, expected):
 
             # Call the main function.
             with mock.patch.object(sys, "exit"):
-                nox.__main__.main()
+                nox.main()
 
             config = execute.call_args[1]["global_config"]
             assert config.color == expected
@@ -685,7 +684,7 @@ def test_main_color_options(monkeypatch, color_opt, expected):
 
         # Call the main function.
         with mock.patch.object(sys, "exit"):
-            nox.__main__.main()
+            nox.main()
 
         config = execute.call_args[1]["global_config"]
         assert config.color == expected
@@ -698,7 +697,7 @@ def test_main_color_conflict(capsys, monkeypatch):
 
         # Call the main function.
         with mock.patch.object(sys, "exit") as exit:
-            nox.__main__.main()
+            nox.main()
             exit.assert_called_with(1)
 
     _, err = capsys.readouterr()
@@ -710,7 +709,7 @@ def test_main_force_python(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["nox", "--force-python=3.11"])
     with mock.patch("nox.workflow.execute", return_value=0) as execute:
         with mock.patch.object(sys, "exit"):
-            nox.__main__.main()
+            nox.main()
         config = execute.call_args[1]["global_config"]
     assert config.pythons == config.extra_pythons == ["3.11"]
 
@@ -719,7 +718,7 @@ def test_main_reuse_existing_virtualenvs_no_install(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["nox", "-R"])
     with mock.patch("nox.workflow.execute", return_value=0) as execute:
         with mock.patch.object(sys, "exit"):
-            nox.__main__.main()
+            nox.main()
         config = execute.call_args[1]["global_config"]
     assert (
         config.reuse_existing_virtualenvs
@@ -772,7 +771,7 @@ def test_main_noxfile_options_with_ci_override(
         "nox.tasks.honor_list_request", return_value=0
     ) as honor_list_request:
         with mock.patch("sys.exit"):
-            nox.__main__.main()
+            nox.main()
         config = honor_list_request.call_args[1]["global_config"]
     assert config.error_on_missing_interpreters == expected_final_value
 
@@ -790,7 +789,7 @@ def test_main_reuse_venv_cli_flags(monkeypatch, generate_noxfile_options, reuse_
     monkeypatch.setattr(sys, "argv", ["nox", "--reuse-venv", reuse_venv])
     with mock.patch("nox.workflow.execute", return_value=0) as execute:
         with mock.patch.object(sys, "exit"):
-            nox.__main__.main()
+            nox.main()
         config = execute.call_args[1]["global_config"]
     assert (
         not config.reuse_existing_virtualenvs
@@ -857,6 +856,6 @@ def test_main_noxfile_options_reuse_venv_compat_check(
         "nox.tasks.honor_list_request", return_value=0
     ) as honor_list_request:
         with mock.patch("sys.exit"):
-            nox.__main__.main()
+            nox.main()
         config = honor_list_request.call_args[1]["global_config"]
     assert config.reuse_venv == expected
