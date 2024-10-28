@@ -34,13 +34,18 @@ REGEX = re.compile(
 )
 
 
-def load_toml(filename: os.PathLike[str] | str) -> dict[str, Any]:
+def load_toml(
+    filename: os.PathLike[str] | str, *, missing_ok: bool = False
+) -> dict[str, Any]:
     """
     Load a toml file or a script with a PEP 723 script block.
 
     The file must have a ``.toml`` extension to be considered a toml file or a
     ``.py`` extension / no extension to be considered a script. Other file
     extensions are not valid in this function.
+
+    If ``missing_ok``, this will return an empty dict if a script block was not
+    found, otherwise it will raise a error.
 
     Example:
 
@@ -55,7 +60,7 @@ def load_toml(filename: os.PathLike[str] | str) -> dict[str, Any]:
     if filepath.suffix == ".toml":
         return _load_toml_file(filepath)
     if filepath.suffix in {".py", ""}:
-        return _load_script_block(filepath)
+        return _load_script_block(filepath, missing_ok=missing_ok)
     msg = f"Extension must be .py or .toml, got {filepath.suffix}"
     raise ValueError(msg)
 
@@ -65,12 +70,14 @@ def _load_toml_file(filepath: Path) -> dict[str, Any]:
         return tomllib.load(f)
 
 
-def _load_script_block(filepath: Path) -> dict[str, Any]:
+def _load_script_block(filepath: Path, *, missing_ok: bool) -> dict[str, Any]:
     name = "script"
     script = filepath.read_text(encoding="utf-8")
     matches = list(filter(lambda m: m.group("type") == name, REGEX.finditer(script)))
 
     if not matches:
+        if missing_ok:
+            return {}
         msg = f"No {name} block found in {filepath}"
         raise ValueError(msg)
     if len(matches) > 1:

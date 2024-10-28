@@ -339,6 +339,13 @@ options.add_options(
         help="Show the Nox version and exit.",
     ),
     _option_set.Option(
+        "script_mode",
+        "--script-mode",
+        group=options.groups["general"],
+        choices=["none", "fresh", "reuse"],
+        default="reuse",
+    ),
+    _option_set.Option(
         "list_sessions",
         "-l",
         "--list-sessions",
