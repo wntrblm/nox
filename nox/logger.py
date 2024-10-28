@@ -120,6 +120,9 @@ def setup_logging(
             colorlog. Otherwise, it will be plaintext.
     """
     root_logger = logging.getLogger()
+    if root_logger.hasHandlers():
+        return
+
     if verbose:
         root_logger.setLevel(OUTPUT)
     else:
