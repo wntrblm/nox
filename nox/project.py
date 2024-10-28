@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import packaging.specifiers
+
 if TYPE_CHECKING:
     from typing import Any
 
@@ -15,7 +17,7 @@ else:
     import tomllib
 
 
-__all__ = ["load_toml"]
+__all__ = ["load_toml", "python_list"]
 
 
 def __dir__() -> list[str]:
@@ -37,6 +39,15 @@ def load_toml(filename: os.PathLike[str] | str) -> dict[str, Any]:
     The file must have a ``.toml`` extension to be considered a toml file or a
     ``.py`` extension / no extension to be considered a script. Other file
     extensions are not valid in this function.
+
+    Example:
+
+    .. code-block:: python
+
+        @nox.session
+        def myscript(session):
+            myscript_options = nox.project.load_toml("myscript.py")
+            session.install(*myscript_options["dependencies"])
     """
     filepath = Path(filename)
     if filepath.suffix == ".toml":
@@ -67,3 +78,52 @@ def _load_script_block(filepath: Path) -> dict[str, Any]:
         for line in matches[0].group("content").splitlines(keepends=True)
     )
     return tomllib.loads(content)
+
+
+def python_list(
+    pyproject: dict[str, Any], *, max_version: str | None = None
+) -> list[str]:
+    """
+    Read a list of supported Python versions. Without ``max_version``, this
+    will read the trove classifiers (recommended). With a ``max_version``, it
+    will read the requires-python setting for a lower bound, and will use the
+    value of ``max_version`` as the upper bound. (Reminder: you should never
+    set an upper bound in ``requires-python``).
+
+    Example:
+
+    .. code-block:: python
+
+        import nox
+
+        PYPROJECT = nox.project.load_toml("pyproject.toml")
+        # From classifiers
+        PYTHON_VERSIONS = nox.project.python_list(PYPROJECT)
+        # Or from requires-python
+        PYTHON_VERSIONS = nox.project.python_list(PYPROJECT, max_version="3.13")
+    """
+    if max_version is None:
+        # Classifiers are a list of every Python version
+        from_classifiers = [
+            c.split()[-1]
+            for c in pyproject.get("project", {}).get("classifiers", [])
+            if c.startswith("Programming Language :: Python :: 3.")
+        ]
+        if from_classifiers:
+            return from_classifiers
+        raise ValueError('No Python version classifiers found in "project.classifiers"')
+
+    requires_python_str = pyproject.get("project", {}).get("requires-python", "")
+    if not requires_python_str:
+        raise ValueError('No "project.requires-python" value set')
+
+    for spec in packaging.specifiers.SpecifierSet(requires_python_str):
+        if spec.operator in {">", ">="}:
+            min_minor_version = int(spec.version.split(".")[1])
+            break
+    else:
+        raise ValueError('No minimum version found in "project.requires-python"')
+
+    max_minor_version = int(max_version.split(".")[1])
+
+    return [f"3.{v}" for v in range(min_minor_version, max_minor_version + 1)]
