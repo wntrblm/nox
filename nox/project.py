@@ -118,7 +118,7 @@ def python_list(
         raise ValueError('No "project.requires-python" value set')
 
     for spec in packaging.specifiers.SpecifierSet(requires_python_str):
-        if spec.operator in {">", ">="}:
+        if spec.operator in {">", ">=", "~="}:
             min_minor_version = int(spec.version.split(".")[1])
             break
     else:
