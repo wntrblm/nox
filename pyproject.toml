@@ -41,6 +41,7 @@ classifiers = [
 dependencies = [
   "argcomplete<4,>=1.9.4",
   "colorlog<7,>=2.6.1",
+  "dependency-groups>=1.1",
   "packaging>=20.9",
   "tomli>=1; python_version<'3.11'",
   "virtualenv>=20.14.1",

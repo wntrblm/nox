@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING
 
 import packaging.requirements
 import packaging.specifiers
+from dependency_groups import resolve
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
     from typing import Any, TypeVar
 
     T = TypeVar("T")
@@ -133,72 +133,6 @@ def python_versions(
     return [f"3.{v}" for v in range(min_minor_version, max_minor_version + 1)]
 
 
-def _normalize_name(name: str) -> str:
-    return re.sub(r"[-_.]+", "-", name).lower()
-
-
-def _normalize_group_names(dependency_groups: dict[str, T]) -> dict[str, T]:
-    original_names: dict[str, list[str]] = {}
-    normalized_groups = {}
-
-    for group_name, value in dependency_groups.items():
-        normed_group_name = _normalize_name(group_name)
-        original_names.setdefault(normed_group_name, []).append(group_name)
-        normalized_groups[normed_group_name] = value
-
-    errors = []
-    for normed_name, names in original_names.items():
-        if len(names) > 1:
-            errors.append(f"{normed_name} ({', '.join(names)})")
-    if errors:
-        raise ValueError(f"Duplicate dependency group names: {', '.join(errors)}")
-
-    return normalized_groups
-
-
-def _resolve_dependency_group(
-    dependency_groups: dict[str, Any], group: str, *past_groups: str
-) -> Generator[str, None, None]:
-    if group in past_groups:
-        raise ValueError(f"Cyclic dependency group include: {group} -> {past_groups}")
-
-    if group not in dependency_groups:
-        raise LookupError(f"Dependency group '{group}' not found")
-
-    raw_group = dependency_groups[group]
-    if not isinstance(raw_group, list):
-        raise ValueError(f"Dependency group '{group}' is not a list")
-
-    for item in raw_group:
-        if isinstance(item, str):
-            # packaging.requirements.Requirement parsing ensures that this is a valid
-            # PEP 508 Dependency Specifier
-            # raises InvalidRequirement on failure
-            packaging.requirements.Requirement(item)
-            yield item
-        elif isinstance(item, dict):
-            if tuple(item.keys()) != ("include-group",):
-                raise ValueError(f"Invalid dependency group item: {item}")
-
-            include_group = _normalize_name(next(iter(item.values())))
-            yield from _resolve_dependency_group(
-                dependency_groups, include_group, *past_groups, group
-            )
-        else:
-            raise ValueError(f"Invalid dependency group item: {item}")
-
-
-def _resolve(
-    dependency_groups: dict[str, Any], *groups: str
-) -> Generator[str, None, None]:
-    if not isinstance(dependency_groups, dict):
-        raise TypeError("Dependency Groups table is not a dict")
-    for group in groups:
-        if not isinstance(group, str):
-            raise TypeError("Dependency group name is not a str")
-        yield from _resolve_dependency_group(dependency_groups, group)
-
-
 def dependency_groups(pyproject: dict[str, Any], *groups: str) -> list[str]:
-    norm_groups = (_normalize_name(g) for g in groups)
-    return list(_resolve(pyproject["dependency-groups"], *norm_groups))
+    dep_groups = pyproject["dependency-groups"]
+    return [item for g in groups for item in resolve(dep_groups, g)]
