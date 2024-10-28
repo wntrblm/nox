@@ -16,8 +16,7 @@ keywords = [
 ]
 license = { text = "Apache-2.0" }
 authors = [
-  { name = "Alethea Katherine Flowers" },
-  { email = "me@thea.codes" },
+  { name = "Alethea Katherine Flowers", email = "me@thea.codes" },
 ]
 requires-python = ">=3.8"
 classifiers = [
@@ -116,3 +115,21 @@ enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
 [[tool.mypy.overrides]]
 module = [ "argcomplete", "colorlog.*", "py", "tox.*" ]
 ignore_missing_imports = true
+
+[dependency-groups]
+test = [
+  "coverage[toml]>=7.2",
+  "pytest>=6.0",
+  "pytest-cov",
+]
+docs = [
+  "myst-parser",
+  "sphinx>=3.0",
+  "sphinx-autobuild",
+  "sphinx-tabs",
+  "witchhazel",
+]
+dev = [
+  { include-group = "docs" },
+  { include-group = "test" },
+]
