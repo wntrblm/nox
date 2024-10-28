@@ -125,7 +125,6 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.bin_paths = ["/no/bin/for/you"]  # type: ignore[misc]
         runner.venv.venv_backend = "venv"  # type: ignore[misc]
         return nox.sessions.Session(runner=runner), runner
@@ -301,11 +300,12 @@ class TestSession:
             session.install("spam")
             session.run("spam", "eggs")
 
+        env = dict(os.environ)
+        env["PATH"] = os.pathsep.join(["/no/bin/for/you", env["PATH"]])
+
         run.assert_called_once_with(
             ("python", "-m", "pip", "install", "spam"),
-            **run_with_defaults(
-                paths=mock.ANY, silent=True, env=dict(os.environ), external="error"
-            ),
+            **run_with_defaults(paths=mock.ANY, silent=True, env=env, external="error"),
         )
 
     def test_run_success(self) -> None:
@@ -345,10 +345,12 @@ class TestSession:
         assert result
         assert result.strip() == "1 3 5"
 
-    def test_by_default_all_invocation_env_vars_are_passed(self) -> None:
+    def test_by_default_all_invocation_env_vars_are_passed(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("I_SHOULD_BE_INCLUDED", "happy")
         session, runner = self.make_session_and_runner()
         assert runner.venv
-        runner.venv.env["I_SHOULD_BE_INCLUDED"] = "happy"
         runner.venv.env["I_SHOULD_BE_INCLUDED_TOO"] = "happier"
         runner.venv.env["EVERYONE_SHOULD_BE_INCLUDED_TOO"] = "happiest"
         result = session.run(
@@ -362,11 +364,13 @@ class TestSession:
         assert "happier" in result
         assert "happiest" in result
 
-    def test_no_included_invocation_env_vars_are_passed(self) -> None:
+    def test_no_included_invocation_env_vars_are_passed(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("I_SHOULD_NOT_BE_INCLUDED", "sad")
+        monkeypatch.setenv("AND_NEITHER_SHOULD_I", "unhappy")
         session, runner = self.make_session_and_runner()
         assert runner.venv
-        runner.venv.env["I_SHOULD_NOT_BE_INCLUDED"] = "sad"
-        runner.venv.env["AND_NEITHER_SHOULD_I"] = "unhappy"
         result = session.run(
             sys.executable,
             "-c",
@@ -418,7 +422,6 @@ class TestSession:
         assert runner.venv
         runner.venv.allowed_globals = ("conda",)  # type: ignore[misc]
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.bin_paths = ["/path/to/env/bin"]  # type: ignore[misc]
         runner.venv.create.return_value = True  # type: ignore[attr-defined]
 
@@ -445,7 +448,6 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
         assert runner.venv
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.bin_paths = ["/path/to/env/bin"]  # type: ignore[misc]
 
         runner.global_config.error_on_external_run = True
@@ -619,7 +621,6 @@ class TestSession:
         assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.is_offline = lambda: offline  # type: ignore[attr-defined]
         runner.venv.conda_cmd = conda  # type: ignore[attr-defined]
 
@@ -667,7 +668,6 @@ class TestSession:
         assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.is_offline = lambda: True  # type: ignore[attr-defined]
         runner.venv.conda_cmd = "conda"  # type: ignore[attr-defined]
 
@@ -696,7 +696,6 @@ class TestSession:
         assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.is_offline = lambda: False  # type: ignore[attr-defined]
         runner.venv.conda_cmd = "conda"  # type: ignore[attr-defined]
 
@@ -754,7 +753,6 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.venv_backend = "venv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
@@ -787,7 +785,6 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.venv_backend = "venv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
@@ -818,7 +815,6 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.PassthroughEnv)
         assert runner.venv
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -943,7 +939,6 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.venv_backend = "uv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
@@ -973,7 +968,6 @@ class TestSession:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         runner.venv.venv_backend = "uv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
@@ -1250,7 +1244,6 @@ class TestSessionRunner:
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
         assert runner.venv
         runner.venv.env = {}
-        runner.venv.outer_env = dict(os.environ)
         return runner
 
     def test_execute_noop_success(self, caplog: pytest.LogCaptureFixture) -> None:
