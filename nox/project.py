@@ -17,7 +17,7 @@ else:
     import tomllib
 
 
-__all__ = ["load_toml", "python_list"]
+__all__ = ["load_toml", "python_versions"]
 
 
 def __dir__() -> list[str]:
@@ -80,7 +80,7 @@ def _load_script_block(filepath: Path) -> dict[str, Any]:
     return tomllib.loads(content)
 
 
-def python_list(
+def python_versions(
     pyproject: dict[str, Any], *, max_version: str | None = None
 ) -> list[str]:
     """
@@ -98,9 +98,9 @@ def python_list(
 
         PYPROJECT = nox.project.load_toml("pyproject.toml")
         # From classifiers
-        PYTHON_VERSIONS = nox.project.python_list(PYPROJECT)
+        PYTHON_VERSIONS = nox.project.python_versions(PYPROJECT)
         # Or from requires-python
-        PYTHON_VERSIONS = nox.project.python_list(PYPROJECT, max_version="3.13")
+        PYTHON_VERSIONS = nox.project.python_versions(PYPROJECT, max_version="3.13")
     """
     if max_version is None:
         # Classifiers are a list of every Python version
