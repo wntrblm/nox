@@ -11,9 +11,7 @@ import packaging.specifiers
 from dependency_groups import resolve
 
 if TYPE_CHECKING:
-    from typing import Any, TypeVar
-
-    T = TypeVar("T")
+    from typing import Any
 
 if sys.version_info < (3, 11):
     import tomli as tomllib
@@ -134,5 +132,17 @@ def python_versions(
 
 
 def dependency_groups(pyproject: dict[str, Any], *groups: str) -> list[str]:
+    """
+    Get a list of dependencies from a ``[dependency-groups]`` section(s).
+
+    Example:
+
+    .. code-block:: python
+
+        @nox.session
+        def test(session):
+            pyproject = nox.project.load_toml("pyproject.toml")
+            session.install(*nox.project.dependency_groups(pyproject, "dev"))
+    """
     dep_groups = pyproject["dependency-groups"]
     return [item for g in groups for item in resolve(dep_groups, g)]
