@@ -398,6 +398,7 @@ options.add_options(
         "--verbose",
         group=options.groups["reporting"],
         action="store_true",
+        default=False,
         help="Logs the output of all commands run including commands marked silent.",
         noxfile=True,
     ),
