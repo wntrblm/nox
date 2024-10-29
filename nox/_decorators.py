@@ -71,6 +71,7 @@ class Func(FunctionDecorator):
         tags: Sequence[str] | None = None,
         *,
         default: bool = True,
+        requires: Sequence[str] | None = None,
     ) -> None:
         self.func = func
         self.python = python
@@ -81,6 +82,7 @@ class Func(FunctionDecorator):
         self.should_warn = dict(should_warn or {})
         self.tags = list(tags or [])
         self.default = default
+        self.requires = list(requires or [])
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
@@ -98,7 +100,30 @@ class Func(FunctionDecorator):
             self.should_warn,
             self.tags,
             default=self.default,
+            requires=self._requires,
         )
+
+    @property
+    def requires(self) -> list[str]:
+        # Compute dynamically on lookup since ``self.python`` can be modified after
+        # creation (e.g. on an instance from ``self.copy``).
+        return list(map(self.format_dependency, self._requires))
+
+    @requires.setter
+    def requires(self, value: Sequence[str]) -> None:
+        self._requires = list(value)
+
+    def format_dependency(self, dependency: str) -> str:
+        if isinstance(self.python, (bool, str)) or self.python is None:
+            formatted = dependency.format(python=self.python, py=self.python)
+            if (
+                self.python is None or isinstance(self.python, bool)
+            ) and formatted != dependency:
+                msg = "Cannot parametrize requires with {python} when python is None or a bool."
+                raise ValueError(msg)
+            return formatted
+        msg = "The requires of a not-yet-parametrized session cannot be parametrized."  # pragma: no cover
+        raise TypeError(msg)  # pragma: no cover
 
 
 class Call(Func):
@@ -130,6 +155,7 @@ class Call(Func):
             func.should_warn,
             func.tags + param_spec.tags,
             default=func.default,
+            requires=func.requires,
         )
         self.call_spec = call_spec
         self.session_signature = session_signature

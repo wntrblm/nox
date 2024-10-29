@@ -386,6 +386,41 @@ You can also pass the notified session positional arguments:
 
 Note that this will only have the desired effect if selecting sessions to run via the ``--session/-s`` flag. If you simply run ``nox``, all selected sessions will be run.
 
+Requiring sessions
+------------------
+
+You can also request sessions be run before your session runs. This is done with the ``requires=`` keyword:
+
+
+.. code-block:: python
+
+    @nox.session
+    def tests(session):
+        session.install("pytest")
+        session.run("pytest")
+
+    @nox.session(requires=["tests"])
+    def coverage(session):
+        session.install("coverage")
+        session.run("coverage")
+
+The required sessions will be stably topologically sorted and run. Parametrized
+sessions are supported. You can also get the current Python version with
+``{python}``, though arbitrary parametrizations are not supported.
+
+
+.. code-block:: python
+
+    @nox.session(python=["3.10", "3.13"])
+    def tests(session):
+        session.install("pytest")
+        session.run("pytest")
+
+    @nox.session(python=["3.10", "3.13"], requires=["tests-{python}"])
+    def coverage(session):
+        session.install("coverage")
+        session.run("coverage")
+
 Testing against different and multiple Pythons
 ----------------------------------------------
 

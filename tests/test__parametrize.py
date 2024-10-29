@@ -167,6 +167,7 @@ def test_parametrize_decorator_multiple_and_stack():
 def test_generate_calls_simple():
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"
+    f.requires = None
     f.some_prop = 42
 
     arg_names = ("abc",)
@@ -199,6 +200,7 @@ def test_generate_calls_simple():
 def test_generate_calls_multiple_args():
     f = mock.Mock(should_warn=None, tags=[])
     f.__name__ = "f"
+    f.requires = None
 
     arg_names = ("foo", "abc")
     call_specs = [
@@ -225,6 +227,7 @@ def test_generate_calls_multiple_args():
 def test_generate_calls_ids():
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"
+    f.requires = None
 
     arg_names = ("foo",)
     call_specs = [
@@ -245,7 +248,7 @@ def test_generate_calls_ids():
 
 
 def test_generate_calls_tags():
-    f = mock.Mock(should_warn={}, tags=[])
+    f = mock.Mock(should_warn={}, tags=[], requires=[])
     f.__name__ = "f"
 
     arg_names = ("foo",)
@@ -264,7 +267,7 @@ def test_generate_calls_tags():
 
 
 def test_generate_calls_merge_tags():
-    f = mock.Mock(should_warn={}, tags=["tag1", "tag2"])
+    f = mock.Mock(should_warn={}, tags=["tag1", "tag2"], requires=[])
     f.__name__ = "f"
 
     arg_names = ("foo",)

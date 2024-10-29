@@ -32,6 +32,12 @@ jobs:
             python-version: "3.12"
     steps:
       - uses: actions/checkout@v4
+      - name: Set up non-default Pythons
+        uses: actions/setup-python@v5
+        with:
+          python-version: |
+            3.9
+            3.10
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:

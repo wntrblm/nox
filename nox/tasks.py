@@ -27,6 +27,7 @@ from colorlog.escape_codes import parse_colors
 
 import nox
 from nox import _options, registry
+from nox._resolver import CycleError
 from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
 from nox.logger import logger
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
@@ -221,6 +222,14 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
 
     if not manifest and not global_config.list_sessions:
         logger.error("No sessions selected after filtering by keyword.")
+        return 3
+
+    # Add dependencies.
+    try:
+        manifest.add_dependencies()
+    except (KeyError, CycleError) as exc:
+        logger.error("Error while resolving session dependencies.")
+        logger.error(exc.args[0])
         return 3
 
     # Return the modified manifest.
