@@ -466,6 +466,13 @@ class.
     :members:
     :undoc-members:
 
+The pyproject.toml helpers
+--------------------------
+
+Nox provides helpers for ``pyproject.toml`` projects in the ``nox.project`` namespace.
+
+.. automodule:: nox.project
+   :members:
 
 Modifying Nox's behavior in the Noxfile
 ---------------------------------------

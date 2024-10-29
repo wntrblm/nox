@@ -218,6 +218,9 @@ is provided:
        session.install_and_run_script("peps.py")
 
 
+Other helpers for ``pyproject.toml`` based projects are also available in
+``nox.project``.
+
 Running commands
 ----------------
 
