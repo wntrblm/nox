@@ -37,6 +37,7 @@ repos:
         files: ^nox/
         args: []
         additional_dependencies:
+          - attrs
           - colorlog
           - dependency-groups>=1.2
           - jinja2
