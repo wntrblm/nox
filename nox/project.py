@@ -131,7 +131,7 @@ def python_versions(
     return [f"3.{v}" for v in range(min_minor_version, max_minor_version + 1)]
 
 
-def dependency_groups(pyproject: dict[str, Any], *groups: str) -> list[str]:
+def dependency_groups(pyproject: dict[str, Any], *groups: str) -> tuple[str, ...]:
     """
     Get a list of dependencies from a ``[dependency-groups]`` section(s).
 
@@ -145,4 +145,4 @@ def dependency_groups(pyproject: dict[str, Any], *groups: str) -> list[str]:
             session.install(*nox.project.dependency_groups(pyproject, "dev"))
     """
     dep_groups = pyproject["dependency-groups"]
-    return [item for g in groups for item in resolve(dep_groups, g)]
+    return resolve(dep_groups, *groups)

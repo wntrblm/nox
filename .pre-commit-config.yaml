@@ -37,7 +37,7 @@ repos:
         files: ^nox/
         args: []
         additional_dependencies:
-          - dependency-groups>=1.1
+          - dependency-groups>=1.2
           - jinja2
           - packaging
           - importlib_metadata

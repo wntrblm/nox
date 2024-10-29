@@ -79,18 +79,18 @@ def test_dependency_groups():
         }
     }
 
-    assert dependency_groups(example, "test") == ["pytest", "coverage"]
-    assert dependency_groups(example, "typing-test") == [
+    assert dependency_groups(example, "test") == ("pytest", "coverage")
+    assert dependency_groups(example, "typing-test") == (
         "mypy",
         "types-requests",
         "pytest",
         "coverage",
         "useful-types",
-    ]
-    assert dependency_groups(example, "typing_test") == [
+    )
+    assert dependency_groups(example, "typing_test") == (
         "mypy",
         "types-requests",
         "pytest",
         "coverage",
         "useful-types",
-    ]
+    )
