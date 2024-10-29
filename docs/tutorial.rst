@@ -560,7 +560,7 @@ the tags, so all three sessions:
 
 
 Running without the nox command
--------------------
+-------------------------------
 
 With a few small additions to your noxfile, you can support running using only
 a generalized Python runner, such as ``pipx run noxfile.py``, ``uv run
