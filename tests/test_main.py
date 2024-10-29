@@ -918,3 +918,13 @@ def test_main_noxfile_options_reuse_venv_compat_check(
             nox.main()
         config = honor_list_request.call_args[1]["global_config"]
     assert config.reuse_venv == expected
+
+
+def test_noxfile_options_cant_be_set():
+    with pytest.raises(AttributeError, match="reuse_venvs"):
+        nox.options.reuse_venvs = True
+
+
+def test_noxfile_options_cant_be_set_long():
+    with pytest.raises(AttributeError, match="i_am_clearly_not_an_option"):
+        nox.options.i_am_clearly_not_an_option = True

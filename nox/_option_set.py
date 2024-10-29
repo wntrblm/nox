@@ -20,13 +20,49 @@ from __future__ import annotations
 
 import argparse
 import collections
+import dataclasses
 import functools
 from argparse import ArgumentError as ArgumentError  # noqa: PLC0414
 from argparse import ArgumentParser, Namespace
 from collections.abc import Callable, Iterable
-from typing import Any
+from typing import Any, Literal
 
 import argcomplete
+
+
+# Python 3.10+ has slots=True (or attrs does), also kwonly=True
+@dataclasses.dataclass
+class NoxOptions:
+    __slots__ = (
+        "default_venv_backend",
+        "envdir",
+        "error_on_external_run",
+        "error_on_missing_interpreters",
+        "force_venv_backend",
+        "keywords",
+        "pythons",
+        "report",
+        "reuse_existing_virtualenvs",
+        "reuse_venv",
+        "sessions",
+        "stop_on_first_error",
+        "tags",
+        "verbose",
+    )
+    default_venv_backend: None | str
+    envdir: None | str
+    error_on_external_run: bool
+    error_on_missing_interpreters: bool
+    force_venv_backend: None | str
+    keywords: None | list[str]
+    pythons: None | list[str]
+    report: None | str
+    reuse_existing_virtualenvs: bool
+    reuse_venv: None | Literal["no", "yes", "never", "always"]
+    sessions: None | list[str]
+    stop_on_first_error: bool
+    tags: None | list[str]
+    verbose: bool
 
 
 class OptionGroup:
@@ -59,7 +95,7 @@ class Option:
         help (str): The help string pass to argparse.
         noxfile (bool): Whether or not this option can be set in the
             configuration file.
-        merge_func (Callable[[Namespace, Namespace], Any]): A function that
+        merge_func (Callable[[Namespace, NoxOptions], Any]): A function that
             can define custom behavior when merging the command-line options
             with the configuration file options. The first argument is the
             command-line options, the second is the configuration file options.
@@ -84,7 +120,7 @@ class Option:
         group: OptionGroup | None,
         help: str | None = None,
         noxfile: bool = False,
-        merge_func: Callable[[Namespace, Namespace], Any] | None = None,
+        merge_func: Callable[[Namespace, NoxOptions], Any] | None = None,
         finalizer_func: Callable[[Any, Namespace], Any] | None = None,
         default: (
             bool | str | None | list[str] | Callable[[], bool | str | None | list[str]]
@@ -117,7 +153,7 @@ def flag_pair_merge_func(
     enable_default: bool | Callable[[], bool],
     disable_name: str,
     command_args: Namespace,
-    noxfile_args: Namespace,
+    noxfile_args: NoxOptions,
 ) -> bool:
     """Merge function for flag pairs. If the flag is set in the Noxfile or
     the command line params, return ``True`` *unless* the disable flag has been
@@ -305,19 +341,19 @@ class OptionSet:
 
         return argparse.Namespace(**args)
 
-    def noxfile_namespace(self) -> Namespace:
+    def noxfile_namespace(self) -> NoxOptions:
         """Returns a namespace of options that can be set in the configuration
         file."""
-        return argparse.Namespace(
+        return NoxOptions(
             **{
                 option.name: option.default
                 for option in self.options.values()
                 if option.noxfile
-            }
+            }  # type: ignore[arg-type]
         )
 
     def merge_namespaces(
-        self, command_args: Namespace, noxfile_args: Namespace
+        self, command_args: Namespace, noxfile_args: NoxOptions
     ) -> None:
         """Merges the command-line options with the Noxfile options."""
         command_args_copy = Namespace(**vars(command_args))

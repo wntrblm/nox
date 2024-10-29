@@ -25,6 +25,7 @@ from typing import Any, Callable, Literal, Sequence
 import argcomplete
 
 from nox import _option_set
+from nox._option_set import NoxOptions
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 from nox.virtualenv import ALL_VENVS
 
@@ -72,7 +73,7 @@ options.add_groups(
 
 
 def _sessions_merge_func(
-    key: str, command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+    key: str, command_args: argparse.Namespace, noxfile_args: NoxOptions
 ) -> list[str]:
     """Only return the Noxfile value for sessions/keywords if neither sessions,
     keywords or tags are specified on the command-line.
@@ -83,7 +84,7 @@ def _sessions_merge_func(
             same function for both options.
         command_args (_option_set.Namespace): The options specified on the
             command-line.
-        noxfile_Args (_option_set.Namespace): The options specified in the
+        noxfile_Args (NoxOptions): The options specified in the
             Noxfile."""
     if (
         not command_args.sessions
@@ -95,14 +96,14 @@ def _sessions_merge_func(
 
 
 def _default_venv_backend_merge_func(
-    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+    command_args: argparse.Namespace, noxfile_args: NoxOptions
 ) -> str:
     """Merge default_venv_backend from command args and Noxfile. Default is "virtualenv".
 
     Args:
         command_args (_option_set.Namespace): The options specified on the
             command-line.
-        noxfile_Args (_option_set.Namespace): The options specified in the
+        noxfile_Args (NoxOptions): The options specified in the
             Noxfile.
     """
     return (
@@ -113,14 +114,14 @@ def _default_venv_backend_merge_func(
 
 
 def _force_venv_backend_merge_func(
-    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+    command_args: argparse.Namespace, noxfile_args: NoxOptions
 ) -> str:
     """Merge force_venv_backend from command args and Noxfile. Default is None.
 
     Args:
         command_args (_option_set.Namespace): The options specified on the
             command-line.
-        noxfile_Args (_option_set.Namespace): The options specified in the
+        noxfile_Args (NoxOptions): The options specified in the
             Noxfile.
     """
     if command_args.no_venv:
@@ -132,25 +133,25 @@ def _force_venv_backend_merge_func(
                 "You can not use `--no-venv` with a non-none `--force-venv-backend`"
             )
         return "none"
-    return command_args.force_venv_backend or noxfile_args.force_venv_backend  # type: ignore[no-any-return]
+    return command_args.force_venv_backend or noxfile_args.force_venv_backend  # type: ignore[return-value]
 
 
 def _envdir_merge_func(
-    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+    command_args: argparse.Namespace, noxfile_args: NoxOptions
 ) -> str:
     """Ensure that there is always some envdir.
 
     Args:
         command_args (_option_set.Namespace): The options specified on the
             command-line.
-        noxfile_Args (_option_set.Namespace): The options specified in the
+        noxfile_Args (NoxOptions): The options specified in the
             Noxfile.
     """
     return command_args.envdir or noxfile_args.envdir or ".nox"
 
 
 def _reuse_venv_merge_func(
-    command_args: argparse.Namespace, noxfile_args: argparse.Namespace
+    command_args: argparse.Namespace, noxfile_args: NoxOptions
 ) -> ReuseVenvType:
     """Merge reuse_venv from command args and Noxfile while maintaining
     backwards compatibility with reuse_existing_virtualenvs. Default is "no".
@@ -158,7 +159,7 @@ def _reuse_venv_merge_func(
     Args:
         command_args (_option_set.Namespace): The options specified on the
             command-line.
-        noxfile_Args (_option_set.Namespace): The options specified in the
+        noxfile_Args (NoxOptions): The options specified in the
             Noxfile.
     """
     # back-compat scenario with no_reuse_existing_virtualenvs/reuse_existing_virtualenvs
@@ -397,6 +398,7 @@ options.add_options(
         "--verbose",
         group=options.groups["reporting"],
         action="store_true",
+        default=False,
         help="Logs the output of all commands run including commands marked silent.",
         noxfile=True,
     ),
