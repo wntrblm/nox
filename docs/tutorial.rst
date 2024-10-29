@@ -559,7 +559,7 @@ the tags, so all three sessions:
     * flake8
 
 
-Running without nox
+Running without the nox command
 -------------------
 
 With a few small additions to your noxfile, you can support running using only
