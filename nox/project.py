@@ -6,7 +6,9 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import packaging.requirements
 import packaging.specifiers
+from dependency_groups import resolve
 
 if TYPE_CHECKING:
     from typing import Any
@@ -17,7 +19,7 @@ else:
     import tomllib
 
 
-__all__ = ["load_toml", "python_versions"]
+__all__ = ["load_toml", "python_versions", "dependency_groups"]
 
 
 def __dir__() -> list[str]:
@@ -127,3 +129,20 @@ def python_versions(
     max_minor_version = int(max_version.split(".")[1])
 
     return [f"3.{v}" for v in range(min_minor_version, max_minor_version + 1)]
+
+
+def dependency_groups(pyproject: dict[str, Any], *groups: str) -> tuple[str, ...]:
+    """
+    Get a list of dependencies from a ``[dependency-groups]`` section(s).
+
+    Example:
+
+    .. code-block:: python
+
+        @nox.session
+        def test(session):
+            pyproject = nox.project.load_toml("pyproject.toml")
+            session.install(*nox.project.dependency_groups(pyproject, "dev"))
+    """
+    dep_groups = pyproject["dependency-groups"]
+    return resolve(dep_groups, *groups)

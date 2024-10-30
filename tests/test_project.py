@@ -1,6 +1,6 @@
 import pytest
 
-from nox.project import python_versions
+from nox.project import dependency_groups, python_versions
 
 
 def test_classifiers():
@@ -63,3 +63,34 @@ def test_python_range_no_min():
 
     with pytest.raises(ValueError, match="No minimum version found"):
         python_versions(pyproject, max_version="3.5")
+
+
+def test_dependency_groups():
+    example = {
+        "dependency-groups": {
+            "test": ["pytest", "coverage"],
+            "docs": ["sphinx", "sphinx-rtd-theme"],
+            "typing": ["mypy", "types-requests"],
+            "typing-test": [
+                {"include-group": "typing"},
+                {"include-group": "test"},
+                "useful-types",
+            ],
+        }
+    }
+
+    assert dependency_groups(example, "test") == ("pytest", "coverage")
+    assert dependency_groups(example, "typing-test") == (
+        "mypy",
+        "types-requests",
+        "pytest",
+        "coverage",
+        "useful-types",
+    )
+    assert dependency_groups(example, "typing_test") == (
+        "mypy",
+        "types-requests",
+        "pytest",
+        "coverage",
+        "useful-types",
+    )
