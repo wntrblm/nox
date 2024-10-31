@@ -18,6 +18,7 @@ import argparse
 import logging
 import operator
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -1144,6 +1145,13 @@ class TestSessionRunner:
         runner.func.reuse_venv = reuse_venv_func
         runner.global_config.reuse_venv = reuse_venv
         assert runner.reuse_existing_venv() == should_reuse
+
+    def test__reuse_venv_invalid(self):
+        runner = self.make_runner()
+        runner.global_config.reuse_venv = True
+        msg = "nox.options.reuse_venv must be set to 'always', 'never', 'no', or 'yes', got True!"
+        with pytest.raises(AttributeError, match=re.escape(msg)):
+            runner.reuse_existing_venv()
 
     def make_runner_with_mock_venv(self):
         runner = self.make_runner()

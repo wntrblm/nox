@@ -1053,6 +1053,12 @@ class SessionRunner:
         Returns:
             bool: True if the existing virtual environment should be reused, False otherwise.
         """
+        if self.global_config.reuse_venv not in {"always", "never", "no", "yes", None}:
+            msg = (
+                "nox.options.reuse_venv must be set to 'always', 'never', 'no', or 'yes',"
+                f" got {self.global_config.reuse_venv!r}!"
+            )
+            raise AttributeError(msg)
 
         return any(
             (
