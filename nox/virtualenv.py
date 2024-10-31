@@ -24,7 +24,7 @@ import re
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from socket import gethostbyname
 from typing import Any, ClassVar
@@ -33,6 +33,7 @@ from packaging import version
 
 import nox
 import nox.command
+from nox._typing import Python
 from nox.logger import logger
 
 # Problematic environment variables that are stripped from all commands inside
@@ -286,7 +287,7 @@ class CondaEnv(ProcessEnv):
         location: str,
         interpreter: str | None = None,
         reuse_existing: bool = False,
-        venv_params: Any = None,
+        venv_params: Sequence[str] = (),
         *,
         conda_cmd: str = "conda",
     ):
@@ -422,7 +423,7 @@ class VirtualEnv(ProcessEnv):
         reuse_existing: bool = False,
         *,
         venv_backend: str = "virtualenv",
-        venv_params: Any = None,
+        venv_params: Sequence[str] = (),
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
@@ -662,3 +663,40 @@ OPTIONAL_VENVS = {
     "micromamba": shutil.which("micromamba") is not None,
     "uv": HAS_UV,
 }
+
+
+def get_virtualenv(
+    *backends: str,
+    envdir: str,
+    reuse_existing: bool,
+    interpreter: Python = None,
+    venv_params: Sequence[str] = (),
+) -> ProcessEnv:
+    # Support fallback backends
+    for bk in backends:
+        if bk not in ALL_VENVS:
+            msg = f"Expected venv_backend one of {sorted(ALL_VENVS)!r}, but got {bk!r}."
+            raise ValueError(msg)
+
+    for bk in backends[:-1]:
+        if bk not in OPTIONAL_VENVS:
+            msg = f"Only optional backends ({sorted(OPTIONAL_VENVS)!r}) may have a fallback, {bk!r} is not optional."
+            raise ValueError(msg)
+
+    for bk in backends:
+        if OPTIONAL_VENVS.get(bk, True):
+            backend = bk
+            break
+    else:
+        msg = f"No backends present, looked for {backends!r}."
+        raise ValueError(msg)
+
+    if backend == "none" or interpreter is False:
+        return ALL_VENVS["none"]()
+
+    return ALL_VENVS[backend](
+        envdir,
+        interpreter=interpreter,
+        reuse_existing=reuse_existing,
+        venv_params=venv_params,
+    )

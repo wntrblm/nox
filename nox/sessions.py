@@ -45,7 +45,13 @@ import nox.virtualenv
 from nox._decorators import Func
 from nox.logger import logger
 from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT
-from nox.virtualenv import CondaEnv, PassthroughEnv, ProcessEnv, VirtualEnv
+from nox.virtualenv import (
+    CondaEnv,
+    PassthroughEnv,
+    ProcessEnv,
+    VirtualEnv,
+    get_virtualenv,
+)
 
 if TYPE_CHECKING:
     from typing import IO
@@ -991,34 +997,13 @@ class SessionRunner:
             or "virtualenv"
         ).split("|")
 
-        # Support fallback backends
-        for bk in backends:
-            if bk not in nox.virtualenv.ALL_VENVS:
-                msg = f"Expected venv_backend one of {list(nox.virtualenv.ALL_VENVS)!r}, but got {bk!r}."
-                raise ValueError(msg)
-
-        for bk in backends[:-1]:
-            if bk not in nox.virtualenv.OPTIONAL_VENVS:
-                msg = f"Only optional backends ({list(nox.virtualenv.OPTIONAL_VENVS)!r}) may have a fallback, {bk!r} is not optional."
-                raise ValueError(msg)
-
-        for bk in backends:
-            if nox.virtualenv.OPTIONAL_VENVS.get(bk, True):
-                backend = bk
-                break
-        else:
-            msg = f"No backends present, looked for {backends!r}."
-            raise ValueError(msg)
-
-        if backend == "none" or self.func.python is False:
-            self.venv = nox.virtualenv.ALL_VENVS["none"]()
-        else:
-            self.venv = nox.virtualenv.ALL_VENVS[backend](
-                self.envdir,
-                interpreter=self.func.python,
-                reuse_existing=reuse_existing,
-                venv_params=self.func.venv_params,
-            )
+        self.venv = get_virtualenv(
+            *backends,
+            reuse_existing=reuse_existing,
+            envdir=self.envdir,
+            interpreter=self.func.python,
+            venv_params=self.func.venv_params,
+        )
 
         self.venv.create()
 

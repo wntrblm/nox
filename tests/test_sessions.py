@@ -793,7 +793,7 @@ class TestSession:
             if "-x" in session.posargs:
                 raise RuntimeError("invalid option: -x")
 
-        config = _options.options.namespace(posargs=[])
+        config = _options.options.namespace(posargs=[], envdir=".nox")
         manifest = nox.manifest.Manifest(registry, config)
 
         assert manifest["test"].execute()
