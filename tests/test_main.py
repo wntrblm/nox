@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import subprocess
 import sys
 from importlib import metadata
 from pathlib import Path
@@ -928,3 +929,25 @@ def test_noxfile_options_cant_be_set():
 def test_noxfile_options_cant_be_set_long():
     with pytest.raises(AttributeError, match="i_am_clearly_not_an_option"):
         nox.options.i_am_clearly_not_an_option = True
+
+
+def test_symlink_orig(monkeypatch):
+    monkeypatch.chdir(Path(RESOURCES) / "orig_dir")
+    subprocess.run([sys.executable, "-m", "nox", "-s", "orig"], check=True)
+
+
+def test_symlink_orig_not(monkeypatch):
+    monkeypatch.chdir(Path(RESOURCES) / "orig_dir")
+    res = subprocess.run([sys.executable, "-m", "nox", "-s", "sym"], check=False)
+    assert res.returncode == 1
+
+
+def test_symlink_sym(monkeypatch):
+    monkeypatch.chdir(Path(RESOURCES) / "sym_dir")
+    subprocess.run([sys.executable, "-m", "nox", "-s", "sym"], check=True)
+
+
+def test_symlink_sym_not(monkeypatch):
+    monkeypatch.chdir(Path(RESOURCES) / "sym_dir")
+    res = subprocess.run([sys.executable, "-m", "nox", "-s", "orig"], check=False)
+    assert res.returncode == 1

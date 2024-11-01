@@ -199,6 +199,16 @@ class Session:
         return venv
 
     @property
+    def noxfile(self) -> pathlib.Path:
+        """The path to the Noxfile that defines this session.
+
+        If the noxfile is a symlink, this does not resolve that last symlink; it
+        has been resolved up to that point. Use `session.noxfile.resolve()` to
+        get the original file path.
+        """
+        return pathlib.Path(self._runner.global_config.noxfile)
+
+    @property
     def venv_backend(self) -> str:
         """The venv_backend selected."""
         venv = self._runner.venv
