@@ -2,7 +2,7 @@ from pathlib import Path
 
 import nox
 
-DIR = Path(__file__).parent.resolve()
+FILE = Path(__file__).resolve()
 
 
 @nox.session(venv_backend="none", default=False)
@@ -14,4 +14,4 @@ def orig(session: nox.Session) -> None:
 def sym(session: nox.Session) -> None:
     assert Path("sym_file.txt").exists()
 
-    assert session.noxfile.resolve().parent.joinpath("orig_file.txt").exists()
+    assert FILE.parent.joinpath("orig_file.txt").exists()
