@@ -66,7 +66,7 @@ class Func(FunctionDecorator):
         reuse_venv: bool | None = None,
         name: str | None = None,
         venv_backend: Any = None,
-        venv_params: Any = None,
+        venv_params: Sequence[str] = (),
         should_warn: Mapping[str, Any] | None = None,
         tags: Sequence[str] | None = None,
         *,
