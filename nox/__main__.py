@@ -19,56 +19,11 @@ function). This module primarily loads configuration, and then passes
 control to :meth:``nox.workflow.execute``.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # pragma: no cover
 
-import sys
-from typing import Any
+from nox._cli import main  # pragma: no cover
 
-from nox import _options, tasks, workflow
-from nox._version import get_nox_version
-from nox.logger import setup_logging
-
-
-def execute_workflow(args: Any) -> int:
-    """
-    Execute the appropriate tasks.
-    """
-
-    return workflow.execute(
-        global_config=args,
-        workflow=(
-            tasks.load_nox_module,
-            tasks.merge_noxfile_options,
-            tasks.discover_manifest,
-            tasks.filter_manifest,
-            tasks.honor_list_request,
-            tasks.run_manifest,
-            tasks.print_summary,
-            tasks.create_report,
-            tasks.final_reduce,
-        ),
-    )
-
-
-def main() -> None:
-    args = _options.options.parse_args()
-
-    if args.help:
-        _options.options.print_help()
-        return
-
-    if args.version:
-        print(get_nox_version(), file=sys.stderr)
-        return
-
-    setup_logging(
-        color=args.color, verbose=args.verbose, add_timestamp=args.add_timestamp
-    )
-
-    exit_code = execute_workflow(args)
-
-    # Done; exit.
-    sys.exit(exit_code)
+__all__ = ["main"]  # pragma: no cover
 
 
 if __name__ == "__main__":  # pragma: no cover

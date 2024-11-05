@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from nox import project
-from nox.__main__ import main
+from nox._cli import main
 from nox._options import noxfile_options as options
 from nox._parametrize import Param as param
 from nox._parametrize import parametrize_decorator as parametrize
