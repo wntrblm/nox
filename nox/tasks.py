@@ -83,13 +83,15 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     # Be sure to expand variables
     global_config_noxfile = os.path.expandvars(global_config.noxfile)
 
+    # Make sure we only expand the parent dir just in case the noxfile is a symlink
+    noxfile_parent_dir = os.path.realpath(os.path.dirname(global_config_noxfile))
+
     # Save the absolute path to the Noxfile.
     # This will inoculate it if Nox changes paths because of an implicit
     # or explicit chdir (like the one below).
-    global_config.noxfile = os.path.realpath(global_config_noxfile)
-
-    # Make sure we only expand the parent dir just in case the noxfile is a symlink
-    noxfile_parent_dir = os.path.realpath(os.path.dirname(global_config.noxfile))
+    global_config.noxfile = os.path.join(
+        noxfile_parent_dir, os.path.basename(global_config_noxfile)
+    )
 
     try:
         # Check ``nox.needs_version`` by parsing the AST.
