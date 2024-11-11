@@ -18,8 +18,8 @@ from __future__ import annotations
 
 import argparse
 import os
-import pkgutil
 import re
+import sys
 from configparser import ConfigParser
 from importlib import metadata
 from pathlib import Path
@@ -29,18 +29,25 @@ from typing import Any, Iterable
 import jinja2
 import tox.config
 
+if sys.version_info < (3, 9):
+    from importlib_resources import files
+else:
+    from importlib.resources import files
+
 TOX_VERSION = metadata.version("tox")
 
 TOX4 = int(TOX_VERSION.split(".")[0]) >= 4
 
+DATA = files("nox")
+
 if TOX4:
     _TEMPLATE = jinja2.Template(
-        pkgutil.get_data(__name__, "tox4_to_nox.jinja2").decode("utf-8"),  # type: ignore[union-attr]
+        DATA.joinpath("tox4_to_nox.jinja2").read_text(encoding="utf-8"),
         extensions=["jinja2.ext.do"],
     )
 else:
     _TEMPLATE = jinja2.Template(
-        pkgutil.get_data(__name__, "tox_to_nox.jinja2").decode("utf-8"),  # type: ignore[union-attr]
+        DATA.joinpath("tox_to_nox.jinja2").read_text(encoding="utf-8"),
         extensions=["jinja2.ext.do"],
     )
 

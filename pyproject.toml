@@ -47,6 +47,7 @@ dependencies = [
   "virtualenv>=20.14.1",
 ]
 optional-dependencies.tox_to_nox = [
+  "importlib-resources; python_version<'3.9'",
   "jinja2",
   "tox",
 ]

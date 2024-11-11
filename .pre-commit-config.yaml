@@ -41,6 +41,7 @@ repos:
           - jinja2
           - packaging
           - importlib_metadata
+          - importlib_resources
           - tomli
           - uv
 
