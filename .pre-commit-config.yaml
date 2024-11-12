@@ -43,6 +43,7 @@ repos:
           - orjson # Faster mypy
           - packaging
           - importlib_metadata
+          - importlib_resources
           - tomli
           - uv
 
