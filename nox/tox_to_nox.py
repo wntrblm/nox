@@ -34,6 +34,14 @@ if sys.version_info < (3, 9):
 else:
     from importlib.resources import files
 
+
+__all__ = ["main"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 TOX_VERSION = metadata.version("tox")
 
 TOX4 = int(TOX_VERSION.split(".")[0]) >= 4

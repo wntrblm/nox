@@ -14,8 +14,13 @@
 
 from __future__ import annotations
 
+from typing import Sequence, Union
+
 __all__ = ["Python"]
 
-from typing import Sequence, Union
+
+def __dir__() -> list[str]:
+    return __all__
+
 
 Python = Union[str, Sequence[str], bool, None]

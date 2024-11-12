@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""All of Nox's configuration options."""
+
 from __future__ import annotations
 
 import argparse
@@ -32,9 +34,15 @@ if TYPE_CHECKING:
 
     from nox._option_set import NoxOptions
 
-ReuseVenvType = Literal["no", "yes", "never", "always"]
 
-"""All of Nox's configuration options."""
+__all__ = ["ReuseVenvType", "noxfile_options", "options"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
+ReuseVenvType = Literal["no", "yes", "never", "always"]
 
 options = _option_set.OptionSet(
     description="Nox is a Python automation toolkit.", add_help=False

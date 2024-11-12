@@ -35,6 +35,22 @@ if TYPE_CHECKING:
     import types
     from argparse import Namespace
 
+__all__ = [
+    "create_report",
+    "discover_manifest",
+    "filter_manifest",
+    "final_reduce",
+    "honor_list_request",
+    "load_nox_module",
+    "merge_noxfile_options",
+    "print_summary",
+    "run_manifest",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
 
 def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
     """

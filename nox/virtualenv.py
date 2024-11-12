@@ -39,6 +39,31 @@ if TYPE_CHECKING:
 
     from nox._typing import Python
 
+__all__ = [
+    "ALL_VENVS",
+    "HAS_UV",
+    "OPTIONAL_VENVS",
+    "UV",
+    "UV_PYTHON_SUPPORT",
+    "CondaEnv",
+    "InterpreterNotFound",
+    "PassthroughEnv",
+    "ProcessEnv",
+    "VirtualEnv",
+    "find_uv",
+    "get_virtualenv",
+    "get_virtualenv",
+    "uv_install_python",
+    "uv_install_python",
+    "uv_version",
+    "uv_version",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
 _BLACKLISTED_ENV_VARS = frozenset(

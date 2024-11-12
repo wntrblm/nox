@@ -59,6 +59,12 @@ if TYPE_CHECKING:
     from nox.command import ExternalType
     from nox.manifest import Manifest
 
+__all__ = ["Result", "Session", "SessionRunner", "Status", "nox"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
 
 @contextlib.contextmanager
 def _chdir(path: str) -> Generator[None, None, None]:

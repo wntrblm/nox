@@ -23,6 +23,12 @@ from nox import _options, tasks, workflow
 from nox._version import get_nox_version
 from nox.logger import setup_logging
 
+__all__ = ["execute_workflow", "main"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
 
 def execute_workflow(args: Any) -> int:
     """

@@ -28,6 +28,13 @@ if TYPE_CHECKING:
     import argparse
     from collections.abc import Iterable, Iterator, Sequence
 
+__all__ = ["WARN_PYTHONS_IGNORED", "Manifest", "keyword_match"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 WARN_PYTHONS_IGNORED = "python_ignored"
 
 
