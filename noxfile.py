@@ -60,6 +60,7 @@ def tests(session: nox.Session, tox_version: str) -> None:
     session.install("-e.[tox_to_nox]")
     if tox_version != "latest":
         session.install(f"tox{tox_version}")
+    extra_env = {} if tox_version != "latest" else {"PYTHONWARNDEFAULTENCODING": "1"}
     session.run(
         "pytest",
         "--cov",
@@ -69,6 +70,7 @@ def tests(session: nox.Session, tox_version: str) -> None:
         *session.posargs,
         env={
             "COVERAGE_FILE": coverage_file,
+            **extra_env,
         },
     )
 

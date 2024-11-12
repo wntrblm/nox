@@ -148,7 +148,7 @@ def test_load_nox_module_needs_version_static(tmp_path: Path) -> None:
         """
     )
     noxfile = tmp_path / "noxfile.py"
-    noxfile.write_text(text)
+    noxfile.write_text(text, encoding="utf-8")
     config = _options.options.namespace(noxfile=str(noxfile))
     assert tasks.load_nox_module(config) == 2
 
@@ -162,7 +162,7 @@ def test_load_nox_module_needs_version_dynamic(tmp_path: Path) -> None:
         """
     )
     noxfile = tmp_path / "noxfile.py"
-    noxfile.write_text(text)
+    noxfile.write_text(text, encoding="utf-8")
     config = _options.options.namespace(noxfile=str(noxfile))
     tasks.load_nox_module(config)
     # Dynamic version requirements are not checked.

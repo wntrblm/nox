@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 def temp_noxfile(tmp_path: Path) -> Callable[[str], str]:
     def make_temp_noxfile(content: str) -> str:
         path = tmp_path / "noxfile.py"
-        path.write_text(content)
+        path.write_text(content, encoding="utf8")
         return str(path)
 
     return make_temp_noxfile

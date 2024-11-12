@@ -35,12 +35,12 @@ PYTHON_VERSION_NODOT = PYTHON_VERSION.replace(".", "")
 @pytest.fixture
 def makeconfig(tmpdir: LEGACY_PATH) -> Callable[[str], str]:
     def makeconfig(toxini_content: str) -> str:
-        tmpdir.join("tox.ini").write(toxini_content)
+        tmpdir.join("tox.ini").write_text(toxini_content, encoding="utf8")
         old = tmpdir.chdir()
         try:
             sys.argv = [sys.executable]
             tox_to_nox.main()
-            return tmpdir.join("noxfile.py").read()  # type: ignore[no-any-return]
+            return tmpdir.join("noxfile.py").read_text(encoding="utf8")  # type: ignore[no-any-return]
         finally:
             old.chdir()
 

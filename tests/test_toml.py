@@ -14,7 +14,8 @@ def test_load_pyproject(tmp_path: Path) -> None:
         name = "hi"
         version = "1.0"
         dependencies = ["numpy", "requests"]
-        """
+        """,
+        encoding="utf-8",
     )
 
     toml = nox.project.load_toml(filepath)
@@ -43,7 +44,8 @@ def test_load_script_block(tmp_path: Path, example: str) -> None:
             data = resp.json()
             pprint([(k, v["title"]) for k, v in data.items()][:10])
             """
-        )
+        ),
+        encoding="utf-8",
     )
 
     toml = nox.project.load_toml(filepath)
@@ -64,7 +66,8 @@ def test_load_no_script_block(tmp_path: Path) -> None:
             data = resp.json()
             pprint([(k, v["title"]) for k, v in data.items()][:10])
             """
-        )
+        ),
+        encoding="utf-8",
     )
 
     with pytest.raises(ValueError, match="No script block found"):
@@ -94,7 +97,8 @@ def test_load_multiple_script_block(tmp_path: Path) -> None:
             data = resp.json()
             pprint([(k, v["title"]) for k, v in data.items()][:10])
             """
-        )
+        ),
+        encoding="utf-8",
     )
 
     with pytest.raises(ValueError, match="Multiple script blocks found"):
