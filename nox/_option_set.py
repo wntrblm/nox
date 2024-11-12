@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import collections
-import dataclasses
 import functools
 from argparse import ArgumentError as ArgumentError  # noqa: PLC0414
 from argparse import ArgumentParser, Namespace
@@ -28,41 +27,37 @@ from collections.abc import Callable, Iterable
 from typing import Any, Literal
 
 import argcomplete
+import attrs
+import attrs.validators as av
 
-
-# Python 3.10+ has slots=True (or attrs does), also kwonly=True
-@dataclasses.dataclass
-class NoxOptions:
-    __slots__ = (
-        "default_venv_backend",
-        "envdir",
-        "error_on_external_run",
-        "error_on_missing_interpreters",
-        "force_venv_backend",
-        "keywords",
-        "pythons",
-        "report",
-        "reuse_existing_virtualenvs",
-        "reuse_venv",
-        "sessions",
-        "stop_on_first_error",
-        "tags",
-        "verbose",
+av_opt_str = av.optional(av.instance_of(str))
+av_opt_list_str = av.optional(
+    av.deep_iterable(
+        member_validator=av.instance_of(str),
+        iterable_validator=attrs.validators.instance_of(list),
     )
-    default_venv_backend: None | str
-    envdir: None | str
-    error_on_external_run: bool
-    error_on_missing_interpreters: bool
-    force_venv_backend: None | str
-    keywords: None | list[str]
-    pythons: None | list[str]
-    report: None | str
-    reuse_existing_virtualenvs: bool
-    reuse_venv: None | Literal["no", "yes", "never", "always"]
-    sessions: None | list[str]
-    stop_on_first_error: bool
-    tags: None | list[str]
-    verbose: bool
+)
+av_bool = av.instance_of(bool)
+
+
+@attrs.define(slots=True, kw_only=True)
+class NoxOptions:
+    default_venv_backend: None | str = attrs.field(validator=av_opt_str)
+    envdir: None | str = attrs.field(validator=av_opt_str)
+    error_on_external_run: bool = attrs.field(validator=av_bool)
+    error_on_missing_interpreters: bool = attrs.field(validator=av_bool)
+    force_venv_backend: None | str = attrs.field(validator=av_opt_str)
+    keywords: None | list[str] = attrs.field(validator=av_opt_list_str)
+    pythons: None | list[str] = attrs.field(validator=av_opt_list_str)
+    report: None | str = attrs.field(validator=av_opt_str)
+    reuse_existing_virtualenvs: bool = attrs.field(validator=av_bool)
+    reuse_venv: None | Literal["no", "yes", "never", "always"] = attrs.field(
+        validator=av.optional(av.in_(["no", "yes", "never", "always"]))
+    )
+    sessions: None | list[str] = attrs.field(validator=av_opt_list_str)
+    stop_on_first_error: bool = attrs.field(validator=av_bool)
+    tags: None | list[str] = attrs.field(validator=av_opt_list_str)
+    verbose: bool = attrs.field(validator=av_bool)
 
 
 class OptionGroup:
