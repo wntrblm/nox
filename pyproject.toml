@@ -145,10 +145,10 @@ pythonpath = [ ".github/" ]
 
 [tool.coverage]
 run.branch = true
-run.omit = [ "nox/_typing.py" ]
 run.relative_files = true
 run.source_pkgs = [ "nox" ]
 report.exclude_also = [ "def __dir__()", "if TYPE_CHECKING:", "@overload" ]
+report.omit = [ "nox/_typing.py" ]
 
 [tool.mypy]
 python_version = "3.8"
