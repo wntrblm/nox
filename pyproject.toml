@@ -39,8 +39,8 @@ classifiers = [
   "Topic :: Software Development :: Testing",
 ]
 dependencies = [
-  "argcomplete<4,>=1.9.4",
-  "colorlog<7,>=2.6.1",
+  "argcomplete>=1.9.4,<4",
+  "colorlog>=2.6.1,<7",
   "dependency-groups>=1.1",
   "packaging>=20.9",
   "tomli>=1; python_version<'3.11'",
@@ -59,6 +59,24 @@ urls.homepage = "https://github.com/wntrblm/nox"
 urls.repository = "https://github.com/wntrblm/nox"
 scripts.nox = "nox.__main__:main"
 scripts.tox-to-nox = "nox.tox_to_nox:main"
+
+[dependency-groups]
+dev = [
+  { include-group = "docs" },
+  { include-group = "test" },
+]
+test = [
+  "coverage[toml]>=7.2",
+  "pytest>=6",
+  "pytest-cov",
+]
+docs = [
+  "myst-parser",
+  "sphinx>=3",
+  "sphinx-autobuild",
+  "sphinx-tabs",
+  "witchhazel",
+]
 
 [tool.hatch]
 metadata.allow-ambiguous-features = true # disable normalization (tox-to-nox) for back-compat
@@ -116,21 +134,3 @@ enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
 [[tool.mypy.overrides]]
 module = [ "argcomplete", "colorlog.*", "py", "tox.*" ]
 ignore_missing_imports = true
-
-[dependency-groups]
-test = [
-  "coverage[toml]>=7.2",
-  "pytest>=6.0",
-  "pytest-cov",
-]
-docs = [
-  "myst-parser",
-  "sphinx>=3.0",
-  "sphinx-autobuild",
-  "sphinx-tabs",
-  "witchhazel",
-]
-dev = [
-  { include-group = "docs" },
-  { include-group = "test" },
-]
