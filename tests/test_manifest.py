@@ -151,7 +151,7 @@ def test_iteration() -> None:
 
     # Continuing past the end raises StopIteration.
     with pytest.raises(StopIteration):
-        manifest.__next__()
+        next(manifest)
 
 
 def test_len() -> None:

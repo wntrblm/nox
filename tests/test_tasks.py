@@ -754,7 +754,7 @@ def test_create_report() -> None:
                 mock.ANY,
                 indent=2,
             )
-        open_.assert_called_once_with("/path/to/report", "w")
+        open_.assert_called_once_with("/path/to/report", "w", encoding="utf-8")
 
 
 def test_final_reduce() -> None:

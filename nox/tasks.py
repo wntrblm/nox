@@ -419,7 +419,7 @@ def create_report(
         return results
 
     # Write the JSON report.
-    with open(global_config.report, "w") as report_file:
+    with open(global_config.report, "w", encoding="utf-8") as report_file:
         json.dump(
             {
                 "result": int(all(results)),

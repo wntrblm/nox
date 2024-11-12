@@ -192,7 +192,7 @@ class TestSession:
         assert session.venv_backend == "none"
 
     def test_interactive(self) -> None:
-        session, runner = self.make_session_and_runner()
+        session, _runner = self.make_session_and_runner()
 
         with mock.patch("nox.sessions.sys.stdin.isatty") as m_isatty:
             m_isatty.return_value = True
@@ -447,7 +447,7 @@ class TestSession:
         session.conda_install("numpy")
 
     def test_run_no_conda_install(self) -> None:
-        session, runner = self.make_session_and_runner()
+        session, _runner = self.make_session_and_runner()
 
         with pytest.raises(TypeError, match="A session without a conda"):
             session.conda_install("numpy")
@@ -1383,8 +1383,6 @@ class TestResult:
                 session=typing.cast(nox.sessions.SessionRunner, object()), status=status
             )
             assert bool(result)
-            assert result.__bool__()
-            assert result.__nonzero__()
 
     def test__bool_false(self) -> None:
         for status in (nox.sessions.Status.FAILED, nox.sessions.Status.ABORTED):
@@ -1392,8 +1390,6 @@ class TestResult:
                 session=typing.cast(nox.sessions.SessionRunner, object()), status=status
             )
             assert not bool(result)
-            assert not result.__bool__()
-            assert not result.__nonzero__()
 
     def test__imperfect(self) -> None:
         result = nox.sessions.Result(

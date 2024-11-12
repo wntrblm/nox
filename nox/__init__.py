@@ -26,11 +26,11 @@ needs_version: str | None = None
 
 __all__ = [
     "Session",
+    "main",
     "needs_version",
     "options",
     "param",
     "parametrize",
     "project",
     "session",
-    "main",
 ]

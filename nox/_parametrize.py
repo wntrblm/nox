@@ -75,9 +75,9 @@ class Param:
 
     def update(self, other: Param) -> None:
         self.id = ", ".join([str(self), str(other)])
-        self.args = self.args + other.args
-        self.arg_names = self.arg_names + other.arg_names
-        self.tags = self.tags + other.tags
+        self.args += other.args
+        self.arg_names += other.arg_names
+        self.tags += other.tags
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, self.__class__):

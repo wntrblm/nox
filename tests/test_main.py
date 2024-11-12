@@ -591,7 +591,7 @@ def test_main_requries_modern_param(
     session: str,
 ) -> None:
     noxfile = os.path.join(RESOURCES, "noxfile_requires.py")
-    returncode, _, stderr = run_nox(f"--noxfile={noxfile}", f"--session={session}")
+    returncode, _, _stderr = run_nox(f"--noxfile={noxfile}", f"--session={session}")
     assert returncode == 0
 
 

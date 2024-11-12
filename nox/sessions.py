@@ -1145,9 +1145,6 @@ class Result:
     def __bool__(self) -> bool:
         return self.status.value > 0
 
-    def __nonzero__(self) -> bool:
-        return self.__bool__()
-
     @property
     def imperfect(self) -> str:
         """Return the English imperfect tense for the status.

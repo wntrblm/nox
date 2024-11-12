@@ -57,7 +57,7 @@ def decode_output(output: bytes) -> str:
         return output.decode("utf-8")
     except UnicodeDecodeError:
         second_encoding = locale.getpreferredencoding()
-        if second_encoding.casefold() in ("utf8", "utf-8"):
+        if second_encoding.casefold() in {"utf8", "utf-8"}:
             raise
 
         return output.decode(second_encoding)
@@ -86,11 +86,11 @@ def popen(
     proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=stderr)
 
     try:
-        out, err = proc.communicate()
+        out, _err = proc.communicate()
         sys.stdout.flush()
 
     except KeyboardInterrupt:
-        out, err = shutdown_process(proc, interrupt_timeout, terminate_timeout)
+        out, _err = shutdown_process(proc, interrupt_timeout, terminate_timeout)
         if proc.returncode != 0:
             raise
 

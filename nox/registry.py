@@ -32,12 +32,13 @@ _REGISTRY: collections.OrderedDict[str, Func] = collections.OrderedDict()
 
 
 @overload
-def session_decorator(__func: RawFunc | Func) -> Func: ...
+def session_decorator(func: RawFunc | Func, /) -> Func: ...
 
 
 @overload
 def session_decorator(
-    __func: None = ...,
+    func: None = ...,
+    /,
     python: Python | None = ...,
     py: Python | None = ...,
     reuse_venv: bool | None = ...,
@@ -53,6 +54,7 @@ def session_decorator(
 
 def session_decorator(
     func: Callable[..., Any] | Func | None = None,
+    /,
     python: Python | None = None,
     py: Python | None = None,
     reuse_venv: bool | None = None,

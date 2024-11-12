@@ -273,7 +273,7 @@ def test_fail_with_silent(capsys: pytest.CaptureFixture[str]) -> None:
             ],
             silent=True,
         )
-    out, err = capsys.readouterr()
+    _out, err = capsys.readouterr()
     assert "out" in err
     assert "err" in err
 

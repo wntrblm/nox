@@ -458,7 +458,7 @@ class VirtualEnv(ProcessEnv):
     def _read_pyvenv_cfg(self) -> dict[str, str] | None:
         """Read a pyvenv.cfg file into dict, returns None if missing."""
         path = os.path.join(self.location, "pyvenv.cfg")
-        with contextlib.suppress(FileNotFoundError), open(path) as fp:
+        with contextlib.suppress(FileNotFoundError), open(path, encoding="utf-8") as fp:
             parts = (x.partition("=") for x in fp if "=" in x)
             return {k.strip(): v.strip() for k, _, v in parts}
         return None

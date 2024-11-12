@@ -19,7 +19,7 @@ else:
     import tomllib
 
 
-__all__ = ["load_toml", "python_versions", "dependency_groups"]
+__all__ = ["dependency_groups", "load_toml", "python_versions"]
 
 
 def __dir__() -> list[str]:

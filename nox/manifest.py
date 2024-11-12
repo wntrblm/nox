@@ -375,7 +375,7 @@ class Manifest:
         return sessions
 
     def next(self) -> SessionRunner:
-        return self.__next__()
+        return next(self)
 
     def notify(
         self, session: str | SessionRunner, posargs: Iterable[str] | None = None

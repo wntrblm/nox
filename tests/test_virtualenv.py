@@ -238,18 +238,18 @@ def test_condaenv_create_interpreter(
 def test_conda_env_create_verbose(
     make_conda: Callable[..., tuple[CondaEnv, Any]],
 ) -> None:
-    venv, dir_ = make_conda()
+    venv, _dir = make_conda()
     with mock.patch("nox.virtualenv.nox.command.run") as mock_run:
         venv.create()
 
-    args, kwargs = mock_run.call_args
+    _args, kwargs = mock_run.call_args
     assert kwargs["log"] is False
 
     nox.options.verbose = True
     with mock.patch("nox.virtualenv.nox.command.run") as mock_run:
         venv.create()
 
-    args, kwargs = mock_run.call_args
+    _args, kwargs = mock_run.call_args
     assert kwargs["log"]
 
 
@@ -268,7 +268,7 @@ def test_condaenv_bin_windows(make_conda: Callable[..., tuple[CondaEnv, Any]]) -
 
 @has_conda
 def test_condaenv_(make_conda: Callable[..., tuple[CondaEnv, Any]]) -> None:
-    venv, dir_ = make_conda()
+    venv, _dir = make_conda()
     assert not venv.is_offline()
 
 
@@ -466,7 +466,7 @@ def test_create(
 def test_create_reuse_environment(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
 ) -> None:
-    venv, location = make_one(reuse_existing=True)
+    venv, _location = make_one(reuse_existing=True)
     venv.create()
 
     reused = not venv.create()
@@ -526,10 +526,10 @@ def test_not_stale_virtualenv_environment(
     # Making the reuse requirement more strict
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
 
-    venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
+    venv, _location = make_one(reuse_existing=True, venv_backend="virtualenv")
     venv.create()
 
-    venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
+    venv, _location = make_one(reuse_existing=True, venv_backend="virtualenv")
     reused = not venv.create()
 
     assert reused
@@ -539,10 +539,10 @@ def test_not_stale_virtualenv_environment(
 def test_stale_virtualenv_to_conda_environment(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
 ) -> None:
-    venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
+    venv, _location = make_one(reuse_existing=True, venv_backend="virtualenv")
     venv.create()
 
-    venv, location = make_one(reuse_existing=True, venv_backend="conda")
+    venv, _location = make_one(reuse_existing=True, venv_backend="conda")
     reused = not venv.create()
 
     # The environment is not reused because it is now conda style
@@ -853,7 +853,7 @@ def test_inner_functions_reusing_venv(
 def test_create_reuse_python2_environment(
     make_one: Callable[..., tuple[VirtualEnv, Any]],
 ) -> None:
-    venv, location = make_one(reuse_existing=True, interpreter="2.7")
+    venv, _location = make_one(reuse_existing=True, interpreter="2.7")
 
     try:
         venv.create()
@@ -868,7 +868,7 @@ def test_create_reuse_python2_environment(
 def test_create_venv_backend(
     make_one: Callable[..., tuple[VirtualEnv, Any]],
 ) -> None:
-    venv, dir_ = make_one(venv_backend="venv")
+    venv, _dir = make_one(venv_backend="venv")
     venv.create()
 
 

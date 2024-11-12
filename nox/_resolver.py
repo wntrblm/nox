@@ -119,7 +119,7 @@ def lazy_stable_topo_sort(
         ~nox._resolver.CycleError: If a dependency cycle is encountered.
     """
 
-    visited = {node: False for node in dependencies}
+    visited = dict.fromkeys(dependencies, False)
 
     def prepended_by_dependencies(
         node: Node,

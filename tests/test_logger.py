@@ -41,7 +41,7 @@ def test_formatter(caplog: pytest.LogCaptureFixture) -> None:
         logger.logger.info("bar")
         logger.logger.output("foo")
 
-    logs = [rec for rec in caplog.records if rec.levelname in ("INFO", "OUTPUT")]
+    logs = [rec for rec in caplog.records if rec.levelname in {"INFO", "OUTPUT"}]
     assert len(logs) == 1
     assert not hasattr(logs[0], "asctime")
 
@@ -50,7 +50,7 @@ def test_formatter(caplog: pytest.LogCaptureFixture) -> None:
         logger.logger.info("bar")
         logger.logger.output("foo")
 
-    logs = [rec for rec in caplog.records if rec.levelname in ("INFO", "OUTPUT")]
+    logs = [rec for rec in caplog.records if rec.levelname in {"INFO", "OUTPUT"}]
     assert len(logs) == 2
 
     logs = [rec for rec in caplog.records if rec.levelname == "OUTPUT"]
@@ -75,7 +75,7 @@ def test_no_color_timestamp(caplog: pytest.LogCaptureFixture, color: bool) -> No
         logger.logger.info("bar")
         logger.logger.output("foo")
 
-    logs = [rec for rec in caplog.records if rec.levelname in ("INFO", "OUTPUT")]
+    logs = [rec for rec in caplog.records if rec.levelname in {"INFO", "OUTPUT"}]
     assert len(logs) == 1
     assert hasattr(logs[0], "asctime")
 
