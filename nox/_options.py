@@ -371,7 +371,7 @@ options.add_options(
         noxfile=True,
         merge_func=functools.partial(_sessions_merge_func, "keywords"),
         help="Only run sessions that match the given expression.",
-        completer=argcomplete.completers.ChoicesCompleter(()),
+        completer=argcomplete.completers.ChoicesCompleter(()),  # type: ignore[no-untyped-call]
     ),
     _option_set.Option(
         "tags",
@@ -499,7 +499,7 @@ options.add_options(
         merge_func=_envdir_merge_func,
         group=options.groups["environment"],
         help="Directory where Nox will store virtualenvs, this is ``.nox`` by default.",
-        completer=argcomplete.completers.DirectoriesCompleter(),
+        completer=argcomplete.completers.DirectoriesCompleter(),  # type: ignore[no-untyped-call]
     ),
     _option_set.Option(
         "extra_pythons",
@@ -577,7 +577,7 @@ options.add_options(
         group=options.groups["reporting"],
         noxfile=True,
         help="Output a report of all sessions to the given filename.",
-        completer=argcomplete.completers.FilesCompleter(("json",)),
+        completer=argcomplete.completers.FilesCompleter(("json",)),  # type: ignore[no-untyped-call]
     ),
     _option_set.Option(
         "non_interactive",
