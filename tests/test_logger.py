@@ -36,7 +36,7 @@ def test_output() -> None:
 
 def test_formatter(caplog: pytest.LogCaptureFixture) -> None:
     caplog.clear()
-    logger.setup_logging(True, verbose=True)
+    logger.setup_logging(color=True, verbose=True)
     with caplog.at_level(logging.DEBUG):
         logger.logger.info("bar")
         logger.logger.output("foo")

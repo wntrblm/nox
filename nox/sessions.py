@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import argparse
 import contextlib
 import enum
 import hashlib
@@ -25,15 +24,6 @@ import shutil
 import subprocess
 import sys
 import unicodedata
-from collections.abc import (
-    Callable,
-    Generator,
-    Iterable,
-    Iterator,
-    Mapping,
-    Sequence,
-)
-from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -42,7 +32,6 @@ from typing import (
 
 import nox.command
 import nox.virtualenv
-from nox._decorators import Func
 from nox.logger import logger
 from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT
 from nox.virtualenv import (
@@ -54,8 +43,19 @@ from nox.virtualenv import (
 )
 
 if TYPE_CHECKING:
+    import argparse
+    from collections.abc import (
+        Callable,
+        Generator,
+        Iterable,
+        Iterator,
+        Mapping,
+        Sequence,
+    )
+    from types import TracebackType
     from typing import IO
 
+    from nox._decorators import Func
     from nox.command import ExternalType
     from nox.manifest import Manifest
 
@@ -88,7 +88,7 @@ def _normalize_path(envdir: str, path: str | bytes) -> str:
     full_path = os.path.join(envdir, path)
     if len(full_path) > 100 - len("bin/pythonX.Y"):
         if len(envdir) < 100 - 9:
-            path = hashlib.sha1(path.encode("ascii")).hexdigest()[:8]
+            path = hashlib.sha1(path.encode("ascii")).hexdigest()[:8]  # noqa: S324
             full_path = os.path.join(envdir, path)
             logger.warning("The virtualenv name was hashed to avoid being too long.")
         else:
@@ -108,9 +108,8 @@ def _dblquote_pkg_install_args(args: Iterable[str]) -> tuple[str, ...]:
     def _dblquote_pkg_install_arg(pkg_req_str: str) -> str:
         # sanity check: we need an even number of double-quotes
         if pkg_req_str.count('"') % 2 != 0:
-            raise ValueError(
-                f"ill-formatted argument with odd number of quotes: {pkg_req_str}"
-            )
+            msg = f"ill-formatted argument with odd number of quotes: {pkg_req_str}"
+            raise ValueError(msg)
 
         if "<" in pkg_req_str or ">" in pkg_req_str:
             if pkg_req_str[0] == pkg_req_str[-1] == '"':
@@ -118,7 +117,8 @@ def _dblquote_pkg_install_args(args: Iterable[str]) -> tuple[str, ...]:
                 return pkg_req_str
             # need to double-quote string
             if '"' in pkg_req_str:
-                raise ValueError(f"Cannot escape requirement string: {pkg_req_str}")
+                msg = f"Cannot escape requirement string: {pkg_req_str}"
+                raise ValueError(msg)
             return f'"{pkg_req_str}"'
         # no dangerous char: no need to double-quote string
         return pkg_req_str
@@ -147,7 +147,7 @@ class _WorkingDirContext:
         self._prev_working_dir = os.getcwd()
         os.chdir(dir)
 
-    def __enter__(self) -> _WorkingDirContext:
+    def __enter__(self) -> _WorkingDirContext:  # noqa: PYI034
         return self
 
     def __exit__(
@@ -201,7 +201,8 @@ class Session:
         """The virtualenv that all commands are run in."""
         venv = self._runner.venv
         if venv is None:
-            raise ValueError("A virtualenv has not been created for this session")
+            msg = "A virtualenv has not been created for this session"
+            raise ValueError(msg)
         return venv
 
     @property
@@ -227,7 +228,8 @@ class Session:
         """The first bin directory for the virtualenv."""
         paths = self.bin_paths
         if paths is None:
-            raise ValueError("The environment does not have a bin directory.")
+            msg = "The environment does not have a bin directory."
+            raise ValueError(msg)
         return paths[0]
 
     def create_tmp(self) -> str:
@@ -278,6 +280,7 @@ class Session:
             silent=silent,
             success_codes=success_codes,
             external=None,
+            log=log,
             stdout=stdout,
             stderr=stderr,
             interrupt_timeout=interrupt_timeout,
@@ -439,7 +442,8 @@ class Session:
         :type stderr: file or file descriptor
         """
         if not args:
-            raise ValueError("At least one argument required to run().")
+            msg = "At least one argument required to run()."
+            raise ValueError(msg)
 
         if len(args) == 1 and isinstance(args[0], (list, tuple)):
             msg = "First argument to `session.run` is a list. Did you mean to use `session.run(*args)`?"
@@ -529,7 +533,8 @@ class Session:
             return None
 
         if not args:
-            raise ValueError("At least one argument required to run_install().")
+            msg = "At least one argument required to run_install()"
+            raise ValueError(msg)
 
         return self._run(
             *args,
@@ -696,13 +701,15 @@ class Session:
         if isinstance(venv, CondaEnv):
             prefix_args = ("--prefix", venv.location)
         elif not isinstance(venv, PassthroughEnv):
-            raise ValueError(
+            msg = (
                 "A session without a conda environment can not install dependencies"
                 " from conda."
             )
+            raise TypeError(msg)
 
         if not args:
-            raise ValueError("At least one argument required to install().")
+            msg = "At least one argument required to install()."
+            raise ValueError(msg)
 
         if self._runner.global_config.no_install and (
             isinstance(venv, PassthroughEnv) or venv._reused
@@ -756,7 +763,7 @@ class Session:
         silent: bool | None = None,
         success_codes: Iterable[int] | None = None,
         log: bool = True,
-        external: ExternalType | None = None,
+        external: ExternalType | None = None,  # noqa: ARG002
         stdout: int | IO[str] | None = None,
         stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
@@ -803,20 +810,21 @@ class Session:
         if not isinstance(
             venv, (CondaEnv, VirtualEnv, PassthroughEnv)
         ):  # pragma: no cover
-            raise ValueError(
-                "A session without a virtualenv can not install dependencies."
-            )
+            msg = "A session without a virtualenv can not install dependencies."
+            raise TypeError(msg)
         if isinstance(venv, PassthroughEnv):
             if self._runner.global_config.no_install:
                 return
-            raise ValueError(
+            msg = (
                 f"Session {self.name} does not have a virtual environment, so use of"
                 " session.install() is no longer allowed since it would modify the"
                 " global Python environment. If you're really sure that is what you"
                 ' want to do, use session.run("pip", "install", ...) instead.'
             )
+            raise ValueError(msg)
         if not args:
-            raise ValueError("At least one argument required to install().")
+            msg = "At least one argument required to install()."
+            raise ValueError(msg)
 
         if self._runner.global_config.no_install and venv._reused:
             return
@@ -909,6 +917,7 @@ class SessionRunner:
         func: Func,
         global_config: argparse.Namespace,
         manifest: Manifest,
+        *,
         multi: bool = False,
     ) -> None:
         self.name = name
@@ -985,7 +994,8 @@ class SessionRunner:
             else:
                 yield from map(sessions_by_id.__getitem__, self.func.requires)
         except KeyError as exc:
-            raise KeyError(f"Session not found: {exc.args[0]}") from exc
+            msg = f"Session not found: {exc.args[0]}"
+            raise KeyError(msg) from exc
 
     def _create_venv(self) -> None:
         reuse_existing = self.reuse_existing_venv()

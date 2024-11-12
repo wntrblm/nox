@@ -14,16 +14,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import pytest
 
 import nox
 from nox import registry
 
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
-@pytest.fixture
+
+@pytest.fixture(autouse=True)
 def cleanup_registry() -> Generator[None, None, None]:
     """Ensure that the session registry is completely empty before and
     after each test.
@@ -35,7 +37,7 @@ def cleanup_registry() -> Generator[None, None, None]:
         registry._REGISTRY.clear()
 
 
-def test_session_decorator(cleanup_registry: None) -> None:
+def test_session_decorator() -> None:
     # Establish that the use of the session decorator will cause the
     # function to be found in the registry.
     @registry.session_decorator
@@ -48,7 +50,7 @@ def test_session_decorator(cleanup_registry: None) -> None:
     assert unit_tests.python is None
 
 
-def test_session_decorator_single_python(cleanup_registry: None) -> None:
+def test_session_decorator_single_python() -> None:
     @registry.session_decorator(python="3.6")
     def unit_tests(session: nox.Session) -> None:
         pass
@@ -56,7 +58,7 @@ def test_session_decorator_single_python(cleanup_registry: None) -> None:
     assert unit_tests.python == "3.6"
 
 
-def test_session_decorator_list_of_pythons(cleanup_registry: None) -> None:
+def test_session_decorator_list_of_pythons() -> None:
     @registry.session_decorator(python=["3.5", "3.6"])
     def unit_tests(session: nox.Session) -> None:
         pass
@@ -64,7 +66,7 @@ def test_session_decorator_list_of_pythons(cleanup_registry: None) -> None:
     assert unit_tests.python == ["3.5", "3.6"]
 
 
-def test_session_decorator_tags(cleanup_registry: None) -> None:
+def test_session_decorator_tags() -> None:
     @registry.session_decorator(tags=["tag-1", "tag-2"])
     def unit_tests(session: nox.Session) -> None:
         pass
@@ -72,7 +74,7 @@ def test_session_decorator_tags(cleanup_registry: None) -> None:
     assert unit_tests.tags == ["tag-1", "tag-2"]
 
 
-def test_session_decorator_py_alias(cleanup_registry: None) -> None:
+def test_session_decorator_py_alias() -> None:
     @registry.session_decorator(py=["3.5", "3.6"])
     def unit_tests(session: nox.Session) -> None:
         pass
@@ -80,7 +82,7 @@ def test_session_decorator_py_alias(cleanup_registry: None) -> None:
     assert unit_tests.python == ["3.5", "3.6"]
 
 
-def test_session_decorator_py_alias_error(cleanup_registry: None) -> None:
+def test_session_decorator_py_alias_error() -> None:
     with pytest.raises(ValueError, match="argument"):
 
         @registry.session_decorator(python=["3.5", "3.6"], py="2.7")
@@ -88,7 +90,7 @@ def test_session_decorator_py_alias_error(cleanup_registry: None) -> None:
             pass
 
 
-def test_session_decorator_reuse(cleanup_registry: None) -> None:
+def test_session_decorator_reuse() -> None:
     @registry.session_decorator(reuse_venv=True)
     def unit_tests(session: nox.Session) -> None:
         pass
@@ -98,8 +100,7 @@ def test_session_decorator_reuse(cleanup_registry: None) -> None:
 
 @pytest.mark.parametrize("name", ["unit-tests", "unit tests", "the unit tests"])
 def test_session_decorator_name(
-    cleanup_registry: None,
-    name: Literal["unit-tests"] | Literal["unit tests"] | Literal["the unit tests"],
+    name: Literal["unit-tests", "unit tests", "the unit tests"],
 ) -> None:
     @registry.session_decorator(name=name)
     def unit_tests(session: nox.Session) -> None:
@@ -112,7 +113,7 @@ def test_session_decorator_name(
     assert unit_tests.python is None
 
 
-def test_get(cleanup_registry: None) -> None:
+def test_get() -> None:
     # Establish that the get method returns a copy of the registry.
     empty = registry.get()
     assert empty == registry._REGISTRY

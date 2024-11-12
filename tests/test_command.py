@@ -25,14 +25,16 @@ import sys
 import time
 from pathlib import Path
 from textwrap import dedent
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
-from _pytest.compat import LEGACY_PATH
 
 import nox.command
 import nox.popen
+
+if TYPE_CHECKING:
+    from _pytest.compat import LEGACY_PATH
 
 PYTHON = sys.executable
 
@@ -46,7 +48,7 @@ only_on_windows = pytest.mark.skipif(
 )
 
 
-def test_run_defaults(capsys: pytest.CaptureFixture[str]) -> None:
+def test_run_defaults() -> None:
     result = nox.command.run([PYTHON, "-c", "print(123)"])
 
     assert result is True
@@ -62,7 +64,7 @@ def test_run_silent(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 @pytest.mark.skipif(shutil.which("git") is None, reason="Needs git")
-def test_run_not_in_path(capsys: pytest.CaptureFixture[str]) -> None:
+def test_run_not_in_path() -> None:
     # Paths falls back on the environment PATH if the command is not found.
     result = nox.command.run(["git", "--version"], paths=["."])
     assert result is True
@@ -271,9 +273,9 @@ def test_fail_with_silent(capsys: pytest.CaptureFixture[str]) -> None:
             ],
             silent=True,
         )
-        out, err = capsys.readouterr()
-        assert "out" in err
-        assert "err" in err
+    out, err = capsys.readouterr()
+    assert "out" in err
+    assert "err" in err
 
 
 @pytest.fixture
@@ -282,7 +284,7 @@ def marker(tmp_path: Path) -> Path:
     return tmp_path / "marker"
 
 
-def enable_ctrl_c(enabled: bool) -> None:
+def enable_ctrl_c(*, enabled: bool) -> None:
     """Enable keyboard interrupts (CTRL-C) on Windows."""
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
 
@@ -294,7 +296,7 @@ def interrupt_process(proc: subprocess.Popen[Any]) -> None:
     """Send SIGINT or CTRL_C_EVENT to the process."""
     if platform.system() == "Windows":
         # Disable Ctrl-C so we don't terminate ourselves.
-        enable_ctrl_c(False)
+        enable_ctrl_c(enabled=False)
 
         # Send the keyboard interrupt to all processes attached to the current
         # console session.
@@ -310,7 +312,7 @@ def command_with_keyboard_interrupt(
     """Monkeypatch Popen.communicate to raise KeyboardInterrupt."""
     if platform.system() == "Windows":
         # Enable Ctrl-C because the child inherits the setting from us.
-        enable_ctrl_c(True)
+        enable_ctrl_c(enabled=True)
 
     communicate = subprocess.Popen.communicate
 
@@ -390,8 +392,8 @@ def run_pytest_in_new_console_session(test: str) -> None:
         """,
     ],
 )
+@pytest.mark.usefixtures("command_with_keyboard_interrupt")
 def test_interrupt_raises(
-    command_with_keyboard_interrupt: None,
     program: str,
     marker: Any,
 ) -> None:
@@ -407,7 +409,7 @@ def test_interrupt_raises_on_windows() -> None:
 
 
 @skip_on_windows_primary_console_session
-def test_interrupt_handled(command_with_keyboard_interrupt: None, marker: Any) -> None:
+def test_interrupt_handled(command_with_keyboard_interrupt: None, marker: Any) -> None:  # noqa: ARG001
     """It does not raise if the child handles the keyboard interrupt."""
     program = """
     import signal
@@ -429,7 +431,7 @@ def test_interrupt_handled_on_windows() -> None:
 
 
 def test_custom_stdout(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) -> None:
-    with open(str(tmpdir / "out.txt"), "w+t") as stdout:
+    with open(str(tmpdir / "out.txt"), "w+") as stdout:
         nox.command.run(
             [
                 PYTHON,
@@ -451,10 +453,8 @@ def test_custom_stdout(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) 
         assert "err" in tempfile_contents
 
 
-def test_custom_stdout_silent_flag(
-    capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH
-) -> None:
-    with open(str(tmpdir / "out.txt"), "w+t") as stdout:  # noqa: SIM117
+def test_custom_stdout_silent_flag(tmpdir: LEGACY_PATH) -> None:
+    with open(str(tmpdir / "out.txt"), "w+") as stdout:  # noqa: SIM117
         with pytest.raises(ValueError, match="silent"):
             nox.command.run([PYTHON, "-c", 'print("hi")'], stdout=stdout, silent=True)
 
@@ -462,7 +462,7 @@ def test_custom_stdout_silent_flag(
 def test_custom_stdout_failed_command(
     capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH
 ) -> None:
-    with open(str(tmpdir / "out.txt"), "w+t") as stdout:
+    with open(str(tmpdir / "out.txt"), "w+") as stdout:
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run(
                 [
@@ -486,7 +486,7 @@ def test_custom_stdout_failed_command(
 
 
 def test_custom_stderr(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) -> None:
-    with open(str(tmpdir / "err.txt"), "w+t") as stderr:
+    with open(str(tmpdir / "err.txt"), "w+") as stderr:
         nox.command.run(
             [
                 PYTHON,
@@ -511,7 +511,7 @@ def test_custom_stderr(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) 
 def test_custom_stderr_failed_command(
     capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH
 ) -> None:
-    with open(str(tmpdir / "out.txt"), "w+t") as stderr:
+    with open(str(tmpdir / "out.txt"), "w+") as stderr:
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run(
                 [

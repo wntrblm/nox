@@ -20,14 +20,13 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Literal, overload
+from typing import TYPE_CHECKING, Literal, overload
 
 from nox.logger import logger
 from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT, popen
 
-TYPE_CHECKING = False
-
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
     from typing import IO
 
 ExternalType = Literal["error", True, False]
@@ -53,7 +52,8 @@ def which(program: str | os.PathLike[str], paths: Sequence[str] | None) -> str:
         return os.fspath(full_path)
 
     logger.error(f"Program {program} not found.")
-    raise CommandFailed(f"Program {program} not found")
+    msg = f"Program {program} not found"
+    raise CommandFailed(msg)
 
 
 def _clean_env(env: Mapping[str, str | None] | None = None) -> dict[str, str] | None:
@@ -162,7 +162,8 @@ def run(
                     f" at {cmd_path}. Pass external=True into run() to explicitly allow"
                     " this."
                 )
-                raise CommandFailed("External program disallowed.")
+                msg = "External program disallowed."
+                raise CommandFailed(msg)
             if external is False:
                 logger.warning(
                     f"Warning: {cmd} is not installed into the virtualenv, it is"
@@ -192,13 +193,14 @@ def run(
             if silent:
                 sys.stderr.write(output)
 
-            raise CommandFailed(f"Returned code {return_code}")
+            msg = f"Returned code {return_code}"
+            raise CommandFailed(msg)
 
         if output:
             logger.output(output)
 
-        return output if silent else True
-
     except KeyboardInterrupt:
         logger.error("Interrupted...")
         raise
+
+    return output if silent else True

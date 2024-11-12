@@ -16,8 +16,10 @@ from __future__ import annotations
 
 import functools
 import itertools
-from collections.abc import Callable, Sequence
-from typing import Any, Iterable, Union
+from typing import TYPE_CHECKING, Any, Iterable, Union
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
 
 
 class Param:

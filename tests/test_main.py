@@ -18,10 +18,9 @@ import contextlib
 import os
 import subprocess
 import sys
-from collections.abc import Callable
 from importlib import metadata
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from unittest import mock
 
 import pytest
@@ -30,6 +29,9 @@ import nox
 import nox._options
 import nox.registry
 import nox.sessions
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 VERSION = metadata.version("nox")
@@ -221,7 +223,7 @@ def test_main_explicit_sessions_with_spaces_in_names(
 
 
 @pytest.mark.parametrize(
-    "var,option,env,values",
+    ("var", "option", "env", "values"),
     [
         ("NOXSESSION", "sessions", "foo", ["foo"]),
         ("NOXSESSION", "sessions", "foo,bar", ["foo", "bar"]),
@@ -270,7 +272,7 @@ def test_main_list_option_from_nox_env_var(
 
 
 @pytest.mark.parametrize(
-    "options,env,expected",
+    ("options", "env", "expected"),
     [
         (["--default-venv-backend", "conda"], "", "conda"),
         ([], "mamba", "mamba"),
@@ -569,15 +571,11 @@ def test_main_requires_bad_python_parametrization(
     run_nox: Callable[..., tuple[Any, Any, Any]],
 ) -> None:
     noxfile = os.path.join(RESOURCES, "noxfile_requires.py")
-    with pytest.raises(
-        ValueError,
-        match="Cannot parametrize requires",
-    ):
-        returncode, _, _ = run_nox(f"--noxfile={noxfile}", "--session=q")
-        assert returncode != 0
+    with pytest.raises(ValueError, match="Cannot parametrize requires"):
+        run_nox(f"--noxfile={noxfile}", "--session=q")
 
 
-@pytest.mark.parametrize("session", ("s", "t"))
+@pytest.mark.parametrize("session", ["s", "t"])
 def test_main_requires_chain_fail(
     run_nox: Callable[..., tuple[Any, Any, Any]], session: str
 ) -> None:
@@ -587,7 +585,7 @@ def test_main_requires_chain_fail(
     assert "Prerequisite session r was not successful" in stderr
 
 
-@pytest.mark.parametrize("session", ("w", "u"))
+@pytest.mark.parametrize("session", ["w", "u"])
 def test_main_requries_modern_param(
     run_nox: Callable[..., tuple[Any, Any, Any]],
     session: str,
@@ -849,11 +847,9 @@ def test_main_reuse_existing_virtualenvs_no_install(
         with mock.patch.object(sys, "exit"):
             nox.main()
         config = execute.call_args[1]["global_config"]
-    assert (
-        config.reuse_existing_virtualenvs
-        and config.no_install
-        and config.reuse_venv == "yes"
-    )
+    assert config.reuse_existing_virtualenvs
+    assert config.no_install
+    assert config.reuse_venv == "yes"
 
 
 @pytest.mark.parametrize(
@@ -914,10 +910,10 @@ def test_main_noxfile_options_with_ci_override(
         "never",
     ],
 )
+@pytest.mark.usefixtures("generate_noxfile_options")
 def test_main_reuse_venv_cli_flags(
     monkeypatch: pytest.MonkeyPatch,
-    generate_noxfile_options: Callable[..., str],
-    reuse_venv: Literal["yes"] | Literal["no"] | Literal["always"] | Literal["never"],
+    reuse_venv: Literal["yes", "no", "always", "never"],
 ) -> None:
     monkeypatch.setattr(sys, "argv", ["nox", "--reuse-venv", reuse_venv])
     with mock.patch("nox.workflow.execute", return_value=0) as execute:

@@ -19,9 +19,7 @@ import importlib.util
 import json
 import os
 import sys
-import types
-from argparse import Namespace
-from typing import Sequence, TypeVar
+from typing import TYPE_CHECKING, Sequence, TypeVar
 
 from colorlog.escape_codes import parse_colors
 
@@ -32,6 +30,10 @@ from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_
 from nox.logger import logger
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 from nox.sessions import Result
+
+if TYPE_CHECKING:
+    import types
+    from argparse import Namespace
 
 
 def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
@@ -281,7 +283,7 @@ def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     )
 
 
-def _produce_json_listing(manifest: Manifest, global_config: Namespace) -> None:
+def _produce_json_listing(manifest: Manifest, global_config: Namespace) -> None:  # noqa: ARG001
     report = []
     for session, selected in manifest.list_all_sessions():
         if selected:
@@ -370,7 +372,8 @@ Sequence_Results_T = TypeVar("Sequence_Results_T", bound=Sequence[Result])
 
 
 def print_summary(
-    results: Sequence_Results_T, global_config: Namespace
+    results: Sequence_Results_T,
+    global_config: Namespace,  # noqa: ARG001
 ) -> Sequence_Results_T:
     """Print a summary of the results.
 
@@ -430,7 +433,7 @@ def create_report(
     return results
 
 
-def final_reduce(results: list[Result], global_config: Namespace) -> int:
+def final_reduce(results: list[Result], global_config: Namespace) -> int:  # noqa: ARG001
     """Reduce the results to a final exit code.
 
     Args:

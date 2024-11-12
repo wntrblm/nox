@@ -21,20 +21,24 @@ import shutil
 import subprocess
 import sys
 import types
-from collections.abc import Callable
 from importlib import metadata
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, NamedTuple, NoReturn
+from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn
 from unittest import mock
 
 import pytest
-from _pytest.compat import LEGACY_PATH
 from packaging import version
 
 import nox.command
 import nox.virtualenv
-from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from _pytest.compat import LEGACY_PATH
+
+    from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 HAS_CONDA = shutil.which("conda") is not None
@@ -107,7 +111,7 @@ def patch_sysfind(
                 Use the global ``RAISE_ERROR`` to have ``sysexec`` fail.
         """
 
-        def special_which(name: str, path: Any = None) -> str | None:
+        def special_which(name: str, path: Any = None) -> str | None:  # noqa: ARG001
             if sysfind_result is None:
                 return None
             if name.lower() in only_find:
@@ -116,7 +120,7 @@ def patch_sysfind(
 
         monkeypatch.setattr(shutil, "which", special_which)
 
-        def special_run(cmd: Any, *args: Any, **kwargs: Any) -> TextProcessResult:
+        def special_run(cmd: Any, *args: Any, **kwargs: Any) -> TextProcessResult:  # noqa: ARG001
             return TextProcessResult(sysexec_result)
 
         monkeypatch.setattr(subprocess, "run", special_run)
@@ -149,7 +153,7 @@ def test_invalid_venv_create(
         ..., tuple[nox.virtualenv.VirtualEnv | nox.virtualenv.ProcessEnv, LEGACY_PATH]
     ],
 ) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="venv_backend 'invalid' not recognized"):
         make_one(venv_backend="invalid")
 
 
@@ -696,7 +700,7 @@ UV_IN_PIPX_VENV = "/home/user/.local/pipx/venvs/nox/bin/uv"
 
 
 @pytest.mark.parametrize(
-    ["which_result", "find_uv_bin_result", "found", "path"],
+    ("which_result", "find_uv_bin_result", "found", "path"),
     [
         ("/usr/bin/uv", UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV),
         ("/usr/bin/uv", None, True, "uv"),
@@ -726,7 +730,7 @@ def test_find_uv(
 
 
 @pytest.mark.parametrize(
-    ["return_code", "stdout", "expected_result"],
+    ("return_code", "stdout", "expected_result"),
     [
         (0, '{"version": "0.2.3", "commit_info": null}', "0.2.3"),
         (1, None, "0.0"),
@@ -759,7 +763,7 @@ def test_uv_version_no_uv(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize(
-    ["requested_python", "expected_result"],
+    ("requested_python", "expected_result"),
     [
         ("3.11", True),
         ("pypy3.8", True),
@@ -888,7 +892,7 @@ def test__resolved_interpreter_none(
 
 
 @pytest.mark.parametrize(
-    ["input_", "expected"],
+    ("input_", "expected"),
     [
         ("3", "python3"),
         ("3.6", "python3.6"),
@@ -967,7 +971,7 @@ def test__resolved_interpreter_windows_full_path(
 
 
 @pytest.mark.parametrize(
-    ["input_", "expected"],
+    ("input_", "expected"),
     [
         ("3.7", r"c:\python37-x64\python.exe"),
         ("python3.6", r"c:\python36-x64\python.exe"),
@@ -1021,7 +1025,7 @@ def test__resolved_interpreter_windows_pyexe_fails(
     # Trick the nox.virtualenv._SYSTEM into thinking that it cannot find python3.6
     # (it likely will on Unix). Also, when the nox.virtualenv._SYSTEM looks for the
     # py launcher, give it a dummy that fails.
-    def special_run(cmd: str, *args: str, **kwargs: object) -> TextProcessResult:
+    def special_run(cmd: str, *args: str, **kwargs: object) -> TextProcessResult:  # noqa: ARG001
         return TextProcessResult("", 1)
 
     run.side_effect = special_run
@@ -1105,7 +1109,7 @@ def test__resolved_interpreter_not_found(
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
-@mock.patch("nox.virtualenv.locate_via_py", new=lambda _: None)  # type: ignore[misc]
+@mock.patch("nox.virtualenv.locate_via_py", new=lambda _: None)  # type: ignore[misc]  # noqa: PT008
 def test__resolved_interpreter_nonstandard(
     make_one: Callable[..., tuple[VirtualEnv, Any]],
 ) -> None:

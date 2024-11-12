@@ -21,8 +21,6 @@ import json
 import os
 import platform
 import typing
-from collections.abc import Callable, Generator
-from pathlib import Path
 from textwrap import dedent
 from types import ModuleType
 from unittest import mock
@@ -33,6 +31,10 @@ import nox
 import nox._decorators
 from nox import _options, sessions, tasks
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
+
+if typing.TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+    from pathlib import Path
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 
@@ -124,7 +126,7 @@ def test_load_nox_module_os_error(caplog: pytest.LogCaptureFixture) -> None:
         assert f"Failed to load Noxfile {noxfile}" in caplog.text
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def reset_needs_version() -> Generator[None, None, None]:
     """Do not leak ``nox.needs_version`` between tests."""
     try:
@@ -138,9 +140,7 @@ def reset_global_nox_options() -> None:
     nox.options = _options.options.noxfile_namespace()
 
 
-def test_load_nox_module_needs_version_static(
-    reset_needs_version: None, tmp_path: Path
-) -> None:
+def test_load_nox_module_needs_version_static(tmp_path: Path) -> None:
     text = dedent(
         """
         import nox
@@ -153,9 +153,7 @@ def test_load_nox_module_needs_version_static(
     assert tasks.load_nox_module(config) == 2
 
 
-def test_load_nox_module_needs_version_dynamic(
-    reset_needs_version: None, tmp_path: Path
-) -> None:
+def test_load_nox_module_needs_version_dynamic(tmp_path: Path) -> None:
     text = dedent(
         """
         import nox
@@ -283,7 +281,7 @@ def test_filter_manifest_keywords_syntax_error() -> None:
 
 
 @pytest.mark.parametrize(
-    "tags,session_count",
+    ("tags", "session_count"),
     [
         (None, 8),
         (["foo"], 7),
@@ -297,11 +295,7 @@ def test_filter_manifest_keywords_syntax_error() -> None:
 )
 def test_filter_manifest_tags(
     tags: None | builtins.list[builtins.str],
-    session_count: builtins.int
-    | builtins.int
-    | builtins.int
-    | builtins.int
-    | builtins.int,
+    session_count: builtins.int,
 ) -> None:
     @nox.session(tags=["foo"])
     def qux() -> None:
@@ -370,9 +364,8 @@ def test_filter_manifest_tags_not_found(
     assert "Tag selection caused no sessions to be selected." in caplog.text
 
 
-def test_merge_sessions_and_tags(
-    reset_global_nox_options: None, generate_noxfile_options: Callable[..., str]
-) -> None:
+@pytest.mark.usefixtures("reset_global_nox_options")
+def test_merge_sessions_and_tags(generate_noxfile_options: Callable[..., str]) -> None:
     @nox.session(tags=["foobar"])
     def test() -> None:
         pass
@@ -441,7 +434,7 @@ def test_honor_list_request_noop() -> None:
 
 
 @pytest.mark.parametrize(
-    "description, module_docstring",
+    ("description", "module_docstring"),
     [
         (None, None),
         (None, "hello docstring"),
@@ -595,9 +588,7 @@ def test_empty_session_list_in_noxfile(
     assert "No sessions selected." in capsys.readouterr().out
 
 
-def test_empty_session_None_in_noxfile(
-    capsys: pytest.CaptureFixture[builtins.str],
-) -> None:
+def test_empty_session_None_in_noxfile() -> None:
     config = _options.options.namespace(noxfile="noxfile.py", sessions=None, posargs=[])
     manifest = Manifest({"session": session_func}, config)
     return_value = tasks.filter_manifest(manifest, global_config=config)
@@ -768,8 +759,8 @@ def test_create_report() -> None:
 
 def test_final_reduce() -> None:
     config = argparse.Namespace()
-    true = typing.cast(sessions.Result, True)
-    false = typing.cast(sessions.Result, False)
+    true = typing.cast(sessions.Result, True)  # noqa: FBT003
+    false = typing.cast(sessions.Result, False)  # noqa: FBT003
     assert tasks.final_reduce([true, true], config) == 0
     assert tasks.final_reduce([true, false], config) == 1
     assert tasks.final_reduce([], config) == 0

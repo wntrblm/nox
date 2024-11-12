@@ -14,9 +14,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from pathlib import Path
 from textwrap import dedent
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -28,6 +27,10 @@ from nox._version import (
     check_nox_version,
     get_nox_version,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 
 @pytest.fixture
@@ -53,7 +56,7 @@ def test_get_nox_version() -> None:
 
 
 @pytest.mark.parametrize(
-    "text,expected",
+    ("text", "expected"),
     [
         ("", None),
         (
