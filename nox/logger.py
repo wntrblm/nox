@@ -46,7 +46,7 @@ class NoxFormatter(logging.Formatter):
         return super().format(record)
 
 
-class NoxColoredFormatter(ColoredFormatter):  # type: ignore[misc]
+class NoxColoredFormatter(ColoredFormatter):
     def __init__(
         self,
         datefmt: Any = None,
@@ -69,7 +69,7 @@ class NoxColoredFormatter(ColoredFormatter):  # type: ignore[misc]
     def format(self, record: Any) -> str:
         if record.levelname == "OUTPUT":
             return self._simple_fmt.format(record)
-        return super().format(record)  # type: ignore[no-any-return]
+        return super().format(record)
 
 
 class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore[misc]
