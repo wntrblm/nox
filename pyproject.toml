@@ -118,6 +118,7 @@ xfail_strict = true
 filterwarnings = [ "error" ]
 log_cli_level = "info"
 testpaths = [ "tests" ]
+pythonpath = [ ".github/" ]
 
 [tool.coverage]
 run.branch = true
@@ -132,7 +133,8 @@ python_version = "3.8"
 strict = true
 warn_unreachable = true
 enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
+mypy_path = [ ".github" ]
 
 [[tool.mypy.overrides]]
-module = [ "argcomplete", "colorlog.*", "py", "tox.*" ]
+module = [ "tox.*" ]
 ignore_missing_imports = true

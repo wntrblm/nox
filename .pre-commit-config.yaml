@@ -37,12 +37,14 @@ repos:
         files: ^nox/
         args: []
         additional_dependencies:
+          - argcomplete
           - attrs
           - colorlog
           - dependency-groups>=1.2
           - jinja2
           - orjson # Faster mypy
           - packaging
+          - pytest
           - importlib_metadata
           - importlib_resources
           - tomli

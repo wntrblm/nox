@@ -1,14 +1,9 @@
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
 
 import pytest
-
-GITHUB_FOLDER = Path(__file__).resolve().parent.parent / ".github"
-sys.path.insert(0, str(GITHUB_FOLDER))
-from action_helper import filter_version, setup_action  # noqa: E402
+from action_helper import filter_version, setup_action
 
 VALID_VERSIONS = {
     "2.7.18": "2.7",
