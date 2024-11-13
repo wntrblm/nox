@@ -121,9 +121,11 @@ class ProcessEnv(abc.ABC):
     allowed_globals: ClassVar[tuple[Any, ...]] = ()
 
     def __init__(
-        self, bin_paths: None = None, env: Mapping[str, str | None] | None = None
+        self,
+        bin_paths: Sequence[str] | None = None,
+        env: Mapping[str, str | None] | None = None,
     ) -> None:
-        self._bin_paths = bin_paths
+        self._bin_paths = None if bin_paths is None else list(bin_paths)
         self._reused = False
 
         # Filter envs now so `.env` is dict[str, str] (easier to use)

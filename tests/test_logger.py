@@ -22,19 +22,19 @@ import pytest
 from nox import logger
 
 
-def test_success():
+def test_success() -> None:
     with mock.patch.object(logger.LoggerWithSuccessAndOutput, "_log") as _log:
         logger.LoggerWithSuccessAndOutput("foo").success("bar")
         _log.assert_called_once_with(logger.SUCCESS, "bar", ())
 
 
-def test_output():
+def test_output() -> None:
     with mock.patch.object(logger.LoggerWithSuccessAndOutput, "_log") as _log:
         logger.LoggerWithSuccessAndOutput("foo").output("bar")
         _log.assert_called_once_with(logger.OUTPUT, "bar", ())
 
 
-def test_formatter(caplog):
+def test_formatter(caplog: pytest.LogCaptureFixture) -> None:
     caplog.clear()
     logger.setup_logging(True, verbose=True)
     with caplog.at_level(logging.DEBUG):
@@ -68,7 +68,7 @@ def test_formatter(caplog):
         pytest.param(False, id="no-color"),
     ],
 )
-def test_no_color_timestamp(caplog, color):
+def test_no_color_timestamp(caplog: pytest.LogCaptureFixture, color: bool) -> None:
     logger.setup_logging(color=color, add_timestamp=True)
     caplog.clear()
     with caplog.at_level(logging.DEBUG):

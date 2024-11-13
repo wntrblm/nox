@@ -34,7 +34,8 @@ repos:
     rev: v1.13.0
     hooks:
       - id: mypy
-        files: ^nox/
+        files: ^(nox/|tests/)
+        exclude: ^tests/resources/
         args: []
         additional_dependencies:
           - argcomplete

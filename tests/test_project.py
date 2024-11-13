@@ -3,7 +3,7 @@ import pytest
 from nox.project import dependency_groups, python_versions
 
 
-def test_classifiers():
+def test_classifiers() -> None:
     pyproject = {
         "project": {
             "classifiers": [
@@ -21,19 +21,19 @@ def test_classifiers():
     assert python_versions(pyproject) == ["3.7", "3.9", "3.12"]
 
 
-def test_no_classifiers():
+def test_no_classifiers() -> None:
     pyproject = {"project": {"requires-python": ">=3.9"}}
     with pytest.raises(ValueError, match="No Python version classifiers"):
         python_versions(pyproject)
 
 
-def test_no_requires_python():
+def test_no_requires_python() -> None:
     pyproject = {"project": {"classifiers": ["Programming Language :: Python :: 3.12"]}}
     with pytest.raises(ValueError, match='No "project.requires-python" value set'):
         python_versions(pyproject, max_version="3.13")
 
 
-def test_python_range():
+def test_python_range() -> None:
     pyproject = {
         "project": {
             "classifiers": [
@@ -52,20 +52,20 @@ def test_python_range():
     assert python_versions(pyproject, max_version="3.11") == ["3.10", "3.11"]
 
 
-def test_python_range_gt():
+def test_python_range_gt() -> None:
     pyproject = {"project": {"requires-python": ">3.2.1,<3.3"}}
 
     assert python_versions(pyproject, max_version="3.4") == ["3.2", "3.3", "3.4"]
 
 
-def test_python_range_no_min():
+def test_python_range_no_min() -> None:
     pyproject = {"project": {"requires-python": "==3.3.1"}}
 
     with pytest.raises(ValueError, match="No minimum version found"):
         python_versions(pyproject, max_version="3.5")
 
 
-def test_dependency_groups():
+def test_dependency_groups() -> None:
     example = {
         "dependency-groups": {
             "test": ["pytest", "coverage"],
