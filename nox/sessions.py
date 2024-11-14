@@ -37,6 +37,7 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Literal,
     NoReturn,
 )
 
@@ -753,7 +754,7 @@ class Session:
         *args: str,
         env: Mapping[str, str] | None = None,
         include_outer_env: bool = True,
-        silent: bool | None = None,
+        silent: bool = True,
         success_codes: Iterable[int] | None = None,
         log: bool = True,
         external: ExternalType | None = None,
@@ -821,9 +822,6 @@ class Session:
         if self._runner.global_config.no_install and venv._reused:
             return
 
-        if silent is None:
-            silent = True
-
         if isinstance(venv, VirtualEnv) and venv.venv_backend == "uv":
             cmd = ["uv", "pip", "install"]
         else:
@@ -831,6 +829,98 @@ class Session:
         self._run(
             *cmd,
             *args,
+            env=env,
+            include_outer_env=include_outer_env,
+            external="error",
+            silent=silent,
+            success_codes=success_codes,
+            log=log,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
+        )
+
+    def sync(
+        self,
+        *args: str,
+        packages: Iterable[str] | None = None,
+        extras: Iterable[str] | Literal["all"] | None = None,
+        inexact: bool = True,
+        frozen: bool = True,
+        omit: Literal["dev", "non-dev"] | None = None,
+        env: Mapping[str, str] | None = None,
+        include_outer_env: bool = True,
+        silent: bool = True,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        external: ExternalType | None = None,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> None:
+        """Install invokes `uv`_ to sync packages inside of the session's
+        virtualenv.
+
+        :param packages: Sync for a specific package in the workspace.
+        :param extras: Include optional dependencies from the extra group name.
+        :param inexact: Do not remove extraneous packages present in the environment. ``True`` by default.
+        :param frozen: Sync without updating the `uv.lock` file. ``True`` by default.
+        :param omit: Omit dependencies.
+
+        Additional keyword args are the same as for :meth:`run`.
+
+        .. note::
+
+           Other then ``uv pip``, ``uv sync`` did not automatically install
+           packages into the virtualenv directory. To do so, it's mandatory
+           to setup ``UV_PROJECT_ENVIRONMENT`` to the virtual env folder. This
+           will be done in the sync command.
+
+        .. _uv: https://docs.astral.sh/uv/concepts/projects
+        """
+        venv = self._runner.venv
+
+        if isinstance(venv, VirtualEnv) and venv.venv_backend == "uv":
+            overlay_env = env or {}
+            uv_venv = {"UV_PROJECT_ENVIRONMENT": venv.location}
+            env = {**uv_venv, **overlay_env}
+        elif not isinstance(venv, PassthroughEnv):
+            raise ValueError(
+                "A session without a uv environment can not install dependencies"
+                " with uv."
+            )
+
+        if self._runner.global_config.no_install and venv._reused:
+            return
+
+        cmd = ["uv", "sync"]
+
+        extraopts: list[str] = []
+        if isinstance(packages, list):
+            extraopts.extend(["--package", *packages])
+
+        if isinstance(extras, list):
+            extraopts.extend(["--extra", *extras])
+        elif extras == "all":
+            extraopts.append("--all-extras")
+
+        if frozen:
+            extraopts.append("--frozen")
+
+        if inexact:
+            extraopts.append("--inexact")
+
+        if omit == "dev":
+            extraopts.append("--no-dev")
+        elif omit == "non-dev":
+            extraopts.append("--only-dev")
+
+        self._run(
+            *cmd,
+            *args,
+            *extraopts,
             env=env,
             include_outer_env=include_outer_env,
             external="error",
