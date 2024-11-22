@@ -23,12 +23,14 @@ import collections
 import functools
 from argparse import ArgumentError as ArgumentError  # noqa: PLC0414
 from argparse import ArgumentParser, Namespace
-from collections.abc import Callable, Iterable
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import argcomplete
 import attrs
 import attrs.validators as av
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
 
 av_opt_str = av.optional(av.instance_of(str))
 av_opt_list_str = av.optional(
@@ -198,6 +200,7 @@ def make_flag_pair(
     name: str,
     enable_flags: tuple[str, str] | tuple[str],
     disable_flags: tuple[str, str] | tuple[str],
+    *,
     default: bool | Callable[[], bool] = False,
     **kwargs: Any,
 ) -> tuple[Option, Option]:
@@ -277,9 +280,8 @@ class OptionSet:
 
             # Every option must have a group (except for hidden options)
             if option.group is None:
-                raise ValueError(
-                    f"Option {option.name} must either have a group or be hidden."
-                )
+                msg = f"Option {option.name} must either have a group or be hidden."
+                raise ValueError(msg)
 
             argument = groups[option.group.name].add_argument(
                 *option.flags, help=option.help, default=option.default, **option.kwargs
@@ -331,7 +333,8 @@ class OptionSet:
         # used in tests.
         for key, value in kwargs.items():
             if key not in args:
-                raise KeyError(f"{key} is not an option.")
+                msg = f"{key} is not an option."
+                raise KeyError(msg)
             args[key] = value
 
         return argparse.Namespace(**args)

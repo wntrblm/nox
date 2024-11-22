@@ -24,17 +24,20 @@ import re
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from socket import gethostbyname
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from packaging import version
 
 import nox
 import nox.command
-from nox._typing import Python
 from nox.logger import logger
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping, Sequence
+
+    from nox._typing import Python
 
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
@@ -151,7 +154,8 @@ class ProcessEnv(abc.ABC):
         """The first bin directory for the virtualenv."""
         paths = self.bin_paths
         if paths is None:
-            raise ValueError("The environment does not have a bin directory.")
+            msg = "The environment does not have a bin directory."
+            raise ValueError(msg)
         return paths[0]
 
     @abc.abstractmethod
@@ -288,9 +292,9 @@ class CondaEnv(ProcessEnv):
         self,
         location: str,
         interpreter: str | None = None,
+        *,
         reuse_existing: bool = False,
         venv_params: Sequence[str] = (),
-        *,
         conda_cmd: str = "conda",
     ):
         self.location_name = location
@@ -386,9 +390,9 @@ class CondaEnv(ProcessEnv):
         try:
             # DNS resolution to detect situation (1) or (2).
             host = gethostbyname("repo.anaconda.com")
-            return host is None
         except BaseException:  # pragma: no cover
             return True
+        return host is None
 
     @property
     def venv_backend(self) -> str:
@@ -422,8 +426,8 @@ class VirtualEnv(ProcessEnv):
         self,
         location: str,
         interpreter: str | None = None,
-        reuse_existing: bool = False,
         *,
+        reuse_existing: bool = False,
         venv_backend: str = "virtualenv",
         venv_params: Sequence[str] = (),
     ):
@@ -435,7 +439,7 @@ class VirtualEnv(ProcessEnv):
         self._venv_backend = venv_backend
         self.venv_params = venv_params or []
         if venv_backend not in {"virtualenv", "venv", "uv"}:
-            msg = f"venv_backend {venv_backend} not recognized"
+            msg = f"venv_backend {venv_backend!r} not recognized"
             raise ValueError(msg)
         super().__init__(env={"VIRTUAL_ENV": self.location, "CONDA_PREFIX": None})
 
@@ -454,7 +458,7 @@ class VirtualEnv(ProcessEnv):
     def _read_pyvenv_cfg(self) -> dict[str, str] | None:
         """Read a pyvenv.cfg file into dict, returns None if missing."""
         path = os.path.join(self.location, "pyvenv.cfg")
-        with contextlib.suppress(FileNotFoundError), open(path) as fp:
+        with contextlib.suppress(FileNotFoundError), open(path, encoding="utf-8") as fp:
             parts = (x.partition("=") for x in fp if "=" in x)
             return {k.strip(): v.strip() for k, _, v in parts}
         return None

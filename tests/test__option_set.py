@@ -82,7 +82,10 @@ class TestOptionSet:
             _option_set.Option("oh_no_i_have_no_group", group=None, default="meep")
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="Option oh_no_i_have_no_group must either have a group or be hidden",
+        ):
             optionset.parser()
 
     def test_session_completer(self) -> None:

@@ -19,15 +19,18 @@ import functools
 import itertools
 import os
 import sys
-from collections.abc import Iterable
-from typing import Any, Callable, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Literal, Sequence
 
 import argcomplete
 
 from nox import _option_set
-from nox._option_set import NoxOptions
 from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 from nox.virtualenv import ALL_VENVS
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from nox._option_set import NoxOptions
 
 ReuseVenvType = Literal["no", "yes", "never", "always"]
 
@@ -129,9 +132,8 @@ def _force_venv_backend_merge_func(
             command_args.force_venv_backend is not None
             and command_args.force_venv_backend != "none"
         ):
-            raise ValueError(
-                "You can not use `--no-venv` with a non-none `--force-venv-backend`"
-            )
+            msg = "You can not use `--no-venv` with a non-none `--force-venv-backend`"
+            raise ValueError(msg)
         return "none"
     return command_args.force_venv_backend or noxfile_args.force_venv_backend  # type: ignore[return-value]
 
@@ -191,7 +193,7 @@ def default_env_var_list_factory(env_var: str) -> Callable[[], list[str] | None]
     return _default_list
 
 
-def _color_finalizer(value: bool, args: argparse.Namespace) -> bool:
+def _color_finalizer(_value: bool, args: argparse.Namespace) -> bool:  # noqa: FBT001
     """Figures out the correct value for "color" based on the two color flags.
 
     Args:
@@ -224,7 +226,7 @@ def _force_pythons_finalizer(
     return value
 
 
-def _R_finalizer(value: bool, args: argparse.Namespace) -> bool:
+def _R_finalizer(value: bool, args: argparse.Namespace) -> bool:  # noqa: FBT001
     """Propagate -R to --reuse-existing-virtualenvs and --no-install and --reuse-venv=yes."""
     if value:
         args.reuse_venv = "yes"
@@ -233,7 +235,8 @@ def _R_finalizer(value: bool, args: argparse.Namespace) -> bool:
 
 
 def _reuse_existing_virtualenvs_finalizer(
-    value: bool, args: argparse.Namespace
+    value: bool,  # noqa: FBT001
+    args: argparse.Namespace,
 ) -> bool:
     """Propagate --reuse-existing-virtualenvs to --reuse-venv=yes."""
     if value:
@@ -242,7 +245,7 @@ def _reuse_existing_virtualenvs_finalizer(
 
 
 def _posargs_finalizer(
-    value: Sequence[Any], args: argparse.Namespace
+    value: Sequence[Any], _args: argparse.Namespace
 ) -> Sequence[Any] | list[Any]:
     """Removes the leading "--"s in the posargs array (if any) and asserts that
     remaining arguments came after a "--".
@@ -268,7 +271,9 @@ def _posargs_finalizer(
 
 
 def _python_completer(
-    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
+    prefix: str,  # noqa: ARG001
+    parsed_args: argparse.Namespace,
+    **kwargs: Any,
 ) -> Iterable[str]:
     module = load_nox_module(parsed_args)
     manifest = discover_manifest(module, parsed_args)
@@ -282,7 +287,9 @@ def _python_completer(
 
 
 def _session_completer(
-    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
+    prefix: str,  # noqa: ARG001
+    parsed_args: argparse.Namespace,
+    **kwargs: Any,
 ) -> Iterable[str]:
     parsed_args.list_sessions = True
     module = load_nox_module(parsed_args)
@@ -296,7 +303,9 @@ def _session_completer(
 
 
 def _tag_completer(
-    prefix: str, parsed_args: argparse.Namespace, **kwargs: Any
+    prefix: str,  # noqa: ARG001
+    parsed_args: argparse.Namespace,
+    **kwargs: Any,
 ) -> Iterable[str]:
     module = load_nox_module(parsed_args)
     manifest = discover_manifest(module, parsed_args)

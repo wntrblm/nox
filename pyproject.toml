@@ -85,28 +85,50 @@ metadata.allow-ambiguous-features = true # disable normalization (tox-to-nox) fo
 
 [tool.ruff]
 lint.extend-select = [
+  # "ANN",  # flake8-annotations
+  "ARG",  # flake8-unused-arguments
   "B",    # flake8-bugbear
   "C4",   # flake8-comprehensions
+  "EM",   # flake8-errmsg
   "EXE",  # flake8-executable
+  "FBT",  # flake8-boolean-trap
+  "FLY",  # flynt
   "FURB", # refurb
   "I",    # isort
   "ICN",  # flake8-import-conventions
   "ISC",  # flake8-implicit-str-concat
+  "N",    # flake8-naming
+  "PERF", # perflint
   "PGH",  # pygrep-hooks
   "PIE",  # flake8-pie
   "PL",   # pylint
-  "RET",  # flake8-return
-  "RUF",  # Ruff-specific
-  "SIM",  # flake8-simplify
-  "UP",   # pyupgrade
-  "YTT",  # flake8-2020
+  "PT",   # flake8-pytest-style
+  # "PTH",  # flake8-use-pathlib
+  "PYI", # flake8-pyi
+  "RET", # flake8-return
+  "RUF", # Ruff-specific
+  "S",   # eval -> literal_eval
+  "SIM", # flake8-simplify
+  "TCH", # flake8-type-checking
+  "TRY", # tryceratops
+  "UP",  # pyupgrade
+  "YTT", # flake8-2020
 ]
 lint.ignore = [
   "ISC001",  # Conflicts with formatter
+  "N802",    # Function name should be lowercase
+  "N818",    # Error suffix for errors
   "PLR09",   # Too many X
   "PLR2004", # Magic value used in comparison
+  "S101",    # Use of assert detected
+  "S603",    # subprocess call - check for execution of untrusted input
 ]
+lint.per-file-ignores."tests/*.py" = [
+  "FBT001", # Boolean args okay for fixtures
+]
+lint.per-file-ignores."tests/resources/**.py" = [ "ARG001", "TRY002" ]
 lint.typing-modules = [ "nox._typing" ]
+lint.flake8-unused-arguments.ignore-variadic-names = true
 
 [tool.pyproject-fmt]
 max_supported_python = "3.13"
@@ -122,10 +144,10 @@ pythonpath = [ ".github/" ]
 
 [tool.coverage]
 run.branch = true
-run.omit = [ "nox/_typing.py" ]
 run.relative_files = true
 run.source_pkgs = [ "nox" ]
 report.exclude_also = [ "def __dir__()", "if TYPE_CHECKING:", "@overload" ]
+report.omit = [ "nox/_typing.py" ]
 
 [tool.mypy]
 python_version = "3.8"

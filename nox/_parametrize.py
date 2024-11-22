@@ -16,8 +16,10 @@ from __future__ import annotations
 
 import functools
 import itertools
-from collections.abc import Callable, Sequence
-from typing import Any, Iterable, Union
+from typing import TYPE_CHECKING, Any, Iterable, Union
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
 
 
 class Param:
@@ -73,9 +75,9 @@ class Param:
 
     def update(self, other: Param) -> None:
         self.id = ", ".join([str(self), str(other)])
-        self.args = self.args + other.args
-        self.arg_names = self.arg_names + other.arg_names
-        self.tags = self.tags + other.tags
+        self.args += other.args
+        self.arg_names += other.arg_names
+        self.tags += other.tags
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, self.__class__):

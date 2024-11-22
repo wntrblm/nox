@@ -28,6 +28,7 @@ class CycleError(ValueError):
 def lazy_stable_topo_sort(
     dependencies: Mapping[Node, Iterable[Node]],
     root: Node,
+    *,
     drop_root: bool = True,
 ) -> Iterator[Node]:
     """Returns the "lazy, stable" topological sort of a dependency graph.
@@ -118,7 +119,7 @@ def lazy_stable_topo_sort(
         ~nox._resolver.CycleError: If a dependency cycle is encountered.
     """
 
-    visited = {node: False for node in dependencies}
+    visited = dict.fromkeys(dependencies, False)
 
     def prepended_by_dependencies(
         node: Node,
@@ -191,7 +192,8 @@ def lazy_stable_topo_sort(
             # Dependency cycle found.
             walk_list = list(walk)
             cycle = walk_list[walk_list.index(node) :] + [node]
-            raise CycleError("Nodes are in a dependency cycle", tuple(cycle))
+            msg = "Nodes are in a dependency cycle"
+            raise CycleError(msg, tuple(cycle))
         walk[node] = None
         return walk
 

@@ -43,7 +43,7 @@ def generate_noxfile_options(tmp_path: Path) -> Callable[..., str]:
         path = Path(RESOURCES) / "noxfile_options.py"
         text = path.read_text(encoding="utf8")
         if option_mapping:
-            for opt, _val in option_mapping.items():
+            for opt in option_mapping:
                 # "uncomment" options with values provided
                 text = re.sub(rf"(# )?nox.options.{opt}", f"nox.options.{opt}", text)
             text = Template(text).safe_substitute(**option_mapping)

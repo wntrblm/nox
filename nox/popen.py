@@ -18,8 +18,10 @@ import contextlib
 import locale
 import subprocess
 import sys
-from collections.abc import Mapping, Sequence
-from typing import IO
+from typing import IO, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 DEFAULT_INTERRUPT_TIMEOUT = 0.3
 DEFAULT_TERMINATE_TIMEOUT = 0.2
@@ -55,7 +57,7 @@ def decode_output(output: bytes) -> str:
         return output.decode("utf-8")
     except UnicodeDecodeError:
         second_encoding = locale.getpreferredencoding()
-        if second_encoding.casefold() in ("utf8", "utf-8"):
+        if second_encoding.casefold() in {"utf8", "utf-8"}:
             raise
 
         return output.decode(second_encoding)
@@ -63,6 +65,7 @@ def decode_output(output: bytes) -> str:
 
 def popen(
     args: Sequence[str],
+    *,
     env: Mapping[str, str] | None = None,
     silent: bool = False,
     stdout: int | IO[str] | None = None,
@@ -71,10 +74,11 @@ def popen(
     terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
 ) -> tuple[int, str]:
     if silent and stdout is not None:
-        raise ValueError(
+        msg = (
             "Can not specify silent and stdout; passing a custom stdout always silences"
             " the commands output in Nox's log."
         )
+        raise ValueError(msg)
 
     if silent:
         stdout = subprocess.PIPE
@@ -82,11 +86,11 @@ def popen(
     proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=stderr)
 
     try:
-        out, err = proc.communicate()
+        out, _err = proc.communicate()
         sys.stdout.flush()
 
     except KeyboardInterrupt:
-        out, err = shutdown_process(proc, interrupt_timeout, terminate_timeout)
+        out, _err = shutdown_process(proc, interrupt_timeout, terminate_timeout)
         if proc.returncode != 0:
             raise
 

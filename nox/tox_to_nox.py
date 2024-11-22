@@ -70,7 +70,7 @@ def fixname(envname: str) -> str:
 
 def write_output_to_file(output: str, filename: str) -> None:
     """Write output to a file."""
-    with open(filename, "w") as outfile:
+    with open(filename, "w", encoding="utf-8") as outfile:
         outfile.write(output)
 
 
@@ -81,7 +81,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if TOX4:
-        output = check_output(["tox", "config"], text=True)
+        output = check_output(["tox", "config"], text=True)  # noqa: S607
         original_config = ConfigParser()
         original_config.read_string(output)
         config: dict[str, dict[str, Any]] = {}
@@ -95,11 +95,11 @@ def main() -> None:
             set_env = {}
             for var in section.get("set_env", "").strip().splitlines():
                 k, v = var.split("=")
-                if k not in (
+                if k not in {
                     "PYTHONHASHSEED",
                     "PIP_DISABLE_PIP_VERSION_CHECK",
                     "PYTHONIOENCODING",
-                ):
+                }:
                     set_env[k] = v
 
             config[name]["set_env"] = set_env

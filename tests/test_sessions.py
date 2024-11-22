@@ -29,7 +29,6 @@ from typing import Any, Literal, NoReturn
 from unittest import mock
 
 import pytest
-from _pytest.compat import LEGACY_PATH
 
 import nox._decorators
 import nox.command
@@ -40,6 +39,9 @@ import nox.sessions
 import nox.virtualenv
 from nox import _options
 from nox.logger import logger
+
+if typing.TYPE_CHECKING:
+    from _pytest.compat import LEGACY_PATH
 
 HAS_CONDA = shutil.which("conda") is not None
 has_conda = pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
@@ -190,7 +192,7 @@ class TestSession:
         assert session.venv_backend == "none"
 
     def test_interactive(self) -> None:
-        session, runner = self.make_session_and_runner()
+        session, _runner = self.make_session_and_runner()
 
         with mock.patch("nox.sessions.sys.stdin.isatty") as m_isatty:
             m_isatty.return_value = True
@@ -271,7 +273,8 @@ class TestSession:
         session, _ = self.make_session_and_runner()
 
         def raise_value_error() -> NoReturn:
-            raise ValueError("meep")
+            msg = "meep"
+            raise ValueError(msg)
 
         with pytest.raises(nox.command.CommandFailed):
             assert session.run(raise_value_error)  # type: ignore[arg-type]
@@ -430,11 +433,10 @@ class TestSession:
     def test_run_install_bad_args(self) -> None:
         session, _ = self.make_session_and_runner()
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(
+            ValueError, match="At least one argument required to run_install"
+        ):
             session.run_install()
-
-        exc_args = exc_info.value.args
-        assert exc_args == ("At least one argument required to run_install().",)
 
     def test_run_no_install_passthrough(self) -> None:
         session, runner = self.make_session_and_runner()
@@ -445,9 +447,9 @@ class TestSession:
         session.conda_install("numpy")
 
     def test_run_no_conda_install(self) -> None:
-        session, runner = self.make_session_and_runner()
+        session, _runner = self.make_session_and_runner()
 
-        with pytest.raises(ValueError, match="A session without a conda"):
+        with pytest.raises(TypeError, match="A session without a conda"):
             session.conda_install("numpy")
 
     def test_run_install_success(self) -> None:
@@ -455,7 +457,7 @@ class TestSession:
 
         assert session.run_install(operator.add, 1300, 37) == 1337  # type: ignore[arg-type]
 
-    def test_run_install_install_only(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_run_install_install_only(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
 
@@ -479,8 +481,8 @@ class TestSession:
         self,
         interrupt_timeout_setting: Literal["default"] | int | None,
         terminate_timeout_setting: Literal["default"] | int | None,
-        interrupt_timeout_expected: float | int | None,
-        terminate_timeout_expected: float | int | None,
+        interrupt_timeout_expected: float | None,
+        terminate_timeout_expected: float | None,
     ) -> None:
         session, runner = self.make_session_and_runner()
 
@@ -567,7 +569,7 @@ class TestSession:
 
         runner.venv = None
 
-        with pytest.raises(ValueError, match="conda environment"):
+        with pytest.raises(TypeError, match="conda environment"):
             session.conda_install()
 
     @pytest.mark.parametrize(
@@ -712,7 +714,7 @@ class TestSession:
 
         runner.venv = None
 
-        with pytest.raises(ValueError, match="virtualenv"):
+        with pytest.raises(TypeError, match="virtualenv"):
             session.install()
 
     def test_install(self) -> None:
@@ -815,7 +817,7 @@ class TestSession:
         runner.manifest.notify.assert_called_with("other", ["--an-arg"])  # type: ignore[attr-defined]
 
     def test_posargs_are_not_shared_between_sessions(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         registry: dict[str, nox._decorators.Func] = {}
         monkeypatch.setattr("nox.registry._REGISTRY", registry)
@@ -827,7 +829,8 @@ class TestSession:
         @nox.session(venv_backend="none")
         def lint(session: nox.Session) -> None:
             if "-x" in session.posargs:
-                raise RuntimeError("invalid option: -x")
+                msg = "invalid option: -x"
+                raise RuntimeError(msg)
 
         config = _options.options.namespace(posargs=[], envdir=".nox")
         manifest = nox.manifest.Manifest(registry, config)
@@ -948,7 +951,7 @@ class TestSession:
         session = SessionNoSlots(runner=runner)
 
         monkeypatch.setattr(nox.virtualenv, "UV", "/some/uv")
-        monkeypatch.setattr(shutil, "which", lambda x, path=None: None)
+        monkeypatch.setattr(shutil, "which", lambda x, path=None: None)  # noqa: ARG005
 
         with mock.patch.object(nox.command, "run", autospec=True) as run:
             session.install("requests", "urllib3", silent=False)
@@ -996,7 +999,9 @@ class TestSession:
     def test_first_arg_list(self) -> None:
         session, _ = self.make_session_and_runner()
 
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="First argument to `session.run` is a list. Did you mean"
+        ):
             session.run(["ls", "-al"])  # type: ignore[arg-type]
 
 
@@ -1088,7 +1093,7 @@ class TestSessionRunner:
         assert runner.venv.reuse_existing is False
 
     @pytest.mark.parametrize(
-        "create_method,venv_backend,expected_backend",
+        ("create_method", "venv_backend", "expected_backend"),
         [
             ("nox.virtualenv.VirtualEnv.create", None, nox.virtualenv.VirtualEnv),
             (
@@ -1109,8 +1114,7 @@ class TestSessionRunner:
         self,
         create_method: str,
         venv_backend: None | str,
-        expected_backend: type[nox.virtualenv.VirtualEnv]
-        | type[nox.virtualenv.CondaEnv],
+        expected_backend: type[nox.virtualenv.VirtualEnv | nox.virtualenv.CondaEnv],
     ) -> None:
         runner = self.make_runner()
         runner.func.python = "coolpython"
@@ -1171,7 +1175,10 @@ class TestSessionRunner:
         )
         with mock.patch(
             "nox.virtualenv.VirtualEnv.create", autospec=True
-        ), pytest.raises(ValueError):
+        ), pytest.raises(
+            ValueError,
+            match="No backends present|Only optional backends|Expected venv_backend",
+        ):
             runner._create_venv()
 
     @pytest.mark.parametrize(
@@ -1307,7 +1314,7 @@ class TestSessionRunner:
     def test_execute_failed(self) -> None:
         runner = self.make_runner_with_mock_venv()
 
-        def func(session: nox.Session) -> None:
+        def func(session: nox.Session) -> None:  # noqa: ARG001
             raise nox.command.CommandFailed()
 
         func.requires = []  # type: ignore[attr-defined]
@@ -1320,7 +1327,7 @@ class TestSessionRunner:
     def test_execute_interrupted(self) -> None:
         runner = self.make_runner_with_mock_venv()
 
-        def func(session: nox.Session) -> None:
+        def func(session: nox.Session) -> None:  # noqa: ARG001
             raise KeyboardInterrupt()
 
         func.requires = []  # type: ignore[attr-defined]
@@ -1332,8 +1339,9 @@ class TestSessionRunner:
     def test_execute_exception(self) -> None:
         runner = self.make_runner_with_mock_venv()
 
-        def func(session: nox.Session) -> None:
-            raise ValueError("meep")
+        def func(session: nox.Session) -> None:  # noqa: ARG001
+            msg = "meep"
+            raise ValueError(msg)
 
         func.requires = []  # type: ignore[attr-defined]
         runner.func = func  # type: ignore[assignment]
@@ -1375,8 +1383,6 @@ class TestResult:
                 session=typing.cast(nox.sessions.SessionRunner, object()), status=status
             )
             assert bool(result)
-            assert result.__bool__()
-            assert result.__nonzero__()
 
     def test__bool_false(self) -> None:
         for status in (nox.sessions.Status.FAILED, nox.sessions.Status.ABORTED):
@@ -1384,8 +1390,6 @@ class TestResult:
                 session=typing.cast(nox.sessions.SessionRunner, object()), status=status
             )
             assert not bool(result)
-            assert not result.__bool__()
-            assert not result.__nonzero__()
 
     def test__imperfect(self) -> None:
         result = nox.sessions.Result(

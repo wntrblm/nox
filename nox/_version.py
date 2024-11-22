@@ -61,7 +61,7 @@ def _parse_needs_version(source: str, filename: str = "<unknown>") -> str | None
 
 def _read_needs_version(filename: str) -> str | None:
     """Read ``nox.needs_version`` from the user's Noxfile."""
-    with open(filename) as io:
+    with open(filename, encoding="utf-8") as io:
         source = io.read()
 
     return _parse_needs_version(source, filename=filename)
@@ -81,9 +81,8 @@ def _check_nox_version_satisfies(needs_version: str) -> None:
         raise InvalidVersionSpecifier(message) from error
 
     if not specifiers.contains(version, prereleases=True):
-        raise VersionCheckFailed(
-            f"The Noxfile requires Nox {specifiers}, you have {version}"
-        )
+        msg = f"The Noxfile requires Nox {specifiers}, you have {version}"
+        raise VersionCheckFailed(msg)
 
 
 def check_nox_version(filename: str) -> None:

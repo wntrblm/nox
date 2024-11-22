@@ -17,11 +17,14 @@ from __future__ import annotations
 import collections
 import copy
 import functools
-from collections.abc import Sequence
-from typing import Any, Callable, overload
+from typing import TYPE_CHECKING, Any, Callable, overload
 
 from ._decorators import Func
-from ._typing import Python
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from ._typing import Python
 
 RawFunc = Callable[..., Any]
 
@@ -29,12 +32,13 @@ _REGISTRY: collections.OrderedDict[str, Func] = collections.OrderedDict()
 
 
 @overload
-def session_decorator(__func: RawFunc | Func) -> Func: ...
+def session_decorator(func: RawFunc | Func, /) -> Func: ...
 
 
 @overload
 def session_decorator(
-    __func: None = ...,
+    func: None = ...,
+    /,
     python: Python | None = ...,
     py: Python | None = ...,
     reuse_venv: bool | None = ...,
@@ -50,6 +54,7 @@ def session_decorator(
 
 def session_decorator(
     func: Callable[..., Any] | Func | None = None,
+    /,
     python: Python | None = None,
     py: Python | None = None,
     reuse_venv: bool | None = None,
@@ -84,10 +89,11 @@ def session_decorator(
         )
 
     if py is not None and python is not None:
-        raise ValueError(
+        msg = (
             "The py argument to nox.session is an alias for the python "
             "argument, please only specify one."
         )
+        raise ValueError(msg)
 
     if python is None:
         python = py

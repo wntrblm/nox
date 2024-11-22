@@ -16,11 +16,14 @@ from __future__ import annotations
 
 import sys
 import textwrap
-from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
-from _pytest.compat import LEGACY_PATH
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from _pytest.compat import LEGACY_PATH
 
 tox_to_nox = pytest.importorskip("nox.tox_to_nox")
 

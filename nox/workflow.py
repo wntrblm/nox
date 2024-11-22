@@ -14,9 +14,11 @@
 
 from __future__ import annotations
 
-import argparse
-from collections.abc import Callable, Iterable
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import argparse
+    from collections.abc import Callable, Iterable
 
 
 def execute(
@@ -56,8 +58,8 @@ def execute(
             # and return it.
             if isinstance(return_value, int):
                 return return_value
-
-        # All tasks completed, presumably without error.
-        return 0
     except KeyboardInterrupt:
         return 130  # http://tldp.org/LDP/abs/html/exitcodes.html
+
+    # All tasks completed, presumably without error.
+    return 0

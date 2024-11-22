@@ -14,17 +14,19 @@
 
 from __future__ import annotations
 
-import argparse
 import ast
 import itertools
 import operator
 from collections import OrderedDict
-from collections.abc import Iterable, Iterator, Sequence
-from typing import Any, Mapping, cast
+from typing import TYPE_CHECKING, Any, Mapping, cast
 
 from nox._decorators import Call, Func
 from nox._resolver import CycleError, lazy_stable_topo_sort
 from nox.sessions import Session, SessionRunner
+
+if TYPE_CHECKING:
+    import argparse
+    from collections.abc import Iterable, Iterator, Sequence
 
 WARN_PYTHONS_IGNORED = "python_ignored"
 
@@ -156,12 +158,12 @@ class Manifest:
         """
         # Filter the sessions remaining in the queue based on
         # whether they are individually specified.
-        queue = []
-        for session_name in specified_sessions:
-            for session in self._queue:
-                if _normalized_session_match(session_name, session):
-                    queue.append(session)
-        self._queue = queue
+        self._queue = [
+            session
+            for session_name in specified_sessions
+            for session in self._queue
+            if _normalized_session_match(session_name, session)
+        ]
 
         # If a session was requested and was not found, complain loudly.
         all_sessions = set(
@@ -181,7 +183,8 @@ class Manifest:
             if _normalize_arg(session_name) not in all_sessions
         ]
         if missing_sessions:
-            raise KeyError(f"Sessions not found: {', '.join(missing_sessions)}")
+            msg = f"Sessions not found: {', '.join(missing_sessions)}"
+            raise KeyError(msg)
 
     def filter_by_default(self) -> None:
         """Filter sessions in the queue based on the default flag."""
@@ -241,7 +244,7 @@ class Manifest:
                 session.signatures[0] for session in parametrized_sessions
             ]
             parent_session = SessionRunner(
-                parent_name, [], parent_func, self._config, self, False
+                parent_name, [], parent_func, self._config, self, multi=False
             )
             parent_sessions.add(parent_session)
             sessions_by_id[parent_name] = parent_session
@@ -272,7 +275,7 @@ class Manifest:
         ]
 
     def make_session(
-        self, name: str, func: Func, multi: bool = False
+        self, name: str, func: Func, *, multi: bool = False
     ) -> list[SessionRunner]:
         """Create a session object from the session function.
 
@@ -338,7 +341,9 @@ class Manifest:
             if func.python:
                 long_names.append(f"{name}-{func.python}")
 
-            return [SessionRunner(name, long_names, func, self._config, self, multi)]
+            return [
+                SessionRunner(name, long_names, func, self._config, self, multi=multi)
+            ]
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
@@ -354,21 +359,23 @@ class Manifest:
                 long_names.append(f"{name}-{func.python}")
 
             sessions.append(
-                SessionRunner(name, long_names, call, self._config, self, multi)
+                SessionRunner(name, long_names, call, self._config, self, multi=multi)
             )
 
         # Edge case: If the parameters made it such that there were no valid
         # calls, add an empty, do-nothing session.
         if not calls:
             sessions.append(
-                SessionRunner(name, [], _null_session_func, self._config, self, multi)
+                SessionRunner(
+                    name, [], _null_session_func, self._config, self, multi=multi
+                )
             )
 
         # Return the list of sessions.
         return sessions
 
     def next(self) -> SessionRunner:
-        return self.__next__()
+        return next(self)
 
     def notify(
         self, session: str | SessionRunner, posargs: Iterable[str] | None = None
@@ -407,7 +414,8 @@ class Manifest:
                 return True
 
         # The session was not found in the list of sessions.
-        raise ValueError(f"Session {session} not found.")
+        msg = f"Session {session} not found."
+        raise ValueError(msg)
 
 
 class KeywordLocals(Mapping[str, bool]):
@@ -434,8 +442,9 @@ class KeywordLocals(Mapping[str, bool]):
 
 def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
     """See if an expression matches the given set of keywords."""
+    # TODO: see if we can use ast.literal_eval here.
     locals = KeywordLocals(set(keywords))
-    return eval(expression, {}, locals)
+    return eval(expression, {}, locals)  # noqa: S307
 
 
 def _null_session_func_(session: Session) -> None:

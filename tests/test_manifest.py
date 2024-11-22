@@ -17,7 +17,7 @@ from __future__ import annotations
 import collections
 import typing
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
@@ -32,6 +32,9 @@ from nox.manifest import (
     _normalized_session_match,
     _null_session_func,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 def create_mock_sessions() -> collections.OrderedDict[str, mock.Mock]:
@@ -148,7 +151,7 @@ def test_iteration() -> None:
 
     # Continuing past the end raises StopIteration.
     with pytest.raises(StopIteration):
-        manifest.__next__()
+        next(manifest)
 
 
 def test_len() -> None:
@@ -205,7 +208,7 @@ def test_filter_by_keyword() -> None:
 
 
 @pytest.mark.parametrize(
-    "tags,session_count",
+    ("tags", "session_count"),
     [
         (["baz", "qux"], 2),
         (["baz"], 2),
@@ -257,7 +260,7 @@ def test_add_session_multiple_pythons() -> None:
 
 
 @pytest.mark.parametrize(
-    "python,extra_pythons,expected",
+    ("python", "extra_pythons", "expected"),
     [
         (None, [], [None]),
         (None, ["3.8"], [None]),
@@ -295,7 +298,7 @@ def test_extra_pythons(
 
 
 @pytest.mark.parametrize(
-    "python,force_pythons,expected",
+    ("python", "force_pythons", "expected"),
     [
         (None, [], [None]),
         (None, ["3.8"], ["3.8"]),
@@ -448,7 +451,7 @@ def test_notify_with_posargs() -> None:
     cfg = create_mock_config()
     manifest = Manifest({}, cfg)
 
-    session = manifest.make_session("my_session", Func(lambda session: None))[0]
+    session = manifest.make_session("my_session", Func(lambda _: None))[0]
     manifest.add_session(session)
 
     # delete my_session from the queue
@@ -461,7 +464,7 @@ def test_notify_with_posargs() -> None:
 
 def test_notify_error() -> None:
     manifest = Manifest({}, create_mock_config())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Session does_not_exist not found"):
         manifest.notify("does_not_exist")
 
 

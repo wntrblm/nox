@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import sys
 from pathlib import Path
@@ -11,6 +10,7 @@ import packaging.specifiers
 from dependency_groups import resolve
 
 if TYPE_CHECKING:
+    import os
     from typing import Any
 
 if sys.version_info < (3, 11):
@@ -19,7 +19,7 @@ else:
     import tomllib
 
 
-__all__ = ["load_toml", "python_versions", "dependency_groups"]
+__all__ = ["dependency_groups", "load_toml", "python_versions"]
 
 
 def __dir__() -> list[str]:
@@ -71,9 +71,11 @@ def _load_script_block(filepath: Path) -> dict[str, Any]:
     matches = list(filter(lambda m: m.group("type") == name, REGEX.finditer(script)))
 
     if not matches:
-        raise ValueError(f"No {name} block found in {filepath}")
+        msg = f"No {name} block found in {filepath}"
+        raise ValueError(msg)
     if len(matches) > 1:
-        raise ValueError(f"Multiple {name} blocks found in {filepath}")
+        msg = f"Multiple {name} blocks found in {filepath}"
+        raise ValueError(msg)
 
     content = "".join(
         line[2:] if line.startswith("# ") else line[1:]
@@ -113,18 +115,21 @@ def python_versions(
         ]
         if from_classifiers:
             return from_classifiers
-        raise ValueError('No Python version classifiers found in "project.classifiers"')
+        msg = 'No Python version classifiers found in "project.classifiers"'
+        raise ValueError(msg)
 
     requires_python_str = pyproject.get("project", {}).get("requires-python", "")
     if not requires_python_str:
-        raise ValueError('No "project.requires-python" value set')
+        msg = 'No "project.requires-python" value set'
+        raise ValueError(msg)
 
     for spec in packaging.specifiers.SpecifierSet(requires_python_str):
         if spec.operator in {">", ">=", "~="}:
             min_minor_version = int(spec.version.split(".")[1])
             break
     else:
-        raise ValueError('No minimum version found in "project.requires-python"')
+        msg = 'No minimum version found in "project.requires-python"'
+        raise ValueError(msg)
 
     max_minor_version = int(max_version.split(".")[1])
 

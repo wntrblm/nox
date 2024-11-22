@@ -23,7 +23,7 @@ from nox import _decorators, _parametrize, parametrize, session
 
 
 @pytest.mark.parametrize(
-    "param, other, expected",
+    ("param", "other", "expected"),
     [
         (_parametrize.Param(1, 2), _parametrize.Param(1, 2), True),
         (_parametrize.Param(1, 2, id="a"), _parametrize.Param(1, 2, id="a"), True),

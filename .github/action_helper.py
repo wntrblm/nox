@@ -22,11 +22,14 @@ def filter_version(version: str) -> str:
 
     version_parts = version_.split(".")
     if len(version_parts) < 2:
-        raise ValueError(f"invalid version: {version}")
+        msg = f"invalid version: {version}"
+        raise ValueError(msg)
     if not version_parts[0].isdigit():
-        raise ValueError(f"invalid major python version: {version}")
+        msg = f"invalid major python version: {version}"
+        raise ValueError(msg)
     if not version_parts[1].isdigit():
-        raise ValueError(f"invalid minor python version: {version}")
+        msg = f"invalid minor python version: {version}"
+        raise ValueError(msg)
     return ".".join(version_parts[:2])
 
 
@@ -36,20 +39,22 @@ def setup_action(input_: str) -> None:
     pypy_versions = [version for version in versions if version.startswith("pypy")]
     pypy_versions_filtered = [filter_version(version) for version in pypy_versions]
     if len(pypy_versions) != len(set(pypy_versions_filtered)):
-        raise ValueError(
+        msg = (
             "multiple versions specified for the same 'major.minor' PyPy interpreter:"
             f" {pypy_versions}"
         )
+        raise ValueError(msg)
 
     cpython_versions = [version for version in versions if version not in pypy_versions]
     cpython_versions_filtered = [
         filter_version(version) for version in cpython_versions
     ]
     if len(cpython_versions) != len(set(cpython_versions_filtered)):
-        raise ValueError(
+        msg = (
             "multiple versions specified for the same 'major.minor' CPython"
             f" interpreter: {cpython_versions}"
         )
+        raise ValueError(msg)
 
     # cpython shall be installed last because
     # other interpreters also define pythonX.Y symlinks.
@@ -70,5 +75,6 @@ def setup_action(input_: str) -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        raise AssertionError(f"invalid arguments: {sys.argv}")
+        msg = f"invalid arguments: {sys.argv}"
+        raise AssertionError(msg)
     setup_action(sys.argv[1])

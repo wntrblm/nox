@@ -100,7 +100,8 @@ def q(session):
 @nox.session
 def r(session):
     print(session.name)
-    raise Exception("Fail!")
+    msg = "Fail!"
+    raise Exception(msg)
 
 
 @nox.session(requires=["r"])

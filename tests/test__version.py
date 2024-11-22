@@ -14,9 +14,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from pathlib import Path
 from textwrap import dedent
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -28,6 +27,10 @@ from nox._version import (
     check_nox_version,
     get_nox_version,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
 
 
 @pytest.fixture
@@ -48,12 +51,12 @@ def test_needs_version_default() -> None:
 def test_get_nox_version() -> None:
     """It returns something that looks like a Nox version."""
     result = get_nox_version()
-    year, month, day, *_ = (int(part) for part in result.split("."))
+    year, _month, _day, *_ = (int(part) for part in result.split("."))
     assert year >= 2020
 
 
 @pytest.mark.parametrize(
-    "text,expected",
+    ("text", "expected"),
     [
         ("", None),
         (

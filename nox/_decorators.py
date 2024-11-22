@@ -18,12 +18,12 @@ import copy
 import functools
 import inspect
 import types
-from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
 
-from . import _typing
-
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
+
+    from . import _typing
     from ._parametrize import Param
 
 T = TypeVar("T", bound=Callable[..., Any])
@@ -32,12 +32,12 @@ T = TypeVar("T", bound=Callable[..., Any])
 class FunctionDecorator:
     """This is a function decorator."""
 
-    def __new__(
+    def __new__(  # noqa: PYI034
         cls: Any, func: Callable[..., Any], *args: Any, **kwargs: Any
     ) -> FunctionDecorator:
-        obj = super().__new__(cls)
-        functools.update_wrapper(obj, func)
-        return cast(FunctionDecorator, obj)
+        self = super().__new__(cls)
+        functools.update_wrapper(self, func)
+        return cast(FunctionDecorator, self)
 
 
 def _copy_func(src: T, name: str | None = None) -> T:
