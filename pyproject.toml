@@ -120,7 +120,6 @@ lint.ignore = [
   "N818",    # Error suffix for errors
   "PLR09",   # Too many X
   "PLR2004", # Magic value used in comparison
-  "PT004",   # pytest fixture doesn't return anything - add underscore
   "S101",    # Use of assert detected
   "S603",    # subprocess call - check for execution of untrusted input
 ]
