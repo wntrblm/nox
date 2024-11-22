@@ -16,8 +16,11 @@ from __future__ import annotations
 
 import sys
 import textwrap
+from collections.abc import Callable
+from typing import Any
 
 import pytest
+from _pytest.compat import LEGACY_PATH
 
 tox_to_nox = pytest.importorskip("nox.tox_to_nox")
 
@@ -27,21 +30,21 @@ PYTHON_VERSION_NODOT = PYTHON_VERSION.replace(".", "")
 
 
 @pytest.fixture
-def makeconfig(tmpdir):
-    def makeconfig(toxini_content):
+def makeconfig(tmpdir: LEGACY_PATH) -> Callable[[str], str]:
+    def makeconfig(toxini_content: str) -> str:
         tmpdir.join("tox.ini").write(toxini_content)
         old = tmpdir.chdir()
         try:
             sys.argv = [sys.executable]
             tox_to_nox.main()
-            return tmpdir.join("noxfile.py").read()
+            return tmpdir.join("noxfile.py").read()  # type: ignore[no-any-return]
         finally:
             old.chdir()
 
     return makeconfig
 
 
-def test_trivial(makeconfig):
+def test_trivial(makeconfig: Callable[..., Any]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -66,7 +69,7 @@ def test_trivial(makeconfig):
     )
 
 
-def test_skipinstall(makeconfig):
+def test_skipinstall(makeconfig: Callable[..., Any]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -93,7 +96,7 @@ def test_skipinstall(makeconfig):
     )
 
 
-def test_usedevelop(makeconfig):
+def test_usedevelop(makeconfig: Callable[..., Any]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -121,7 +124,7 @@ def test_usedevelop(makeconfig):
     )
 
 
-def test_commands(makeconfig):
+def test_commands(makeconfig: Callable[..., Any]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -157,7 +160,7 @@ def test_commands(makeconfig):
     )
 
 
-def test_deps(makeconfig):
+def test_deps(makeconfig: Callable[..., Any]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -189,7 +192,7 @@ def test_deps(makeconfig):
     )
 
 
-def test_env(makeconfig):
+def test_env(makeconfig: Callable[..., Any]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -223,7 +226,7 @@ def test_env(makeconfig):
     )
 
 
-def test_chdir(makeconfig):
+def test_chdir(makeconfig: Callable[..., Any]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -253,7 +256,7 @@ def test_chdir(makeconfig):
     )
 
 
-def test_dash_in_envname(makeconfig):
+def test_dash_in_envname(makeconfig: Callable[..., Any]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -282,7 +285,9 @@ def test_dash_in_envname(makeconfig):
 
 
 @pytest.mark.skipif(TOX4, reason="Not supported in tox 4.")
-def test_non_identifier_in_envname(makeconfig, capfd):
+def test_non_identifier_in_envname(
+    makeconfig: Callable[..., Any], capfd: pytest.CaptureFixture[str]
+) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -317,7 +322,7 @@ def test_non_identifier_in_envname(makeconfig, capfd):
     )
 
 
-def test_descriptions_into_docstrings(makeconfig):
+def test_descriptions_into_docstrings(makeconfig: Callable[..., Any]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""

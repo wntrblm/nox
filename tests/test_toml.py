@@ -101,7 +101,7 @@ def test_load_multiple_script_block(tmp_path: Path) -> None:
         nox.project.load_toml(filepath)
 
 
-def test_load_non_recognised_extension():
+def test_load_non_recognised_extension() -> None:
     msg = "Extension must be .py or .toml, got .txt"
     with pytest.raises(ValueError, match=msg):
         nox.project.load_toml("some.txt")

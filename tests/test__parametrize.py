@@ -18,6 +18,7 @@ from unittest import mock
 
 import pytest
 
+import nox
 from nox import _decorators, _parametrize, parametrize, session
 
 
@@ -30,94 +31,99 @@ from nox import _decorators, _parametrize, parametrize, session
         (_parametrize.Param(1, 2, arg_names=("a", "b")), {"a": 1, "b": 2}, True),
     ],
 )
-def test_param_eq(param, other, expected):
+def test_param_eq(
+    param: _parametrize.Param,
+    other: _parametrize.Param | dict[str, int],
+    expected: bool,
+) -> None:
     assert (param == other) is expected
 
 
-def test_param_eq_fail():
+def test_param_eq_fail() -> None:
     assert _parametrize.Param() != "a"
 
 
-def test_parametrize_decorator_one():
-    def f():
+def test_parametrize_decorator_one() -> None:
+    def f() -> None:
         pass
 
-    _parametrize.parametrize_decorator("abc", 1)(f)
+    # A raw int is supported, but not part of the typed API.
+    _parametrize.parametrize_decorator("abc", 1)(f)  # type: ignore[arg-type]
 
-    assert f.parametrize == [_parametrize.Param(1, arg_names=("abc",))]
+    assert f.parametrize == [_parametrize.Param(1, arg_names=("abc",))]  # type: ignore[attr-defined]
 
 
-def test_parametrize_decorator_one_param():
-    def f():
+def test_parametrize_decorator_one_param() -> None:
+    def f() -> None:
         pass
 
     _parametrize.parametrize_decorator("abc", _parametrize.Param(1))(f)
 
-    assert f.parametrize == [_parametrize.Param(1, arg_names=("abc",))]
+    assert f.parametrize == [_parametrize.Param(1, arg_names=("abc",))]  # type: ignore[attr-defined]
 
 
-def test_parametrize_decorator_one_with_args():
-    def f():
+def test_parametrize_decorator_one_with_args() -> None:
+    def f() -> None:
         pass
 
     _parametrize.parametrize_decorator("abc", [1, 2, 3])(f)
 
-    assert f.parametrize == [{"abc": 1}, {"abc": 2}, {"abc": 3}]
+    assert f.parametrize == [{"abc": 1}, {"abc": 2}, {"abc": 3}]  # type: ignore[attr-defined]
 
 
-def test_parametrize_decorator_param():
-    def f():
+def test_parametrize_decorator_param() -> None:
+    def f() -> None:
         pass
 
     _parametrize.parametrize_decorator(["abc", "def"], _parametrize.Param(1))(f)
 
-    assert f.parametrize == [_parametrize.Param(1, arg_names=("abc", "def"))]
+    assert f.parametrize == [_parametrize.Param(1, arg_names=("abc", "def"))]  # type: ignore[attr-defined]
 
 
-def test_parametrize_decorator_id_list():
-    def f():
+def test_parametrize_decorator_id_list() -> None:
+    def f() -> None:
         pass
 
     _parametrize.parametrize_decorator("abc", [1, 2, 3], ids=["a", "b", "c"])(f)
 
     arg_names = ("abc",)
-    assert f.parametrize == [
+    assert f.parametrize == [  # type: ignore[attr-defined]
         _parametrize.Param(1, arg_names=arg_names, id="a"),
         _parametrize.Param(2, arg_names=arg_names, id="b"),
         _parametrize.Param(3, arg_names=arg_names, id="c"),
     ]
 
 
-def test_parametrize_decorator_multiple_args_as_list():
-    def f():
+def test_parametrize_decorator_multiple_args_as_list() -> None:
+    def f() -> None:
         pass
 
     _parametrize.parametrize_decorator(["abc", "def"], [("a", 1), ("b", 2), ("c", 3)])(
         f
     )
 
-    assert f.parametrize == [
+    assert f.parametrize == [  # type: ignore[attr-defined]
         {"abc": "a", "def": 1},
         {"abc": "b", "def": 2},
         {"abc": "c", "def": 3},
     ]
 
 
-def test_parametrize_decorator_multiple_args_as_string():
-    def f():
+def test_parametrize_decorator_multiple_args_as_string() -> None:
+    def f() -> None:
         pass
 
     _parametrize.parametrize_decorator("abc, def", [("a", 1), ("b", 2), ("c", 3)])(f)
 
-    assert f.parametrize == [
+    assert f.parametrize == [  # type: ignore[attr-defined]
         {"abc": "a", "def": 1},
         {"abc": "b", "def": 2},
         {"abc": "c", "def": 3},
     ]
 
 
-def test_parametrize_decorator_mixed_params():
-    def f():
+def test_parametrize_decorator_mixed_params() -> None:
+    def f() -> None:
         pass
 
     _parametrize.parametrize_decorator(
@@ -125,21 +131,21 @@ def test_parametrize_decorator_mixed_params():
     )(f)
 
     arg_names = ("abc", "def")
-    assert f.parametrize == [
+    assert f.parametrize == [  # type: ignore[attr-defined]
         _parametrize.Param(1, 2, arg_names=arg_names),
         _parametrize.Param(3, 4, arg_names=arg_names, id="b"),
         _parametrize.Param(5, 6, arg_names=arg_names),
     ]
 
 
-def test_parametrize_decorator_stack():
-    def f():
+def test_parametrize_decorator_stack() -> None:
+    def f() -> None:
         pass
 
     _parametrize.parametrize_decorator("abc", [1, 2, 3])(f)
     _parametrize.parametrize_decorator("def", ["a", "b"])(f)
 
-    assert f.parametrize == [
+    assert f.parametrize == [  # type: ignore[attr-defined]
         {"abc": 1, "def": "a"},
         {"abc": 2, "def": "a"},
         {"abc": 3, "def": "a"},
@@ -149,14 +155,14 @@ def test_parametrize_decorator_stack():
     ]
 
 
-def test_parametrize_decorator_multiple_and_stack():
-    def f():
+def test_parametrize_decorator_multiple_and_stack() -> None:
+    def f() -> None:
         pass
 
     _parametrize.parametrize_decorator("abc, def", [(1, "a"), (2, "b")])(f)
     _parametrize.parametrize_decorator("foo", ["bar", "baz"])(f)
 
-    assert f.parametrize == [
+    assert f.parametrize == [  # type: ignore[attr-defined]
         {"abc": 1, "def": "a", "foo": "bar"},
         {"abc": 2, "def": "b", "foo": "bar"},
         {"abc": 1, "def": "a", "foo": "baz"},
@@ -164,7 +170,7 @@ def test_parametrize_decorator_multiple_and_stack():
     ]
 
 
-def test_generate_calls_simple():
+def test_generate_calls_simple() -> None:
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"
     f.requires = None
@@ -193,11 +199,11 @@ def test_generate_calls_simple():
 
     # Make sure wrapping was done correctly.
     for call in calls:
-        assert call.some_prop == 42
-        assert call.__name__ == "f"
+        assert call.some_prop == 42  # type: ignore[attr-defined]
+        assert call.__name__ == "f"  # type: ignore[attr-defined]
 
 
-def test_generate_calls_multiple_args():
+def test_generate_calls_multiple_args() -> None:
     f = mock.Mock(should_warn=None, tags=[])
     f.__name__ = "f"
     f.requires = None
@@ -224,7 +230,7 @@ def test_generate_calls_multiple_args():
     f.assert_called_with(abc=3, foo="c")
 
 
-def test_generate_calls_ids():
+def test_generate_calls_ids() -> None:
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"
     f.requires = None
@@ -247,7 +253,7 @@ def test_generate_calls_ids():
     f.assert_called_with(foo=2)
 
 
-def test_generate_calls_tags():
+def test_generate_calls_tags() -> None:
     f = mock.Mock(should_warn={}, tags=[], requires=[])
     f.__name__ = "f"
 
@@ -266,7 +272,7 @@ def test_generate_calls_tags():
     assert calls[2].tags == ["tag4", "tag5"]
 
 
-def test_generate_calls_merge_tags():
+def test_generate_calls_merge_tags() -> None:
     f = mock.Mock(should_warn={}, tags=["tag1", "tag2"], requires=[])
     f.__name__ = "f"
 
@@ -285,12 +291,12 @@ def test_generate_calls_merge_tags():
     assert calls[2].tags == ["tag1", "tag2", "tag4", "tag5"]
 
 
-def test_generate_calls_session_python():
+def test_generate_calls_session_python() -> None:
     called_with = []
 
     @session
     @parametrize("python,dependency", [("3.8", "0.9"), ("3.9", "0.9"), ("3.9", "1.0")])
-    def f(session, dependency):
+    def f(session: nox.Session, dependency: str) -> None:
         called_with.append((session, dependency))
 
     calls = _decorators.Call.generate_calls(f, f.parametrize)
@@ -313,17 +319,17 @@ def test_generate_calls_session_python():
 
     assert len(called_with) == 3
 
-    assert called_with[0] == (session_, "0.9")
-    assert called_with[1] == (session_, "0.9")
-    assert called_with[2] == (session_, "1.0")
+    assert called_with[0] == (session_, "0.9")  # type: ignore[comparison-overlap]
+    assert called_with[1] == (session_, "0.9")  # type: ignore[comparison-overlap]
+    assert called_with[2] == (session_, "1.0")  # type: ignore[comparison-overlap]
 
 
-def test_generate_calls_python_compatibility():
+def test_generate_calls_python_compatibility() -> None:
     called_with = []
 
     @session
     @parametrize("python,dependency", [("3.8", "0.9"), ("3.9", "0.9"), ("3.9", "1.0")])
-    def f(session, python, dependency):
+    def f(session: nox.Session, python: str, dependency: str) -> None:
         called_with.append((session, python, dependency))
 
     calls = _decorators.Call.generate_calls(f, f.parametrize)
@@ -346,6 +352,6 @@ def test_generate_calls_python_compatibility():
 
     assert len(called_with) == 3
 
-    assert called_with[0] == (session_, "3.8", "0.9")
-    assert called_with[1] == (session_, "3.9", "0.9")
-    assert called_with[2] == (session_, "3.9", "1.0")
+    assert called_with[0] == (session_, "3.8", "0.9")  # type: ignore[comparison-overlap]
+    assert called_with[1] == (session_, "3.9", "0.9")  # type: ignore[comparison-overlap]
+    assert called_with[2] == (session_, "3.9", "1.0")  # type: ignore[comparison-overlap]

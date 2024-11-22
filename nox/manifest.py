@@ -419,8 +419,8 @@ class KeywordLocals(Mapping[str, bool]):
     returns False.
     """
 
-    def __init__(self, keywords: set[str]) -> None:
-        self._keywords = keywords
+    def __init__(self, keywords: Iterable[str]) -> None:
+        self._keywords = frozenset(keywords)
 
     def __getitem__(self, variable_name: str) -> bool:
         return any(variable_name in keyword for keyword in self._keywords)

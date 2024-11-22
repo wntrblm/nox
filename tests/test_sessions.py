@@ -23,11 +23,15 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import typing
 from pathlib import Path
+from typing import Any, Literal, NoReturn
 from unittest import mock
 
 import pytest
+from _pytest.compat import LEGACY_PATH
 
+import nox._decorators
 import nox.command
 import nox.manifest
 import nox.popen
@@ -43,7 +47,7 @@ has_conda = pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
 DIR = Path(__file__).parent.resolve()
 
 
-def run_with_defaults(**kwargs):
+def run_with_defaults(**kwargs: Any) -> dict[str, Any]:
     return {
         "env": None,
         "silent": False,
@@ -59,7 +63,7 @@ def run_with_defaults(**kwargs):
     }
 
 
-def _run_with_defaults(**kwargs):
+def _run_with_defaults(**kwargs: Any) -> dict[str, Any]:
     return {
         "env": None,
         "include_outer_env": True,
@@ -75,7 +79,7 @@ def _run_with_defaults(**kwargs):
     }
 
 
-def test__normalize_path():
+def test__normalize_path() -> None:
     envdir = "envdir"
     normalize = nox.sessions._normalize_path
     assert normalize(envdir, "hello") == os.path.join("envdir", "hello")
@@ -89,21 +93,23 @@ def test__normalize_path():
     )
 
 
-def test__normalize_path_hash():
+def test__normalize_path_hash() -> None:
     envdir = "d" * (100 - len("bin/pythonX.Y") - 10)
     norm_path = nox.sessions._normalize_path(envdir, "a-really-long-virtualenv-path")
     assert "a-really-long-virtualenv-path" not in norm_path
     assert len(norm_path) < 100
 
 
-def test__normalize_path_give_up():
+def test__normalize_path_give_up() -> None:
     envdir = "d" * 100
     norm_path = nox.sessions._normalize_path(envdir, "any-path")
     assert "any-path" in norm_path
 
 
 class TestSession:
-    def make_session_and_runner(self):
+    def make_session_and_runner(
+        self,
+    ) -> tuple[nox.sessions.Session, nox.sessions.SessionRunner]:
         func = mock.Mock(spec=["python"], python="3.7")
         runner = nox.sessions.SessionRunner(
             name="test",
@@ -118,12 +124,13 @@ class TestSession:
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        assert runner.venv
         runner.venv.env = {}
-        runner.venv.bin_paths = ["/no/bin/for/you"]
-        runner.venv.venv_backend = "venv"
+        runner.venv.bin_paths = ["/no/bin/for/you"]  # type: ignore[misc]
+        runner.venv.venv_backend = "venv"  # type: ignore[misc]
         return nox.sessions.Session(runner=runner), runner
 
-    def test_create_tmp(self):
+    def test_create_tmp(self) -> None:
         session, runner = self.make_session_and_runner()
         with tempfile.TemporaryDirectory() as root:
             runner.global_config.envdir = root
@@ -131,25 +138,28 @@ class TestSession:
             assert session.env["TMPDIR"] == os.path.abspath(tmpdir)
             assert tmpdir.startswith(root)
 
-    def test_create_tmp_twice(self):
+    def test_create_tmp_twice(self) -> None:
         session, runner = self.make_session_and_runner()
         with tempfile.TemporaryDirectory() as root:
             runner.global_config.envdir = root
-            runner.venv.bin = bin
+            assert runner.venv
+            runner.venv.bin = bin  # type: ignore[misc, assignment]
             session.create_tmp()
             tmpdir = session.create_tmp()
             assert session.env["TMPDIR"] == os.path.abspath(tmpdir)
             assert tmpdir.startswith(root)
 
-    def test_properties(self):
+    def test_properties(self) -> None:
         session, runner = self.make_session_and_runner()
         with tempfile.TemporaryDirectory() as root:
             runner.global_config.envdir = root
 
             assert session.name is runner.friendly_name
+            assert runner.venv
             assert session.env is runner.venv.env
             assert session.posargs == runner.global_config.posargs
             assert session.virtualenv is runner.venv
+            assert runner.venv.bin_paths
             assert session.bin_paths is runner.venv.bin_paths
             assert session.bin is runner.venv.bin_paths[0]
             assert session.python is runner.func.python
@@ -158,17 +168,18 @@ class TestSession:
                 ".cache"
             )
 
-    def test_no_bin_paths(self):
+    def test_no_bin_paths(self) -> None:
         session, runner = self.make_session_and_runner()
 
-        runner.venv.bin_paths = None
+        assert runner.venv
+        runner.venv.bin_paths = None  # type: ignore[misc]
         with pytest.raises(
             ValueError, match=r"^The environment does not have a bin directory\.$"
         ):
             session.bin  # noqa: B018
         assert session.bin_paths is None
 
-    def test_virtualenv_as_none(self):
+    def test_virtualenv_as_none(self) -> None:
         session, runner = self.make_session_and_runner()
 
         runner.venv = None
@@ -178,7 +189,7 @@ class TestSession:
 
         assert session.venv_backend == "none"
 
-    def test_interactive(self):
+    def test_interactive(self) -> None:
         session, runner = self.make_session_and_runner()
 
         with mock.patch("nox.sessions.sys.stdin.isatty") as m_isatty:
@@ -190,7 +201,7 @@ class TestSession:
 
             assert session.interactive is False
 
-    def test_explicit_non_interactive(self):
+    def test_explicit_non_interactive(self) -> None:
         session, runner = self.make_session_and_runner()
 
         with mock.patch("nox.sessions.sys.stdin.isatty") as m_isatty:
@@ -199,7 +210,7 @@ class TestSession:
 
             assert session.interactive is False
 
-    def test_chdir(self, tmpdir):
+    def test_chdir(self, tmpdir: LEGACY_PATH) -> None:
         cdto = str(tmpdir.join("cdbby").ensure(dir=True))
         current_cwd = os.getcwd()
 
@@ -210,7 +221,7 @@ class TestSession:
         assert os.getcwd() == cdto
         os.chdir(current_cwd)
 
-    def test_chdir_ctx(self, tmpdir):
+    def test_chdir_ctx(self, tmpdir: LEGACY_PATH) -> None:
         cdto = str(tmpdir.join("cdbby").ensure(dir=True))
         current_cwd = os.getcwd()
 
@@ -223,7 +234,7 @@ class TestSession:
 
         os.chdir(current_cwd)
 
-    def test_invoked_from(self, tmpdir):
+    def test_invoked_from(self, tmpdir: LEGACY_PATH) -> None:
         cdto = str(tmpdir.join("cdbby").ensure(dir=True))
         current_cwd = os.getcwd()
 
@@ -234,7 +245,7 @@ class TestSession:
         assert session.invoked_from == current_cwd
         os.chdir(current_cwd)
 
-    def test_chdir_pathlib(self, tmpdir):
+    def test_chdir_pathlib(self, tmpdir: LEGACY_PATH) -> None:
         cdto = str(tmpdir.join("cdbby").ensure(dir=True))
         current_cwd = os.getcwd()
 
@@ -245,27 +256,27 @@ class TestSession:
         assert os.getcwd() == cdto
         os.chdir(current_cwd)
 
-    def test_run_bad_args(self):
+    def test_run_bad_args(self) -> None:
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError, match="arg"):
             session.run()
 
-    def test_run_with_func(self):
+    def test_run_with_func(self) -> None:
         session, _ = self.make_session_and_runner()
 
-        assert session.run(operator.add, 1, 2) == 3
+        assert session.run(operator.add, 1, 2) == 3  # type: ignore[arg-type]
 
-    def test_run_with_func_error(self):
+    def test_run_with_func_error(self) -> None:
         session, _ = self.make_session_and_runner()
 
-        def raise_value_error():
+        def raise_value_error() -> NoReturn:
             raise ValueError("meep")
 
         with pytest.raises(nox.command.CommandFailed):
-            assert session.run(raise_value_error)
+            assert session.run(raise_value_error)  # type: ignore[arg-type]
 
-    def test_run_install_only(self, caplog):
+    def test_run_install_only(self, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.INFO)
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
@@ -277,7 +288,7 @@ class TestSession:
 
         assert "install-only" in caplog.text
 
-    def test_run_install_only_should_install(self):
+    def test_run_install_only_should_install(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
 
@@ -290,18 +301,18 @@ class TestSession:
             **run_with_defaults(paths=mock.ANY, silent=True, env={}, external="error"),
         )
 
-    def test_run_success(self):
+    def test_run_success(self) -> None:
         session, _ = self.make_session_and_runner()
         result = session.run(sys.executable, "-c", "print(123)")
         assert result
 
-    def test_run_error(self):
+    def test_run_error(self) -> None:
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(nox.command.CommandFailed):
             session.run(sys.executable, "-c", "import sys; sys.exit(1)")
 
-    def test_run_install_script(self):
+    def test_run_install_script(self) -> None:
         session, _ = self.make_session_and_runner()
 
         with mock.patch.object(nox.command, "run") as run:
@@ -311,8 +322,9 @@ class TestSession:
         assert "rich" in run.call_args_list[0][0][0]
         assert DIR / "resources/pep721example1.py" in run.call_args_list[1][0][0]
 
-    def test_run_overly_env(self):
+    def test_run_overly_env(self) -> None:
         session, runner = self.make_session_and_runner()
+        assert runner.venv
         runner.venv.env["A"] = "1"
         runner.venv.env["B"] = "2"
         runner.venv.env["C"] = "4"
@@ -323,10 +335,12 @@ class TestSession:
             env={"B": "3", "C": None},
             silent=True,
         )
+        assert result
         assert result.strip() == "1 3 5"
 
-    def test_by_default_all_invocation_env_vars_are_passed(self):
+    def test_by_default_all_invocation_env_vars_are_passed(self) -> None:
         session, runner = self.make_session_and_runner()
+        assert runner.venv
         runner.venv.env["I_SHOULD_BE_INCLUDED"] = "happy"
         runner.venv.env["I_SHOULD_BE_INCLUDED_TOO"] = "happier"
         runner.venv.env["EVERYONE_SHOULD_BE_INCLUDED_TOO"] = "happiest"
@@ -336,12 +350,14 @@ class TestSession:
             "import os; print(os.environ)",
             silent=True,
         )
+        assert result
         assert "happy" in result
         assert "happier" in result
         assert "happiest" in result
 
-    def test_no_included_invocation_env_vars_are_passed(self):
+    def test_no_included_invocation_env_vars_are_passed(self) -> None:
         session, runner = self.make_session_and_runner()
+        assert runner.venv
         runner.venv.env["I_SHOULD_NOT_BE_INCLUDED"] = "sad"
         runner.venv.env["AND_NEITHER_SHOULD_I"] = "unhappy"
         result = session.run(
@@ -352,11 +368,12 @@ class TestSession:
             include_outer_env=False,
             silent=True,
         )
+        assert result
         assert "sad" not in result
         assert "unhappy" not in result
         assert "happy" in result
 
-    def test_run_external_not_a_virtualenv(self):
+    def test_run_external_not_a_virtualenv(self) -> None:
         # Non-virtualenv sessions should always allow external programs.
         session, runner = self.make_session_and_runner()
 
@@ -370,14 +387,15 @@ class TestSession:
             **run_with_defaults(external=True, env=mock.ANY),
         )
 
-    def test_run_external_condaenv(self):
+    def test_run_external_condaenv(self) -> None:
         # condaenv sessions should always allow conda.
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
-        runner.venv.allowed_globals = ("conda",)
+        assert runner.venv
+        runner.venv.allowed_globals = ("conda",)  # type: ignore[misc]
         runner.venv.env = {}
-        runner.venv.bin_paths = ["/path/to/env/bin"]
-        runner.venv.create.return_value = True
+        runner.venv.bin_paths = ["/path/to/env/bin"]  # type: ignore[misc]
+        runner.venv.create.return_value = True  # type: ignore[attr-defined]
 
         with mock.patch("nox.command.run", autospec=True) as run:
             session.run("conda", "--version")
@@ -389,7 +407,7 @@ class TestSession:
             ),
         )
 
-    def test_run_external_with_error_on_external_run(self):
+    def test_run_external_with_error_on_external_run(self) -> None:
         session, runner = self.make_session_and_runner()
 
         runner.global_config.error_on_external_run = True
@@ -397,18 +415,19 @@ class TestSession:
         with pytest.raises(nox.command.CommandFailed, match="External"):
             session.run(sys.executable, "--version")
 
-    def test_run_external_with_error_on_external_run_condaenv(self):
+    def test_run_external_with_error_on_external_run_condaenv(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        assert runner.venv
         runner.venv.env = {}
-        runner.venv.bin_paths = ["/path/to/env/bin"]
+        runner.venv.bin_paths = ["/path/to/env/bin"]  # type: ignore[misc]
 
         runner.global_config.error_on_external_run = True
 
         with pytest.raises(nox.command.CommandFailed, match="External"):
             session.run(sys.executable, "--version")
 
-    def test_run_install_bad_args(self):
+    def test_run_install_bad_args(self) -> None:
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError) as exc_info:
@@ -417,7 +436,7 @@ class TestSession:
         exc_args = exc_info.value.args
         assert exc_args == ("At least one argument required to run_install().",)
 
-    def test_run_no_install_passthrough(self):
+    def test_run_no_install_passthrough(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.venv = nox.virtualenv.PassthroughEnv()
         runner.global_config.no_install = True
@@ -425,22 +444,22 @@ class TestSession:
         session.install("numpy")
         session.conda_install("numpy")
 
-    def test_run_no_conda_install(self):
+    def test_run_no_conda_install(self) -> None:
         session, runner = self.make_session_and_runner()
 
         with pytest.raises(ValueError, match="A session without a conda"):
             session.conda_install("numpy")
 
-    def test_run_install_success(self):
+    def test_run_install_success(self) -> None:
         session, _ = self.make_session_and_runner()
 
-        assert session.run_install(operator.add, 1300, 37) == 1337
+        assert session.run_install(operator.add, 1300, 37) == 1337  # type: ignore[arg-type]
 
-    def test_run_install_install_only(self, caplog):
+    def test_run_install_install_only(self, caplog: pytest.LogCaptureFixture) -> None:
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
 
-        assert session.run_install(operator.add, 23, 19) == 42
+        assert session.run_install(operator.add, 23, 19) == 42  # type: ignore[arg-type]
 
     @pytest.mark.parametrize(
         (
@@ -458,11 +477,11 @@ class TestSession:
     )
     def test_run_shutdown_process_timeouts(
         self,
-        interrupt_timeout_setting,
-        terminate_timeout_setting,
-        interrupt_timeout_expected,
-        terminate_timeout_expected,
-    ):
+        interrupt_timeout_setting: Literal["default"] | int | None,
+        terminate_timeout_setting: Literal["default"] | int | None,
+        interrupt_timeout_expected: float | int | None,
+        terminate_timeout_expected: float | int | None,
+    ) -> None:
         session, runner = self.make_session_and_runner()
 
         runner.venv = nox.virtualenv.PassthroughEnv()
@@ -477,14 +496,14 @@ class TestSession:
         ):
             shutdown_process.return_value = ("", "")
 
-            timeout_kwargs = {}
+            timeout_kwargs: dict[str, None | float] = {}
             if interrupt_timeout_setting != "default":
                 timeout_kwargs["interrupt_timeout"] = interrupt_timeout_setting
             if terminate_timeout_setting != "default":
                 timeout_kwargs["terminate_timeout"] = terminate_timeout_setting
 
             with pytest.raises(KeyboardInterrupt):
-                session.run(sys.executable, "--version", **timeout_kwargs)
+                session.run(sys.executable, "--version", **timeout_kwargs)  # type: ignore[arg-type]
 
         shutdown_process.assert_called_once_with(
             proc=mock.ANY,
@@ -503,10 +522,11 @@ class TestSession:
     )
     @pytest.mark.parametrize("run_install_func", ["run_always", "run_install"])
     def test_run_install_no_install(
-        self, no_install, reused, run_called, run_install_func
-    ):
+        self, no_install: bool, reused: bool, run_called: bool, run_install_func: str
+    ) -> None:
         session, runner = self.make_session_and_runner()
         runner.global_config.no_install = no_install
+        assert runner.venv
         runner.venv._reused = reused
 
         with mock.patch.object(nox.command, "run") as run:
@@ -515,31 +535,34 @@ class TestSession:
 
         assert run.called is run_called
 
-    def test_conda_install_bad_args(self):
+    def test_conda_install_bad_args(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        assert runner.venv
         runner.venv.location = "dummy"
 
         with pytest.raises(ValueError, match="arg"):
             session.conda_install()
 
-    def test_conda_install_bad_args_odd_nb_double_quotes(self):
+    def test_conda_install_bad_args_odd_nb_double_quotes(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        assert runner.venv
         runner.venv.location = "./not/a/location"
 
         with pytest.raises(ValueError, match="odd number of quotes"):
             session.conda_install('a"a')
 
-    def test_conda_install_bad_args_cannot_escape(self):
+    def test_conda_install_bad_args_cannot_escape(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        assert runner.venv
         runner.venv.location = "./not/a/location"
 
         with pytest.raises(ValueError, match="Cannot escape"):
             session.conda_install('a"o"<a')
 
-    def test_conda_install_not_a_condaenv(self):
+    def test_conda_install_not_a_condaenv(self) -> None:
         session, runner = self.make_session_and_runner()
 
         runner.venv = None
@@ -557,7 +580,9 @@ class TestSession:
         ["", "conda-forge", ["conda-forge", "bioconda"]],
         ids=["default", "conda-forge", "bioconda"],
     )
-    def test_conda_install(self, auto_offline, offline, conda, channel):
+    def test_conda_install(
+        self, auto_offline: bool, offline: bool, conda: str, channel: str | list[str]
+    ) -> None:
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -566,10 +591,11 @@ class TestSession:
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
-        runner.venv.is_offline = lambda: offline
-        runner.venv.conda_cmd = conda
+        runner.venv.is_offline = lambda: offline  # type: ignore[attr-defined]
+        runner.venv.conda_cmd = conda  # type: ignore[attr-defined]
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -606,14 +632,17 @@ class TestSession:
             (False, False, True),
         ],
     )
-    def test_conda_venv_reused_with_no_install(self, no_install, reused, run_called):
+    def test_conda_venv_reused_with_no_install(
+        self, no_install: bool, reused: bool, run_called: bool
+    ) -> None:
         session, runner = self.make_session_and_runner()
 
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
-        runner.venv.is_offline = lambda: True
-        runner.venv.conda_cmd = "conda"
+        runner.venv.is_offline = lambda: True  # type: ignore[attr-defined]
+        runner.venv.conda_cmd = "conda"  # type: ignore[attr-defined]
 
         runner.global_config.no_install = no_install
         runner.venv._reused = reused
@@ -628,7 +657,7 @@ class TestSession:
         ["no", "yes", "already_dbl_quoted"],
         ids="version_constraint={}".format,
     )
-    def test_conda_install_non_default_kwargs(self, version_constraint):
+    def test_conda_install_non_default_kwargs(self, version_constraint: str) -> None:
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -637,10 +666,11 @@ class TestSession:
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
-        runner.venv.is_offline = lambda: False
-        runner.venv.conda_cmd = "conda"
+        runner.venv.is_offline = lambda: False  # type: ignore[attr-defined]
+        runner.venv.conda_cmd = "conda"  # type: ignore[attr-defined]
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -671,13 +701,13 @@ class TestSession:
                 **_run_with_defaults(silent=False, external="error"),
             )
 
-    def test_install_bad_args_no_arg(self):
+    def test_install_bad_args_no_arg(self) -> None:
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError, match="arg"):
             session.install()
 
-    def test_install_not_a_virtualenv(self):
+    def test_install_not_a_virtualenv(self) -> None:
         session, runner = self.make_session_and_runner()
 
         runner.venv = None
@@ -685,7 +715,7 @@ class TestSession:
         with pytest.raises(ValueError, match="virtualenv"):
             session.install()
 
-    def test_install(self):
+    def test_install(self) -> None:
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -694,8 +724,9 @@ class TestSession:
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        assert runner.venv
         runner.venv.env = {}
-        runner.venv.venv_backend = "venv"
+        runner.venv.venv_backend = "venv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -716,7 +747,7 @@ class TestSession:
                 **_run_with_defaults(silent=True, external="error"),
             )
 
-    def test_install_non_default_kwargs(self):
+    def test_install_non_default_kwargs(self) -> None:
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -725,8 +756,9 @@ class TestSession:
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        assert runner.venv
         runner.venv.env = {}
-        runner.venv.venv_backend = "venv"
+        runner.venv.venv_backend = "venv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -745,7 +777,7 @@ class TestSession:
                 **_run_with_defaults(silent=False, external="error"),
             )
 
-    def test_install_no_venv_failure(self):
+    def test_install_no_venv_failure(self) -> None:
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -754,6 +786,7 @@ class TestSession:
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.PassthroughEnv)
+        assert runner.venv
         runner.venv.env = {}
 
         class SessionNoSlots(nox.sessions.Session):
@@ -770,27 +803,29 @@ class TestSession:
         ):
             session.install("requests", "urllib3")
 
-    def test_notify(self):
+    def test_notify(self) -> None:
         session, runner = self.make_session_and_runner()
 
         session.notify("other")
 
-        runner.manifest.notify.assert_called_once_with("other", None)
+        runner.manifest.notify.assert_called_once_with("other", None)  # type: ignore[attr-defined]
 
         session.notify("other", posargs=["--an-arg"])
 
-        runner.manifest.notify.assert_called_with("other", ["--an-arg"])
+        runner.manifest.notify.assert_called_with("other", ["--an-arg"])  # type: ignore[attr-defined]
 
-    def test_posargs_are_not_shared_between_sessions(self, monkeypatch, tmp_path):
-        registry = {}
+    def test_posargs_are_not_shared_between_sessions(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        registry: dict[str, nox._decorators.Func] = {}
         monkeypatch.setattr("nox.registry._REGISTRY", registry)
 
         @nox.session(venv_backend="none")
-        def test(session):
+        def test(session: nox.Session) -> None:
             session.posargs.extend(["-x"])
 
         @nox.session(venv_backend="none")
-        def lint(session):
+        def lint(session: nox.Session) -> None:
             if "-x" in session.posargs:
                 raise RuntimeError("invalid option: -x")
 
@@ -800,7 +835,7 @@ class TestSession:
         assert manifest["test"].execute()
         assert manifest["lint"].execute()
 
-    def test_log(self, caplog):
+    def test_log(self, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.INFO)
         session, _ = self.make_session_and_runner()
 
@@ -808,7 +843,7 @@ class TestSession:
 
         assert "meep" in caplog.text
 
-    def test_warn(self, caplog):
+    def test_warn(self, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.WARNING)
         session, _ = self.make_session_and_runner()
 
@@ -816,7 +851,7 @@ class TestSession:
 
         assert "meep" in caplog.text
 
-    def test_debug(self, caplog):
+    def test_debug(self, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.DEBUG)
         session, _ = self.make_session_and_runner()
 
@@ -824,20 +859,20 @@ class TestSession:
 
         assert "meep" in caplog.text
 
-    def test_error(self, caplog):
+    def test_error(self, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.ERROR)
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(nox.sessions._SessionQuit, match="meep"):
             session.error("meep")
 
-    def test_error_no_log(self):
+    def test_error_no_log(self) -> None:
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(nox.sessions._SessionQuit):
             session.error()
 
-    def test_skip_no_log(self):
+    def test_skip_no_log(self) -> None:
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(nox.sessions._SessionSkip):
@@ -852,9 +887,12 @@ class TestSession:
             (False, False, True),
         ],
     )
-    def test_session_venv_reused_with_no_install(self, no_install, reused, run_called):
+    def test_session_venv_reused_with_no_install(
+        self, no_install: bool, reused: bool, run_called: bool
+    ) -> None:
         session, runner = self.make_session_and_runner()
         runner.global_config.no_install = no_install
+        assert runner.venv
         runner.venv._reused = reused
 
         with mock.patch.object(nox.command, "run") as run:
@@ -862,7 +900,7 @@ class TestSession:
 
         assert run.called is run_called
 
-    def test_install_uv(self):
+    def test_install_uv(self) -> None:
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -871,8 +909,9 @@ class TestSession:
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        assert runner.venv
         runner.venv.env = {}
-        runner.venv.venv_backend = "uv"
+        runner.venv.venv_backend = "uv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -890,7 +929,7 @@ class TestSession:
                 **_run_with_defaults(silent=False, external="error"),
             )
 
-    def test_install_uv_command(self, monkeypatch):
+    def test_install_uv_command(self, monkeypatch: pytest.MonkeyPatch) -> None:
         runner = nox.sessions.SessionRunner(
             name="test",
             signatures=["test"],
@@ -899,8 +938,9 @@ class TestSession:
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        assert runner.venv
         runner.venv.env = {}
-        runner.venv.venv_backend = "uv"
+        runner.venv.venv_backend = "uv"  # type: ignore[misc]
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -941,27 +981,27 @@ class TestSession:
                 "urllib3",
             )
 
-    def test___slots__(self):
+    def test___slots__(self) -> None:
         session, _ = self.make_session_and_runner()
         with pytest.raises(AttributeError):
-            session.foo = "bar"
+            session.foo = "bar"  # type: ignore[attr-defined]
         with pytest.raises(AttributeError):
-            session.quux  # noqa: B018
+            session.quux  # type: ignore[attr-defined] # noqa: B018
 
-    def test___dict__(self):
+    def test___dict__(self) -> None:
         session, _ = self.make_session_and_runner()
         expected = {name: getattr(session, name) for name in session.__slots__}
         assert session.__dict__ == expected
 
-    def test_first_arg_list(self):
+    def test_first_arg_list(self) -> None:
         session, _ = self.make_session_and_runner()
 
         with pytest.raises(ValueError):
-            session.run(["ls", "-al"])
+            session.run(["ls", "-al"])  # type: ignore[arg-type]
 
 
 class TestSessionRunner:
-    def make_runner(self):
+    def make_runner(self) -> nox.sessions.SessionRunner:
         func = mock.Mock()
         func.python = None
         func.venv_backend = None
@@ -981,7 +1021,7 @@ class TestSessionRunner:
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
 
-    def test_properties(self):
+    def test_properties(self) -> None:
         runner = self.make_runner()
 
         assert runner.name == "test"
@@ -992,23 +1032,23 @@ class TestSessionRunner:
         assert runner.global_config.posargs == []
         assert isinstance(runner.manifest, nox.manifest.Manifest)
 
-    def test_str_and_friendly_name(self):
+    def test_str_and_friendly_name(self) -> None:
         runner = self.make_runner()
         runner.signatures = ["test(1, 2)", "test(3, 4)"]
 
         assert str(runner) == "Session(name=test, signatures=test(1, 2), test(3, 4))"
         assert runner.friendly_name == "test(1, 2)"
 
-    def test_description_property_one_line(self):
-        def foo():
+    def test_description_property_one_line(self) -> None:
+        def foo() -> None:
             """Just one line"""
 
         runner = self.make_runner()
-        runner.func = foo
+        runner.func = foo  # type: ignore[assignment]
         assert runner.description == "Just one line"
 
-    def test_description_property_multi_line(self):
-        def foo():
+    def test_description_property_multi_line(self) -> None:
+        def foo() -> None:
             """
             Multiline
 
@@ -1016,18 +1056,18 @@ class TestSessionRunner:
             """
 
         runner = self.make_runner()
-        runner.func = foo
+        runner.func = foo  # type: ignore[assignment]
         assert runner.description == "Multiline"
 
-    def test_description_property_no_doc(self):
-        def foo():
+    def test_description_property_no_doc(self) -> None:
+        def foo() -> None:
             pass
 
         runner = self.make_runner()
-        runner.func = foo
+        runner.func = foo  # type: ignore[assignment]
         assert runner.description is None
 
-    def test__create_venv_process_env(self):
+    def test__create_venv_process_env(self) -> None:
         runner = self.make_runner()
         runner.func.python = False
 
@@ -1036,7 +1076,7 @@ class TestSessionRunner:
         assert isinstance(runner.venv, nox.virtualenv.ProcessEnv)
 
     @mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True)
-    def test__create_venv(self, create):
+    def test__create_venv(self, create: mock.Mock) -> None:
         runner = self.make_runner()
 
         runner._create_venv()
@@ -1065,7 +1105,13 @@ class TestSessionRunner:
             ),
         ],
     )
-    def test__create_venv_options(self, create_method, venv_backend, expected_backend):
+    def test__create_venv_options(
+        self,
+        create_method: str,
+        venv_backend: None | str,
+        expected_backend: type[nox.virtualenv.VirtualEnv]
+        | type[nox.virtualenv.CondaEnv],
+    ) -> None:
         runner = self.make_runner()
         runner.func.python = "coolpython"
         runner.func.reuse_venv = True
@@ -1076,10 +1122,10 @@ class TestSessionRunner:
 
         create.assert_called_once_with(runner.venv)
         assert isinstance(runner.venv, expected_backend)
-        assert runner.venv.interpreter == "coolpython"
-        assert runner.venv.reuse_existing is True
+        assert runner.venv.interpreter == "coolpython"  # type: ignore[union-attr]
+        assert runner.venv.reuse_existing is True  # type: ignore[union-attr]
 
-    def test__create_venv_unexpected_venv_backend(self):
+    def test__create_venv_unexpected_venv_backend(self) -> None:
         runner = self.make_runner()
         runner.func.venv_backend = "somenewenvtool"
         with pytest.raises(ValueError, match="venv_backend"):
@@ -1089,7 +1135,9 @@ class TestSessionRunner:
         "venv_backend",
         ["uv|virtualenv", "conda|virtualenv", "mamba|conda|venv"],
     )
-    def test_fallback_venv(self, venv_backend, monkeypatch):
+    def test_fallback_venv(
+        self, venv_backend: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         runner = self.make_runner()
         runner.func.venv_backend = venv_backend
         monkeypatch.setattr(
@@ -1099,6 +1147,7 @@ class TestSessionRunner:
         )
         with mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True):
             runner._create_venv()
+        assert runner.venv
         assert runner.venv.venv_backend == venv_backend.split("|")[-1]
 
     @pytest.mark.parametrize(
@@ -1110,7 +1159,9 @@ class TestSessionRunner:
             "conda|mamba",
         ],
     )
-    def test_invalid_fallback_venv(self, venv_backend, monkeypatch):
+    def test_invalid_fallback_venv(
+        self, venv_backend: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         runner = self.make_runner()
         runner.func.venv_backend = venv_backend
         monkeypatch.setattr(
@@ -1140,27 +1191,30 @@ class TestSessionRunner:
             ("never", True, False),
         ],
     )
-    def test__reuse_venv_outcome(self, reuse_venv, reuse_venv_func, should_reuse):
+    def test__reuse_venv_outcome(
+        self, reuse_venv: str, reuse_venv_func: bool | None, should_reuse: bool
+    ) -> None:
         runner = self.make_runner()
         runner.func.reuse_venv = reuse_venv_func
         runner.global_config.reuse_venv = reuse_venv
         assert runner.reuse_existing_venv() == should_reuse
 
-    def test__reuse_venv_invalid(self):
+    def test__reuse_venv_invalid(self) -> None:
         runner = self.make_runner()
         runner.global_config.reuse_venv = True
         msg = "nox.options.reuse_venv must be set to 'always', 'never', 'no', or 'yes', got True!"
         with pytest.raises(AttributeError, match=re.escape(msg)):
             runner.reuse_existing_venv()
 
-    def make_runner_with_mock_venv(self):
+    def make_runner_with_mock_venv(self) -> nox.sessions.SessionRunner:
         runner = self.make_runner()
-        runner._create_venv = mock.Mock()
+        runner._create_venv = mock.Mock()  # type: ignore[method-assign]
         runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
+        assert runner.venv
         runner.venv.env = {}
         return runner
 
-    def test_execute_noop_success(self, caplog):
+    def test_execute_noop_success(self, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.DEBUG)
 
         runner = self.make_runner_with_mock_venv()
@@ -1168,122 +1222,130 @@ class TestSessionRunner:
         result = runner.execute()
 
         assert result
-        runner.func.assert_called_once_with(mock.ANY)
+        runner.func.assert_called_once_with(mock.ANY)  # type: ignore[attr-defined]
         assert "Running session test(1, 2)" in caplog.text
 
-    def test_execute_quit(self):
+    def test_execute_quit(self) -> None:
         runner = self.make_runner_with_mock_venv()
 
-        def func(session):
+        def func(session: nox.Session) -> None:
             session.error("meep")
 
-        func.requires = []
-        runner.func = func
+        func.requires = []  # type: ignore[attr-defined]
+        runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.ABORTED
 
-    def test_execute_skip(self):
+    def test_execute_skip(self) -> None:
         runner = self.make_runner_with_mock_venv()
 
-        def func(session):
+        def func(session: nox.Session) -> None:
             session.skip("meep")
 
-        func.requires = []
-        runner.func = func
+        func.requires = []  # type: ignore[attr-defined]
+        runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.SKIPPED
 
-    def test_execute_with_manifest_null_session_func(self):
+    def test_execute_with_manifest_null_session_func(self) -> None:
         runner = self.make_runner()
         runner.func = nox.manifest._null_session_func
 
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.SKIPPED
+        assert result.reason
         assert "no parameters" in result.reason
 
-    def test_execute_skip_missing_interpreter(self, caplog, monkeypatch):
+    def test_execute_skip_missing_interpreter(
+        self, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         # Important to have this first here as the runner will pick it up
         # to set default for --error-on-missing-interpreters
         monkeypatch.delenv("CI", raising=False)
 
         runner = self.make_runner_with_mock_venv()
-        runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
+        runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")  # type: ignore[attr-defined]
 
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.SKIPPED
+        assert result.reason
         assert "meep" in result.reason
         assert (
             "Missing interpreters will error by default on CI systems." in caplog.text
         )
 
-    def test_execute_missing_interpreter_on_CI(self, monkeypatch):
+    def test_execute_missing_interpreter_on_CI(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.setenv("CI", "True")
         runner = self.make_runner_with_mock_venv()
-        runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
+        runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")  # type: ignore[attr-defined]
 
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.FAILED
+        assert result.reason
         assert "meep" in result.reason
 
-    def test_execute_error_missing_interpreter(self):
+    def test_execute_error_missing_interpreter(self) -> None:
         runner = self.make_runner_with_mock_venv()
         runner.global_config.error_on_missing_interpreters = True
-        runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")
+        runner._create_venv.side_effect = nox.virtualenv.InterpreterNotFound("meep")  # type: ignore[attr-defined]
 
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.FAILED
+        assert result.reason
         assert "meep" in result.reason
 
-    def test_execute_failed(self):
+    def test_execute_failed(self) -> None:
         runner = self.make_runner_with_mock_venv()
 
-        def func(session):
+        def func(session: nox.Session) -> None:
             raise nox.command.CommandFailed()
 
-        func.requires = []
-        runner.func = func
+        func.requires = []  # type: ignore[attr-defined]
+        runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.FAILED
 
-    def test_execute_interrupted(self):
+    def test_execute_interrupted(self) -> None:
         runner = self.make_runner_with_mock_venv()
 
-        def func(session):
+        def func(session: nox.Session) -> None:
             raise KeyboardInterrupt()
 
-        func.requires = []
-        runner.func = func
+        func.requires = []  # type: ignore[attr-defined]
+        runner.func = func  # type: ignore[assignment]
 
         with pytest.raises(KeyboardInterrupt):
             runner.execute()
 
-    def test_execute_exception(self):
+    def test_execute_exception(self) -> None:
         runner = self.make_runner_with_mock_venv()
 
-        def func(session):
+        def func(session: nox.Session) -> None:
             raise ValueError("meep")
 
-        func.requires = []
-        runner.func = func
+        func.requires = []  # type: ignore[attr-defined]
+        runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
 
         assert result.status == nox.sessions.Status.FAILED
 
-    def test_execute_check_env(self):
+    def test_execute_check_env(self) -> None:
         runner = self.make_runner_with_mock_venv()
 
-        def func(session):
+        def func(session: nox.Session) -> None:
             session.run(
                 sys.executable,
                 "-c",
@@ -1291,8 +1353,8 @@ class TestSessionRunner:
                 f' os.environ["NOX_CURRENT_SESSION"] == {session.name!r} else 0)',
             )
 
-        func.requires = []
-        runner.func = func
+        func.requires = []  # type: ignore[attr-defined]
+        runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
 
@@ -1300,59 +1362,83 @@ class TestSessionRunner:
 
 
 class TestResult:
-    def test_init(self):
+    def test_init(self) -> None:
         result = nox.sessions.Result(
             session=mock.sentinel.SESSION, status=mock.sentinel.STATUS
         )
         assert result.session == mock.sentinel.SESSION
         assert result.status == mock.sentinel.STATUS
 
-    def test__bool_true(self):
+    def test__bool_true(self) -> None:
         for status in (nox.sessions.Status.SUCCESS, nox.sessions.Status.SKIPPED):
-            result = nox.sessions.Result(session=object(), status=status)
+            result = nox.sessions.Result(
+                session=typing.cast(nox.sessions.SessionRunner, object()), status=status
+            )
             assert bool(result)
             assert result.__bool__()
             assert result.__nonzero__()
 
-    def test__bool_false(self):
+    def test__bool_false(self) -> None:
         for status in (nox.sessions.Status.FAILED, nox.sessions.Status.ABORTED):
-            result = nox.sessions.Result(session=object(), status=status)
+            result = nox.sessions.Result(
+                session=typing.cast(nox.sessions.SessionRunner, object()), status=status
+            )
             assert not bool(result)
             assert not result.__bool__()
             assert not result.__nonzero__()
 
-    def test__imperfect(self):
-        result = nox.sessions.Result(object(), nox.sessions.Status.SUCCESS)
+    def test__imperfect(self) -> None:
+        result = nox.sessions.Result(
+            typing.cast(nox.sessions.SessionRunner, object()),
+            nox.sessions.Status.SUCCESS,
+        )
         assert result.imperfect == "was successful"
-        result = nox.sessions.Result(object(), nox.sessions.Status.FAILED)
+        result = nox.sessions.Result(
+            typing.cast(nox.sessions.SessionRunner, object()),
+            nox.sessions.Status.FAILED,
+        )
         assert result.imperfect == "failed"
         result = nox.sessions.Result(
-            object(), nox.sessions.Status.FAILED, reason="meep"
+            typing.cast(nox.sessions.SessionRunner, object()),
+            nox.sessions.Status.FAILED,
+            reason="meep",
         )
         assert result.imperfect == "failed: meep"
 
-    def test__log_success(self):
-        result = nox.sessions.Result(object(), nox.sessions.Status.SUCCESS)
+    def test__log_success(self) -> None:
+        result = nox.sessions.Result(
+            typing.cast(nox.sessions.SessionRunner, object()),
+            nox.sessions.Status.SUCCESS,
+        )
         with mock.patch.object(logger, "success") as success:
             result.log("foo")
             success.assert_called_once_with("foo")
 
-    def test__log_warning(self):
-        result = nox.sessions.Result(object(), nox.sessions.Status.SKIPPED)
+    def test__log_warning(self) -> None:
+        result = nox.sessions.Result(
+            typing.cast(nox.sessions.SessionRunner, object()),
+            nox.sessions.Status.SKIPPED,
+        )
         with mock.patch.object(logger, "warning") as warning:
             result.log("foo")
             warning.assert_called_once_with("foo")
 
-    def test__log_error(self):
-        result = nox.sessions.Result(object(), nox.sessions.Status.FAILED)
+    def test__log_error(self) -> None:
+        result = nox.sessions.Result(
+            typing.cast(nox.sessions.SessionRunner, object()),
+            nox.sessions.Status.FAILED,
+        )
         with mock.patch.object(logger, "error") as error:
             result.log("foo")
             error.assert_called_once_with("foo")
 
-    def test__serialize(self):
+    def test__serialize(self) -> None:
         result = nox.sessions.Result(
-            session=argparse.Namespace(
-                signatures=["siggy"], name="namey", func=mock.Mock()
+            session=typing.cast(
+                nox.sessions.SessionRunner,
+                argparse.Namespace(
+                    signatures=["siggy"], name="namey", func=mock.Mock()
+                ),
             ),
             status=nox.sessions.Status.SUCCESS,
         )

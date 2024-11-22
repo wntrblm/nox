@@ -25,9 +25,11 @@ import sys
 import time
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 from unittest import mock
 
 import pytest
+from _pytest.compat import LEGACY_PATH
 
 import nox.command
 import nox.popen
@@ -44,13 +46,13 @@ only_on_windows = pytest.mark.skipif(
 )
 
 
-def test_run_defaults(capsys):
+def test_run_defaults(capsys: pytest.CaptureFixture[str]) -> None:
     result = nox.command.run([PYTHON, "-c", "print(123)"])
 
     assert result is True
 
 
-def test_run_silent(capsys):
+def test_run_silent(capsys: pytest.CaptureFixture[str]) -> None:
     result = nox.command.run([PYTHON, "-c", "print(123)"], silent=True)
 
     out, _ = capsys.readouterr()
@@ -60,13 +62,15 @@ def test_run_silent(capsys):
 
 
 @pytest.mark.skipif(shutil.which("git") is None, reason="Needs git")
-def test_run_not_in_path(capsys):
+def test_run_not_in_path(capsys: pytest.CaptureFixture[str]) -> None:
     # Paths falls back on the environment PATH if the command is not found.
     result = nox.command.run(["git", "--version"], paths=["."])
     assert result is True
 
 
-def test_run_verbosity(capsys, caplog):
+def test_run_verbosity(
+    capsys: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture
+) -> None:
     caplog.clear()
     with caplog.at_level(logging.DEBUG):
         result = nox.command.run([PYTHON, "-c", "print(123)"], silent=True)
@@ -93,7 +97,9 @@ def test_run_verbosity(capsys, caplog):
     assert logs[0].message.strip() == "123"
 
 
-def test_run_verbosity_failed_command(capsys, caplog):
+def test_run_verbosity_failed_command(
+    capsys: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture
+) -> None:
     caplog.clear()
     with caplog.at_level(logging.DEBUG):
         with pytest.raises(nox.command.CommandFailed):
@@ -125,7 +131,7 @@ def test_run_verbosity_failed_command(capsys, caplog):
     platform.system() == "Windows",
     reason="See https://github.com/python/cpython/issues/85815",
 )
-def test_run_non_str():
+def test_run_non_str() -> None:
     result = nox.command.run(
         [Path(PYTHON), "-c", "import sys; print(sys.argv)", Path(PYTHON)],
         silent=True,
@@ -134,7 +140,7 @@ def test_run_non_str():
     assert PYTHON in result
 
 
-def test_run_env_unicode():
+def test_run_env_unicode() -> None:
     result = nox.command.run(
         [PYTHON, "-c", 'import os; print(os.environ["SIGIL"])'],
         silent=True,
@@ -144,7 +150,7 @@ def test_run_env_unicode():
     assert "123" in result
 
 
-def test_run_env_remove(monkeypatch):
+def test_run_env_remove(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("EMPTY", "notempty")
     nox.command.run(
         [PYTHON, "-c", 'import os; assert "EMPTY" in os.environ'],
@@ -158,7 +164,7 @@ def test_run_env_remove(monkeypatch):
 
 
 @mock.patch("sys.platform", "win32")
-def test_run_env_systemroot():
+def test_run_env_systemroot() -> None:
     systemroot = os.environ.setdefault("SYSTEMROOT", "sigil")
 
     result = nox.command.run(
@@ -168,12 +174,12 @@ def test_run_env_systemroot():
     assert systemroot in result
 
 
-def test_run_not_found():
+def test_run_not_found() -> None:
     with pytest.raises(nox.command.CommandFailed):
         nox.command.run(["nonexistentcmd"])
 
 
-def test_run_path_nonexistent():
+def test_run_path_nonexistent() -> None:
     result = nox.command.run(
         [PYTHON, "-c", "import sys; print(sys.executable)"],
         silent=True,
@@ -183,7 +189,7 @@ def test_run_path_nonexistent():
     assert "/non/existent" not in result
 
 
-def test_run_path_existent(tmp_path: Path):
+def test_run_path_existent(tmp_path: Path) -> None:
     executable_name = (
         "testexc.exe" if "windows" in platform.platform().lower() else "testexc"
     )
@@ -206,7 +212,9 @@ def test_run_path_existent(tmp_path: Path):
         )
 
 
-def test_run_external_warns(tmpdir, caplog):
+def test_run_external_warns(
+    tmpdir: LEGACY_PATH, caplog: pytest.LogCaptureFixture
+) -> None:
     caplog.set_level(logging.WARNING)
 
     nox.command.run([PYTHON, "--version"], silent=True, paths=[tmpdir.strpath])
@@ -214,7 +222,9 @@ def test_run_external_warns(tmpdir, caplog):
     assert "external=True" in caplog.text
 
 
-def test_run_external_silences(tmpdir, caplog):
+def test_run_external_silences(
+    tmpdir: LEGACY_PATH, caplog: pytest.LogCaptureFixture
+) -> None:
     caplog.set_level(logging.WARNING)
 
     nox.command.run(
@@ -224,7 +234,9 @@ def test_run_external_silences(tmpdir, caplog):
     assert "external=True" not in caplog.text
 
 
-def test_run_external_raises(tmpdir, caplog):
+def test_run_external_raises(
+    tmpdir: LEGACY_PATH, caplog: pytest.LogCaptureFixture
+) -> None:
     caplog.set_level(logging.ERROR)
 
     with pytest.raises(nox.command.CommandFailed):
@@ -235,7 +247,7 @@ def test_run_external_raises(tmpdir, caplog):
     assert "external=True" in caplog.text
 
 
-def test_exit_codes():
+def test_exit_codes() -> None:
     assert nox.command.run([PYTHON, "-c", "import sys; sys.exit(0)"])
 
     with pytest.raises(nox.command.CommandFailed):
@@ -246,7 +258,7 @@ def test_exit_codes():
     )
 
 
-def test_fail_with_silent(capsys):
+def test_fail_with_silent(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(nox.command.CommandFailed):
         nox.command.run(
             [
@@ -265,20 +277,20 @@ def test_fail_with_silent(capsys):
 
 
 @pytest.fixture
-def marker(tmp_path):
+def marker(tmp_path: Path) -> Path:
     """A marker file for process communication."""
     return tmp_path / "marker"
 
 
-def enable_ctrl_c(enabled):
+def enable_ctrl_c(enabled: bool) -> None:
     """Enable keyboard interrupts (CTRL-C) on Windows."""
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
 
     if not kernel32.SetConsoleCtrlHandler(None, not enabled):
-        raise ctypes.WinError(ctypes.get_last_error())
+        raise ctypes.WinError(ctypes.get_last_error())  # type: ignore[attr-defined]
 
 
-def interrupt_process(proc):
+def interrupt_process(proc: subprocess.Popen[Any]) -> None:
     """Send SIGINT or CTRL_C_EVENT to the process."""
     if platform.system() == "Windows":
         # Disable Ctrl-C so we don't terminate ourselves.
@@ -286,13 +298,15 @@ def interrupt_process(proc):
 
         # Send the keyboard interrupt to all processes attached to the current
         # console session.
-        os.kill(0, signal.CTRL_C_EVENT)
+        os.kill(0, signal.CTRL_C_EVENT)  # type: ignore[attr-defined]
     else:
         proc.send_signal(signal.SIGINT)
 
 
 @pytest.fixture
-def command_with_keyboard_interrupt(monkeypatch, marker):
+def command_with_keyboard_interrupt(
+    monkeypatch: pytest.MonkeyPatch, marker: Any
+) -> None:
     """Monkeypatch Popen.communicate to raise KeyboardInterrupt."""
     if platform.system() == "Windows":
         # Enable Ctrl-C because the child inherits the setting from us.
@@ -300,12 +314,14 @@ def command_with_keyboard_interrupt(monkeypatch, marker):
 
     communicate = subprocess.Popen.communicate
 
-    def wrapper(proc, *args, **kwargs):
+    def wrapper(
+        proc: subprocess.Popen[Any], *args: Any, **kwargs: Any
+    ) -> tuple[Any, Any]:
         # Raise the interrupt only on the first call, so Nox has a chance to
         # shut down the child process subsequently.
 
-        if wrapper.firstcall:
-            wrapper.firstcall = False
+        if wrapper.firstcall:  # type: ignore[attr-defined]
+            wrapper.firstcall = False  # type: ignore[attr-defined]
 
             # Give the child time to install its signal handlers.
             while not marker.exists():
@@ -319,12 +335,12 @@ def command_with_keyboard_interrupt(monkeypatch, marker):
 
         return communicate(proc, *args, **kwargs)
 
-    wrapper.firstcall = True
+    wrapper.firstcall = True  # type: ignore[attr-defined]
 
     monkeypatch.setattr("subprocess.Popen.communicate", wrapper)
 
 
-def format_program(program, marker):
+def format_program(program: str, marker: Any) -> str:
     """Preprocess the Python program run by the child process."""
     main = f"""
     import time
@@ -336,10 +352,10 @@ def format_program(program, marker):
     return dedent(program).format(MAIN=dedent(main))
 
 
-def run_pytest_in_new_console_session(test):
+def run_pytest_in_new_console_session(test: str) -> None:
     """Run the given test in a separate console session."""
     env = dict(os.environ, SECONDARY_CONSOLE_SESSION="")
-    creationflags = subprocess.CREATE_NO_WINDOW
+    creationflags = subprocess.CREATE_NO_WINDOW  # type: ignore[attr-defined]
 
     subprocess.run(
         [sys.executable, "-m", "pytest", f"{__file__}::{test}"],
@@ -374,20 +390,24 @@ def run_pytest_in_new_console_session(test):
         """,
     ],
 )
-def test_interrupt_raises(command_with_keyboard_interrupt, program, marker):
+def test_interrupt_raises(
+    command_with_keyboard_interrupt: None,
+    program: str,
+    marker: Any,
+) -> None:
     """It kills the process and reraises the keyboard interrupt."""
     with pytest.raises(KeyboardInterrupt):
         nox.command.run([PYTHON, "-c", format_program(program, marker)])
 
 
 @only_on_windows
-def test_interrupt_raises_on_windows():
+def test_interrupt_raises_on_windows() -> None:
     """It kills the process and reraises the keyboard interrupt."""
     run_pytest_in_new_console_session("test_interrupt_raises")
 
 
 @skip_on_windows_primary_console_session
-def test_interrupt_handled(command_with_keyboard_interrupt, marker):
+def test_interrupt_handled(command_with_keyboard_interrupt: None, marker: Any) -> None:
     """It does not raise if the child handles the keyboard interrupt."""
     program = """
     import signal
@@ -403,13 +423,13 @@ def test_interrupt_handled(command_with_keyboard_interrupt, marker):
 
 
 @only_on_windows
-def test_interrupt_handled_on_windows():
+def test_interrupt_handled_on_windows() -> None:
     """It does not raise if the child handles the keyboard interrupt."""
     run_pytest_in_new_console_session("test_interrupt_handled")
 
 
-def test_custom_stdout(capsys, tmpdir):
-    with open(str(tmpdir / "out.txt"), "w+b") as stdout:
+def test_custom_stdout(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) -> None:
+    with open(str(tmpdir / "out.txt"), "w+t") as stdout:
         nox.command.run(
             [
                 PYTHON,
@@ -426,19 +446,23 @@ def test_custom_stdout(capsys, tmpdir):
         assert "out" not in err
         assert "err" not in err
         stdout.seek(0)
-        tempfile_contents = stdout.read().decode("utf-8")
+        tempfile_contents = stdout.read()
         assert "out" in tempfile_contents
         assert "err" in tempfile_contents
 
 
-def test_custom_stdout_silent_flag(capsys, tmpdir):
-    with open(str(tmpdir / "out.txt"), "w+b") as stdout:  # noqa: SIM117
+def test_custom_stdout_silent_flag(
+    capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH
+) -> None:
+    with open(str(tmpdir / "out.txt"), "w+t") as stdout:  # noqa: SIM117
         with pytest.raises(ValueError, match="silent"):
             nox.command.run([PYTHON, "-c", 'print("hi")'], stdout=stdout, silent=True)
 
 
-def test_custom_stdout_failed_command(capsys, tmpdir):
-    with open(str(tmpdir / "out.txt"), "w+b") as stdout:
+def test_custom_stdout_failed_command(
+    capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH
+) -> None:
+    with open(str(tmpdir / "out.txt"), "w+t") as stdout:
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run(
                 [
@@ -456,13 +480,13 @@ def test_custom_stdout_failed_command(capsys, tmpdir):
         assert "out" not in err
         assert "err" not in err
         stdout.seek(0)
-        tempfile_contents = stdout.read().decode("utf-8")
+        tempfile_contents = stdout.read()
         assert "out" in tempfile_contents
         assert "err" in tempfile_contents
 
 
-def test_custom_stderr(capsys, tmpdir):
-    with open(str(tmpdir / "err.txt"), "w+b") as stderr:
+def test_custom_stderr(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) -> None:
+    with open(str(tmpdir / "err.txt"), "w+t") as stderr:
         nox.command.run(
             [
                 PYTHON,
@@ -479,13 +503,15 @@ def test_custom_stderr(capsys, tmpdir):
         assert "out" not in out
         assert "err" not in out
         stderr.seek(0)
-        tempfile_contents = stderr.read().decode("utf-8")
+        tempfile_contents = stderr.read()
         assert "out" not in tempfile_contents
         assert "err" in tempfile_contents
 
 
-def test_custom_stderr_failed_command(capsys, tmpdir):
-    with open(str(tmpdir / "out.txt"), "w+b") as stderr:
+def test_custom_stderr_failed_command(
+    capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH
+) -> None:
+    with open(str(tmpdir / "out.txt"), "w+t") as stderr:
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run(
                 [
@@ -503,7 +529,7 @@ def test_custom_stderr_failed_command(capsys, tmpdir):
         assert "out" not in out
         assert "err" not in out
         stderr.seek(0)
-        tempfile_contents = stderr.read().decode("utf-8")
+        tempfile_contents = stderr.read()
         assert "out" not in tempfile_contents
         assert "err" in tempfile_contents
 
@@ -521,7 +547,7 @@ def test_output_decoding_non_ascii() -> None:
 
 
 def test_output_decoding_utf8_only_fail(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "utf8")
+    monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "utf8")  # type: ignore[attr-defined]
 
     with pytest.raises(UnicodeDecodeError) as exc:
         nox.popen.decode_output(b"\x95")
@@ -532,7 +558,7 @@ def test_output_decoding_utf8_only_fail(monkeypatch: pytest.MonkeyPatch) -> None
 def test_output_decoding_utf8_fail_cp1252_success(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "cp1252")
+    monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "cp1252")  # type: ignore[attr-defined]
 
     result = nox.popen.decode_output(b"\x95")
 
@@ -540,7 +566,7 @@ def test_output_decoding_utf8_fail_cp1252_success(
 
 
 def test_output_decoding_both_fail(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "ascii")
+    monkeypatch.setattr(nox.popen.locale, "getpreferredencoding", lambda: "ascii")  # type: ignore[attr-defined]
 
     with pytest.raises(UnicodeDecodeError) as exc:
         nox.popen.decode_output(b"\x95")

@@ -14,13 +14,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+from typing import Literal
+
 import pytest
 
+import nox
 from nox import registry
 
 
 @pytest.fixture
-def cleanup_registry():
+def cleanup_registry() -> Generator[None, None, None]:
     """Ensure that the session registry is completely empty before and
     after each test.
     """
@@ -31,11 +35,11 @@ def cleanup_registry():
         registry._REGISTRY.clear()
 
 
-def test_session_decorator(cleanup_registry):
+def test_session_decorator(cleanup_registry: None) -> None:
     # Establish that the use of the session decorator will cause the
     # function to be found in the registry.
     @registry.session_decorator
-    def unit_tests(session):
+    def unit_tests(session: nox.Session) -> None:
         pass
 
     answer = registry.get()
@@ -44,58 +48,61 @@ def test_session_decorator(cleanup_registry):
     assert unit_tests.python is None
 
 
-def test_session_decorator_single_python(cleanup_registry):
+def test_session_decorator_single_python(cleanup_registry: None) -> None:
     @registry.session_decorator(python="3.6")
-    def unit_tests(session):
+    def unit_tests(session: nox.Session) -> None:
         pass
 
     assert unit_tests.python == "3.6"
 
 
-def test_session_decorator_list_of_pythons(cleanup_registry):
+def test_session_decorator_list_of_pythons(cleanup_registry: None) -> None:
     @registry.session_decorator(python=["3.5", "3.6"])
-    def unit_tests(session):
+    def unit_tests(session: nox.Session) -> None:
         pass
 
     assert unit_tests.python == ["3.5", "3.6"]
 
 
-def test_session_decorator_tags(cleanup_registry):
+def test_session_decorator_tags(cleanup_registry: None) -> None:
     @registry.session_decorator(tags=["tag-1", "tag-2"])
-    def unit_tests(session):
+    def unit_tests(session: nox.Session) -> None:
         pass
 
     assert unit_tests.tags == ["tag-1", "tag-2"]
 
 
-def test_session_decorator_py_alias(cleanup_registry):
+def test_session_decorator_py_alias(cleanup_registry: None) -> None:
     @registry.session_decorator(py=["3.5", "3.6"])
-    def unit_tests(session):
+    def unit_tests(session: nox.Session) -> None:
         pass
 
     assert unit_tests.python == ["3.5", "3.6"]
 
 
-def test_session_decorator_py_alias_error(cleanup_registry):
+def test_session_decorator_py_alias_error(cleanup_registry: None) -> None:
     with pytest.raises(ValueError, match="argument"):
 
         @registry.session_decorator(python=["3.5", "3.6"], py="2.7")
-        def unit_tests(session):
+        def unit_tests(session: nox.Session) -> None:
             pass
 
 
-def test_session_decorator_reuse(cleanup_registry):
+def test_session_decorator_reuse(cleanup_registry: None) -> None:
     @registry.session_decorator(reuse_venv=True)
-    def unit_tests(session):
+    def unit_tests(session: nox.Session) -> None:
         pass
 
     assert unit_tests.reuse_venv is True
 
 
 @pytest.mark.parametrize("name", ["unit-tests", "unit tests", "the unit tests"])
-def test_session_decorator_name(cleanup_registry, name):
+def test_session_decorator_name(
+    cleanup_registry: None,
+    name: Literal["unit-tests"] | Literal["unit tests"] | Literal["the unit tests"],
+) -> None:
     @registry.session_decorator(name=name)
-    def unit_tests(session):
+    def unit_tests(session: nox.Session) -> None:
         pass
 
     answer = registry.get()
@@ -105,7 +112,7 @@ def test_session_decorator_name(cleanup_registry, name):
     assert unit_tests.python is None
 
 
-def test_get(cleanup_registry):
+def test_get(cleanup_registry: None) -> None:
     # Establish that the get method returns a copy of the registry.
     empty = registry.get()
     assert empty == registry._REGISTRY
@@ -113,11 +120,11 @@ def test_get(cleanup_registry):
     assert len(empty) == 0
 
     @registry.session_decorator
-    def unit_tests(session):
+    def unit_tests(session: nox.Session) -> None:
         pass
 
     @registry.session_decorator
-    def system_tests(session):
+    def system_tests(session: nox.Session) -> None:
         pass
 
     full = registry.get()

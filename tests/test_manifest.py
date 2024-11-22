@@ -15,7 +15,9 @@
 from __future__ import annotations
 
 import collections
+import typing
 from collections.abc import Sequence
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -32,7 +34,7 @@ from nox.manifest import (
 )
 
 
-def create_mock_sessions():
+def create_mock_sessions() -> collections.OrderedDict[str, mock.Mock]:
     sessions = collections.OrderedDict()
     sessions["foo"] = mock.Mock(spec=(), python=None, venv_backend=None, tags=["baz"])
     sessions["bar"] = mock.Mock(
@@ -44,7 +46,7 @@ def create_mock_sessions():
     return sessions
 
 
-def create_mock_config():
+def create_mock_config() -> Any:
     cfg = mock.sentinel.MOCKED_CONFIG
     cfg.force_venv_backend = None
     cfg.default_venv_backend = None
@@ -54,7 +56,7 @@ def create_mock_config():
     return cfg
 
 
-def test__normalize_arg():
+def test__normalize_arg() -> None:
     assert _normalize_arg('test(foo="bar")') == _normalize_arg('test(foo="bar")')
 
     # In the case of SyntaxError it should fallback to string
@@ -64,13 +66,13 @@ def test__normalize_arg():
     )
 
 
-def test__normalized_session_match():
+def test__normalized_session_match() -> None:
     session_mock = mock.MagicMock()
     session_mock.signatures = ['test(foo="bar")']
     assert _normalized_session_match("test(foo='bar')", session_mock)
 
 
-def test_init():
+def test_init() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
 
@@ -80,7 +82,7 @@ def test_init():
     assert manifest["bar"].func is sessions["bar"]
 
 
-def test_contains():
+def test_contains() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
 
@@ -100,7 +102,7 @@ def test_contains():
     assert manifest["foo"] in manifest
 
 
-def test_getitem():
+def test_getitem() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
 
@@ -119,7 +121,7 @@ def test_getitem():
     assert manifest["bar"].func is sessions["bar"]
 
 
-def test_iteration():
+def test_iteration() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
 
@@ -149,7 +151,7 @@ def test_iteration():
         manifest.__next__()
 
 
-def test_len():
+def test_len() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     assert len(manifest) == 2
@@ -157,7 +159,7 @@ def test_len():
         assert len(manifest) == 2
 
 
-def test_filter_by_name():
+def test_filter_by_name() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     manifest.filter_by_name(("foo",))
@@ -165,21 +167,21 @@ def test_filter_by_name():
     assert "bar" not in manifest
 
 
-def test_filter_by_name_maintains_order():
+def test_filter_by_name_maintains_order() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     manifest.filter_by_name(("bar", "foo"))
     assert [session.name for session in manifest] == ["bar", "foo"]
 
 
-def test_filter_by_name_not_found():
+def test_filter_by_name_not_found() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     with pytest.raises(KeyError):
         manifest.filter_by_name(("baz",))
 
 
-def test_filter_by_python_interpreter():
+def test_filter_by_python_interpreter() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     manifest["foo"].func.python = "3.8"
@@ -189,7 +191,7 @@ def test_filter_by_python_interpreter():
     assert "bar" not in manifest
 
 
-def test_filter_by_keyword():
+def test_filter_by_keyword() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     assert len(manifest) == 2
@@ -212,7 +214,7 @@ def test_filter_by_keyword():
         (["baz", "missing"], 2),
     ],
 )
-def test_filter_by_tags(tags: Sequence[str], session_count: int):
+def test_filter_by_tags(tags: Sequence[str], session_count: int) -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     assert len(manifest) == 2
@@ -220,7 +222,7 @@ def test_filter_by_tags(tags: Sequence[str], session_count: int):
     assert len(manifest) == session_count
 
 
-def test_list_all_sessions_with_filter():
+def test_list_all_sessions_with_filter() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
     assert len(manifest) == 2
@@ -233,7 +235,7 @@ def test_list_all_sessions_with_filter():
     assert all_sessions[1][1] is False
 
 
-def test_add_session_plain():
+def test_add_session_plain() -> None:
     manifest = Manifest({}, create_mock_config())
     session_func = mock.Mock(spec=(), python=None, venv_backend=None)
     for session in manifest.make_session("my_session", session_func):
@@ -241,10 +243,10 @@ def test_add_session_plain():
     assert len(manifest) == 1
 
 
-def test_add_session_multiple_pythons():
+def test_add_session_multiple_pythons() -> None:
     manifest = Manifest({}, create_mock_config())
 
-    def session_func():
+    def session_func() -> None:
         pass
 
     func = Func(session_func, python=["3.5", "3.6"])
@@ -272,13 +274,17 @@ def test_add_session_multiple_pythons():
         (["3.5", "3.9"], ["3.5", "3.9"], ["3.5", "3.9"]),
     ],
 )
-def test_extra_pythons(python, extra_pythons, expected):
+def test_extra_pythons(
+    python: list[str] | str | bool | None,
+    extra_pythons: list[str],
+    expected: list[None] | list[bool] | list[str],
+) -> None:
     cfg = create_mock_config()
     cfg.extra_pythons = extra_pythons
 
     manifest = Manifest({}, cfg)
 
-    def session_func():
+    def session_func() -> None:
         pass
 
     func = Func(session_func, python=python)
@@ -306,14 +312,18 @@ def test_extra_pythons(python, extra_pythons, expected):
         (["3.5", "3.9"], ["3.5", "3.9"], ["3.5", "3.9"]),
     ],
 )
-def test_force_pythons(python, force_pythons, expected):
+def test_force_pythons(
+    python: list[str] | str | bool | None,
+    force_pythons: list[str],
+    expected: list[None] | list[bool] | list[str],
+) -> None:
     cfg = create_mock_config()
     cfg.force_pythons = force_pythons
     cfg.extra_pythons = force_pythons
 
     manifest = Manifest({}, cfg)
 
-    def session_func():
+    def session_func() -> None:
         pass
 
     func = Func(session_func, python=python)
@@ -323,12 +333,12 @@ def test_force_pythons(python, force_pythons, expected):
     assert expected == [session.func.python for session in manifest._all_sessions]
 
 
-def test_add_session_parametrized():
+def test_add_session_parametrized() -> None:
     manifest = Manifest({}, create_mock_config())
 
     # Define a session with parameters.
     @nox.parametrize("param", ("a", "b", "c"))
-    def my_session(session, param):
+    def my_session(session: nox.Session, param: str) -> None:
         pass
 
     func = Func(my_session, python=None)
@@ -339,12 +349,12 @@ def test_add_session_parametrized():
     assert len(manifest) == 3
 
 
-def test_add_session_parametrized_multiple_pythons():
+def test_add_session_parametrized_multiple_pythons() -> None:
     manifest = Manifest({}, create_mock_config())
 
     # Define a session with parameters.
     @nox.parametrize("param", ("a", "b"))
-    def my_session(session, param):
+    def my_session(session: nox.Session, param: str) -> None:
         pass
 
     func = Func(my_session, python=["2.7", "3.6"])
@@ -355,12 +365,12 @@ def test_add_session_parametrized_multiple_pythons():
     assert len(manifest) == 4
 
 
-def test_add_session_parametrized_noop():
+def test_add_session_parametrized_noop() -> None:
     manifest = Manifest({}, create_mock_config())
 
     # Define a session without any parameters.
     @nox.parametrize("param", ())
-    def my_session(session, param):
+    def my_session(session: nox.Session, param: object) -> None:
         pass
 
     my_session.python = None
@@ -376,18 +386,22 @@ def test_add_session_parametrized_noop():
     assert session.func == _null_session_func
 
 
-def test_notify():
+def test_notify() -> None:
     manifest = Manifest({}, create_mock_config())
 
     # Define a session.
-    def my_session(session):
+    def my_session_raw(session: nox.Session) -> None:
         pass
+
+    my_session = typing.cast(Func, my_session_raw)
 
     my_session.python = None
     my_session.venv_backend = None
 
-    def notified(session):
+    def notified_raw(session: nox.Session) -> None:
         pass
+
+    notified = typing.cast(Func, notified_raw)
 
     notified.python = None
     notified.venv_backend = None
@@ -408,12 +422,14 @@ def test_notify():
     assert len(manifest) == 2
 
 
-def test_notify_noop():
+def test_notify_noop() -> None:
     manifest = Manifest({}, create_mock_config())
 
     # Define a session and add it to the manifest.
-    def my_session(session):
+    def my_session_raw(session: nox.Session) -> None:
         pass
+
+    my_session = typing.cast(Func, my_session_raw)
 
     my_session.python = None
     my_session.venv_backend = None
@@ -428,7 +444,7 @@ def test_notify_noop():
     assert len(manifest) == 1
 
 
-def test_notify_with_posargs():
+def test_notify_with_posargs() -> None:
     cfg = create_mock_config()
     manifest = Manifest({}, cfg)
 
@@ -443,13 +459,13 @@ def test_notify_with_posargs():
     assert session.posargs == ["--an-arg"]
 
 
-def test_notify_error():
+def test_notify_error() -> None:
     manifest = Manifest({}, create_mock_config())
     with pytest.raises(ValueError):
         manifest.notify("does_not_exist")
 
 
-def test_add_session_idempotent():
+def test_add_session_idempotent() -> None:
     manifest = Manifest({}, create_mock_config())
     session_func = mock.Mock(spec=(), python=None, venv_backend=None)
     for session in manifest.make_session("my_session", session_func):
@@ -458,29 +474,31 @@ def test_add_session_idempotent():
     assert len(manifest) == 1
 
 
-def test_null_session_function():
+def test_null_session_function() -> None:
     session = mock.Mock(spec=("skip",))
     _null_session_func(session)
     assert session.skip.called
 
 
-def test_keyword_locals_length():
+def test_keyword_locals_length() -> None:
     kw = KeywordLocals({"foo", "bar"})
     assert len(kw) == 2
 
 
-def test_keyword_locals_iter():
-    values = ["foo", "bar"]
+def test_keyword_locals_iter() -> None:
+    values = ["bar", "foo"]
     kw = KeywordLocals(values)
-    assert list(kw) == values
+    assert sorted(kw) == values
 
 
-def test_no_venv_backend_but_some_pythons():
+def test_no_venv_backend_but_some_pythons() -> None:
     manifest = Manifest({}, create_mock_config())
 
     # Define a session and add it to the manifest.
-    def my_session(session):
+    def my_session_raw(session: nox.Session) -> None:
         pass
+
+    my_session = typing.cast(Func, my_session_raw)
 
     # the session sets "no venv backend" but declares some pythons
     my_session.python = ["3.7", "3.8"]

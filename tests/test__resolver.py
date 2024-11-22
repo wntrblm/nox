@@ -125,7 +125,9 @@ from nox._resolver import CycleError, lazy_stable_topo_sort
         ),
     ],
 )
-def test_lazy_stable_topo_sort(dependencies, expected):
+def test_lazy_stable_topo_sort(
+    dependencies: dict[str, tuple[str, ...]], expected: tuple[str, ...]
+) -> None:
     actual = tuple(lazy_stable_topo_sort(dependencies, "0"))
     actual_with_root = tuple(lazy_stable_topo_sort(dependencies, "0", drop_root=False))
     assert actual == actual_with_root[:-1] == expected
@@ -156,7 +158,9 @@ def test_lazy_stable_topo_sort(dependencies, expected):
         ),
     ],
 )
-def test_lazy_stable_topo_sort_CycleError(dependencies, expected_cycle):
+def test_lazy_stable_topo_sort_CycleError(
+    dependencies: dict[str, tuple[str, ...]], expected_cycle: tuple[str, ...]
+) -> None:
     with pytest.raises(CycleError) as exc_info:
         tuple(lazy_stable_topo_sort(dependencies, "0"))
     # While the exact cycle reported is not unique and is an implementation detail, this

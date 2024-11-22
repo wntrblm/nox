@@ -18,18 +18,18 @@ import collections
 import copy
 import functools
 from collections.abc import Sequence
-from typing import Any, Callable, TypeVar, overload
+from typing import Any, Callable, overload
 
 from ._decorators import Func
 from ._typing import Python
 
-F = TypeVar("F", bound=Callable[..., Any])
+RawFunc = Callable[..., Any]
 
 _REGISTRY: collections.OrderedDict[str, Func] = collections.OrderedDict()
 
 
 @overload
-def session_decorator(__func: F) -> F: ...
+def session_decorator(__func: RawFunc | Func) -> Func: ...
 
 
 @overload
@@ -45,11 +45,11 @@ def session_decorator(
     *,
     default: bool = ...,
     requires: Sequence[str] | None = ...,
-) -> Callable[[F], F]: ...
+) -> Callable[[RawFunc | Func], Func]: ...
 
 
 def session_decorator(
-    func: F | None = None,
+    func: Callable[..., Any] | Func | None = None,
     python: Python | None = None,
     py: Python | None = None,
     reuse_venv: bool | None = None,
@@ -60,7 +60,7 @@ def session_decorator(
     *,
     default: bool = True,
     requires: Sequence[str] | None = None,
-) -> F | Callable[[F], F]:
+) -> Func | Callable[[RawFunc | Func], Func]:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
     # being sent as part of the Python syntax (`@nox.session`).

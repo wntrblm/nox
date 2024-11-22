@@ -19,7 +19,7 @@ from unittest import mock
 from nox import workflow
 
 
-def test_simple_workflow():
+def test_simple_workflow() -> None:
     # Set up functions for the workflow.
     function_a = mock.Mock(spec=())
     function_b = mock.Mock(spec=())
@@ -45,7 +45,7 @@ def test_simple_workflow():
     )
 
 
-def test_workflow_int_cutoff():
+def test_workflow_int_cutoff() -> None:
     # Set up functions for the workflow.
     function_a = mock.Mock(spec=())
     function_b = mock.Mock(spec=())
@@ -73,7 +73,7 @@ def test_workflow_int_cutoff():
     assert not function_c.called
 
 
-def test_workflow_interrupted():
+def test_workflow_interrupted() -> None:
     # Set up functions for the workflow.
     function_a = mock.Mock(spec=())
     function_b = mock.Mock(spec=())

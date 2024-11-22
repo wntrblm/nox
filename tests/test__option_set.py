@@ -28,7 +28,7 @@ RESOURCES = Path(__file__).parent.joinpath("resources")
 
 
 class TestOptionSet:
-    def test_namespace(self):
+    def test_namespace(self) -> None:
         optionset = _option_set.OptionSet()
         optionset.add_groups(_option_set.OptionGroup("group_a"))
         optionset.add_options(
@@ -43,7 +43,7 @@ class TestOptionSet:
         assert not hasattr(namespace, "non_existent_option")
         assert namespace.option_a == "meep"
 
-    def test_namespace_values(self):
+    def test_namespace_values(self) -> None:
         optionset = _option_set.OptionSet()
         optionset.add_groups(_option_set.OptionGroup("group_a"))
         optionset.add_options(
@@ -56,13 +56,13 @@ class TestOptionSet:
 
         assert namespace.option_a == "moop"
 
-    def test_namespace_non_existent_options_with_values(self):
+    def test_namespace_non_existent_options_with_values(self) -> None:
         optionset = _option_set.OptionSet()
 
         with pytest.raises(KeyError):
             optionset.namespace(non_existent_option="meep")
 
-    def test_parser_hidden_option(self):
+    def test_parser_hidden_option(self) -> None:
         optionset = _option_set.OptionSet()
         optionset.add_options(
             _option_set.Option(
@@ -76,7 +76,7 @@ class TestOptionSet:
 
         assert namespace.oh_boy_i_am_hidden == "meep"
 
-    def test_parser_groupless_option(self):
+    def test_parser_groupless_option(self) -> None:
         optionset = _option_set.OptionSet()
         optionset.add_options(
             _option_set.Option("oh_no_i_have_no_group", group=None, default="meep")
@@ -85,46 +85,46 @@ class TestOptionSet:
         with pytest.raises(ValueError):
             optionset.parser()
 
-    def test_session_completer(self):
+    def test_session_completer(self) -> None:
         parsed_args = _options.options.namespace(
             posargs=[],
             noxfile=str(RESOURCES.joinpath("noxfile_multiple_sessions.py")),
         )
         actual_sessions_from_file = _options._session_completer(
-            prefix=None, parsed_args=parsed_args
+            prefix="", parsed_args=parsed_args
         )
 
         expected_sessions = ["testytest", "lintylint", "typeytype"]
         assert expected_sessions == list(actual_sessions_from_file)
 
-    def test_session_completer_invalid_sessions(self):
+    def test_session_completer_invalid_sessions(self) -> None:
         parsed_args = _options.options.namespace(
             sessions=("baz",), keywords=(), posargs=[]
         )
         all_nox_sessions = _options._session_completer(
-            prefix=None, parsed_args=parsed_args
+            prefix="", parsed_args=parsed_args
         )
-        assert len(all_nox_sessions) == 0
+        assert len(list(all_nox_sessions)) == 0
 
-    def test_python_completer(self):
+    def test_python_completer(self) -> None:
         parsed_args = _options.options.namespace(
             posargs=[],
             noxfile=str(RESOURCES.joinpath("noxfile_pythons.py")),
         )
         actual_pythons_from_file = _options._python_completer(
-            prefix=None, parsed_args=parsed_args
+            prefix="", parsed_args=parsed_args
         )
 
         expected_pythons = {"3.6", "3.12"}
         assert expected_pythons == set(actual_pythons_from_file)
 
-    def test_tag_completer(self):
+    def test_tag_completer(self) -> None:
         parsed_args = _options.options.namespace(
             posargs=[],
             noxfile=str(RESOURCES.joinpath("noxfile_tags.py")),
         )
         actual_tags_from_file = _options._tag_completer(
-            prefix=None, parsed_args=parsed_args
+            prefix="", parsed_args=parsed_args
         )
 
         expected_tags = {f"tag{n}" for n in range(1, 8)}

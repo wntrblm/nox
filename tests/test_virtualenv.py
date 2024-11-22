@@ -21,16 +21,20 @@ import shutil
 import subprocess
 import sys
 import types
+from collections.abc import Callable
 from importlib import metadata
 from pathlib import Path
 from textwrap import dedent
-from typing import NamedTuple
+from typing import Any, NamedTuple, NoReturn
 from unittest import mock
 
 import pytest
+from _pytest.compat import LEGACY_PATH
 from packaging import version
 
+import nox.command
 import nox.virtualenv
+from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
 IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
 HAS_CONDA = shutil.which("conda") is not None
@@ -48,8 +52,14 @@ class TextProcessResult(NamedTuple):
 
 
 @pytest.fixture
-def make_one(tmpdir):
-    def factory(*args, venv_backend: str = "virtualenv", **kwargs):
+def make_one(
+    tmpdir: LEGACY_PATH,
+) -> Callable[
+    ..., tuple[nox.virtualenv.VirtualEnv | nox.virtualenv.ProcessEnv, LEGACY_PATH]
+]:
+    def factory(
+        *args: Any, venv_backend: str = "virtualenv", **kwargs: Any
+    ) -> tuple[nox.virtualenv.VirtualEnv | nox.virtualenv.ProcessEnv, LEGACY_PATH]:
         location = tmpdir.join("venv")
         try:
             venv_fn = nox.virtualenv.ALL_VENVS[venv_backend]
@@ -64,8 +74,8 @@ def make_one(tmpdir):
 
 
 @pytest.fixture
-def make_conda(tmpdir):
-    def factory(*args, **kwargs):
+def make_conda(tmpdir: LEGACY_PATH) -> Callable[..., tuple[CondaEnv, LEGACY_PATH]]:
+    def factory(*args: Any, **kwargs: Any) -> tuple[CondaEnv, LEGACY_PATH]:
         location = tmpdir.join("condaenv")
         venv = nox.virtualenv.CondaEnv(location.strpath, *args, **kwargs)
         return (venv, location)
@@ -74,12 +84,16 @@ def make_conda(tmpdir):
 
 
 @pytest.fixture
-def patch_sysfind(monkeypatch):
+def patch_sysfind(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Callable[[tuple[str, ...], str | None, str], None]:
     """Provides a function to patch ``sysfind`` with parameters for tests related
     to locating a Python interpreter in the system ``PATH``.
     """
 
-    def patcher(only_find, sysfind_result, sysexec_result):
+    def patcher(
+        only_find: tuple[str, ...], sysfind_result: str | None, sysexec_result: str
+    ) -> None:
         """Monkeypatches python discovery, causing specific results to be found.
 
         Args:
@@ -93,7 +107,7 @@ def patch_sysfind(monkeypatch):
                 Use the global ``RAISE_ERROR`` to have ``sysexec`` fail.
         """
 
-        def special_which(name, path=None):
+        def special_which(name: str, path: Any = None) -> str | None:
             if sysfind_result is None:
                 return None
             if name.lower() in only_find:
@@ -102,7 +116,7 @@ def patch_sysfind(monkeypatch):
 
         monkeypatch.setattr(shutil, "which", special_which)
 
-        def special_run(cmd, *args, **kwargs):
+        def special_run(cmd: Any, *args: Any, **kwargs: Any) -> TextProcessResult:
             return TextProcessResult(sysexec_result)
 
         monkeypatch.setattr(subprocess, "run", special_run)
@@ -110,7 +124,7 @@ def patch_sysfind(monkeypatch):
     return patcher
 
 
-def test_process_env_constructor():
+def test_process_env_constructor() -> None:
     penv = nox.virtualenv.PassthroughEnv()
     assert not penv.bin_paths
     with pytest.raises(
@@ -125,24 +139,32 @@ def test_process_env_constructor():
     assert penv.bin == "/bin"
 
 
-def test_process_env_create():
+def test_process_env_create() -> None:
     with pytest.raises(TypeError):
-        nox.virtualenv.ProcessEnv()
+        nox.virtualenv.ProcessEnv()  # type: ignore[abstract]
 
 
-def test_invalid_venv_create(make_one):
+def test_invalid_venv_create(
+    make_one: Callable[
+        ..., tuple[nox.virtualenv.VirtualEnv | nox.virtualenv.ProcessEnv, LEGACY_PATH]
+    ],
+) -> None:
     with pytest.raises(ValueError):
         make_one(venv_backend="invalid")
 
 
-def test_condaenv_constructor_defaults(make_conda):
+def test_condaenv_constructor_defaults(
+    make_conda: Callable[..., tuple[CondaEnv, Any]],
+) -> None:
     venv, _ = make_conda()
     assert venv.location
     assert venv.interpreter is None
     assert venv.reuse_existing is False
 
 
-def test_condaenv_constructor_explicit(make_conda):
+def test_condaenv_constructor_explicit(
+    make_conda: Callable[..., tuple[CondaEnv, Any]],
+) -> None:
     venv, _ = make_conda(interpreter="3.5", reuse_existing=True)
     assert venv.location
     assert venv.interpreter == "3.5"
@@ -150,7 +172,7 @@ def test_condaenv_constructor_explicit(make_conda):
 
 
 @has_conda
-def test_condaenv_create(make_conda):
+def test_condaenv_create(make_conda: Callable[..., tuple[CondaEnv, Any]]) -> None:
     venv, dir_ = make_conda()
     venv.create()
 
@@ -179,7 +201,9 @@ def test_condaenv_create(make_conda):
 
 
 @has_conda
-def test_condaenv_create_with_params(make_conda):
+def test_condaenv_create_with_params(
+    make_conda: Callable[..., tuple[CondaEnv, Any]],
+) -> None:
     venv, dir_ = make_conda(venv_params=["--verbose"])
     venv.create()
     if IS_WINDOWS:
@@ -191,7 +215,9 @@ def test_condaenv_create_with_params(make_conda):
 
 
 @has_conda
-def test_condaenv_create_interpreter(make_conda):
+def test_condaenv_create_interpreter(
+    make_conda: Callable[..., tuple[CondaEnv, Any]],
+) -> None:
     venv, dir_ = make_conda(interpreter="3.8")
     venv.create()
     if IS_WINDOWS:
@@ -205,7 +231,9 @@ def test_condaenv_create_interpreter(make_conda):
 
 
 @has_conda
-def test_conda_env_create_verbose(make_conda):
+def test_conda_env_create_verbose(
+    make_conda: Callable[..., tuple[CondaEnv, Any]],
+) -> None:
     venv, dir_ = make_conda()
     with mock.patch("nox.virtualenv.nox.command.run") as mock_run:
         venv.create()
@@ -222,7 +250,7 @@ def test_conda_env_create_verbose(make_conda):
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
-def test_condaenv_bin_windows(make_conda):
+def test_condaenv_bin_windows(make_conda: Callable[..., tuple[CondaEnv, Any]]) -> None:
     venv, dir_ = make_conda()
     assert [
         dir_.strpath,
@@ -235,18 +263,20 @@ def test_condaenv_bin_windows(make_conda):
 
 
 @has_conda
-def test_condaenv_(make_conda):
+def test_condaenv_(make_conda: Callable[..., tuple[CondaEnv, Any]]) -> None:
     venv, dir_ = make_conda()
     assert not venv.is_offline()
 
 
 @has_conda
-def test_condaenv_detection(make_conda):
+def test_condaenv_detection(make_conda: Callable[..., tuple[CondaEnv, Any]]) -> None:
     venv, dir_ = make_conda()
     venv.create()
+    conda = shutil.which("conda")
+    assert conda
 
     proc_result = subprocess.run(
-        [shutil.which("conda"), "list"],
+        [conda, "list"],
         env=venv.env,
         check=True,
         capture_output=True,
@@ -254,11 +284,15 @@ def test_condaenv_detection(make_conda):
     output = proc_result.stdout.decode()
     path_regex = re.compile(r"packages in environment at (?P<env_dir>.+):")
 
-    assert path_regex.search(output).group("env_dir") == dir_.strpath
+    output_match = path_regex.search(output)
+    assert output_match
+    assert output_match.group("env_dir") == dir_.strpath
 
 
 @has_uv
-def test_uv_creation(make_one):
+def test_uv_creation(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     venv, _ = make_one(venv_backend="uv")
     assert venv.location
     assert venv.interpreter is None
@@ -270,11 +304,15 @@ def test_uv_creation(make_one):
 
 
 @has_uv
-def test_uv_managed_python(make_one):
+def test_uv_managed_python(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     make_one(interpreter="cpython3.12", venv_backend="uv")
 
 
-def test_constructor_defaults(make_one):
+def test_constructor_defaults(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     venv, _ = make_one()
     assert venv.location
     assert venv.interpreter is None
@@ -283,14 +321,19 @@ def test_constructor_defaults(make_one):
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
-def test_constructor_explicit(make_one):
+def test_constructor_explicit(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     venv, _ = make_one(interpreter="python3.5", reuse_existing=True)
     assert venv.location
     assert venv.interpreter == "python3.5"
     assert venv.reuse_existing is True
 
 
-def test_env(monkeypatch, make_one):
+def test_env(
+    monkeypatch: pytest.MonkeyPatch,
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     monkeypatch.setenv("SIGIL", "123")
     venv, _ = make_one()
     assert venv.env["SIGIL"] == "123"
@@ -299,7 +342,10 @@ def test_env(monkeypatch, make_one):
     assert venv.bin_paths[0] not in os.environ["PATH"]
 
 
-def test_blacklisted_env(monkeypatch, make_one):
+def test_blacklisted_env(
+    monkeypatch: pytest.MonkeyPatch,
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     monkeypatch.setenv("__PYVENV_LAUNCHER__", "meep")
     venv, _ = make_one()
     assert len(venv.bin_paths) == 1
@@ -307,7 +353,10 @@ def test_blacklisted_env(monkeypatch, make_one):
     assert "__PYVENV_LAUNCHER__" not in venv.bin
 
 
-def test__clean_location(monkeypatch, make_one):
+def test__clean_location(
+    monkeypatch: pytest.MonkeyPatch,
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     venv, dir_ = make_one()
 
     # Don't reuse existing, but doesn't currently exist.
@@ -320,7 +369,7 @@ def test__clean_location(monkeypatch, make_one):
         "_check_reused_environment_interpreter",
         mock.MagicMock(),
     )
-    monkeypatch.delattr(nox.virtualenv.shutil, "rmtree")
+    monkeypatch.delattr(nox.virtualenv.shutil, "rmtree")  # type: ignore[attr-defined]
     assert not dir_.check()
     assert venv._clean_location()
 
@@ -345,9 +394,12 @@ def test__clean_location(monkeypatch, make_one):
     assert venv._clean_location()
 
 
-def test_bin_paths(make_one):
+def test_bin_paths(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+) -> None:
     venv, dir_ = make_one()
 
+    assert venv.bin_paths
     assert len(venv.bin_paths) == 1
     assert venv.bin_paths[0] == venv.bin
 
@@ -358,14 +410,20 @@ def test_bin_paths(make_one):
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
-def test_bin_windows(make_one):
+def test_bin_windows(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+) -> None:
     venv, dir_ = make_one()
+    assert venv.bin_paths
     assert len(venv.bin_paths) == 1
     assert venv.bin_paths[0] == venv.bin
     assert dir_.join("Scripts").strpath == venv.bin
 
 
-def test_create(monkeypatch, make_one):
+def test_create(
+    monkeypatch: pytest.MonkeyPatch,
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     monkeypatch.setenv("CONDA_PREFIX", "no-prefix-allowed")
     monkeypatch.setenv("NOT_CONDA_PREFIX", "something-else")
 
@@ -401,7 +459,9 @@ def test_create(monkeypatch, make_one):
     assert dir_.join("test.txt").check()
 
 
-def test_create_reuse_environment(make_one):
+def test_create_reuse_environment(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+) -> None:
     venv, location = make_one(reuse_existing=True)
     venv.create()
 
@@ -410,7 +470,10 @@ def test_create_reuse_environment(make_one):
     assert reused
 
 
-def test_create_reuse_environment_with_different_interpreter(make_one, monkeypatch):
+def test_create_reuse_environment_with_different_interpreter(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # Making the reuse requirement more strict
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
 
@@ -430,7 +493,9 @@ def test_create_reuse_environment_with_different_interpreter(make_one, monkeypat
 
 
 @has_uv
-def test_create_reuse_stale_venv_environment(make_one):
+def test_create_reuse_stale_venv_environment(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+) -> None:
     venv, location = make_one(reuse_existing=True)
     venv.create()
 
@@ -448,7 +513,12 @@ def test_create_reuse_stale_venv_environment(make_one):
     assert not reused
 
 
-def test_not_stale_virtualenv_environment(make_one, monkeypatch):
+def test_not_stale_virtualenv_environment(
+    make_one: Callable[
+        ..., tuple[nox.virtualenv.VirtualEnv | nox.virtualenv.ProcessEnv, Any]
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # Making the reuse requirement more strict
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
 
@@ -462,7 +532,9 @@ def test_not_stale_virtualenv_environment(make_one, monkeypatch):
 
 
 @has_conda
-def test_stale_virtualenv_to_conda_environment(make_one):
+def test_stale_virtualenv_to_conda_environment(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+) -> None:
     venv, location = make_one(reuse_existing=True, venv_backend="virtualenv")
     venv.create()
 
@@ -475,7 +547,9 @@ def test_stale_virtualenv_to_conda_environment(make_one):
 
 
 @has_conda
-def test_reuse_conda_environment(make_one):
+def test_reuse_conda_environment(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+) -> None:
     venv, _ = make_one(reuse_existing=True, venv_backend="conda")
     venv.create()
 
@@ -487,7 +561,10 @@ def test_reuse_conda_environment(make_one):
 
 # This mocks micromamba so that it doesn't need to be installed.
 @has_conda
-def test_micromamba_environment(make_one, monkeypatch):
+def test_micromamba_environment(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     conda_path = shutil.which("conda")
     which = shutil.which
     monkeypatch.setattr(
@@ -509,7 +586,11 @@ def test_micromamba_environment(make_one, monkeypatch):
     [["--channel=default"], ["-cdefault"], ["-c", "default"], ["--channel", "default"]],
 )
 @has_conda
-def test_micromamba_channel_environment(make_one, monkeypatch, params):
+def test_micromamba_channel_environment(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    params: list[str],
+) -> None:
     conda_path = shutil.which("conda")
     which = shutil.which
     monkeypatch.setattr(
@@ -538,7 +619,13 @@ def test_micromamba_channel_environment(make_one, monkeypatch, params):
         pytest.param("conda", "virtualenv", False, marks=has_conda),
     ],
 )
-def test_stale_environment(make_one, frm, to, result, monkeypatch):
+def test_stale_environment(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+    frm: str,
+    to: str,
+    result: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
     venv, _ = make_one(reuse_existing=True, venv_backend=frm)
     venv.create()
@@ -551,14 +638,19 @@ def test_stale_environment(make_one, frm, to, result, monkeypatch):
     assert reused == result
 
 
-def test_passthrough_environment_venv_backend(make_one):
+def test_passthrough_environment_venv_backend(
+    make_one: Callable[..., tuple[ProcessEnv, Any]],
+) -> None:
     venv, _ = make_one(venv_backend="none")
     venv.create()
     assert venv.venv_backend == "none"
 
 
 @has_uv
-def test_create_reuse_stale_virtualenv_environment(make_one, monkeypatch):
+def test_create_reuse_stale_virtualenv_environment(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
     venv, location = make_one(reuse_existing=True, venv_backend="venv")
     venv.create()
@@ -584,7 +676,9 @@ def test_create_reuse_stale_virtualenv_environment(make_one, monkeypatch):
 
 
 @has_uv
-def test_create_reuse_uv_environment(make_one):
+def test_create_reuse_uv_environment(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+) -> None:
     venv, location = make_one(reuse_existing=True, venv_backend="uv")
     venv.create()
 
@@ -605,16 +699,22 @@ UV_IN_PIPX_VENV = "/home/user/.local/pipx/venvs/nox/bin/uv"
     ["which_result", "find_uv_bin_result", "found", "path"],
     [
         ("/usr/bin/uv", UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV),
-        ("/usr/bin/uv", FileNotFoundError, True, "uv"),
+        ("/usr/bin/uv", None, True, "uv"),
         (None, UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV),
-        (None, FileNotFoundError, False, "uv"),
+        (None, None, False, "uv"),
     ],
 )
-def test_find_uv(monkeypatch, which_result, find_uv_bin_result, found, path):
-    def find_uv_bin():
-        if find_uv_bin_result is FileNotFoundError:
-            raise FileNotFoundError
-        return find_uv_bin_result
+def test_find_uv(
+    monkeypatch: pytest.MonkeyPatch,
+    which_result: str | None,
+    find_uv_bin_result: str | None,
+    found: bool,
+    path: str,
+) -> None:
+    def find_uv_bin() -> str:
+        if find_uv_bin_result:
+            return find_uv_bin_result
+        raise FileNotFoundError()
 
     monkeypatch.setattr(shutil, "which", lambda _: which_result)
     monkeypatch.setattr(Path, "samefile", lambda a, b: a == b)
@@ -633,8 +733,13 @@ def test_find_uv(monkeypatch, which_result, find_uv_bin_result, found, path):
         (1, '{"version": "9.9.9", "commit_info": null}', "0.0"),
     ],
 )
-def test_uv_version(monkeypatch, return_code, stdout, expected_result):
-    def mock_run(*args, **kwargs):
+def test_uv_version(
+    monkeypatch: pytest.MonkeyPatch,
+    return_code: int,
+    stdout: str | None,
+    expected_result: str,
+) -> None:
+    def mock_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(
             args=["uv", "version", "--output-format", "json"],
             stdout=stdout,
@@ -645,8 +750,8 @@ def test_uv_version(monkeypatch, return_code, stdout, expected_result):
     assert nox.virtualenv.uv_version() == version.Version(expected_result)
 
 
-def test_uv_version_no_uv(monkeypatch):
-    def mock_exception(*args, **kwargs):
+def test_uv_version_no_uv(monkeypatch: pytest.MonkeyPatch) -> None:
+    def mock_exception(*args: object, **kwargs: object) -> NoReturn:
         raise FileNotFoundError
 
     monkeypatch.setattr(subprocess, "run", mock_exception)
@@ -665,11 +770,14 @@ def test_uv_version_no_uv(monkeypatch):
     ],
 )
 @has_uv
-def test_uv_install(requested_python, expected_result):
+def test_uv_install(requested_python: str, expected_result: bool) -> None:
     assert nox.virtualenv.uv_install_python(requested_python) == expected_result
 
 
-def test_create_reuse_venv_environment(make_one, monkeypatch):
+def test_create_reuse_venv_environment(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # Making the reuse requirement more strict
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
 
@@ -687,7 +795,9 @@ def test_create_reuse_venv_environment(make_one, monkeypatch):
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
-def test_create_reuse_oldstyle_virtualenv_environment(make_one):
+def test_create_reuse_oldstyle_virtualenv_environment(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Any]],
+) -> None:
     venv, location = make_one(reuse_existing=True)
     venv.create()
 
@@ -705,7 +815,10 @@ def test_create_reuse_oldstyle_virtualenv_environment(make_one):
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Avoid 'No pyvenv.cfg file' error on Windows.")
-def test_inner_functions_reusing_venv(make_one, monkeypatch):
+def test_inner_functions_reusing_venv(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("NOX_ENABLE_STALENESS_CHECK", "1")
     venv, location = make_one(reuse_existing=True)
     venv.create()
@@ -719,7 +832,9 @@ def test_inner_functions_reusing_venv(make_one, monkeypatch):
     """
     location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
 
-    base_prefix = venv._read_pyvenv_cfg()["base-prefix"]
+    config = venv._read_pyvenv_cfg()
+    assert config
+    base_prefix = config["base-prefix"]
     assert base_prefix == "foo"
 
     reused_interpreter = venv._check_reused_environment_interpreter()
@@ -731,7 +846,9 @@ def test_inner_functions_reusing_venv(make_one, monkeypatch):
     version.parse(VIRTUALENV_VERSION) >= version.parse("20.22.0"),
     reason="Python 2.7 unsupported for virtualenv>=20.22.0",
 )
-def test_create_reuse_python2_environment(make_one):
+def test_create_reuse_python2_environment(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     venv, location = make_one(reuse_existing=True, interpreter="2.7")
 
     try:
@@ -744,20 +861,26 @@ def test_create_reuse_python2_environment(make_one):
     assert reused
 
 
-def test_create_venv_backend(make_one):
+def test_create_venv_backend(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     venv, dir_ = make_one(venv_backend="venv")
     venv.create()
 
 
 @pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
-def test_create_interpreter(make_one):
+def test_create_interpreter(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     venv, dir_ = make_one(interpreter="python3")
     venv.create()
     assert dir_.join("bin", "python").check()
     assert dir_.join("bin", "python3").check()
 
 
-def test__resolved_interpreter_none(make_one):
+def test__resolved_interpreter_none(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     # Establish that the _resolved_interpreter method is a no-op if the
     # interpreter is not set.
     venv, _ = make_one(interpreter=None)
@@ -776,7 +899,12 @@ def test__resolved_interpreter_none(make_one):
 )
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(shutil, "which", return_value=True)
-def test__resolved_interpreter_numerical_non_windows(which, make_one, input_, expected):
+def test__resolved_interpreter_numerical_non_windows(
+    which: mock.Mock,
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+    input_: str,
+    expected: str,
+) -> None:
     venv, _ = make_one(interpreter=input_)
 
     assert venv._resolved_interpreter == expected
@@ -786,7 +914,11 @@ def test__resolved_interpreter_numerical_non_windows(which, make_one, input_, ex
 @pytest.mark.parametrize("input_", ["2.", "2.7."])
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(shutil, "which", return_value=False)
-def test__resolved_interpreter_invalid_numerical_id(which, make_one, input_):
+def test__resolved_interpreter_invalid_numerical_id(
+    which: mock.Mock,
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+    input_: str,
+) -> None:
     venv, _ = make_one(interpreter=input_)
 
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
@@ -797,7 +929,9 @@ def test__resolved_interpreter_invalid_numerical_id(which, make_one, input_):
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(shutil, "which", return_value=False)
-def test__resolved_interpreter_32_bit_non_windows(which, make_one):
+def test__resolved_interpreter_32_bit_non_windows(
+    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Any]]
+) -> None:
     venv, _ = make_one(interpreter="3.6-32")
 
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
@@ -807,7 +941,9 @@ def test__resolved_interpreter_32_bit_non_windows(which, make_one):
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(shutil, "which", return_value=True)
-def test__resolved_interpreter_non_windows(which, make_one):
+def test__resolved_interpreter_non_windows(
+    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Any]]
+) -> None:
     # Establish that the interpreter is simply passed through resolution
     # on non-Windows.
     venv, _ = make_one(interpreter="python3.6")
@@ -818,7 +954,9 @@ def test__resolved_interpreter_non_windows(which, make_one):
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch.object(shutil, "which")
-def test__resolved_interpreter_windows_full_path(which, make_one):
+def test__resolved_interpreter_windows_full_path(
+    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Any]]
+) -> None:
     # Establish that if we get a fully-qualified system path (on Windows
     # or otherwise) and the path exists, that we accept it.
     venv, _ = make_one(interpreter=r"c:\Python36\python.exe")
@@ -839,7 +977,13 @@ def test__resolved_interpreter_windows_full_path(which, make_one):
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch.object(subprocess, "run")
 @mock.patch.object(shutil, "which")
-def test__resolved_interpreter_windows_pyexe(which, run, make_one, input_, expected):
+def test__resolved_interpreter_windows_pyexe(
+    which: mock.Mock,
+    run: mock.Mock,
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+    input_: str,
+    expected: str,
+) -> None:
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the py launcher on Windows.
     venv, _ = make_one(interpreter=input_)
@@ -851,7 +995,7 @@ def test__resolved_interpreter_windows_pyexe(which, run, make_one, input_, expec
     # (it likely will on Unix). Also, when the system looks for the
     # py launcher, give it a dummy that returns our test value when
     # run.
-    def special_run(cmd, *args, **kwargs):
+    def special_run(cmd: str, *args: str, **kwargs: object) -> TextProcessResult:
         if cmd[0] == "py":
             return TextProcessResult(expected)
         return TextProcessResult("", 1)
@@ -868,14 +1012,16 @@ def test__resolved_interpreter_windows_pyexe(which, run, make_one, input_, expec
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch.object(subprocess, "run")
 @mock.patch.object(shutil, "which")
-def test__resolved_interpreter_windows_pyexe_fails(which, run, make_one):
+def test__resolved_interpreter_windows_pyexe_fails(
+    which: mock.Mock, run: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Any]]
+) -> None:
     # Establish that if the py launcher fails, we give the right error.
     venv, _ = make_one(interpreter="python3.6")
 
     # Trick the nox.virtualenv._SYSTEM into thinking that it cannot find python3.6
     # (it likely will on Unix). Also, when the nox.virtualenv._SYSTEM looks for the
     # py launcher, give it a dummy that fails.
-    def special_run(cmd, *args, **kwargs):
+    def special_run(cmd: str, *args: str, **kwargs: object) -> TextProcessResult:
         return TextProcessResult("", 1)
 
     run.side_effect = special_run
@@ -890,7 +1036,10 @@ def test__resolved_interpreter_windows_pyexe_fails(which, run, make_one):
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
-def test__resolved_interpreter_windows_path_and_version(make_one, patch_sysfind):
+def test__resolved_interpreter_windows_path_and_version(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+    patch_sysfind: Callable[..., None],
+) -> None:
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the path on Windows.
     venv, _ = make_one(interpreter="3.7")
@@ -917,8 +1066,12 @@ def test__resolved_interpreter_windows_path_and_version(make_one, patch_sysfind)
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
 def test__resolved_interpreter_windows_path_and_version_fails(
-    input_, sysfind_result, sysexec_result, make_one, patch_sysfind
-):
+    input_: str,
+    sysfind_result: None | str,
+    sysexec_result: str,
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+    patch_sysfind: Callable[..., None],
+) -> None:
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the path on Windows.
     venv, _ = make_one(interpreter=input_)
@@ -936,7 +1089,9 @@ def test__resolved_interpreter_windows_path_and_version_fails(
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
 @mock.patch.object(shutil, "which")
-def test__resolved_interpreter_not_found(which, make_one):
+def test__resolved_interpreter_not_found(
+    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Any]]
+) -> None:
     # Establish that if an interpreter cannot be found at a standard
     # location on Windows, we raise a useful error.
     venv, _ = make_one(interpreter="python3.6")
@@ -950,8 +1105,10 @@ def test__resolved_interpreter_not_found(which, make_one):
 
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Windows")
-@mock.patch("nox.virtualenv.locate_via_py", new=lambda _: None)
-def test__resolved_interpreter_nonstandard(make_one):
+@mock.patch("nox.virtualenv.locate_via_py", new=lambda _: None)  # type: ignore[misc]
+def test__resolved_interpreter_nonstandard(
+    make_one: Callable[..., tuple[VirtualEnv, Any]],
+) -> None:
     # Establish that we do not try to resolve non-standard locations
     # on Windows.
     venv, _ = make_one(interpreter="goofy")
@@ -962,7 +1119,9 @@ def test__resolved_interpreter_nonstandard(make_one):
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(shutil, "which", return_value=True)
-def test__resolved_interpreter_cache_result(which, make_one):
+def test__resolved_interpreter_cache_result(
+    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Any]]
+) -> None:
     venv, _ = make_one(interpreter="3.6")
 
     assert venv._resolved is None
@@ -976,7 +1135,9 @@ def test__resolved_interpreter_cache_result(which, make_one):
 
 @mock.patch("nox.virtualenv._SYSTEM", new="Linux")
 @mock.patch.object(shutil, "which", return_value=None)
-def test__resolved_interpreter_cache_failure(which, make_one):
+def test__resolved_interpreter_cache_failure(
+    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Any]]
+) -> None:
     venv, _ = make_one(interpreter="3.7-32")
 
     assert venv._resolved is None
@@ -987,6 +1148,6 @@ def test__resolved_interpreter_cache_failure(which, make_one):
     which.assert_called_once_with("3.7-32")
     # Check the cache and call again to make sure it is used.
     assert venv._resolved is caught
-    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):  # type: ignore[unreachable]
         print(venv._resolved_interpreter)
     assert which.call_count == 1

@@ -112,7 +112,7 @@ lint.typing-modules = [ "nox._typing" ]
 max_supported_python = "3.13"
 
 [tool.pytest.ini_options]
-minversion = "6.0"
+minversion = "7.0"
 addopts = [ "-ra", "--strict-markers", "--strict-config" ]
 xfail_strict = true
 filterwarnings = [ "error" ]
@@ -128,7 +128,6 @@ run.source_pkgs = [ "nox" ]
 report.exclude_also = [ "def __dir__()", "if TYPE_CHECKING:", "@overload" ]
 
 [tool.mypy]
-files = [ "nox/**/*.py", "noxfile.py" ]
 python_version = "3.8"
 strict = true
 warn_unreachable = true

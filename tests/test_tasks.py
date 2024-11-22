@@ -20,20 +20,28 @@ import copy
 import json
 import os
 import platform
+import typing
+from collections.abc import Callable, Generator
+from pathlib import Path
 from textwrap import dedent
+from types import ModuleType
 from unittest import mock
 
 import pytest
 
 import nox
+import nox._decorators
 from nox import _options, sessions, tasks
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 
 
-def session_func():
+def session_func_raw() -> None:
     pass
+
+
+session_func = typing.cast(nox._decorators.Func, session_func_raw)
 
 
 session_func.python = None
@@ -44,8 +52,13 @@ session_func.default = True
 session_func.requires = []
 
 
-def session_func_with_python():
+def session_func_with_python_raw() -> None:
     pass
+
+
+session_func_with_python = typing.cast(
+    nox._decorators.Func, session_func_with_python_raw
+)
 
 
 session_func_with_python.python = "3.8"
@@ -54,8 +67,13 @@ session_func_with_python.default = True
 session_func_with_python.requires = []
 
 
-def session_func_venv_pythons_warning():
+def session_func_venv_pythons_warning_raw() -> None:
     pass
+
+
+session_func_venv_pythons_warning = typing.cast(
+    nox._decorators.Func, session_func_venv_pythons_warning_raw
+)
 
 
 session_func_venv_pythons_warning.python = ["3.7"]
@@ -63,13 +81,14 @@ session_func_venv_pythons_warning.venv_backend = "none"
 session_func_venv_pythons_warning.should_warn = {WARN_PYTHONS_IGNORED: ["3.7"]}
 
 
-def test_load_nox_module():
+def test_load_nox_module() -> None:
     config = _options.options.namespace(noxfile=os.path.join(RESOURCES, "noxfile.py"))
     noxfile_module = tasks.load_nox_module(config)
+    assert not isinstance(noxfile_module, int)
     assert noxfile_module.SIGIL == "123"
 
 
-def test_load_nox_module_expandvars():
+def test_load_nox_module_expandvars() -> None:
     # Assert that variables are expanded when looking up the path to the Noxfile
     # This is particular importand in Windows when one needs to use variables like
     # %TEMP% to point to the noxfile.py
@@ -79,11 +98,14 @@ def test_load_nox_module_expandvars():
         else:
             config = _options.options.namespace(noxfile="${RESOURCES_PATH}/noxfile.py")
         noxfile_module = tasks.load_nox_module(config)
+    assert not isinstance(noxfile_module, int)
     assert noxfile_module.__file__ == os.path.join(RESOURCES, "noxfile.py")
     assert noxfile_module.SIGIL == "123"
 
 
-def test_load_nox_module_not_found(caplog, tmp_path):
+def test_load_nox_module_not_found(
+    caplog: pytest.LogCaptureFixture, tmp_path: Path
+) -> None:
     bogus_noxfile = tmp_path / "bogus.py"
     config = _options.options.namespace(noxfile=str(bogus_noxfile))
 
@@ -93,7 +115,7 @@ def test_load_nox_module_not_found(caplog, tmp_path):
     )
 
 
-def test_load_nox_module_os_error(caplog):
+def test_load_nox_module_os_error(caplog: pytest.LogCaptureFixture) -> None:
     noxfile = os.path.join(RESOURCES, "noxfile.py")
     config = _options.options.namespace(noxfile=noxfile)
     with mock.patch("nox.tasks.check_nox_version", autospec=True) as version_checker:
@@ -103,7 +125,7 @@ def test_load_nox_module_os_error(caplog):
 
 
 @pytest.fixture
-def reset_needs_version():
+def reset_needs_version() -> Generator[None, None, None]:
     """Do not leak ``nox.needs_version`` between tests."""
     try:
         yield
@@ -112,11 +134,13 @@ def reset_needs_version():
 
 
 @pytest.fixture
-def reset_global_nox_options():
+def reset_global_nox_options() -> None:
     nox.options = _options.options.noxfile_namespace()
 
 
-def test_load_nox_module_needs_version_static(reset_needs_version, tmp_path):
+def test_load_nox_module_needs_version_static(
+    reset_needs_version: None, tmp_path: Path
+) -> None:
     text = dedent(
         """
         import nox
@@ -129,7 +153,9 @@ def test_load_nox_module_needs_version_static(reset_needs_version, tmp_path):
     assert tasks.load_nox_module(config) == 2
 
 
-def test_load_nox_module_needs_version_dynamic(reset_needs_version, tmp_path):
+def test_load_nox_module_needs_version_dynamic(
+    reset_needs_version: None, tmp_path: Path
+) -> None:
     text = dedent(
         """
         import nox
@@ -145,26 +171,29 @@ def test_load_nox_module_needs_version_dynamic(reset_needs_version, tmp_path):
     assert nox.needs_version == ">=9999.99.99"
 
 
-def test_discover_session_functions_decorator():
+def test_discover_session_functions_decorator() -> None:
     # Define sessions using the decorator.
     @nox.session
-    def foo():
+    def foo() -> None:
         pass
 
     @nox.session
-    def bar():
+    def bar() -> None:
         pass
 
     @nox.session(name="not-a-bar")
-    def not_a_bar():
+    def not_a_bar() -> None:
         pass
 
-    def notasession():
+    def notasession() -> None:
         pass
 
     # Mock up a noxfile.py module and configuration.
-    mock_module = argparse.Namespace(
-        __name__=foo.__module__, foo=foo, bar=bar, notasession=notasession
+    mock_module = typing.cast(
+        ModuleType,
+        argparse.Namespace(
+            __name__=foo.__module__, foo=foo, bar=bar, notasession=notasession
+        ),
     )
     config = _options.options.namespace(sessions=(), keywords=(), posargs=[])
 
@@ -175,7 +204,7 @@ def test_discover_session_functions_decorator():
     assert [i.friendly_name for i in sessions] == ["foo", "bar", "not-a-bar"]
 
 
-def test_filter_manifest():
+def test_filter_manifest() -> None:
     config = _options.options.namespace(
         sessions=None, pythons=(), keywords=(), posargs=[]
     )
@@ -185,7 +214,7 @@ def test_filter_manifest():
     assert len(manifest) == 2
 
 
-def test_filter_manifest_not_found():
+def test_filter_manifest_not_found() -> None:
     config = _options.options.namespace(
         sessions=("baz",), pythons=(), keywords=(), posargs=[]
     )
@@ -194,7 +223,7 @@ def test_filter_manifest_not_found():
     assert return_value == 3
 
 
-def test_filter_manifest_pythons():
+def test_filter_manifest_pythons() -> None:
     config = _options.options.namespace(
         sessions=None, pythons=("3.8",), keywords=(), posargs=[]
     )
@@ -207,7 +236,7 @@ def test_filter_manifest_pythons():
     assert len(manifest) == 1
 
 
-def test_filter_manifest_pythons_not_found(caplog):
+def test_filter_manifest_pythons_not_found(caplog: pytest.LogCaptureFixture) -> None:
     config = _options.options.namespace(
         sessions=None, pythons=("1.2",), keywords=(), posargs=[]
     )
@@ -220,7 +249,7 @@ def test_filter_manifest_pythons_not_found(caplog):
     assert "Python version selection caused no sessions to be selected." in caplog.text
 
 
-def test_filter_manifest_keywords():
+def test_filter_manifest_keywords() -> None:
     config = _options.options.namespace(
         sessions=None, pythons=(), keywords="foo or bar", posargs=[]
     )
@@ -232,7 +261,7 @@ def test_filter_manifest_keywords():
     assert len(manifest) == 2
 
 
-def test_filter_manifest_keywords_not_found(caplog):
+def test_filter_manifest_keywords_not_found(caplog: pytest.LogCaptureFixture) -> None:
     config = _options.options.namespace(
         sessions=None, pythons=(), keywords="mouse or python", posargs=[]
     )
@@ -244,7 +273,7 @@ def test_filter_manifest_keywords_not_found(caplog):
     assert "No sessions selected after filtering by keyword." in caplog.text
 
 
-def test_filter_manifest_keywords_syntax_error():
+def test_filter_manifest_keywords_syntax_error() -> None:
     config = _options.options.namespace(
         sessions=None, pythons=(), keywords="foo:bar", posargs=[]
     )
@@ -266,27 +295,34 @@ def test_filter_manifest_keywords_syntax_error():
         (["foo", "bar", "baz"], 8),
     ],
 )
-def test_filter_manifest_tags(tags, session_count):
+def test_filter_manifest_tags(
+    tags: None | builtins.list[builtins.str],
+    session_count: builtins.int
+    | builtins.int
+    | builtins.int
+    | builtins.int
+    | builtins.int,
+) -> None:
     @nox.session(tags=["foo"])
-    def qux():
+    def qux() -> None:
         pass
 
     @nox.session(tags=["bar"])
-    def quux():
+    def quux() -> None:
         pass
 
     @nox.session(tags=["foo", "bar"])
-    def quuz():
+    def quuz() -> None:
         pass
 
     @nox.session(tags=["foo", "bar", "baz"])
-    def corge():
+    def corge() -> None:
         pass
 
     @nox.session(tags=["foo"])
     @nox.parametrize("a", [1, nox.param(2, tags=["bar"])])
     @nox.parametrize("b", [3, 4], tags=[["baz"]])
-    def grault():
+    def grault() -> None:
         pass
 
     config = _options.options.namespace(
@@ -318,9 +354,11 @@ def test_filter_manifest_tags(tags, session_count):
         "tag-does-not-exist",
     ],
 )
-def test_filter_manifest_tags_not_found(tags, caplog):
+def test_filter_manifest_tags_not_found(
+    tags: list[str], caplog: pytest.LogCaptureFixture
+) -> None:
     @nox.session(tags=["foo"])
-    def quux():
+    def quux() -> None:
         pass
 
     config = _options.options.namespace(
@@ -332,13 +370,15 @@ def test_filter_manifest_tags_not_found(tags, caplog):
     assert "Tag selection caused no sessions to be selected." in caplog.text
 
 
-def test_merge_sessions_and_tags(reset_global_nox_options, generate_noxfile_options):
+def test_merge_sessions_and_tags(
+    reset_global_nox_options: None, generate_noxfile_options: Callable[..., str]
+) -> None:
     @nox.session(tags=["foobar"])
-    def test():
+    def test() -> None:
         pass
 
     @nox.session(tags=["foobar"])
-    def bar():
+    def bar() -> None:
         pass
 
     noxfile_path = generate_noxfile_options(reuse_existing_virtualenvs=True)
@@ -351,6 +391,7 @@ def test_merge_sessions_and_tags(reset_global_nox_options, generate_noxfile_opti
     )
 
     nox_module = tasks.load_nox_module(config)
+    assert not isinstance(nox_module, int)
     tasks.merge_noxfile_options(nox_module, config)
     manifest = Manifest({"test": test, "bar": bar}, config)
     return_value = tasks.filter_manifest(manifest, config)
@@ -359,21 +400,21 @@ def test_merge_sessions_and_tags(reset_global_nox_options, generate_noxfile_opti
 
 
 @pytest.mark.parametrize("selection", [None, ["qux"], ["quuz"], ["qux", "quuz"]])
-def test_default_false(selection):
+def test_default_false(selection: None | builtins.list[builtins.str]) -> None:
     @nox.session()
-    def qux():
+    def qux() -> None:
         pass
 
     @nox.session()
-    def quux():
+    def quux() -> None:
         pass
 
     @nox.session(default=False)
-    def quuz():
+    def quuz() -> None:
         pass
 
     @nox.session(default=False)
-    def corge():
+    def corge() -> None:
         pass
 
     config = _options.options.namespace(sessions=selection, pythons=(), posargs=[])
@@ -392,9 +433,9 @@ def test_default_false(selection):
     assert len(manifest) == expected
 
 
-def test_honor_list_request_noop():
+def test_honor_list_request_noop() -> None:
     config = _options.options.namespace(list_sessions=False)
-    manifest = {"thing": mock.sentinel.THING}
+    manifest = typing.cast(Manifest, {"thing": mock.sentinel.THING})
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value is manifest
 
@@ -408,7 +449,9 @@ def test_honor_list_request_noop():
         ("Bar", "hello docstring"),
     ],
 )
-def test_honor_list_request(description, module_docstring):
+def test_honor_list_request(
+    description: None | builtins.str, module_docstring: None | builtins.str
+) -> None:
     config = _options.options.namespace(
         list_sessions=True, noxfile="noxfile.py", color=False
     )
@@ -421,7 +464,9 @@ def test_honor_list_request(description, module_docstring):
     assert return_value == 0
 
 
-def test_honor_list_request_skip_and_selected(capsys):
+def test_honor_list_request_skip_and_selected(
+    capsys: pytest.CaptureFixture[builtins.str],
+) -> None:
     config = _options.options.namespace(
         list_sessions=True, noxfile="noxfile.py", color=False
     )
@@ -440,7 +485,9 @@ def test_honor_list_request_skip_and_selected(capsys):
     assert "- bar" in out
 
 
-def test_honor_list_request_prints_docstring_if_present(capsys):
+def test_honor_list_request_prints_docstring_if_present(
+    capsys: pytest.CaptureFixture[builtins.str],
+) -> None:
     config = _options.options.namespace(
         list_sessions=True, noxfile="noxfile.py", color=False
     )
@@ -459,7 +506,9 @@ def test_honor_list_request_prints_docstring_if_present(capsys):
     assert "Hello I'm a docstring" in out
 
 
-def test_honor_list_request_doesnt_print_docstring_if_not_present(capsys):
+def test_honor_list_request_doesnt_print_docstring_if_not_present(
+    capsys: pytest.CaptureFixture[builtins.str],
+) -> None:
     config = _options.options.namespace(
         list_sessions=True, noxfile="noxfile.py", color=False
     )
@@ -478,7 +527,7 @@ def test_honor_list_request_doesnt_print_docstring_if_not_present(capsys):
     assert "Hello I'm a docstring" not in out
 
 
-def test_honor_list_json_request(capsys):
+def test_honor_list_json_request(capsys: pytest.CaptureFixture[builtins.str]) -> None:
     config = _options.options.namespace(
         list_sessions=True, noxfile="noxfile.py", json=True
     )
@@ -513,7 +562,7 @@ def test_honor_list_json_request(capsys):
     ]
 
 
-def test_refuse_json_nolist_request(caplog):
+def test_refuse_json_nolist_request(caplog: pytest.LogCaptureFixture) -> None:
     config = _options.options.namespace(
         list_sessions=False, noxfile="noxfile.py", json=True
     )
@@ -536,7 +585,9 @@ def test_refuse_json_nolist_request(caplog):
     assert record.message == "Must specify --list-sessions with --json"
 
 
-def test_empty_session_list_in_noxfile(capsys):
+def test_empty_session_list_in_noxfile(
+    capsys: pytest.CaptureFixture[builtins.str],
+) -> None:
     config = _options.options.namespace(noxfile="noxfile.py", sessions=(), posargs=[])
     manifest = Manifest({"session": session_func}, config)
     return_value = tasks.filter_manifest(manifest, global_config=config)
@@ -544,28 +595,30 @@ def test_empty_session_list_in_noxfile(capsys):
     assert "No sessions selected." in capsys.readouterr().out
 
 
-def test_empty_session_None_in_noxfile(capsys):
+def test_empty_session_None_in_noxfile(
+    capsys: pytest.CaptureFixture[builtins.str],
+) -> None:
     config = _options.options.namespace(noxfile="noxfile.py", sessions=None, posargs=[])
     manifest = Manifest({"session": session_func}, config)
     return_value = tasks.filter_manifest(manifest, global_config=config)
     assert return_value == manifest
 
 
-def test_verify_manifest_empty():
+def test_verify_manifest_empty() -> None:
     config = _options.options.namespace(sessions=(), keywords=())
     manifest = Manifest({}, config)
     return_value = tasks.filter_manifest(manifest, global_config=config)
     assert return_value == 3
 
 
-def test_verify_manifest_nonempty():
+def test_verify_manifest_nonempty() -> None:
     config = _options.options.namespace(sessions=None, keywords=(), posargs=[])
     manifest = Manifest({"session": session_func}, config)
     return_value = tasks.filter_manifest(manifest, global_config=config)
     assert return_value == manifest
 
 
-def test_verify_manifest_list(capsys):
+def test_verify_manifest_list(capsys: pytest.CaptureFixture[builtins.str]) -> None:
     config = _options.options.namespace(sessions=(), keywords=(), posargs=[])
     manifest = Manifest({"session": session_func}, config)
     return_value = tasks.filter_manifest(manifest, global_config=config)
@@ -574,19 +627,19 @@ def test_verify_manifest_list(capsys):
 
 
 @pytest.mark.parametrize("with_warnings", [False, True], ids="with_warnings={}".format)
-def test_run_manifest(with_warnings):
+def test_run_manifest(with_warnings: builtins.bool) -> None:
     # Set up a valid manifest.
     config = _options.options.namespace(stop_on_first_error=False)
     sessions_ = [
-        mock.Mock(spec=sessions.SessionRunner),
-        mock.Mock(spec=sessions.SessionRunner),
+        typing.cast(sessions.SessionRunner, mock.Mock(spec=sessions.SessionRunner)),
+        typing.cast(sessions.SessionRunner, mock.Mock(spec=sessions.SessionRunner)),
     ]
     manifest = Manifest({}, config)
     manifest._queue = copy.copy(sessions_)
 
     # Ensure each of the mocks returns a successful result
     for mock_session in sessions_:
-        mock_session.execute.return_value = sessions.Result(
+        mock_session.execute.return_value = sessions.Result(  # type: ignore[attr-defined]
             session=mock_session, status=sessions.Status.SUCCESS
         )
         # we need the should_warn attribute, add some func
@@ -608,19 +661,19 @@ def test_run_manifest(with_warnings):
         assert result.status == sessions.Status.SUCCESS
 
 
-def test_run_manifest_abort_on_first_failure():
+def test_run_manifest_abort_on_first_failure() -> None:
     # Set up a valid manifest.
     config = _options.options.namespace(stop_on_first_error=True)
     sessions_ = [
-        mock.Mock(spec=sessions.SessionRunner),
-        mock.Mock(spec=sessions.SessionRunner),
+        typing.cast(sessions.SessionRunner, mock.Mock(spec=sessions.SessionRunner)),
+        typing.cast(sessions.SessionRunner, mock.Mock(spec=sessions.SessionRunner)),
     ]
     manifest = Manifest({}, config)
     manifest._queue = copy.copy(sessions_)
 
     # Ensure each of the mocks returns a successful result.
     for mock_session in sessions_:
-        mock_session.execute.return_value = sessions.Result(
+        mock_session.execute.return_value = sessions.Result(  # type: ignore[attr-defined]
             session=mock_session, status=sessions.Status.FAILED
         )
         # we need the should_warn attribute, add some func
@@ -636,38 +689,42 @@ def test_run_manifest_abort_on_first_failure():
     assert results[0].status == sessions.Status.FAILED
 
     # Verify that only the first session was called.
-    assert sessions_[0].execute.called
-    assert not sessions_[1].execute.called
+    assert sessions_[0].execute.called  # type: ignore[attr-defined]
+    assert not sessions_[1].execute.called  # type: ignore[attr-defined]
 
 
-def test_print_summary_one_result():
+def test_print_summary_one_result() -> None:
     results = [mock.sentinel.RESULT]
     with mock.patch("nox.tasks.logger", autospec=True) as logger:
-        answer = tasks.print_summary(results, object())
+        answer = tasks.print_summary(results, argparse.Namespace())
         assert not logger.warning.called
         assert not logger.success.called
         assert not logger.error.called
     assert answer is results
 
 
-def test_print_summary():
+def test_print_summary() -> None:
     results = [
         sessions.Result(
-            session=argparse.Namespace(friendly_name="foo"),
+            session=typing.cast(
+                sessions.SessionRunner, argparse.Namespace(friendly_name="foo")
+            ),
             status=sessions.Status.SUCCESS,
         ),
         sessions.Result(
-            session=argparse.Namespace(friendly_name="bar"),
+            session=typing.cast(
+                sessions.SessionRunner, argparse.Namespace(friendly_name="bar")
+            ),
             status=sessions.Status.FAILED,
         ),
     ]
     with mock.patch.object(sessions.Result, "log", autospec=True) as log:
-        answer = tasks.print_summary(results, object())
+        answer = tasks.print_summary(results, argparse.Namespace())
         assert log.call_count == 2
     assert answer is results
 
 
-def test_create_report_noop():
+def test_create_report_noop() -> None:
     config = _options.options.namespace(report=None)
     with mock.patch.object(builtins, "open", autospec=True) as open_:
         results = tasks.create_report(mock.sentinel.RESULTS, config)
@@ -675,12 +732,13 @@ def test_create_report_noop():
     assert results is mock.sentinel.RESULTS
 
 
-def test_create_report():
+def test_create_report() -> None:
     config = _options.options.namespace(report="/path/to/report")
     results = [
         sessions.Result(
-            session=argparse.Namespace(
-                signatures=["foosig"], name="foo", func=object()
+            session=typing.cast(
+                sessions.SessionRunner,
+                argparse.Namespace(signatures=["foosig"], name="foo", func=object()),
             ),
             status=sessions.Status.SUCCESS,
         )
@@ -708,8 +766,10 @@ def test_create_report():
         open_.assert_called_once_with("/path/to/report", "w")
 
 
-def test_final_reduce():
-    config = object()
-    assert tasks.final_reduce([True, True], config) == 0
-    assert tasks.final_reduce([True, False], config) == 1
+def test_final_reduce() -> None:
+    config = argparse.Namespace()
+    true = typing.cast(sessions.Result, True)
+    false = typing.cast(sessions.Result, False)
+    assert tasks.final_reduce([true, true], config) == 0
+    assert tasks.final_reduce([true, false], config) == 1
     assert tasks.final_reduce([], config) == 0

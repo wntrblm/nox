@@ -20,7 +20,7 @@ import shutil
 import subprocess
 import sys
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Literal
+from typing import Literal, overload
 
 from nox.logger import logger
 from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT, popen
@@ -71,6 +71,57 @@ def _clean_env(env: Mapping[str, str | None] | None = None) -> dict[str, str] | 
 
 def _shlex_join(args: Sequence[str | os.PathLike[str]]) -> str:
     return " ".join(shlex.quote(os.fspath(arg)) for arg in args)
+
+
+@overload
+def run(
+    args: Sequence[str | os.PathLike[str]],
+    *,
+    env: Mapping[str, str | None] | None = ...,
+    silent: Literal[True],
+    paths: Sequence[str] | None = ...,
+    success_codes: Iterable[int] | None = ...,
+    log: bool = ...,
+    external: ExternalType = ...,
+    stdout: int | IO[str] | None = ...,
+    stderr: int | IO[str] | None = ...,
+    interrupt_timeout: float | None = ...,
+    terminate_timeout: float | None = ...,
+) -> str: ...
+
+
+@overload
+def run(
+    args: Sequence[str | os.PathLike[str]],
+    *,
+    env: Mapping[str, str | None] | None = ...,
+    silent: Literal[False] = ...,
+    paths: Sequence[str] | None = ...,
+    success_codes: Iterable[int] | None = ...,
+    log: bool = ...,
+    external: ExternalType = ...,
+    stdout: int | IO[str] | None = ...,
+    stderr: int | IO[str] | None = ...,
+    interrupt_timeout: float | None = ...,
+    terminate_timeout: float | None = ...,
+) -> bool: ...
+
+
+@overload
+def run(
+    args: Sequence[str | os.PathLike[str]],
+    *,
+    env: Mapping[str, str | None] | None = ...,
+    silent: bool,
+    paths: Sequence[str] | None = ...,
+    success_codes: Iterable[int] | None = ...,
+    log: bool = ...,
+    external: ExternalType = ...,
+    stdout: int | IO[str] | None = ...,
+    stderr: int | IO[str] | None = ...,
+    interrupt_timeout: float | None = ...,
+    terminate_timeout: float | None = ...,
+) -> str | bool: ...
 
 
 def run(
