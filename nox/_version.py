@@ -21,6 +21,12 @@ from importlib import metadata
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
 
+__all__ = ["InvalidVersionSpecifier", "VersionCheckFailed", "check_nox_version"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
 
 class VersionCheckFailed(Exception):
     """The Nox version does not satisfy what ``nox.needs_version`` specifies."""

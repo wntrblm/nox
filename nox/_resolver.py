@@ -18,6 +18,13 @@ import itertools
 from collections import OrderedDict
 from typing import Hashable, Iterable, Iterator, Mapping, TypeVar
 
+__all__ = ["CycleError", "lazy_stable_topo_sort"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 Node = TypeVar("Node", bound=Hashable)
 
 

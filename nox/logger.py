@@ -19,6 +19,13 @@ from typing import Any, cast
 
 from colorlog import ColoredFormatter
 
+__all__ = ["OUTPUT", "SUCCESS", "logger", "setup_logging"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 SUCCESS = 25
 OUTPUT = logging.DEBUG - 1
 

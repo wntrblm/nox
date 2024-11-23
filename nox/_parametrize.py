@@ -21,6 +21,12 @@ from typing import TYPE_CHECKING, Any, Iterable, Union
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
+__all__ = ["Param", "parametrize_decorator", "update_param_specs"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
 
 class Param:
     """A class that encapsulates a single set of parameters to a parametrized

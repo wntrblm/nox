@@ -26,6 +26,13 @@ if TYPE_CHECKING:
 
     from ._typing import Python
 
+__all__ = ["get", "session_decorator"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 RawFunc = Callable[..., Any]
 
 _REGISTRY: collections.OrderedDict[str, Func] = collections.OrderedDict()

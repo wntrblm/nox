@@ -26,5 +26,9 @@ from nox._cli import main  # pragma: no cover
 __all__ = ["main"]  # pragma: no cover
 
 
+def __dir__() -> list[str]:
+    return __all__
+
+
 if __name__ == "__main__":  # pragma: no cover
     main()
