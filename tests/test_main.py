@@ -694,14 +694,14 @@ def generate_noxfile_options_pythons(tmp_path: Path) -> Callable[[str, str, str]
         default_session: str, default_python: str, alternate_python: str
     ) -> str:
         path = Path(RESOURCES) / "noxfile_options_pythons.py"
-        text = path.read_text()
+        text = path.read_text(encoding="utf-8")
         text = text.format(
             default_session=default_session,
             default_python=default_python,
             alternate_python=alternate_python,
         )
         path = tmp_path / "noxfile.py"
-        path.write_text(text)
+        path.write_text(text, encoding="utf-8")
         return str(path)
 
     return generate_noxfile

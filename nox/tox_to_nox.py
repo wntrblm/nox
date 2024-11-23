@@ -81,7 +81,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if TOX4:
-        output = check_output(["tox", "config"], text=True)  # noqa: S607
+        output = check_output(["tox", "config"], text=True, encoding="utf-8")  # noqa: S607
         original_config = ConfigParser()
         original_config.read_string(output)
         config: dict[str, dict[str, Any]] = {}

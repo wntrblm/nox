@@ -48,7 +48,7 @@ def generate_noxfile_options(tmp_path: Path) -> Callable[..., str]:
                 text = re.sub(rf"(# )?nox.options.{opt}", f"nox.options.{opt}", text)
             text = Template(text).safe_substitute(**option_mapping)
         path = tmp_path / "noxfile.py"
-        path.write_text(text)
+        path.write_text(text, encoding="utf8")
         return str(path)
 
     return generate_noxfile

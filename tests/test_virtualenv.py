@@ -510,7 +510,7 @@ def test_create_reuse_stale_venv_environment(
     version = 3.9.6
     uv = 0.1.9
     """
-    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+    location.join("pyvenv.cfg").write_text(dedent(pyvenv_cfg), encoding="utf-8")
 
     reused = not venv.create()
 
@@ -670,7 +670,7 @@ def test_create_reuse_stale_virtualenv_environment(
     base-exec-prefix = /usr
     base-executable = /usr/bin/python3.9
     """
-    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+    location.join("pyvenv.cfg").write_text(dedent(pyvenv_cfg), encoding="utf-8")
 
     reused = not venv.create()
 
@@ -688,7 +688,9 @@ def test_create_reuse_uv_environment(
 
     # Place a spurious occurrence of "uv" in the pyvenv.cfg.
     pyvenv_cfg = location.join("pyvenv.cfg")
-    pyvenv_cfg.write(pyvenv_cfg.read() + "bogus = uv\n")
+    pyvenv_cfg.write_text(
+        pyvenv_cfg.read_text(encoding="utf-8") + "bogus = uv\n", encoding="utf-8"
+    )
 
     reused = not venv.create()
 
@@ -790,7 +792,10 @@ def test_create_reuse_venv_environment(
 
     # Place a spurious occurrence of "virtualenv" in the pyvenv.cfg.
     pyvenv_cfg = location.join("pyvenv.cfg")
-    pyvenv_cfg.write(pyvenv_cfg.read() + "bogus = virtualenv\n")
+    pyvenv_cfg.write_text(
+        pyvenv_cfg.read_text(encoding="utf-8") + "bogus = virtualenv\n",
+        encoding="utf-8",
+    )
 
     reused = not venv.create()
 
@@ -834,7 +839,7 @@ def test_inner_functions_reusing_venv(
     version = 3.10
     base-prefix = foo
     """
-    location.join("pyvenv.cfg").write(dedent(pyvenv_cfg))
+    location.join("pyvenv.cfg").write_text(dedent(pyvenv_cfg), encoding="utf-8")
 
     config = venv._read_pyvenv_cfg()
     assert config

@@ -80,6 +80,7 @@ def uv_version() -> version.Version:
             check=False,
             text=True,
             capture_output=True,
+            encoding="utf-8",
         )
     except FileNotFoundError:
         logger.info("uv binary not found.")
