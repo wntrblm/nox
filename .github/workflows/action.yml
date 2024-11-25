@@ -27,7 +27,7 @@ jobs:
           - macos-14
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v4
       - uses: ./
       - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_default_tests
 

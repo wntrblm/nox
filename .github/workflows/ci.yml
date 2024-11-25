@@ -44,7 +44,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - name: Setup uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -76,7 +76,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Setup uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
       - name: Install Nox-under-test
         run:  uv pip install --system .
       - name: Download individual coverage reports
@@ -110,7 +110,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Setup uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
       - name: Install Nox-under-test
         run:  uv pip install --system .
       - name: Docs
