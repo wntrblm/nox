@@ -40,10 +40,12 @@ class CommandFailed(Exception):
         self.reason = reason
 
 
-def which(program: str | os.PathLike[str], paths: Sequence[str] | None) -> str:
+def which(
+    program: str | os.PathLike[str], paths: Sequence[str | os.PathLike[str]] | None
+) -> str:
     """Finds the full path to an executable."""
     if paths is not None:
-        full_path = shutil.which(program, path=os.pathsep.join(paths))
+        full_path = shutil.which(program, path=os.pathsep.join(str(p) for p in paths))
         if full_path:
             return os.fspath(full_path)
 
@@ -79,7 +81,7 @@ def run(
     *,
     env: Mapping[str, str | None] | None = ...,
     silent: Literal[True],
-    paths: Sequence[str] | None = ...,
+    paths: Sequence[str | os.PathLike[str]] | None = ...,
     success_codes: Iterable[int] | None = ...,
     log: bool = ...,
     external: ExternalType = ...,
@@ -96,7 +98,7 @@ def run(
     *,
     env: Mapping[str, str | None] | None = ...,
     silent: Literal[False] = ...,
-    paths: Sequence[str] | None = ...,
+    paths: Sequence[str | os.PathLike[str]] | None = ...,
     success_codes: Iterable[int] | None = ...,
     log: bool = ...,
     external: ExternalType = ...,
@@ -113,7 +115,7 @@ def run(
     *,
     env: Mapping[str, str | None] | None = ...,
     silent: bool,
-    paths: Sequence[str] | None = ...,
+    paths: Sequence[str | os.PathLike[str]] | None = ...,
     success_codes: Iterable[int] | None = ...,
     log: bool = ...,
     external: ExternalType = ...,
@@ -129,7 +131,7 @@ def run(
     *,
     env: Mapping[str, str | None] | None = None,
     silent: bool = False,
-    paths: Sequence[str] | None = None,
+    paths: Sequence[str | os.PathLike[str]] | None = None,
     success_codes: Iterable[int] | None = None,
     log: bool = True,
     external: ExternalType = False,
@@ -153,7 +155,7 @@ def run(
         logger.info(full_cmd)
 
         is_external_tool = paths is not None and not any(
-            cmd_path.startswith(path) for path in paths
+            cmd_path.startswith(str(path)) for path in paths
         )
         if is_external_tool:
             if external == "error":
