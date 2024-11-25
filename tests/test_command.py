@@ -25,16 +25,13 @@ import sys
 import time
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from unittest import mock
 
 import pytest
 
 import nox.command
 import nox.popen
-
-if TYPE_CHECKING:
-    from _pytest.compat import LEGACY_PATH
 
 PYTHON = sys.executable
 
@@ -214,36 +211,30 @@ def test_run_path_existent(tmp_path: Path) -> None:
         )
 
 
-def test_run_external_warns(
-    tmpdir: LEGACY_PATH, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_run_external_warns(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.WARNING)
 
-    nox.command.run([PYTHON, "--version"], silent=True, paths=[tmpdir.strpath])
+    nox.command.run([PYTHON, "--version"], silent=True, paths=[tmp_path])
 
     assert "external=True" in caplog.text
 
 
 def test_run_external_silences(
-    tmpdir: LEGACY_PATH, caplog: pytest.LogCaptureFixture
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     caplog.set_level(logging.WARNING)
 
-    nox.command.run(
-        [PYTHON, "--version"], silent=True, paths=[tmpdir.strpath], external=True
-    )
+    nox.command.run([PYTHON, "--version"], silent=True, paths=[tmp_path], external=True)
 
     assert "external=True" not in caplog.text
 
 
-def test_run_external_raises(
-    tmpdir: LEGACY_PATH, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_run_external_raises(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.ERROR)
 
     with pytest.raises(nox.command.CommandFailed):
         nox.command.run(
-            [PYTHON, "--version"], silent=True, paths=[tmpdir.strpath], external="error"
+            [PYTHON, "--version"], silent=True, paths=[tmp_path], external="error"
         )
 
     assert "external=True" in caplog.text
@@ -430,8 +421,8 @@ def test_interrupt_handled_on_windows() -> None:
     run_pytest_in_new_console_session("test_interrupt_handled")
 
 
-def test_custom_stdout(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) -> None:
-    with open(str(tmpdir / "out.txt"), "w+") as stdout:
+def test_custom_stdout(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
+    with (tmp_path / "out.txt").open("w+", encoding="utf-8") as stdout:
         nox.command.run(
             [
                 PYTHON,
@@ -453,16 +444,16 @@ def test_custom_stdout(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) 
         assert "err" in tempfile_contents
 
 
-def test_custom_stdout_silent_flag(tmpdir: LEGACY_PATH) -> None:
-    with open(str(tmpdir / "out.txt"), "w+") as stdout:  # noqa: SIM117
+def test_custom_stdout_silent_flag(tmp_path: Path) -> None:
+    with (tmp_path / "out.txt").open("w+", encoding="utf-8") as stdout:  # noqa: SIM117
         with pytest.raises(ValueError, match="silent"):
             nox.command.run([PYTHON, "-c", 'print("hi")'], stdout=stdout, silent=True)
 
 
 def test_custom_stdout_failed_command(
-    capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
-    with open(str(tmpdir / "out.txt"), "w+") as stdout:
+    with (tmp_path / "out.txt").open("w+", encoding="utf-8") as stdout:
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run(
                 [
@@ -485,8 +476,8 @@ def test_custom_stdout_failed_command(
         assert "err" in tempfile_contents
 
 
-def test_custom_stderr(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) -> None:
-    with open(str(tmpdir / "err.txt"), "w+") as stderr:
+def test_custom_stderr(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
+    with (tmp_path / "err.txt").open("w+", encoding="utf-8") as stderr:
         nox.command.run(
             [
                 PYTHON,
@@ -509,9 +500,9 @@ def test_custom_stderr(capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH) 
 
 
 def test_custom_stderr_failed_command(
-    capsys: pytest.CaptureFixture[str], tmpdir: LEGACY_PATH
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
-    with open(str(tmpdir / "out.txt"), "w+") as stderr:
+    with (tmp_path / "out.txt").open("w+", encoding="utf-8") as stderr:
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run(
                 [
