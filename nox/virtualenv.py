@@ -24,6 +24,7 @@ import re
 import shutil
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -75,6 +76,7 @@ _BLACKLISTED_ENV_VARS = frozenset(
     ]
 )
 _SYSTEM = platform.system()
+_IS_MINGW = sysconfig.get_platform().startswith("mingw")
 
 
 def find_uv() -> tuple[bool, str]:
@@ -630,7 +632,7 @@ class VirtualEnv(ProcessEnv):
     @property
     def bin_paths(self) -> list[str]:
         """Returns the location of the virtualenv's bin folder."""
-        if _SYSTEM == "Windows":
+        if _SYSTEM == "Windows" and not _IS_MINGW:
             return [os.path.join(self.location, "Scripts")]
         return [os.path.join(self.location, "bin")]
 
