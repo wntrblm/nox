@@ -193,7 +193,7 @@ class Session:
         return self._runner.friendly_name
 
     @property
-    def env(self) -> dict[str, str]:
+    def env(self) -> dict[str, str | None]:
         """A dictionary of environment variables to pass into all commands."""
         return self.virtualenv.env
 
@@ -618,9 +618,14 @@ class Session:
             args = (nox.virtualenv.UV, *args[1:])
 
         # Combine the env argument with our virtualenv's env vars.
+        env = env or {}
+        env = {**self.env, **env}
         if include_outer_env:
-            overlay_env = env or {}
-            env = {**self.env, **overlay_env}
+            env = {**os.environ, **env}
+        if self.virtualenv.bin_paths:
+            env["PATH"] = os.pathsep.join(
+                [*self.virtualenv.bin_paths, env.get("PATH") or ""]
+            )
 
         # If --error-on-external-run is specified, error on external programs.
         if self._runner.global_config.error_on_external_run and external is None:
