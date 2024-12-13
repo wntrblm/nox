@@ -36,12 +36,12 @@ import nox.popen
 PYTHON = sys.executable
 
 skip_on_windows_primary_console_session = pytest.mark.skipif(
-    platform.system() == "Windows" and "SECONDARY_CONSOLE_SESSION" not in os.environ,
+    sys.platform.startswith("win") and "SECONDARY_CONSOLE_SESSION" not in os.environ,
     reason="On Windows, this test must run in a separate console session.",
 )
 
 only_on_windows = pytest.mark.skipif(
-    platform.system() != "Windows", reason="Only run this test on Windows."
+    not sys.platform.startswith("win"), reason="Only run this test on Windows."
 )
 
 
@@ -127,7 +127,7 @@ def test_run_verbosity_failed_command(
 
 
 @pytest.mark.skipif(
-    platform.system() == "Windows",
+    sys.platform.startswith("win"),
     reason="See https://github.com/python/cpython/issues/85815",
 )
 def test_run_non_str() -> None:
@@ -285,7 +285,7 @@ def enable_ctrl_c(*, enabled: bool) -> None:
 
 def interrupt_process(proc: subprocess.Popen[Any]) -> None:
     """Send SIGINT or CTRL_C_EVENT to the process."""
-    if platform.system() == "Windows":
+    if sys.platform.startswith("win"):
         # Disable Ctrl-C so we don't terminate ourselves.
         enable_ctrl_c(enabled=False)
 
@@ -301,7 +301,7 @@ def command_with_keyboard_interrupt(
     monkeypatch: pytest.MonkeyPatch, marker: Any
 ) -> None:
     """Monkeypatch Popen.communicate to raise KeyboardInterrupt."""
-    if platform.system() == "Windows":
+    if sys.platform.startswith("win"):
         # Enable Ctrl-C because the child inherits the setting from us.
         enable_ctrl_c(enabled=True)
 
