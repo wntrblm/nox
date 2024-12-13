@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 
 __all__ = ["CommandFailed", "ExternalType", "run", "which"]
 
+_PLATFORM = sys.platform
+
 
 def __dir__() -> list[str]:
     return __all__
@@ -72,7 +74,7 @@ def _clean_env(env: Mapping[str, str | None] | None = None) -> dict[str, str] | 
     clean_env = {k: v for k, v in env.items() if v is not None}
 
     # Ensure systemroot is passed down, otherwise Windows will explode.
-    if sys.platform == "win32":
+    if _PLATFORM.startswith("win"):
         clean_env.setdefault("SYSTEMROOT", os.environ.get("SYSTEMROOT", ""))
 
     return clean_env
