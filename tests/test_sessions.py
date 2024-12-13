@@ -40,9 +40,6 @@ import nox.virtualenv
 from nox import _options
 from nox.logger import logger
 
-if typing.TYPE_CHECKING:
-    from _pytest.compat import LEGACY_PATH
-
 HAS_CONDA = shutil.which("conda") is not None
 has_conda = pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
 
@@ -212,50 +209,54 @@ class TestSession:
 
             assert session.interactive is False
 
-    def test_chdir(self, tmpdir: LEGACY_PATH) -> None:
-        cdto = str(tmpdir.join("cdbby").ensure(dir=True))
+    def test_chdir(self, tmp_path: Path) -> None:
+        cdbby = tmp_path / "cdbby"
+        cdbby.mkdir()
         current_cwd = os.getcwd()
 
         session, _ = self.make_session_and_runner()
 
-        session.chdir(cdto)
+        session.chdir(str(cdbby))
 
-        assert os.getcwd() == cdto
+        assert cdbby.samefile(".")
         os.chdir(current_cwd)
 
-    def test_chdir_ctx(self, tmpdir: LEGACY_PATH) -> None:
-        cdto = str(tmpdir.join("cdbby").ensure(dir=True))
-        current_cwd = os.getcwd()
+    def test_chdir_ctx(self, tmp_path: Path) -> None:
+        cdbby = tmp_path / "cdbby"
+        cdbby.mkdir()
+        current_cwd = Path.cwd().resolve()
 
         session, _ = self.make_session_and_runner()
 
-        with session.chdir(cdto):
-            assert os.getcwd() == cdto
+        with session.chdir(cdbby):
+            assert cdbby.samefile(".")
 
-        assert os.getcwd() == current_cwd
+        assert current_cwd.samefile(".")
 
         os.chdir(current_cwd)
 
-    def test_invoked_from(self, tmpdir: LEGACY_PATH) -> None:
-        cdto = str(tmpdir.join("cdbby").ensure(dir=True))
-        current_cwd = os.getcwd()
+    def test_invoked_from(self, tmp_path: Path) -> None:
+        cdbby = tmp_path / "cdbby"
+        cdbby.mkdir()
+        current_cwd = Path.cwd().resolve()
 
         session, _ = self.make_session_and_runner()
 
-        session.chdir(cdto)
+        session.chdir(cdbby)
 
-        assert session.invoked_from == current_cwd
+        assert current_cwd.samefile(session.invoked_from)
         os.chdir(current_cwd)
 
-    def test_chdir_pathlib(self, tmpdir: LEGACY_PATH) -> None:
-        cdto = str(tmpdir.join("cdbby").ensure(dir=True))
-        current_cwd = os.getcwd()
+    def test_chdir_pathlib(self, tmp_path: Path) -> None:
+        cdbby = tmp_path / "cdbby"
+        cdbby.mkdir()
+        current_cwd = Path.cwd().resolve()
 
         session, _ = self.make_session_and_runner()
 
-        session.chdir(Path(cdto))
+        session.chdir(cdbby)
 
-        assert os.getcwd() == cdto
+        assert cdbby.samefile(".")
         os.chdir(current_cwd)
 
     def test_run_bad_args(self) -> None:

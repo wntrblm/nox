@@ -14,16 +14,17 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import textwrap
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from _pytest.compat import LEGACY_PATH
 
 tox_to_nox = pytest.importorskip("nox.tox_to_nox")
 
@@ -33,21 +34,22 @@ PYTHON_VERSION_NODOT = PYTHON_VERSION.replace(".", "")
 
 
 @pytest.fixture
-def makeconfig(tmpdir: LEGACY_PATH) -> Callable[[str], str]:
+def makeconfig(tmp_path: Path) -> Callable[[str], str]:
     def makeconfig(toxini_content: str) -> str:
-        tmpdir.join("tox.ini").write_text(toxini_content, encoding="utf8")
-        old = tmpdir.chdir()
+        tmp_path.joinpath("tox.ini").write_text(toxini_content, encoding="utf-8")
+        old = Path.cwd().resolve()
+        os.chdir(tmp_path)
         try:
             sys.argv = [sys.executable]
             tox_to_nox.main()
-            return tmpdir.join("noxfile.py").read_text(encoding="utf8")  # type: ignore[no-any-return]
+            return tmp_path.joinpath("noxfile.py").read_text(encoding="utf-8")
         finally:
-            old.chdir()
+            os.chdir(old)
 
     return makeconfig
 
 
-def test_trivial(makeconfig: Callable[..., Any]) -> None:
+def test_trivial(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -72,7 +74,7 @@ def test_trivial(makeconfig: Callable[..., Any]) -> None:
     )
 
 
-def test_skipinstall(makeconfig: Callable[..., Any]) -> None:
+def test_skipinstall(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -99,7 +101,7 @@ def test_skipinstall(makeconfig: Callable[..., Any]) -> None:
     )
 
 
-def test_usedevelop(makeconfig: Callable[..., Any]) -> None:
+def test_usedevelop(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -127,7 +129,7 @@ def test_usedevelop(makeconfig: Callable[..., Any]) -> None:
     )
 
 
-def test_commands(makeconfig: Callable[..., Any]) -> None:
+def test_commands(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -163,7 +165,7 @@ def test_commands(makeconfig: Callable[..., Any]) -> None:
     )
 
 
-def test_deps(makeconfig: Callable[..., Any]) -> None:
+def test_deps(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -195,7 +197,7 @@ def test_deps(makeconfig: Callable[..., Any]) -> None:
     )
 
 
-def test_env(makeconfig: Callable[..., Any]) -> None:
+def test_env(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -229,7 +231,7 @@ def test_env(makeconfig: Callable[..., Any]) -> None:
     )
 
 
-def test_chdir(makeconfig: Callable[..., Any]) -> None:
+def test_chdir(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -259,7 +261,7 @@ def test_chdir(makeconfig: Callable[..., Any]) -> None:
     )
 
 
-def test_dash_in_envname(makeconfig: Callable[..., Any]) -> None:
+def test_dash_in_envname(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
@@ -289,7 +291,7 @@ def test_dash_in_envname(makeconfig: Callable[..., Any]) -> None:
 
 @pytest.mark.skipif(TOX4, reason="Not supported in tox 4.")
 def test_non_identifier_in_envname(
-    makeconfig: Callable[..., Any], capfd: pytest.CaptureFixture[str]
+    makeconfig: Callable[[str], str], capfd: pytest.CaptureFixture[str]
 ) -> None:
     result = makeconfig(
         textwrap.dedent(
@@ -325,7 +327,7 @@ def test_non_identifier_in_envname(
     )
 
 
-def test_descriptions_into_docstrings(makeconfig: Callable[..., Any]) -> None:
+def test_descriptions_into_docstrings(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
             f"""
