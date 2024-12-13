@@ -29,6 +29,13 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
     from typing import IO
 
+__all__ = ["CommandFailed", "ExternalType", "run", "which"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 ExternalType = Literal["error", True, False]
 
 

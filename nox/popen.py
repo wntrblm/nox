@@ -23,6 +23,18 @@ from typing import IO, TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+__all__ = [
+    "DEFAULT_INTERRUPT_TIMEOUT",
+    "DEFAULT_TERMINATE_TIMEOUT",
+    "decode_output",
+    "popen",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 DEFAULT_INTERRUPT_TIMEOUT = 0.3
 DEFAULT_TERMINATE_TIMEOUT = 0.2
 

@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from types import ModuleType
+
 from nox import project
 from nox._cli import main
 from nox._options import noxfile_options as options
@@ -34,3 +36,11 @@ __all__ = [
     "project",
     "session",
 ]
+
+
+def __dir__() -> list[str]:
+    # Only nox modules are imported here, so we can safely use globals() to
+    # find nox modules only. Other modules, like types and __future__, are imported
+    # from, so don't populate the module globals with surprising entries.
+    modules = {k for k, v in globals().items() if isinstance(v, ModuleType)}
+    return sorted(set(__all__) | modules)

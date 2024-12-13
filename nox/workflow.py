@@ -20,6 +20,12 @@ if TYPE_CHECKING:
     import argparse
     from collections.abc import Callable, Iterable
 
+__all__ = ["execute"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
 
 def execute(
     workflow: Iterable[Callable[..., Any]], global_config: argparse.Namespace

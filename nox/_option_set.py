@@ -21,8 +21,8 @@ from __future__ import annotations
 import argparse
 import collections
 import functools
-from argparse import ArgumentError as ArgumentError  # noqa: PLC0414
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentError, ArgumentParser, Namespace
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, Literal
 
 import argcomplete
@@ -31,6 +31,20 @@ import attrs.validators as av
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
+
+__all__ = [
+    "ArgumentError",
+    "NoxOptions",
+    "Option",
+    "OptionGroup",
+    "OptionSet",
+    "make_flag_pair",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
 
 av_opt_str = av.optional(av.instance_of(str))
 av_opt_list_str = av.optional(

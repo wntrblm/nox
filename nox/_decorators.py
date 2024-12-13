@@ -28,6 +28,12 @@ if TYPE_CHECKING:
 
 T = TypeVar("T", bound=Callable[..., Any])
 
+__all__ = ["Call", "Func", "FunctionDecorator", "_copy_func"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
 
 class FunctionDecorator:
     """This is a function decorator."""
