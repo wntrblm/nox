@@ -162,7 +162,7 @@ def test_run_env_remove(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-@mock.patch("sys.platform", "win32")
+@mock.patch("nox.command._PLATFORM", "win32")
 def test_run_env_systemroot() -> None:
     systemroot = os.environ.setdefault("SYSTEMROOT", "sigil")
 
