@@ -23,6 +23,7 @@ import re
 import shutil
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -65,6 +66,7 @@ def __dir__() -> list[str]:
 
 # Use for test mocking and to make mypy happy
 _PLATFORM = sys.platform
+_IS_MINGW = sysconfig.get_platform().startswith("mingw")
 
 
 # Problematic environment variables that are stripped from all commands inside
@@ -632,7 +634,7 @@ class VirtualEnv(ProcessEnv):
     @property
     def bin_paths(self) -> list[str]:
         """Returns the location of the virtualenv's bin folder."""
-        if _PLATFORM.startswith("win"):
+        if _PLATFORM.startswith("win") and not _IS_MINGW:
             return [os.path.join(self.location, "Scripts")]
         return [os.path.join(self.location, "bin")]
 
