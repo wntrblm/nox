@@ -417,6 +417,18 @@ def test_bin_windows(
     assert str(dir_.joinpath("Scripts")) == venv.bin
 
 
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
+@mock.patch("nox.virtualenv._IS_MINGW", new=True)
+def test_bin_windows_mingw(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
+) -> None:
+    venv, dir_ = make_one()
+    assert venv.bin_paths
+    assert len(venv.bin_paths) == 1
+    assert venv.bin_paths[0] == venv.bin
+    assert str(dir_.joinpath("bin")) == venv.bin
+
+
 def test_create(
     monkeypatch: pytest.MonkeyPatch,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
