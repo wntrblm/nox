@@ -116,7 +116,12 @@ def main() -> None:
                 wrapjoin(c.split()) for c in section["commands"].strip().splitlines()
             ]
 
-            config[name]["deps"] = wrapjoin(section["deps"].strip().splitlines())
+            config[name]["deps"] = wrapjoin([
+                part for dep
+                in section["deps"].strip().splitlines()
+                for part in
+                (dep.split() if dep.startswith("-r") else [dep])
+            ])
 
             for option in "skip_install", "use_develop":
                 if section.get(option):

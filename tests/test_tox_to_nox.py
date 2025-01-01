@@ -357,3 +357,33 @@ def test_descriptions_into_docstrings(makeconfig: Callable[[str], str]) -> None:
             """
         ).lstrip()
     )
+
+
+def test_commands_with_requirements(makeconfig: Callable[[str], str]) -> None:
+    result = makeconfig(
+        textwrap.dedent("""
+        [tox]
+        envlist = aiohttp
+
+        [testenv]
+        use_develop = true
+        deps =
+            pytest
+            pytest-cov
+            aiohttp: -r requirements/aiohttp.txt
+    """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent("""
+    import nox
+
+
+    @nox.session(python='python3.13')
+    def aiohttp(session):
+        session.install('pytest', 'pytest-cov', '-r', 'requirements/aiohttp.txt')
+        session.install('-e', '.')
+    """).lstrip()
+    )
