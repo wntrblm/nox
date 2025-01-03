@@ -597,8 +597,8 @@ the tags, so all three sessions:
     * flake8
 
 
-Running without the nox command
--------------------------------
+Running without the nox command or adding dependencies
+------------------------------------------------------
 
 With a few small additions to your noxfile, you can support running using only
 a generalized Python runner, such as ``pipx run noxfile.py``, ``uv run
@@ -618,6 +618,13 @@ And the following block of code:
    if __name__ == "__main__":
        nox.main()
 
+If this comment block is present, nox will also read it, and run a custom
+environment (``_nox_script_mode``) if the dependencies are not met in the
+current environment. This allows you to specify dependencies for your noxfile
+or a minimum version of nox here (``requires-python`` version setting not
+supported yet, but planned). You can control this with
+``--script-mode``/``NOX_SCRIPT_MODE``; ``none`` will deactivate it, and
+``fresh`` will rebuild it; the default is ``reuse``.
 
 Next steps
 ----------
