@@ -161,19 +161,8 @@ class ProcessEnv(abc.ABC):
         self._bin_paths = None if bin_paths is None else list(bin_paths)
         self._reused = False
 
-        # Filter envs now so `.env` is dict[str, str] (easier to use)
-        # even though .command's env supports None.
-        env = env or {}
-        env = {**os.environ, **env}
-        self.env = {k: v for k, v in env.items() if v is not None}
-
-        for key in _BLACKLISTED_ENV_VARS:
-            self.env.pop(key, None)
-
-        if self.bin_paths:
-            self.env["PATH"] = os.pathsep.join(
-                [*self.bin_paths, self.env.get("PATH", "")]
-            )
+        # .command's env supports None, meaning don't include value even if in parent
+        self.env = {**{k: None for k in _BLACKLISTED_ENV_VARS}, **(env or {})}
 
     @property
     def bin_paths(self) -> list[str] | None:
