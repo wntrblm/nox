@@ -18,14 +18,13 @@ from __future__ import annotations
 import contextlib
 import functools
 import os
-import platform
 import shutil
 import sqlite3
 import sys
 
 import nox
 
-ON_WINDOWS_CI = "CI" in os.environ and platform.system() == "Windows"
+ON_WINDOWS_CI = "CI" in os.environ and sys.platform.startswith("win32")
 
 nox.needs_version = ">=2024.4.15"
 nox.options.default_venv_backend = "uv|virtualenv"

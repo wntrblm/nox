@@ -19,11 +19,11 @@ import contextlib
 import functools
 import json
 import os
-import platform
 import re
 import shutil
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -64,6 +64,11 @@ def __dir__() -> list[str]:
     return __all__
 
 
+# Use for test mocking and to make mypy happy
+_PLATFORM = sys.platform
+_IS_MINGW = sysconfig.get_platform().startswith("mingw")
+
+
 # Problematic environment variables that are stripped from all commands inside
 # of a virtualenv. See https://github.com/theacodes/nox/issues/44
 _BLACKLISTED_ENV_VARS = frozenset(
@@ -74,7 +79,6 @@ _BLACKLISTED_ENV_VARS = frozenset(
         "UV_SYSTEM_PYTHON",
     ]
 )
-_SYSTEM = platform.system()
 
 
 def find_uv() -> tuple[bool, str]:
@@ -359,7 +363,7 @@ class CondaEnv(ProcessEnv):
     def bin_paths(self) -> list[str]:
         """Returns the location of the conda env's bin folder."""
         # see https://github.com/conda/conda/blob/f60f0f1643af04ed9a51da3dd4fa242de81e32f4/conda/activate.py#L563-L572
-        if _SYSTEM == "Windows":
+        if _PLATFORM.startswith("win"):
             return [
                 self.location,
                 os.path.join(self.location, "Library", "mingw-w64", "bin"),
@@ -601,7 +605,7 @@ class VirtualEnv(ProcessEnv):
 
         # The rest of this is only applicable to Windows, so if we don't have
         # an interpreter by now, raise.
-        if _SYSTEM != "Windows":
+        if not _PLATFORM.startswith("win"):
             self._resolved = InterpreterNotFound(self.interpreter)
             raise self._resolved
 
@@ -630,7 +634,7 @@ class VirtualEnv(ProcessEnv):
     @property
     def bin_paths(self) -> list[str]:
         """Returns the location of the virtualenv's bin folder."""
-        if _SYSTEM == "Windows":
+        if _PLATFORM.startswith("win") and not _IS_MINGW:
             return [os.path.join(self.location, "Scripts")]
         return [os.path.join(self.location, "bin")]
 

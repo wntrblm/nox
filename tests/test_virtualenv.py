@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
     from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
-IS_WINDOWS = nox.virtualenv._SYSTEM == "Windows"
+IS_WINDOWS = sys.platform.startswith("win")
 HAS_CONDA = shutil.which("conda") is not None
 HAS_UV = shutil.which("uv") is not None
 RAISE_ERROR = "RAISE_ERROR"
@@ -249,7 +249,7 @@ def test_conda_env_create_verbose(
     assert kwargs["log"]
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
 def test_condaenv_bin_windows(make_conda: Callable[..., tuple[CondaEnv, Path]]) -> None:
     venv, dir_ = make_conda()
     assert [
@@ -406,7 +406,7 @@ def test_bin_paths(
     assert str(dir_.joinpath("Scripts" if IS_WINDOWS else "bin")) == venv.bin
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
 def test_bin_windows(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
 ) -> None:
@@ -415,6 +415,18 @@ def test_bin_windows(
     assert len(venv.bin_paths) == 1
     assert venv.bin_paths[0] == venv.bin
     assert str(dir_.joinpath("Scripts")) == venv.bin
+
+
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
+@mock.patch("nox.virtualenv._IS_MINGW", new=True)
+def test_bin_windows_mingw(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
+) -> None:
+    venv, dir_ = make_one()
+    assert venv.bin_paths
+    assert len(venv.bin_paths) == 1
+    assert venv.bin_paths[0] == venv.bin
+    assert str(dir_.joinpath("bin")) == venv.bin
 
 
 def test_create(
@@ -899,7 +911,7 @@ def test__resolved_interpreter_none(
         ("2.7.15", "python2.7"),
     ],
 )
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._PLATFORM", new="linux")
 @mock.patch.object(shutil, "which", return_value=True)
 def test__resolved_interpreter_numerical_non_windows(
     which: mock.Mock,
@@ -914,7 +926,7 @@ def test__resolved_interpreter_numerical_non_windows(
 
 
 @pytest.mark.parametrize("input_", ["2.", "2.7."])
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._PLATFORM", new="linux")
 @mock.patch.object(shutil, "which", return_value=False)
 def test__resolved_interpreter_invalid_numerical_id(
     which: mock.Mock,
@@ -929,7 +941,7 @@ def test__resolved_interpreter_invalid_numerical_id(
     which.assert_called_once_with(input_)
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._PLATFORM", new="linux")
 @mock.patch.object(shutil, "which", return_value=False)
 def test__resolved_interpreter_32_bit_non_windows(
     which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
@@ -941,7 +953,7 @@ def test__resolved_interpreter_32_bit_non_windows(
     which.assert_called_once_with("3.6-32")
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._PLATFORM", new="linux")
 @mock.patch.object(shutil, "which", return_value=True)
 def test__resolved_interpreter_non_windows(
     which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
@@ -954,7 +966,7 @@ def test__resolved_interpreter_non_windows(
     which.assert_called_once_with("python3.6")
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
 @mock.patch.object(shutil, "which")
 def test__resolved_interpreter_windows_full_path(
     which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
@@ -976,7 +988,7 @@ def test__resolved_interpreter_windows_full_path(
         ("2.7-32", r"c:\python27\python.exe"),
     ],
 )
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
 @mock.patch.object(subprocess, "run")
 @mock.patch.object(shutil, "which")
 def test__resolved_interpreter_windows_pyexe(
@@ -1011,7 +1023,7 @@ def test__resolved_interpreter_windows_pyexe(
     which.assert_has_calls([mock.call(input_), mock.call("py")])
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
 @mock.patch.object(subprocess, "run")
 @mock.patch.object(shutil, "which")
 def test__resolved_interpreter_windows_pyexe_fails(
@@ -1020,8 +1032,8 @@ def test__resolved_interpreter_windows_pyexe_fails(
     # Establish that if the py launcher fails, we give the right error.
     venv, _ = make_one(interpreter="python3.6")
 
-    # Trick the nox.virtualenv._SYSTEM into thinking that it cannot find python3.6
-    # (it likely will on Unix). Also, when the nox.virtualenv._SYSTEM looks for the
+    # Trick the nox.virtualenv into thinking that it cannot find python3.6
+    # (it likely will on Unix). Also, when the nox.virtualenv looks for the
     # py launcher, give it a dummy that fails.
     def special_run(cmd: str, *args: str, **kwargs: object) -> TextProcessResult:  # noqa: ARG001
         return TextProcessResult("", 1)
@@ -1036,7 +1048,7 @@ def test__resolved_interpreter_windows_pyexe_fails(
     which.assert_has_calls([mock.call("python3.6"), mock.call("py")])
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
 @mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
 def test__resolved_interpreter_windows_path_and_version(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
@@ -1065,7 +1077,7 @@ def test__resolved_interpreter_windows_path_and_version(
 @pytest.mark.parametrize("input_", ["2.7", "python3.7", "goofy"])
 @pytest.mark.parametrize("sysfind_result", [r"c:\python37-x64\python.exe", None])
 @pytest.mark.parametrize("sysexec_result", ["3.7.3\\n", RAISE_ERROR])
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
 @mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
 def test__resolved_interpreter_windows_path_and_version_fails(
     input_: str,
@@ -1089,7 +1101,7 @@ def test__resolved_interpreter_windows_path_and_version_fails(
         print(venv._resolved_interpreter)
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
 @mock.patch.object(shutil, "which")
 def test__resolved_interpreter_not_found(
     which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
@@ -1106,7 +1118,7 @@ def test__resolved_interpreter_not_found(
         print(venv._resolved_interpreter)
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Windows")
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
 @mock.patch("nox.virtualenv.locate_via_py", new=lambda _: None)  # type: ignore[misc]  # noqa: PT008
 def test__resolved_interpreter_nonstandard(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
@@ -1119,7 +1131,7 @@ def test__resolved_interpreter_nonstandard(
         print(venv._resolved_interpreter)
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._PLATFORM", new="linux")
 @mock.patch.object(shutil, "which", return_value=True)
 def test__resolved_interpreter_cache_result(
     which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
@@ -1135,7 +1147,7 @@ def test__resolved_interpreter_cache_result(
     assert which.call_count == 1
 
 
-@mock.patch("nox.virtualenv._SYSTEM", new="Linux")
+@mock.patch("nox.virtualenv._PLATFORM", new="linux")
 @mock.patch.object(shutil, "which", return_value=None)
 def test__resolved_interpreter_cache_failure(
     which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
