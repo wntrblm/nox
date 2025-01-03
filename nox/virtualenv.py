@@ -597,7 +597,7 @@ class VirtualEnv(ProcessEnv):
             self._resolved = cleaned_interpreter
             return self._resolved
 
-        if HAS_UV and UV_PYTHON_SUPPORT:
+        if self.venv_backend == "uv" and HAS_UV and UV_PYTHON_SUPPORT:
             uv_python_success = uv_install_python(cleaned_interpreter)
             if uv_python_success:
                 self._resolved = cleaned_interpreter
