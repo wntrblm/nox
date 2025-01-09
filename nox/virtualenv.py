@@ -111,7 +111,7 @@ def uv_version() -> version.Version:
             capture_output=True,
             encoding="utf-8",
         )
-    except FileNotFoundError:
+    except (FileNotFoundError, PermissionError):
         logger.info("uv binary not found.")
         return version.Version("0.0")
 
