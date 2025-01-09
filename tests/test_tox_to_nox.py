@@ -371,8 +371,7 @@ def test_commands_with_requirements(makeconfig: Callable[[str], str]) -> None:
             pytest
             pytest-cov
             aiohttp: -r requirements/aiohttp.txt
-    """
-        )
+    """)
     )
 
     assert (
