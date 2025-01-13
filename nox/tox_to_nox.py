@@ -120,9 +120,7 @@ def main() -> None:
                 [
                     part
                     for dep in section["deps"].strip().splitlines()
-                    for part in (
-                        [dep[:2] + dep[3:]] if dep.startswith("-r ") else [dep]
-                    )
+                    for part in (dep.split() if dep.startswith("-r") else [dep])
                 ]
             )
 
