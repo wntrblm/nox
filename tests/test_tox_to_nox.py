@@ -366,7 +366,7 @@ def test_commands_with_requirements(makeconfig: Callable[[str], str]) -> None:
         envlist = aiohttp
 
         [testenv]
-        use_develop = true
+        usedevelop = true
         deps =
             pytest
             pytest-cov
@@ -382,7 +382,7 @@ def test_commands_with_requirements(makeconfig: Callable[[str], str]) -> None:
 
     @nox.session(python='python3.13')
     def aiohttp(session):
-        session.install('pytest', 'pytest-cov', '-r', 'requirements/aiohttp.txt')
+        session.install('pytest', 'pytest-cov', '-rrequirements/aiohttp.txt')
         session.install('-e', '.')
     """).lstrip()
     )

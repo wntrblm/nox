@@ -120,7 +120,9 @@ def main() -> None:
                 [
                     part
                     for dep in section["deps"].strip().splitlines()
-                    for part in (dep.split() if dep.startswith("-r") else [dep])
+                    for part in (
+                        [dep[:2] + dep[3:]] if dep.startswith("-r ") else [dep]
+                    )
                 ]
             )
 
@@ -139,7 +141,7 @@ def main() -> None:
                 )
                 config[name]["base_python"] = impl + section["py_dot_ver"]
 
-            change_dir = Path(section.get("change_dir", "."))
+            change_dir = Path(section.get("change_dir", ""))
             rel_to_cwd = change_dir.relative_to(Path.cwd())
             if str(rel_to_cwd) == ".":
                 config[name]["change_dir"] = None
