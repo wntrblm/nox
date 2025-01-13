@@ -53,7 +53,7 @@ jobs:
           use-mamba: true
           channels: conda-forge/label/python_rc,conda-forge
       - name: Install Nox-under-test (uv)
-        run:  uv pip install --system
+        run:  uv pip install --system .
       - name: Run tests on ${{ matrix.os }}
         run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
       - name: Save coverage report
