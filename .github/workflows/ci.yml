@@ -53,11 +53,9 @@ jobs:
           use-mamba: true
           channels: conda-forge/label/python_rc,conda-forge
       - name: Install Nox-under-test (uv)
-        run:  uv pip install --system .
-      - name: Run tests on ${{ matrix.os }} (tox <4)
-        run: nox --non-interactive --error-on-missing-interpreter --session "tests(python='${{ matrix.python-version }}', tox_version='<4')" -- --full-trace
-      - name: Run tox-to-nox tests on ${{ matrix.os }} (tox latest)
-        run: nox --non-interactive --error-on-missing-interpreter --session "tests(python='${{ matrix.python-version }}', tox_version='latest')" -- tests/test_tox_to_nox.py --full-trace
+        run:  uv pip install --system
+      - name: Run tests on ${{ matrix.os }}
+        run: nox --non-interactive --error-on-missing-interpreter --session "tests-${{ matrix.python-version }}" -- --full-trace
       - name: Save coverage report
         uses: actions/upload-artifact@v4
         with:

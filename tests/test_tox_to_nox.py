@@ -28,7 +28,6 @@ if TYPE_CHECKING:
 
 tox_to_nox = pytest.importorskip("nox.tox_to_nox")
 
-TOX4 = tox_to_nox.TOX4
 PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}"
 PYTHON_VERSION_NODOT = PYTHON_VERSION.replace(".", "")
 
@@ -289,44 +288,6 @@ def test_dash_in_envname(makeconfig: Callable[[str], str]) -> None:
     )
 
 
-@pytest.mark.skipif(TOX4, reason="Not supported in tox 4.")
-def test_non_identifier_in_envname(
-    makeconfig: Callable[[str], str], capfd: pytest.CaptureFixture[str]
-) -> None:
-    result = makeconfig(
-        textwrap.dedent(
-            f"""
-            [tox]
-            envlist = test-with-&
-
-            [testenv:test-with-&]
-            basepython = python{PYTHON_VERSION}
-            """
-        )
-    )
-
-    assert (
-        result
-        == textwrap.dedent(
-            f"""
-        import nox
-
-
-        @nox.session(python='python{PYTHON_VERSION}')
-        def test_with_&(session):
-            session.install('.')
-        """
-        ).lstrip()
-    )
-
-    out, _ = capfd.readouterr()
-
-    assert (
-        out == "Environment 'test_with_&' is not a valid nox session name.\n"
-        "Manually update the session name in noxfile.py before running nox.\n"
-    )
-
-
 def test_descriptions_into_docstrings(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
@@ -371,8 +332,7 @@ def test_commands_with_requirements(makeconfig: Callable[[str], str]) -> None:
             pytest
             pytest-cov
             aiohttp: -r requirements/aiohttp.txt
-    """
-        )
+    """)
     )
 
     assert (
