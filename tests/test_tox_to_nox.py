@@ -337,11 +337,11 @@ def test_commands_with_requirements(makeconfig: Callable[[str], str]) -> None:
 
     assert (
         result
-        == textwrap.dedent("""
+        == textwrap.dedent(f"""
     import nox
 
 
-    @nox.session(python='python3.13')
+    @nox.session(python='python{PYTHON_VERSION}')
     def aiohttp(session):
         session.install('pytest', 'pytest-cov', '-r', 'requirements/aiohttp.txt')
         session.install('-e', '.')
