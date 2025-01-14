@@ -54,14 +54,11 @@ def wrapjoin(seq: Iterable[Any]) -> str:
 
 
 def fixname(envname: str) -> str:
-    """Replace dashes with underscores and check if the result is a valid identifier."""
-    envname = envname.replace("-", "_").replace("testenv:", "")
-    if not envname.isidentifier():
-        print(
-            f"Environment {envname!r} is not a valid nox session name.\n"
-            "Manually update the session name in noxfile.py before running nox."
-        )
-    return envname
+    """
+    Replace dashes with underscores. Tox 4+ requires valid identifiers for
+    names already.
+    """
+    return envname.replace("-", "_").replace("testenv:", "")
 
 
 def write_output_to_file(output: str, filename: str) -> None:
