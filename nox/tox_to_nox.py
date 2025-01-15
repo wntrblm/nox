@@ -121,7 +121,7 @@ def main() -> None:
             impl = "python" if section["py_impl"] == "cpython" else section["py_impl"]
             config[name]["base_python"] = impl + section["py_dot_ver"]
 
-        change_dir = Path(section.get("change_dir"))
+        change_dir = Path(section.get("change_dir", ""))
         rel_to_cwd = change_dir.relative_to(Path.cwd())
         if str(rel_to_cwd) == ".":
             config[name]["change_dir"] = None
