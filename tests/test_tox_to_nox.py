@@ -327,7 +327,7 @@ def test_commands_with_requirements(makeconfig: Callable[[str], str]) -> None:
         envlist = aiohttp
 
         [testenv]
-        usedevelop = true
+        use_develop = true
         deps =
             pytest
             pytest-cov
