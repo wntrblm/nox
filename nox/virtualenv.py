@@ -229,6 +229,7 @@ def locate_via_py(version: str) -> str | None:
             check=False,
             text=True,
             capture_output=True,
+            encoding="utf-8",
         )
         if ret.returncode == 0 and ret.stdout:
             return ret.stdout.strip()
