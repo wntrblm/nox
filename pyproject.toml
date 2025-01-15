@@ -50,7 +50,7 @@ dependencies = [
 optional-dependencies.tox_to_nox = [
   "importlib-resources; python_version<'3.9'",
   "jinja2",
-  "tox",
+  "tox>=4",
 ]
 optional-dependencies.uv = [
   "uv>=0.1.6",

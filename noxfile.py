@@ -38,28 +38,16 @@ ALL_PYTHONS = [
 ]
 
 
-@nox.session
-@nox.parametrize(
-    "python, tox_version",
-    [
-        (python, tox_version)
-        for python in ALL_PYTHONS
-        for tox_version in ("latest", "<4")
-    ],
-)
-def tests(session: nox.Session, tox_version: str) -> None:
+@nox.session(python=ALL_PYTHONS)
+def tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
 
-    coverage_file = (
-        f".coverage.{sys.platform}.{session.python}.tox{tox_version.lstrip('<')}"
-    )
+    coverage_file = f".coverage.{sys.platform}.{session.python}"
 
     session.create_tmp()  # Fixes permission errors on Windows
     session.install(*PYPROJECT["dependency-groups"]["test"], "uv")
     session.install("-e.[tox_to_nox]")
-    if tox_version != "latest":
-        session.install(f"tox{tox_version}")
-    extra_env = {"PYTHONWARNDEFAULTENCODING": "1"} if tox_version == "latest" else {}
+    extra_env = {"PYTHONWARNDEFAULTENCODING": "1"}
     session.run(
         "pytest",
         "--cov",
