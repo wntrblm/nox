@@ -335,9 +335,6 @@ def test_commands_with_requirements(makeconfig: Callable[[str], str]) -> None:
     """)
     )
 
-    # This is equivalent
-    result = result.replace("'-rrequirements", "'-r', 'requirements")
-
     assert (
         result
         == textwrap.dedent(f"""
