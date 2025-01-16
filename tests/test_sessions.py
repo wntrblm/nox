@@ -300,9 +300,12 @@ class TestSession:
             session.install("spam")
             session.run("spam", "eggs")
 
+        env = dict(os.environ)
+        env["PATH"] = os.pathsep.join(["/no/bin/for/you", env["PATH"]])
+
         run.assert_called_once_with(
             ("python", "-m", "pip", "install", "spam"),
-            **run_with_defaults(paths=mock.ANY, silent=True, env={}, external="error"),
+            **run_with_defaults(paths=mock.ANY, silent=True, env=env, external="error"),
         )
 
     def test_run_success(self) -> None:
@@ -342,10 +345,12 @@ class TestSession:
         assert result
         assert result.strip() == "1 3 5"
 
-    def test_by_default_all_invocation_env_vars_are_passed(self) -> None:
+    def test_by_default_all_invocation_env_vars_are_passed(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("I_SHOULD_BE_INCLUDED", "happy")
         session, runner = self.make_session_and_runner()
         assert runner.venv
-        runner.venv.env["I_SHOULD_BE_INCLUDED"] = "happy"
         runner.venv.env["I_SHOULD_BE_INCLUDED_TOO"] = "happier"
         runner.venv.env["EVERYONE_SHOULD_BE_INCLUDED_TOO"] = "happiest"
         result = session.run(
@@ -359,11 +364,13 @@ class TestSession:
         assert "happier" in result
         assert "happiest" in result
 
-    def test_no_included_invocation_env_vars_are_passed(self) -> None:
+    def test_no_included_invocation_env_vars_are_passed(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("I_SHOULD_NOT_BE_INCLUDED", "sad")
+        monkeypatch.setenv("AND_NEITHER_SHOULD_I", "unhappy")
         session, runner = self.make_session_and_runner()
         assert runner.venv
-        runner.venv.env["I_SHOULD_NOT_BE_INCLUDED"] = "sad"
-        runner.venv.env["AND_NEITHER_SHOULD_I"] = "unhappy"
         result = session.run(
             sys.executable,
             "-c",
@@ -376,6 +383,23 @@ class TestSession:
         assert "sad" not in result
         assert "unhappy" not in result
         assert "happy" in result
+
+    def test_no_included_invocation_env_vars_are_passed_empty(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("I_SHOULD_NOT_BE_INCLUDED", "sad")
+        monkeypatch.setenv("AND_NEITHER_SHOULD_I", "unhappy")
+        session, runner = self.make_session_and_runner()
+        result = session.run(
+            sys.executable,
+            "-c",
+            "import os; print(os.environ)",
+            include_outer_env=False,
+            silent=True,
+        )
+        assert result
+        assert "sad" not in result
+        assert "unhappy" not in result
 
     def test_run_external_not_a_virtualenv(self) -> None:
         # Non-virtualenv sessions should always allow external programs.
