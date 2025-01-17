@@ -218,6 +218,7 @@ def locate_via_py(version: str) -> str | None:
             check=False,
             text=True,
             capture_output=True,
+            encoding="utf-8",
         )
         if ret.returncode == 0 and ret.stdout:
             return ret.stdout.strip()
@@ -586,7 +587,9 @@ class VirtualEnv(ProcessEnv):
             self._resolved = cleaned_interpreter
             return self._resolved
 
-        if HAS_UV and UV_PYTHON_SUPPORT:
+        if (
+            self.venv_backend == "uv" and HAS_UV and UV_PYTHON_SUPPORT
+        ):  # pragma: nocover
             uv_python_success = uv_install_python(cleaned_interpreter)
             if uv_python_success:
                 self._resolved = cleaned_interpreter
