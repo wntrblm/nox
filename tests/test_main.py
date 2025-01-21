@@ -1020,3 +1020,48 @@ def test_symlink_sym_not(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(Path(RESOURCES) / "sym_dir")
     res = subprocess.run([sys.executable, "-m", "nox", "-s", "orig"], check=False)
     assert res.returncode == 1
+
+
+def test_noxfile_script_mode() -> None:
+    job = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "nox",
+            "-f",
+            Path(RESOURCES) / "noxfile_script_mode.py",
+            "-s",
+            "example",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    print(job.stdout)
+    print(job.stderr)
+    assert job.returncode == 0
+    assert "hello_world" in job.stdout
+
+
+def test_noxfile_no_script_mode() -> None:
+    env = os.environ.copy()
+    env["NOX_SCRIPT_MODE"] = "none"
+    job = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "nox",
+            "-f",
+            Path(RESOURCES) / "noxfile_script_mode.py",
+            "-s",
+            "example",
+        ],
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert job.returncode == 1
+    assert "No module named 'cowsay'" in job.stderr
