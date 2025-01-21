@@ -618,14 +618,7 @@ class Session:
             args = (nox.virtualenv.UV, *args[1:])
 
         # Combine the env argument with our virtualenv's env vars.
-        env = env or {}
-        env = {**self.env, **env}
-        if include_outer_env:
-            env = {**os.environ, **env}
-        if self.virtualenv.bin_paths:
-            env["PATH"] = os.pathsep.join(
-                [*self.virtualenv.bin_paths, env.get("PATH") or ""]
-            )
+        env = self.virtualenv.get_env(env=env, include_outer_env=include_outer_env)
 
         # If --error-on-external-run is specified, error on external programs.
         if self._runner.global_config.error_on_external_run and external is None:
@@ -821,7 +814,7 @@ class Session:
         if not isinstance(
             venv, (CondaEnv, VirtualEnv, PassthroughEnv)
         ):  # pragma: no cover
-            msg = "A session without a virtualenv can not install dependencies."
+            msg = f"A session without a virtualenv (got {venv!r}) can not install dependencies."
             raise TypeError(msg)
         if isinstance(venv, PassthroughEnv):
             if self._runner.global_config.no_install:

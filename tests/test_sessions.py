@@ -105,6 +105,19 @@ def test__normalize_path_give_up() -> None:
     assert "any-path" in norm_path
 
 
+class FakeEnv(mock.MagicMock):
+    get_env = nox.virtualenv.VirtualEnv.get_env
+
+
+def make_fake_env(venv_backend: str = "venv", **kwargs: Any) -> FakeEnv:
+    return FakeEnv(
+        spec=nox.virtualenv.VirtualEnv,
+        env={},
+        venv_backend=venv_backend,
+        **kwargs,
+    )
+
+
 class TestSession:
     def make_session_and_runner(
         self,
@@ -122,11 +135,8 @@ class TestSession:
             ),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
-        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
-        assert runner.venv
-        runner.venv.env = {}
-        runner.venv.bin_paths = ["/no/bin/for/you"]  # type: ignore[misc]
-        runner.venv.venv_backend = "venv"  # type: ignore[misc]
+        runner.venv = make_fake_env(bin_paths=["/no/bin/for/you"])
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
         return nox.sessions.Session(runner=runner), runner
 
     def test_create_tmp(self) -> None:
@@ -750,10 +760,8 @@ class TestSession:
             global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
-        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
-        assert runner.venv
-        runner.venv.env = {}
-        runner.venv.venv_backend = "venv"  # type: ignore[misc]
+        runner.venv = make_fake_env()
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -782,10 +790,8 @@ class TestSession:
             global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
-        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
-        assert runner.venv
-        runner.venv.env = {}
-        runner.venv.venv_backend = "venv"  # type: ignore[misc]
+        runner.venv = make_fake_env()
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -936,10 +942,9 @@ class TestSession:
             global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
-        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
-        assert runner.venv
-        runner.venv.env = {}
-        runner.venv.venv_backend = "uv"  # type: ignore[misc]
+        runner.venv = make_fake_env(venv_backend="uv")
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
+        assert runner.venv.venv_backend == "uv"
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -965,10 +970,9 @@ class TestSession:
             global_config=_options.options.namespace(posargs=[]),
             manifest=mock.create_autospec(nox.manifest.Manifest),
         )
-        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
-        assert runner.venv
-        runner.venv.env = {}
-        runner.venv.venv_backend = "uv"  # type: ignore[misc]
+        runner.venv = make_fake_env(venv_backend="uv")
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
+        assert runner.venv.venv_backend == "uv"
 
         class SessionNoSlots(nox.sessions.Session):
             pass
@@ -1241,9 +1245,8 @@ class TestSessionRunner:
     def make_runner_with_mock_venv(self) -> nox.sessions.SessionRunner:
         runner = self.make_runner()
         runner._create_venv = mock.Mock()  # type: ignore[method-assign]
-        runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv)
-        assert runner.venv
-        runner.venv.env = {}
+        runner.venv = make_fake_env()
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
         return runner
 
     def test_execute_noop_success(self, caplog: pytest.LogCaptureFixture) -> None:
