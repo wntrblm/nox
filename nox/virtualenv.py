@@ -191,18 +191,19 @@ class ProcessEnv(abc.ABC):
         Returns the string used to select this environment.
         """
 
-    def get_env(
+    def _get_env(
         self,
+        /,
+        env: Mapping[str, str | None],
         *,
-        env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
     ) -> dict[str, str | None]:
         """
         Get the computed environment, with bin paths added.  You can request
-        the outer environment be excluded, and/or pass in an env to add.
+        the outer environment be excluded. The initial env can be empty.
         """
 
-        computed_env = {**self.env, **(env or {})}
+        computed_env = {**self.env, **env}
         if include_outer_env:
             computed_env = {**os.environ, **computed_env}
         if self.bin_paths:

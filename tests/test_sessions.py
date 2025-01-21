@@ -106,7 +106,7 @@ def test__normalize_path_give_up() -> None:
 
 
 class FakeEnv(mock.MagicMock):
-    get_env = nox.virtualenv.VirtualEnv.get_env
+    _get_env = nox.virtualenv.VirtualEnv._get_env
 
 
 def make_fake_env(venv_backend: str = "venv", **kwargs: Any) -> FakeEnv:

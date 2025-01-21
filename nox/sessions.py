@@ -618,7 +618,7 @@ class Session:
             args = (nox.virtualenv.UV, *args[1:])
 
         # Combine the env argument with our virtualenv's env vars.
-        env = self.virtualenv.get_env(env=env, include_outer_env=include_outer_env)
+        env = self.virtualenv._get_env(env or {}, include_outer_env=include_outer_env)
 
         # If --error-on-external-run is specified, error on external programs.
         if self._runner.global_config.error_on_external_run and external is None:
