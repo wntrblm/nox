@@ -346,6 +346,11 @@ options.add_options(
         default="reuse",
     ),
     _option_set.Option(
+        "script_venv_backend",
+        "--script-venv-backend",
+        group=options.groups["general"],
+    ),
+    _option_set.Option(
         "list_sessions",
         "-l",
         "--list-sessions",

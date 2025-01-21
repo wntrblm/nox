@@ -110,12 +110,13 @@ def check_dependencies(dependencies: list[str]) -> bool:
     return True
 
 
-def run_script_mode(envdir: Path, *, reuse: bool, dependencies: list[str]) -> NoReturn:
+def run_script_mode(
+    envdir: Path, *, reuse: bool, dependencies: list[str], venv_backend: str
+) -> NoReturn:
     envdir.mkdir(exist_ok=True)
     noxenv = envdir.joinpath("_nox_script_mode")
     venv = nox.virtualenv.get_virtualenv(
-        "uv",
-        "virtualenv",
+        *venv_backend.split("|"),
         reuse_existing=reuse,
         envdir=str(noxenv),
     )
@@ -171,9 +172,22 @@ def main() -> None:
             valid_env = check_dependencies(dependencies)
             # Coverage misses this, but it's covered via subprocess call
             if not valid_env:  # pragma: nocover
+                venv_backend = (
+                    os.environ.get("NOX_SCRIPT_VENV_BACKEND")
+                    or args.script_venv_backend
+                    or (
+                        toml_config.get("tool", {})
+                        .get("nox", {})
+                        .get("script-venv-backend", "uv|virtualenv")
+                    )
+                )
+
                 envdir = Path(args.envdir or ".nox")
                 run_script_mode(
-                    envdir, reuse=nox_script_mode == "reuse", dependencies=dependencies
+                    envdir,
+                    reuse=nox_script_mode == "reuse",
+                    dependencies=dependencies,
+                    venv_backend=venv_backend,
                 )
 
     exit_code = execute_workflow(args)

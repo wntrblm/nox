@@ -1,6 +1,7 @@
 import importlib.metadata
 import importlib.util
 import sys
+from pathlib import Path
 
 import packaging.requirements
 import packaging.version
@@ -68,4 +69,33 @@ def test_invalid_mode(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "argv", ["nox"])
 
     with pytest.raises(SystemExit, match="Invalid NOX_SCRIPT_MODE"):
+        nox._cli.main()
+
+
+def test_invalid_backend_envvar(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("NOX_SCRIPT_VENV_BACKEND", "invalid")
+    monkeypatch.setattr(sys, "argv", ["nox"])
+    monkeypatch.chdir(tmp_path)
+    tmp_path.joinpath("noxfile.py").write_text(
+        "# /// script\n# dependencies=['nox', 'invalid']\n# ///",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Expected venv_backend one of"):
+        nox._cli.main()
+
+
+def test_invalid_backend_inline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(sys, "argv", ["nox"])
+    monkeypatch.chdir(tmp_path)
+    tmp_path.joinpath("noxfile.py").write_text(
+        "# /// script\n# dependencies=['nox', 'invalid']\n# tool.nox.script-venv-backend = 'invalid'\n# ///",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Expected venv_backend one of"):
         nox._cli.main()
