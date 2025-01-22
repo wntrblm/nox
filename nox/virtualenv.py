@@ -453,6 +453,7 @@ class VirtualEnv(ProcessEnv):
               be ``py -3.6-32``
             * ``X.Y.Z``, e.g. ``3.4.9``
             * ``pythonX.Y``, e.g. ``python2.7``
+            * ``pypyX.Y``, e.g. ``pypy3.10`` (also ``pypy-3.10`` allowed)
             * A path in the filesystem to a Python executable
 
             If not specified, this will use the currently running Python.
@@ -472,6 +473,10 @@ class VirtualEnv(ProcessEnv):
         venv_backend: str = "virtualenv",
         venv_params: Sequence[str] = (),
     ):
+        # "pypy-" -> "pypy"
+        if interpreter and interpreter.startswith("pypy-"):
+            interpreter = interpreter[:4] + interpreter[5:]
+
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
