@@ -21,7 +21,6 @@ jobs:
         os:
           - ubuntu-22.04
           - ubuntu-24.04
-          - ubuntu-24.04-arm
           - windows-2019
           - windows-2022
           - macos-13
