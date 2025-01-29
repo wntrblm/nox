@@ -322,6 +322,16 @@ def test_constructor_defaults(
     assert venv.venv_backend == "virtualenv"
 
 
+def test_constructor_pypy_dash(
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+) -> None:
+    venv, _ = make_one(interpreter="pypy-3.10")
+    assert venv.location
+    assert venv.interpreter == "pypy3.10"
+    assert venv.reuse_existing is False
+    assert venv.venv_backend == "virtualenv"
+
+
 @pytest.mark.skipif(IS_WINDOWS, reason="Not testing multiple interpreters on Windows.")
 def test_constructor_explicit(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
