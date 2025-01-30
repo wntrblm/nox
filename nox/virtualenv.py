@@ -668,7 +668,13 @@ class VirtualEnv(ProcessEnv):
             return False
 
         if self.venv_backend == "virtualenv":
-            cmd = [sys.executable, "-m", "virtualenv", self.location]
+            cmd = [
+                sys.executable,
+                "-m",
+                "virtualenv",
+                self.location,
+                "--no-periodic-update",
+            ]
             if self.interpreter:
                 cmd.extend(["-p", self._resolved_interpreter])
         elif self.venv_backend == "uv":
