@@ -353,7 +353,7 @@ class CondaEnv(ProcessEnv):
             if self.reuse_existing and is_conda:
                 return False
             if not is_conda:
-                shutil.rmtree(self.location)
+                shutil.rmtree(self.location, ignore_errors=True)
             else:
                 cmd = [
                     self.conda_cmd,
@@ -365,8 +365,7 @@ class CondaEnv(ProcessEnv):
                 ]
                 nox.command.run(cmd, silent=True, log=False)
             # Make sure that location is clean
-            with contextlib.suppress(FileNotFoundError):
-                shutil.rmtree(self.location)
+            shutil.rmtree(self.location, ignore_errors=True)
 
         return True
 
@@ -453,6 +452,7 @@ class VirtualEnv(ProcessEnv):
               be ``py -3.6-32``
             * ``X.Y.Z``, e.g. ``3.4.9``
             * ``pythonX.Y``, e.g. ``python2.7``
+            * ``pypyX.Y``, e.g. ``pypy3.10`` (also ``pypy-3.10`` allowed)
             * A path in the filesystem to a Python executable
 
             If not specified, this will use the currently running Python.
@@ -472,6 +472,10 @@ class VirtualEnv(ProcessEnv):
         venv_backend: str = "virtualenv",
         venv_params: Sequence[str] = (),
     ):
+        # "pypy-" -> "pypy"
+        if interpreter and interpreter.startswith("pypy-"):
+            interpreter = interpreter[:4] + interpreter[5:]
+
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
@@ -493,7 +497,7 @@ class VirtualEnv(ProcessEnv):
                 and self._check_reused_environment_interpreter()
             ):
                 return False
-            shutil.rmtree(self.location)
+            shutil.rmtree(self.location, ignore_errors=True)
         return True
 
     def _read_pyvenv_cfg(self) -> dict[str, str] | None:
@@ -663,7 +667,13 @@ class VirtualEnv(ProcessEnv):
             return False
 
         if self.venv_backend == "virtualenv":
-            cmd = [sys.executable, "-m", "virtualenv", self.location]
+            cmd = [
+                sys.executable,
+                "-m",
+                "virtualenv",
+                self.location,
+                "--no-periodic-update",
+            ]
             if self.interpreter:
                 cmd.extend(["-p", self._resolved_interpreter])
         elif self.venv_backend == "uv":

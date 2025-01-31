@@ -148,7 +148,8 @@ def docs(session: nox.Session) -> None:
 # The following sessions are only to be run in CI to check the nox GHA action
 def _check_python_version(session: nox.Session) -> None:
     if session.python.startswith("pypy"):
-        python_version = session.python[4:]
+        # Drop starting "pypy" and maybe "-"
+        python_version = session.python.lstrip("py-")
         implementation = "pypy"
     else:
         python_version = session.python
@@ -170,7 +171,7 @@ def _check_python_version(session: nox.Session) -> None:
 @nox.session(
     python=[
         *ALL_PYTHONS,
-        "pypy3.10",
+        "pypy-3.10",
     ],
     default=False,
 )
