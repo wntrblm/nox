@@ -44,7 +44,7 @@ __all__ = [
     "HAS_UV",
     "OPTIONAL_VENVS",
     "UV",
-    "UV_PYTHON_SUPPORT",
+    "UV_VERSION",
     "CondaEnv",
     "InterpreterNotFound",
     "PassthroughEnv",
@@ -81,7 +81,7 @@ _BLACKLISTED_ENV_VARS = frozenset(
 )
 
 
-def find_uv() -> tuple[bool, str]:
+def find_uv() -> tuple[bool, str, version.Version]:
     uv_on_path = shutil.which("uv")
 
     # Look for uv in Nox's environment, to handle `pipx install nox[uv]`.
@@ -90,22 +90,25 @@ def find_uv() -> tuple[bool, str]:
 
         uv_bin = find_uv_bin()
 
-        # If the returned value is the same as calling "uv" already, don't
-        # expand (simpler logging)
-        if uv_on_path and Path(uv_bin).samefile(uv_on_path):
-            return True, "uv"
+        uv_vers = uv_version(uv_bin)
+        if uv_vers > version.Version("0"):
+            # If the returned value is the same as calling "uv" already, don't
+            # expand (simpler logging)
+            if uv_on_path and Path(uv_bin).samefile(uv_on_path):
+                return True, "uv", uv_vers
 
-        return True, uv_bin
+            return True, uv_bin, uv_vers
 
     # Fall back to PATH.
-    return uv_on_path is not None, "uv"
+    uv_vers = uv_version("uv")
+    return uv_on_path is not None and uv_vers > version.Version("0"), "uv", uv_vers
 
 
-def uv_version() -> version.Version:
+def uv_version(uv_bin: str) -> version.Version:
     """Returns uv's version defaulting to 0.0 if uv is not available"""
     try:
         ret = subprocess.run(
-            [UV, "version", "--output-format", "json"],
+            [uv_bin, "version", "--output-format", "json"],
             check=False,
             text=True,
             capture_output=True,
@@ -130,10 +133,7 @@ def uv_install_python(python_version: str) -> bool:
     return ret.returncode == 0
 
 
-HAS_UV, UV = find_uv()
-# supported since uv 0.3 but 0.4.16 is the first version that doesn't cause
-# issues for nox with pypy/cpython confusion
-UV_PYTHON_SUPPORT = uv_version() >= version.Version("0.4.16")
+HAS_UV, UV, UV_VERSION = find_uv()
 
 
 class InterpreterNotFound(OSError):
@@ -612,8 +612,12 @@ class VirtualEnv(ProcessEnv):
             self._resolved = cleaned_interpreter
             return self._resolved
 
+        # Supported since uv 0.3 but 0.4.16 is the first version that doesn't cause
+        # issues for nox with pypy/cpython confusion
         if (
-            self.venv_backend == "uv" and HAS_UV and UV_PYTHON_SUPPORT
+            self.venv_backend == "uv"
+            and HAS_UV
+            and version.Version("0.4.16") <= UV_VERSION
         ):  # pragma: nocover
             uv_python_success = uv_install_python(cleaned_interpreter)
             if uv_python_success:
