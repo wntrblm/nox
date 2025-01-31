@@ -35,14 +35,14 @@ REGEX = re.compile(
 
 
 def load_toml(
-    filename: os.PathLike[str] | str, *, missing_ok: bool = False
+    filename: os.PathLike[str] | str = "pyproject.toml", *, missing_ok: bool = False
 ) -> dict[str, Any]:
     """
     Load a toml file or a script with a PEP 723 script block.
 
     The file must have a ``.toml`` extension to be considered a toml file or a
     ``.py`` extension / no extension to be considered a script. Other file
-    extensions are not valid in this function.
+    extensions are not valid in this function. The default is ``"pyproject.toml"``.
 
     If ``missing_ok``, this will return an empty dict if a script block was not
     found, otherwise it will raise a error.
