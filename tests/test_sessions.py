@@ -995,6 +995,17 @@ class TestSession:
                 "urllib3",
             )
 
+        # User runs uvx
+        with mock.patch.object(nox.command, "run", autospec=True) as run:
+            session.run("uvx", "cowsay")
+            run.assert_called_once()
+
+            ((call_args,), _) = run.call_args
+            assert call_args == (
+                "/some/uvx",
+                "cowsay",
+            )
+
         # user installs uv in the session venv
         monkeypatch.setattr(
             shutil, "which", lambda x, path="": path + "/uv" if x == "uv" else None

@@ -461,7 +461,7 @@ class VirtualEnv(ProcessEnv):
     """
 
     is_sandboxed = True
-    allowed_globals = (UV,)
+    allowed_globals = (UV, f"{UV}x")
 
     def __init__(
         self,
