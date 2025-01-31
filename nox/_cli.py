@@ -16,12 +16,26 @@
 
 from __future__ import annotations
 
+import importlib.metadata
+import os
+import shutil
+import subprocess
 import sys
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, NoReturn
 
+import packaging.requirements
+import packaging.utils
+
+import nox.command
+import nox.virtualenv
 from nox import _options, tasks, workflow
 from nox._version import get_nox_version
 from nox.logger import setup_logging
+from nox.project import load_toml
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 __all__ = ["execute_workflow", "main"]
 
@@ -51,6 +65,88 @@ def execute_workflow(args: Any) -> int:
     )
 
 
+def get_dependencies(
+    req: packaging.requirements.Requirement,
+) -> Generator[packaging.requirements.Requirement, None, None]:
+    """
+    Gets all dependencies. Raises ModuleNotFoundError if a package is not installed.
+    """
+    info = importlib.metadata.metadata(req.name)
+    yield req
+
+    dist_list = info.get_all("requires-dist") or []
+    extra_list = [packaging.requirements.Requirement(mk) for mk in dist_list]
+    for extra in req.extras:
+        for ireq in extra_list:
+            if ireq.marker and not ireq.marker.evaluate({"extra": extra}):
+                continue
+            yield from get_dependencies(ireq)
+
+
+def check_dependencies(dependencies: list[str]) -> bool:
+    """
+    Checks to see if a list of dependencies is currently installed.
+    """
+    itr_deps = (packaging.requirements.Requirement(d) for d in dependencies)
+    deps = [d for d in itr_deps if not d.marker or d.marker.evaluate()]
+
+    # Select the one nox dependency (required)
+    nox_dep = [d for d in deps if packaging.utils.canonicalize_name(d.name) == "nox"]
+    if not nox_dep:
+        msg = "Must have a nox dependency in TOML script dependencies"
+        raise ValueError(msg)
+
+    try:
+        expanded_deps = {d for req in deps for d in get_dependencies(req)}
+    except ModuleNotFoundError:
+        return False
+
+    for dep in expanded_deps:
+        if dep.specifier:
+            version = importlib.metadata.version(dep.name)
+            if not dep.specifier.contains(version):
+                return False
+
+    return True
+
+
+def run_script_mode(
+    envdir: Path, *, reuse: bool, dependencies: list[str], venv_backend: str
+) -> NoReturn:
+    envdir.mkdir(exist_ok=True)
+    noxenv = envdir.joinpath("_nox_script_mode")
+    venv = nox.virtualenv.get_virtualenv(
+        *venv_backend.split("|"),
+        reuse_existing=reuse,
+        envdir=str(noxenv),
+    )
+    venv.create()
+    env = {k: v for k, v in venv._get_env({}).items() if v is not None}
+    env["NOX_SCRIPT_MODE"] = "none"
+    cmd = (
+        [nox.virtualenv.UV, "pip", "install"]
+        if venv.venv_backend == "uv"
+        else ["pip", "install"]
+    )
+    subprocess.run([*cmd, *dependencies], env=env, check=True)
+    nox_cmd = shutil.which("nox", path=env["PATH"])
+    assert nox_cmd is not None, "Nox must be discoverable when installed"
+    # The os.exec functions don't work properly on Windows
+    if sys.platform.startswith("win"):
+        raise SystemExit(
+            subprocess.run(
+                [nox_cmd, *sys.argv[1:]],
+                env=env,
+                stdout=None,
+                stderr=None,
+                encoding="utf-8",
+                text=True,
+                check=False,
+            ).returncode
+        )
+    os.execle(nox_cmd, nox_cmd, *sys.argv[1:], env)  # pragma: nocover # noqa: S606
+
+
 def main() -> None:
     args = _options.options.parse_args()
 
@@ -65,6 +161,34 @@ def main() -> None:
     setup_logging(
         color=args.color, verbose=args.verbose, add_timestamp=args.add_timestamp
     )
+    nox_script_mode = os.environ.get("NOX_SCRIPT_MODE", "") or args.script_mode
+    if nox_script_mode not in {"none", "reuse", "fresh"}:
+        msg = f"Invalid NOX_SCRIPT_MODE: {nox_script_mode!r}, must be one of 'none', 'reuse', or 'fresh'"
+        raise SystemExit(msg)
+    if nox_script_mode != "none":
+        toml_config = load_toml(os.path.expandvars(args.noxfile), missing_ok=True)
+        dependencies = toml_config.get("dependencies")
+        if dependencies is not None:
+            valid_env = check_dependencies(dependencies)
+            # Coverage misses this, but it's covered via subprocess call
+            if not valid_env:  # pragma: nocover
+                venv_backend = (
+                    os.environ.get("NOX_SCRIPT_VENV_BACKEND")
+                    or args.script_venv_backend
+                    or (
+                        toml_config.get("tool", {})
+                        .get("nox", {})
+                        .get("script-venv-backend", "uv|virtualenv")
+                    )
+                )
+
+                envdir = Path(args.envdir or ".nox")
+                run_script_mode(
+                    envdir,
+                    reuse=nox_script_mode == "reuse",
+                    dependencies=dependencies,
+                    venv_backend=venv_backend,
+                )
 
     exit_code = execute_workflow(args)
 

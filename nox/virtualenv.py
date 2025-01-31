@@ -353,7 +353,7 @@ class CondaEnv(ProcessEnv):
             if self.reuse_existing and is_conda:
                 return False
             if not is_conda:
-                shutil.rmtree(self.location)
+                shutil.rmtree(self.location, ignore_errors=True)
             else:
                 cmd = [
                     self.conda_cmd,
@@ -365,8 +365,7 @@ class CondaEnv(ProcessEnv):
                 ]
                 nox.command.run(cmd, silent=True, log=False)
             # Make sure that location is clean
-            with contextlib.suppress(FileNotFoundError):
-                shutil.rmtree(self.location)
+            shutil.rmtree(self.location, ignore_errors=True)
 
         return True
 
@@ -498,7 +497,7 @@ class VirtualEnv(ProcessEnv):
                 and self._check_reused_environment_interpreter()
             ):
                 return False
-            shutil.rmtree(self.location)
+            shutil.rmtree(self.location, ignore_errors=True)
         return True
 
     def _read_pyvenv_cfg(self) -> dict[str, str] | None:
