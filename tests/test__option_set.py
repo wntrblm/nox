@@ -132,3 +132,25 @@ class TestOptionSet:
 
         expected_tags = {f"tag{n}" for n in range(1, 8)}
         assert expected_tags == set(actual_tags_from_file)
+
+    def test_validation_options(self) -> None:
+        options = _option_set.NoxOptions(
+            default_venv_backend=None,
+            envdir=None,
+            error_on_external_run=False,
+            error_on_missing_interpreters=False,
+            force_venv_backend=None,
+            keywords=None,
+            pythons=None,
+            report=None,
+            reuse_existing_virtualenvs=False,
+            reuse_venv=None,
+            sessions=None,
+            stop_on_first_error=False,
+            tags=None,
+            verbose=False,
+        )
+        options.sessions = ["testytest"]
+        options.sessions = ("testytest",)
+        with pytest.raises(ValueError):  # noqa: PT011
+            options.sessions = "testytest"
