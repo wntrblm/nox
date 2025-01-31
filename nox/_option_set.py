@@ -30,7 +30,7 @@ import attrs
 import attrs.validators as av
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Sequence
 
 __all__ = [
     "ArgumentError",
@@ -50,7 +50,7 @@ av_opt_str = av.optional(av.instance_of(str))
 av_opt_list_str = av.optional(
     av.deep_iterable(
         member_validator=av.instance_of(str),
-        iterable_validator=attrs.validators.instance_of(list),
+        iterable_validator=av.not_(av.instance_of(str)),
     )
 )
 av_bool = av.instance_of(bool)
@@ -63,16 +63,16 @@ class NoxOptions:
     error_on_external_run: bool = attrs.field(validator=av_bool)
     error_on_missing_interpreters: bool = attrs.field(validator=av_bool)
     force_venv_backend: None | str = attrs.field(validator=av_opt_str)
-    keywords: None | list[str] = attrs.field(validator=av_opt_list_str)
-    pythons: None | list[str] = attrs.field(validator=av_opt_list_str)
+    keywords: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
+    pythons: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
     report: None | str = attrs.field(validator=av_opt_str)
     reuse_existing_virtualenvs: bool = attrs.field(validator=av_bool)
     reuse_venv: None | Literal["no", "yes", "never", "always"] = attrs.field(
         validator=av.optional(av.in_(["no", "yes", "never", "always"]))
     )
-    sessions: None | list[str] = attrs.field(validator=av_opt_list_str)
+    sessions: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
     stop_on_first_error: bool = attrs.field(validator=av_bool)
-    tags: None | list[str] = attrs.field(validator=av_opt_list_str)
+    tags: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
     verbose: bool = attrs.field(validator=av_bool)
 
 
