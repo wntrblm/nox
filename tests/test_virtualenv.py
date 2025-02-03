@@ -722,12 +722,17 @@ UV_IN_PIPX_VENV = "/home/user/.local/pipx/venvs/nox/bin/uv"
 
 
 @pytest.mark.parametrize(
-    ("which_result", "find_uv_bin_result", "found", "path"),
+    ("which_result", "find_uv_bin_result", "found", "path", "vers", "vers_rc"),
     [
-        ("/usr/bin/uv", UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV),
-        ("/usr/bin/uv", None, True, "uv"),
-        (None, UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV),
-        (None, None, False, "uv"),
+        ("/usr/bin/uv", UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV, "0.5.0", 0),
+        ("/usr/bin/uv", UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV, "0.6.0", 0),
+        ("/usr/bin/uv", UV_IN_PIPX_VENV, False, "uv", "0.0.0", 0),
+        ("/usr/bin/uv", UV_IN_PIPX_VENV, False, "uv", "0.6.0", 1),
+        ("/usr/bin/uv", None, True, "uv", "0.6.0", 0),
+        ("/usr/bin/uv", None, False, "uv", "0.0.0", 0),
+        ("/usr/bin/uv", None, False, "uv", "0.6.0", 1),
+        (None, UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV, "0.5.0", 0),
+        (None, None, False, "uv", "0.5.0", 0),
     ],
 )
 def test_find_uv(
@@ -736,11 +741,22 @@ def test_find_uv(
     find_uv_bin_result: str | None,
     found: bool,
     path: str,
+    vers: str,
+    vers_rc: int,
 ) -> None:
     def find_uv_bin() -> str:
         if find_uv_bin_result:
             return find_uv_bin_result
         raise FileNotFoundError()
+
+    def mock_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["uv", "version", "--output-format", "json"],
+            stdout=f'{{"version": "{vers}", "commit_info": null}}',
+            returncode=vers_rc,
+        )
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
 
     monkeypatch.setattr(shutil, "which", lambda _: which_result)
     monkeypatch.setattr(Path, "samefile", lambda a, b: a == b)
@@ -748,7 +764,11 @@ def test_find_uv(
         sys.modules, "uv", types.SimpleNamespace(find_uv_bin=find_uv_bin)
     )
 
-    assert nox.virtualenv.find_uv() == (found, path)
+    assert nox.virtualenv.find_uv() == (
+        found,
+        path,
+        version.Version(vers if vers_rc == 0 else "0"),
+    )
 
 
 @pytest.mark.parametrize(
@@ -773,7 +793,9 @@ def test_uv_version(
         )
 
     monkeypatch.setattr(subprocess, "run", mock_run)
-    assert nox.virtualenv.uv_version() == version.Version(expected_result)
+    assert nox.virtualenv.uv_version(nox.virtualenv.UV) == version.Version(
+        expected_result
+    )
 
 
 def test_uv_version_no_uv(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -781,7 +803,7 @@ def test_uv_version_no_uv(monkeypatch: pytest.MonkeyPatch) -> None:
         raise FileNotFoundError
 
     monkeypatch.setattr(subprocess, "run", mock_exception)
-    assert nox.virtualenv.uv_version() == version.Version("0.0")
+    assert nox.virtualenv.uv_version(nox.virtualenv.UV) == version.Version("0.0")
 
 
 @pytest.mark.parametrize(
@@ -1064,7 +1086,7 @@ def test__resolved_interpreter_windows_pyexe_fails(
 
 
 @mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
+@mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.3"))
 def test__resolved_interpreter_windows_path_and_version(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
     patch_sysfind: Callable[..., None],
@@ -1093,7 +1115,7 @@ def test__resolved_interpreter_windows_path_and_version(
 @pytest.mark.parametrize("sysfind_result", [r"c:\python37-x64\python.exe", None])
 @pytest.mark.parametrize("sysexec_result", ["3.7.3\\n", RAISE_ERROR])
 @mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch("nox.virtualenv.UV_PYTHON_SUPPORT", new=False)
+@mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.3"))
 def test__resolved_interpreter_windows_path_and_version_fails(
     input_: str,
     sysfind_result: None | str,
