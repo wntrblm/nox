@@ -11,8 +11,12 @@ on:
       - "action.yml"
   workflow_dispatch:
     # allow manual runs on branches without a PR
+
 env:
   FORCE_COLOR: "1"
+
+permissions: {}
+
 jobs:
   action-default-tests:
     runs-on: ${{ matrix.os }}
@@ -28,6 +32,8 @@ jobs:
           - macos-14
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v5
       - uses: ./
       - run: nox --non-interactive --error-on-missing-interpreter --session github_actions_default_tests
@@ -36,6 +42,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: 3.9
