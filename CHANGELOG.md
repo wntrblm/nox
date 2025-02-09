@@ -1,6 +1,6 @@
 # Changelog
 
-## 2024.02.06
+## 2025.02.09
 
 This release improves PEP 723 support, including adding dependencies to the noxfile itself ("plugins"). It adds the long-awaited "requires" option, allowing sessions to require other sessions. And it brings further improvements to the `pyproject.toml` support, including helpers for dependency-groups and Python version lists.
 
