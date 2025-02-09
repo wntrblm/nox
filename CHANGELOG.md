@@ -1,5 +1,71 @@
 # Changelog
 
+## 2024.02.06
+
+This release improves PEP 723 support, including adding dependencies to the noxfile itself ("plugins"). It adds the long-awaited "requires" option, allowing sessions to require other sessions. And it brings further improvements to the `pyproject.toml` support, including helpers for dependency-groups and Python version lists.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @btemplep (first contribution)
+* @chirizxc (first contribution)
+* @davidhewitt (first contribution)
+* @gschaffner (first contribution)
+* @henryiii
+* @oliversen (first contribution)
+
+New features:
+
+* Support PEP 723 noxfiles by @henryiii in https://github.com/wntrblm/nox/pull/881
+* Expose main as `nox.main` by @henryiii in https://github.com/wntrblm/nox/pull/878 (followup fix: https://github.com/wntrblm/nox/pull/884)
+* Support session dependencies (`requires`) by @gschaffner in https://github.com/wntrblm/nox/pull/631
+* Helper to get dependency-groups by @henryiii in https://github.com/wntrblm/nox/pull/876
+* Helper to get the Python listing by @henryiii in https://github.com/wntrblm/nox/pull/877
+* Add a `"pyproject.toml"` default for `load_toml` by @henryiii in https://github.com/wntrblm/nox/pull/917
+
+Bugfixes:
+
+* Correct virtualenv bin dir under mingw python by @davidhewitt in https://github.com/wntrblm/nox/pull/901
+* Allow `pypy-*` to be used  as well for `pypy*` (matching GHA) by @henryiii in https://github.com/wntrblm/nox/pull/913
+* Don't trigger a background update process for virtualenv by @henryiii in https://github.com/wntrblm/nox/pull/918
+* Include encoding for consistent behavior (default in Python 3.15+) by @henryiii in https://github.com/wntrblm/nox/pull/891
+* Outer env issues fixed by @henryiii in https://github.com/wntrblm/nox/pull/874
+* Support noxfile being a symlink by @henryiii in https://github.com/wntrblm/nox/pull/829
+* Drop PyPy from the default list for the GitHub Action by @henryiii in https://github.com/wntrblm/nox/pull/916
+
+Bugfixes related to uv support:
+
+* Catch `PermissionError` from popen when UV is not installed by @btemplep in https://github.com/wntrblm/nox/pull/908
+* Use `uv python install` only with uv backend by @oliversen in https://github.com/wntrblm/nox/pull/900
+* Handle `"uvx"` like `"uv"` by @henryiii in https://github.com/wntrblm/nox/pull/920
+* Support broken uv (via pyenv) by @henryiii in https://github.com/wntrblm/nox/pull/922
+
+Tox-to-nox script:
+
+* Drop support for tox 3 by @henryiii in https://github.com/wntrblm/nox/pull/910
+* Switch pkgutil for importlib-resources by @henryiii in https://github.com/wntrblm/nox/pull/887
+* Correctly separate command-line arguments by @chirizxc in https://github.com/wntrblm/nox/pull/906
+
+Improved noxfile validation:
+
+* Error if invalid `reuse_venv` set by @henryiii in https://github.com/wntrblm/nox/pull/872
+* Error with helpful message if invalid option is set via `nox.options` by @henryiii in https://github.com/wntrblm/nox/pull/871 (followup fix: https://github.com/wntrblm/nox/pull/921)
+* Validate entries in `nox.config`, too, using attrs by @henryiii in https://github.com/wntrblm/nox/pull/880
+
+Internal changes:
+
+* Add more Ruff checks and fixes by @henryiii in https://github.com/wntrblm/nox/pull/893
+* Cleanup symlink noxfile code by @henryiii in https://github.com/wntrblm/nox/pull/865
+* Drop some type ignores for colorlog by @henryiii in https://github.com/wntrblm/nox/pull/888
+* Limit the visible items for tab completion by @henryiii in https://github.com/wntrblm/nox/pull/889
+* More typing and test improvements by @henryiii in https://github.com/wntrblm/nox/pull/890
+* Some extra simplifications from Ruff by @henryiii in https://github.com/wntrblm/nox/pull/870
+* Use dependency-groups by @henryiii in https://github.com/wntrblm/nox/pull/873
+* Pull out env creation into helper method by @henryiii in https://github.com/wntrblm/nox/pull/912
+* Pulled out `get_virtualenv` & better typing by @henryiii in https://github.com/wntrblm/nox/pull/882
+* Fix broken mock on CPython 3.12.8+ in tests by @henryiii in https://github.com/wntrblm/nox/pull/903
+* Statically type tests by @henryiii in https://github.com/wntrblm/nox/pull/894
+* Use `tmp_path` instead of `tmpdir` in tests by @henryiii in https://github.com/wntrblm/nox/pull/895
+
 ## 2024.10.09
 
 
