@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import collections
 import functools
+import os
 from argparse import ArgumentError, ArgumentParser, Namespace
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, Literal
@@ -47,6 +48,7 @@ def __dir__() -> list[str]:
 
 
 av_opt_str = av.optional(av.instance_of(str))
+av_opt_path = av.optional(av.or_(av.instance_of(str), av.instance_of(os.PathLike)))
 av_opt_list_str = av.optional(
     av.deep_iterable(
         member_validator=av.instance_of(str),
@@ -59,7 +61,7 @@ av_bool = av.instance_of(bool)
 @attrs.define(slots=True, kw_only=True)
 class NoxOptions:
     default_venv_backend: None | str = attrs.field(validator=av_opt_str)
-    envdir: None | str = attrs.field(validator=av_opt_str)
+    envdir: None | str | os.PathLike[str] = attrs.field(validator=av_opt_path)
     error_on_external_run: bool = attrs.field(validator=av_bool)
     error_on_missing_interpreters: bool = attrs.field(validator=av_bool)
     force_venv_backend: None | str = attrs.field(validator=av_opt_str)
