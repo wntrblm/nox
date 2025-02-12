@@ -133,6 +133,8 @@ If you use a tool like ``uv`` to lock your dependencies, you can use that inside
             "uv",
             "sync",
             "--extra=test",
+            "--no-default-extras",
+            f"--python={session.virtualenv.location}",
             env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
         )
         session.run("pytest", *session.posargs)
