@@ -1065,3 +1065,25 @@ def test_noxfile_no_script_mode() -> None:
     )
     assert job.returncode == 1
     assert "No module named 'cowsay'" in job.stderr
+
+
+def test_noxfile_script_mode_url_req() -> None:
+    job = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "nox",
+            "-f",
+            Path(RESOURCES) / "noxfile_script_mode_url_req.py",
+            "-s",
+            "example",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    print(job.stdout)
+    print(job.stderr)
+    assert job.returncode == 0
+    assert job.stdout.rstrip() == "2024.10.9"
