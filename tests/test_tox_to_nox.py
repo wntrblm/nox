@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 import textwrap
 from pathlib import Path
@@ -22,11 +23,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+# Jinja2 might be missing
+tox_to_nox = pytest.importorskip("nox.tox_to_nox")
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-tox_to_nox = pytest.importorskip("nox.tox_to_nox")
+pytestmark = pytest.mark.skipif(shutil.which("tox") is None, reason="Tox not available")
 
 PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}"
 PYTHON_VERSION_NODOT = PYTHON_VERSION.replace(".", "")

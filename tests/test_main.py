@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import shutil
 import subprocess
 import sys
 from importlib import metadata
@@ -527,12 +528,18 @@ def test_main_with_bad_session_names(
     assert session in stderr
 
 
+py39py310 = pytest.mark.skipif(
+    shutil.which("python3.10") is None or shutil.which("python3.9") is None,
+    reason="Python 3.9 and 3.10 required",
+)
+
+
 @pytest.mark.parametrize(
     ("sessions", "expected_order"),
     [
         (("g", "a", "d"), ("b", "c", "h", "g", "a", "e", "d")),
-        (("m",), ("k-3.9", "k-3.10", "m")),
-        (("n",), ("k-3.10", "n")),
+        pytest.param(("m",), ("k-3.9", "k-3.10", "m"), marks=py39py310),
+        pytest.param(("n",), ("k-3.10", "n"), marks=py39py310),
         (("v",), ("u(django='1.9')", "u(django='2.0')", "v")),
         (("w",), ("u(django='1.9')", "u(django='2.0')", "w")),
     ],
@@ -1022,7 +1029,8 @@ def test_symlink_sym_not(monkeypatch: pytest.MonkeyPatch) -> None:
     assert res.returncode == 1
 
 
-def test_noxfile_script_mode() -> None:
+def test_noxfile_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
     job = subprocess.run(
         [
             sys.executable,
@@ -1044,9 +1052,8 @@ def test_noxfile_script_mode() -> None:
     assert "hello_world" in job.stdout
 
 
-def test_noxfile_no_script_mode() -> None:
-    env = os.environ.copy()
-    env["NOX_SCRIPT_MODE"] = "none"
+def test_noxfile_no_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NOX_SCRIPT_MODE", "none")
     job = subprocess.run(
         [
             sys.executable,
@@ -1057,7 +1064,6 @@ def test_noxfile_no_script_mode() -> None:
             "-s",
             "example",
         ],
-        env=env,
         check=False,
         capture_output=True,
         text=True,
