@@ -154,3 +154,6 @@ class TestOptionSet:
         options.sessions = ("testytest",)
         with pytest.raises(ValueError):  # noqa: PT011
             options.sessions = "testytest"
+
+        options.envdir = "envdir"
+        options.envdir = Path("envdir")

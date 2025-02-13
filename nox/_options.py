@@ -157,7 +157,7 @@ def _envdir_merge_func(
         noxfile_Args (NoxOptions): The options specified in the
             Noxfile.
     """
-    return command_args.envdir or noxfile_args.envdir or ".nox"
+    return os.fspath(command_args.envdir or noxfile_args.envdir or ".nox")
 
 
 def _reuse_venv_merge_func(
