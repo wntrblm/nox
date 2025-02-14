@@ -106,6 +106,8 @@ def check_dependencies(dependencies: list[str]) -> bool:
             version = importlib.metadata.version(dep.name)
             if not dep.specifier.contains(version):
                 return False
+        if dep.url:
+            return False
 
     return True
 
