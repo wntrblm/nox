@@ -95,7 +95,7 @@ Documentation:
 * Added warning about uv and local packages by @henryiii in https://github.com/wntrblm/nox/pull/830
 * Fixed contribution guidelines by @Wurstnase in https://github.com/wntrblm/nox/pull/850
 * Fixed typos by @ember91 in https://github.com/wntrblm/nox/pull/839
-* Fixed typoss in cookbook by @hmd101 in https://github.com/wntrblm/nox/pull/837
+* Fixed typos in cookbook by @hmd101 in https://github.com/wntrblm/nox/pull/837
 * Added missing cookbook recipe snippet imports by @KasperZutterman in https://github.com/wntrblm/nox/pull/853
 * Cleaned up `dev` recipe by @henryiii in https://github.com/wntrblm/nox/pull/862
 * Added note about `uv reinstall` by @henryiii in https://github.com/wntrblm/nox/pull/863
