@@ -19,7 +19,8 @@ import importlib.util
 import json
 import os
 import sys
-from typing import TYPE_CHECKING, Sequence, TypeVar
+from typing import TYPE_CHECKING, TypeVar
+from collections.abc import Sequence
 
 from colorlog.escape_codes import parse_colors
 
@@ -29,7 +30,7 @@ from nox._resolver import CycleError
 from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
 from nox.logger import logger
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
-from nox.sessions import Result
+from nox.sessions import Result, Status
 
 if TYPE_CHECKING:
     import types
@@ -389,7 +390,7 @@ Sequence_Results_T = TypeVar("Sequence_Results_T", bound=Sequence[Result])
 
 def print_summary(
     results: Sequence_Results_T,
-    global_config: Namespace,  # noqa: ARG001
+    global_config: Namespace,
 ) -> Sequence_Results_T:
     """Print a summary of the results.
 
@@ -411,6 +412,9 @@ def print_summary(
     for result in results:
         name = result.session.friendly_name
         status = result.status.name.lower()
+        if result.status is Status.SKIPPED and global_config.skip_summary_details:
+            result.log(f"* {name}: {status} ({result.reason})")
+            continue
         result.log(f"* {name}: {status}")
 
     # Return the results that were sent to this function.

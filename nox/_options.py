@@ -643,6 +643,13 @@ options.add_options(
         hidden=True,
         finalizer_func=_color_finalizer,
     ),
+    _option_set.Option(
+        "skip_summary_details",
+        "--skip-summary-details",
+        group=options.groups["reporting"],
+        action="store_true",
+        help="Skip detailed summary output, such as reasons for skipped sessions.",
+    ),
     # Stores the original working directory that Nox was invoked from,
     # since it could be different from the Noxfile's directory.
     _option_set.Option(
