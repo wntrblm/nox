@@ -411,10 +411,10 @@ def print_summary(
     for result in results:
         name = result.session.friendly_name
         status = result.status.name.lower()
-        if result.status is Status.SKIPPED and global_config.skip_summary_details:
+        if result.status is Status.SKIPPED and result.reason:
             result.log(f"* {name}: {status} ({result.reason})")
-            continue
-        result.log(f"* {name}: {status}")
+        else:
+            result.log(f"* {name}: {status}")
 
     # Return the results that were sent to this function.
     return results
