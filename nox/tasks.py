@@ -389,7 +389,7 @@ Sequence_Results_T = TypeVar("Sequence_Results_T", bound=Sequence[Result])
 
 def print_summary(
     results: Sequence_Results_T,
-    global_config: Namespace,
+    global_config: Namespace,  # noqa: ARG001
 ) -> Sequence_Results_T:
     """Print a summary of the results.
 
