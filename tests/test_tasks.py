@@ -695,23 +695,48 @@ def test_print_summary_one_result() -> None:
 
 
 def test_print_summary() -> None:
-    results = [
-        sessions.Result(
-            session=typing.cast(
-                sessions.SessionRunner, argparse.Namespace(friendly_name="foo")
+    with mock.patch.object(sessions.Result, "log") as mock_log:
+        results = [
+            sessions.Result(
+                session=typing.cast(
+                    sessions.SessionRunner,
+                    argparse.Namespace(friendly_name="foo"),
+                ),
+                status=sessions.Status.SUCCESS,
             ),
-            status=sessions.Status.SUCCESS,
-        ),
-        sessions.Result(
-            session=typing.cast(
-                sessions.SessionRunner, argparse.Namespace(friendly_name="bar")
+            sessions.Result(
+                session=typing.cast(
+                    sessions.SessionRunner,
+                    argparse.Namespace(friendly_name="bar"),
+                ),
+                status=sessions.Status.FAILED,
             ),
-            status=sessions.Status.FAILED,
-        ),
-    ]
-    with mock.patch.object(sessions.Result, "log", autospec=True) as log:
+            sessions.Result(
+                session=typing.cast(
+                    sessions.SessionRunner,
+                    argparse.Namespace(friendly_name="baz"),
+                ),
+                status=sessions.Status.SKIPPED,
+            ),
+            sessions.Result(
+                session=typing.cast(
+                    sessions.SessionRunner,
+                    argparse.Namespace(friendly_name="qux"),
+                ),
+                status=sessions.Status.SKIPPED,
+                reason="something reason",
+            ),
+        ]
+
         answer = tasks.print_summary(results, argparse.Namespace())
-        assert log.call_count == 2
+
+        assert mock_log.call_count == 4
+        calls = mock_log.call_args_list
+        assert calls[0][0][0] == "* foo: success"
+        assert calls[1][0][0] == "* bar: failed"
+        assert calls[2][0][0] == "* baz: skipped"
+        assert calls[3][0][0] == "* qux: skipped (something reason)"
+
     assert answer is results
 
 
