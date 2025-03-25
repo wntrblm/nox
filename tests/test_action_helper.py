@@ -48,17 +48,18 @@ VALID_VERSION_LISTS = {
         "3.9",
         "3.10",
         "3.11",
+        "3.12",
     ],
-    "": ["3.11"],
-    "~3.12.0-0": ["~3.12.0-0", "3.11"],
-    "3.11.4": ["3.11.4"],
-    "3.9-dev,pypy3.9-nightly": ["pypy3.9-nightly", "3.9-dev", "3.11"],
-    "3.11, 3.10, 3.9, 3.8": ["3.10", "3.9", "3.8", "3.11"],
+    "": ["3.12"],
+    "~3.12.0-0": ["~3.12.0-0"],
+    "3.11.4": ["3.11.4", "3.12"],
+    "3.9-dev,pypy3.9-nightly": ["pypy3.9-nightly", "3.9-dev", "3.12"],
+    "3.12, 3.11, 3.10, 3.9": ["3.11", "3.10", "3.9", "3.12"],
     ",".join(f"3.{minor}" for minor in range(20)): [
         f"3.{minor}"
-        for i, minor in enumerate(minor_ for minor_ in range(20) if minor_ != 11)
+        for i, minor in enumerate(minor_ for minor_ in range(20) if minor_ != 12)
     ]
-    + ["3.11"],
+    + ["3.12"],
 }
 
 
