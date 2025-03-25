@@ -442,12 +442,10 @@ More sophisticated tag assignment can be performed by passing a generator to the
                     tags.append("quick")
                 if dependency == "2.0" or database == "sqlite":
                     tags.append("standard")
-                yield nox.param((dependency, database), tags)
+                yield nox.param(dependency, database, tags=tags)
 
     @nox.session
-    @nox.parametrize(
-        ["dependency", "database"], generate_params(),
-    )
+    @nox.parametrize(["dependency", "database"], generate_params())
     def tests(session, dependency, database):
         ...
 
