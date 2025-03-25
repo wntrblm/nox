@@ -33,7 +33,7 @@ def filter_version(version: str) -> str:
     return ".".join(version_parts[:2])
 
 
-def setup_action(input_: str) -> None:
+def setup_action(input_: str, *, self_version: str = "3.12") -> None:
     versions = [version.strip() for version in input_.split(",") if version.strip()]
 
     pypy_versions = [version for version in versions if version.startswith("pypy")]
@@ -60,15 +60,15 @@ def setup_action(input_: str) -> None:
     # other interpreters also define pythonX.Y symlinks.
     versions = pypy_versions + cpython_versions
 
-    # we want to install python 3.11 last to ease nox set-up
-    if "3.11" in cpython_versions_filtered:
-        index = cpython_versions_filtered.index("3.11")
+    # we want to install our own self version last to ease nox set-up
+    if self_version in cpython_versions_filtered:
+        index = cpython_versions_filtered.index(self_version)
         index = versions.index(cpython_versions[index])
         cpython_nox = versions.pop(index)
         versions.append(cpython_nox)
     else:
         # add this to install nox
-        versions.append("3.11")
+        versions.append(self_version)
 
     print(f"interpreters={json.dumps(versions)}")
 

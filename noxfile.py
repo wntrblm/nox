@@ -177,7 +177,7 @@ def _check_python_version(session: nox.Session) -> None:
 )
 def github_actions_default_tests(session: nox.Session) -> None:
     """Check default versions installed by the nox GHA Action"""
-    assert sys.version_info[:2] == (3, 11)
+    assert sys.version_info[:2] == (3, 12)
     _check_python_version(session)
 
 
