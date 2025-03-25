@@ -156,11 +156,6 @@ Note that using this option does not change the backend for sessions where ``ven
    as ``uv pip`` is used to install programs instead. If you need to manually
    interact with pip, you should install it with ``session.install("pip")``.
 
-   Also, uv tries very hard to cache, so you might want
-   ``--reinstall-package=<package>`` in your pip install command for the local
-   package, or preferably set ``tool.uv.reinstall-package`` in your
-   pyproject.toml/uv.toml.
-
 Backends that could be missing (``uv``, ``conda``, ``mamba``, and ``micromamba``) can have a fallback using ``|``, such as ``uv|virtualenv`` or ``micromamba|mamba|conda``. This will use the first item that is available on the users system.
 
 If you need to check to see which backend was selected, you can access it via
