@@ -1,13 +1,20 @@
+from __future__ import annotations
+
+import dataclasses
 import importlib.metadata
 import importlib.util
 import sys
-from pathlib import Path
+import typing
+from types import SimpleNamespace
 
 import packaging.requirements
 import packaging.version
 import pytest
 
 import nox._cli
+
+if typing.TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_get_dependencies() -> None:
@@ -99,3 +106,27 @@ def test_invalid_backend_inline(
 
     with pytest.raises(ValueError, match="Expected venv_backend one of"):
         nox._cli.main()
+
+
+@dataclasses.dataclass
+class FakeDistribution:
+    origin: SimpleNamespace | None
+
+
+def test_url_dependency() -> None:
+    assert nox._cli.check_url_dependency(
+        "https://github.com/a/package",
+        FakeDistribution(origin=SimpleNamespace(url="https://github.com/a/package")),  # type: ignore[arg-type]
+    )
+    assert not nox._cli.check_url_dependency(
+        "https://github.com/a/package",
+        FakeDistribution(origin=None),  # type: ignore[arg-type]
+    )
+    assert nox._cli.check_url_dependency(
+        "https://github.com/a/package@v1.2.3",
+        FakeDistribution(  # type: ignore[arg-type]
+            origin=SimpleNamespace(
+                url="https://github.com/a/package", requested_revision="v1.2.3"
+            )
+        ),
+    )
