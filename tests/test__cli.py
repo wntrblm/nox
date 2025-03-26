@@ -130,3 +130,38 @@ def test_url_dependency() -> None:
             )
         ),
     )
+
+
+def test_dependencies_with_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox._cli, "get_dependencies", lambda x: [x])
+    monkeypatch.setattr(
+        importlib.metadata,
+        "distribution",
+        lambda _: FakeDistribution(
+            SimpleNamespace(
+                url="https://github.com/wntrblm/nox", requested_revision="2024.10.09"
+            )
+        ),
+    )
+
+    assert nox._cli.check_dependencies(
+        ["nox @ git+https://github.com/wntrblm/nox@2024.10.09"]
+    )
+    assert not nox._cli.check_dependencies(
+        ["nox @ git+https://github.com/wntrblm/nox@2024.10.10"]
+    )
+    assert not nox._cli.check_dependencies(
+        ["nox @ git+https://github.com/other/nox@2024.10.09"]
+    )
+
+
+def test_dependencies_with_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox._cli, "get_dependencies", lambda x: [x])
+    monkeypatch.setattr(
+        importlib.metadata, "version", lambda x: {"nox": "2024.10.09", "uv": "0.4.5"}[x]
+    )
+
+    assert nox._cli.check_dependencies(["nox", "uv"])
+    assert nox._cli.check_dependencies(["nox==2024.10.09", "uv>=0.4"])
+    assert nox._cli.check_dependencies(["nox<=2025", "uv~=0.4.2"])
+    assert not nox._cli.check_dependencies(["nox==2024.10.10", "uv"])
