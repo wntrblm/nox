@@ -1,5 +1,7 @@
 argcomplete >=1.9.4,<3.0
+attrs >=23.1
 colorlog >=2.6.1,<7.0.0
+dependency-groups >=1.1
 jinja2
 pytest
 tox>=4.0.0
