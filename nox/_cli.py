@@ -21,6 +21,7 @@ import os
 import shutil
 import subprocess
 import sys
+import urllib.parse
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn
 
@@ -106,8 +107,33 @@ def check_dependencies(dependencies: list[str]) -> bool:
             version = importlib.metadata.version(dep.name)
             if not dep.specifier.contains(version):
                 return False
+        if dep.url:
+            dist = importlib.metadata.distribution(dep.name)
+            if not check_url_dependency(dep.url, dist):
+                return False
 
     return True
+
+
+def check_url_dependency(dep_url: str, dist: importlib.metadata.Distribution) -> bool:
+    """
+    Check to see if a url matches an installed distribution object. Returns false if
+    this is not a clear match.
+    """
+
+    # The .origin property added in Python 3.13
+    origin = getattr(dist, "origin", None)
+    if origin is None:
+        return False
+
+    dep_purl = urllib.parse.urlparse(dep_url)
+
+    if hasattr(origin, "requested_revision"):
+        origin_purl = urllib.parse.urlparse(f"{origin.url}@{origin.requested_revision}")
+    else:
+        origin_purl = urllib.parse.urlparse(origin.url)
+
+    return dep_purl.netloc == origin_purl.netloc and dep_purl.path == origin_purl.path
 
 
 def run_script_mode(
