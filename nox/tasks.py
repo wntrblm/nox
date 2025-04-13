@@ -29,7 +29,7 @@ from nox._resolver import CycleError
 from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
 from nox.logger import logger
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
-from nox.sessions import Result
+from nox.sessions import Result, Status
 
 if TYPE_CHECKING:
     import types
@@ -411,7 +411,10 @@ def print_summary(
     for result in results:
         name = result.session.friendly_name
         status = result.status.name.lower()
-        result.log(f"* {name}: {status}")
+        if result.status is Status.SKIPPED and result.reason:
+            result.log(f"* {name}: {status} ({result.reason})")
+        else:
+            result.log(f"* {name}: {status}")
 
     # Return the results that were sent to this function.
     return results
