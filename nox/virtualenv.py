@@ -103,7 +103,11 @@ def find_uv() -> tuple[bool, str, version.Version]:
 
     # Fall back to PATH.
     uv_vers = uv_version(uv_name or "uv")
-    return uv_on_path is not None and uv_vers > version.Version("0"), "uv", uv_vers
+    return (
+        uv_on_path is not None and uv_vers > version.Version("0"),
+        uv_name or "uv",
+        uv_vers,
+    )
 
 
 def uv_version(uv_bin: str) -> version.Version:

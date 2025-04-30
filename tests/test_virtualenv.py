@@ -722,21 +722,151 @@ UV_IN_PIPX_VENV = "/home/user/.local/pipx/venvs/nox/bin/uv"
 
 
 @pytest.mark.parametrize(
-    ("which_result", "find_uv_bin_result", "found", "path", "vers", "vers_rc"),
+    (
+        "uv_env",
+        "which_result",
+        "find_uv_bin_result",
+        "found",
+        "path",
+        "vers",
+        "vers_rc",
+    ),
     [
-        ("/usr/bin/uv", UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV, "0.5.0", 0),
-        ("/usr/bin/uv", UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV, "0.6.0", 0),
-        ("/usr/bin/uv", UV_IN_PIPX_VENV, False, "uv", "0.0.0", 0),
-        ("/usr/bin/uv", UV_IN_PIPX_VENV, False, "uv", "0.6.0", 1),
-        ("/usr/bin/uv", None, True, "uv", "0.6.0", 0),
-        ("/usr/bin/uv", None, False, "uv", "0.0.0", 0),
-        ("/usr/bin/uv", None, False, "uv", "0.6.0", 1),
-        (None, UV_IN_PIPX_VENV, True, UV_IN_PIPX_VENV, "0.5.0", 0),
-        (None, None, False, "uv", "0.5.0", 0),
+        pytest.param(
+            None,
+            "/usr/bin/uv",
+            UV_IN_PIPX_VENV,
+            True,
+            UV_IN_PIPX_VENV,
+            "0.5.0",
+            0,
+            id="pkg_pipx_uv_0.5",
+        ),
+        pytest.param(
+            None,
+            "/usr/bin/uv",
+            UV_IN_PIPX_VENV,
+            True,
+            UV_IN_PIPX_VENV,
+            "0.6.0",
+            0,
+            id="pkg_pipx_uv_0.6",
+        ),
+        pytest.param(
+            "custom",
+            "/usr/bin/uv",
+            UV_IN_PIPX_VENV,
+            True,
+            "custom",
+            "0.6.0",
+            0,
+            id="UV_pkg_pipx_uv_0.6",
+        ),
+        pytest.param(
+            None,
+            "/usr/bin/uv",
+            UV_IN_PIPX_VENV,
+            True,
+            UV_IN_PIPX_VENV,
+            "0.7.0",
+            0,
+            id="pkg_pipx_uv_0.7",
+        ),
+        pytest.param(
+            "custom",
+            "/usr/bin/uv",
+            UV_IN_PIPX_VENV,
+            True,
+            "custom",
+            "0.7.0",
+            0,
+            id="UV_pkg_pipx_uv_0.7",
+        ),
+        pytest.param(
+            None,
+            "/usr/bin/uv",
+            UV_IN_PIPX_VENV,
+            False,
+            "uv",
+            "0.0.0",
+            0,
+            id="pkg_system_uv_0.0",
+        ),
+        pytest.param(
+            None,
+            "/usr/bin/uv",
+            UV_IN_PIPX_VENV,
+            False,
+            "uv",
+            "0.6.0",
+            1,
+            id="pkg_system_uv_0.6_broken",
+        ),
+        pytest.param(
+            None,
+            "/usr/bin/uv",
+            UV_IN_PIPX_VENV,
+            False,
+            "uv",
+            "0.7.0",
+            1,
+            id="pkg_system_uv_0.7_broken",
+        ),
+        pytest.param(
+            None, "/usr/bin/uv", None, True, "uv", "0.7.0", 0, id="system_uv_0.7"
+        ),
+        pytest.param(
+            None, "/usr/bin/uv", None, True, "uv", "0.6.0", 0, id="system_uv_0.6"
+        ),
+        pytest.param(
+            None, "/usr/bin/uv", None, False, "uv", "0.0.0", 0, id="system_uv_0.0"
+        ),
+        pytest.param(
+            None,
+            "/usr/bin/uv",
+            None,
+            False,
+            "uv",
+            "0.6.0",
+            1,
+            id="system_uv_0.6_broken",
+        ),
+        pytest.param(
+            None,
+            "/usr/bin/uv",
+            None,
+            False,
+            "uv",
+            "0.7.0",
+            1,
+            id="system_uv_0.7_broken",
+        ),
+        pytest.param(
+            None,
+            None,
+            UV_IN_PIPX_VENV,
+            True,
+            UV_IN_PIPX_VENV,
+            "0.5.0",
+            0,
+            id="pipx_uv_0.5",
+        ),
+        pytest.param(
+            None,
+            None,
+            UV_IN_PIPX_VENV,
+            True,
+            UV_IN_PIPX_VENV,
+            "0.7.0",
+            0,
+            id="pipx_uv_0.7",
+        ),
+        pytest.param(None, None, None, False, "uv", "0.5.0", 0, id="no_uv_0.5"),
     ],
 )
 def test_find_uv(
     monkeypatch: pytest.MonkeyPatch,
+    uv_env: str | None,
     which_result: str | None,
     find_uv_bin_result: str | None,
     found: bool,
@@ -744,21 +874,32 @@ def test_find_uv(
     vers: str,
     vers_rc: int,
 ) -> None:
+    monkeypatch.delenv("UV", raising=False)
+    if uv_env:
+        monkeypatch.setenv("UV", uv_env)
+
     def find_uv_bin() -> str:
         if find_uv_bin_result:
             return find_uv_bin_result
         raise FileNotFoundError()
 
-    def mock_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+    def mock_run(*args: Any, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if version.Version(vers) < version.Version("0.7.0") and "self" in args[0]:
+            return subprocess.CompletedProcess(
+                args=args[0],
+                returncode=2,
+            )
         return subprocess.CompletedProcess(
-            args=["uv", "self", "version", "--output-format", "json"],
+            args=args[0],
             stdout=f'{{"version": "{vers}", "commit_info": null}}',
             returncode=vers_rc,
         )
 
     monkeypatch.setattr(subprocess, "run", mock_run)
 
-    monkeypatch.setattr(shutil, "which", lambda _: which_result)
+    monkeypatch.setattr(
+        shutil, "which", lambda x: which_result if x.endswith("uv") else uv_env
+    )
     monkeypatch.setattr(Path, "samefile", lambda a, b: a == b)
     monkeypatch.setitem(
         sys.modules, "uv", types.SimpleNamespace(find_uv_bin=find_uv_bin)
