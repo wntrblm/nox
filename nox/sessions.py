@@ -107,6 +107,32 @@ def _normalize_path(envdir: str, path: str | bytes) -> str:
     return full_path
 
 
+def _dblquote_pkg_install_args(args: Iterable[str]) -> tuple[str, ...]:
+    """Double-quote package install arguments in case they contain '>' or '<' symbols"""
+
+    # routine used to handle a single arg
+    def _dblquote_pkg_install_arg(pkg_req_str: str) -> str:
+        # sanity check: we need an even number of double-quotes
+        if pkg_req_str.count('"') % 2 != 0:
+            msg = f"ill-formatted argument with odd number of quotes: {pkg_req_str}"
+            raise ValueError(msg)
+
+        if "<" in pkg_req_str or ">" in pkg_req_str:
+            if pkg_req_str[0] == pkg_req_str[-1] == '"':
+                # already double-quoted string
+                return pkg_req_str
+            # need to double-quote string
+            if '"' in pkg_req_str:
+                msg = f"Cannot escape requirement string: {pkg_req_str}"
+                raise ValueError(msg)
+            return f'"{pkg_req_str}"'
+        # no dangerous char: no need to double-quote string
+        return pkg_req_str
+
+    # double-quote all args that need to be and return the result
+    return tuple(_dblquote_pkg_install_arg(a) for a in args)
+
+
 class _SessionQuit(Exception):
     pass
 
@@ -696,6 +722,10 @@ class Session:
             isinstance(venv, PassthroughEnv) or venv._reused
         ):
             return
+
+        # Escape args that should be (conda-specific; pip install does not need this)
+        if sys.platform.startswith("win32"):
+            args = _dblquote_pkg_install_args(args)
 
         if silent is None:
             silent = True
