@@ -82,25 +82,27 @@ _BLACKLISTED_ENV_VARS = frozenset(
 
 
 def find_uv() -> tuple[bool, str, version.Version]:
-    uv_on_path = shutil.which("uv")
+    uv_name = os.environ.get("UV", None)
+    uv_on_path = shutil.which(uv_name or "uv")
 
     # Look for uv in Nox's environment, to handle `pipx install nox[uv]`.
-    with contextlib.suppress(ImportError, FileNotFoundError):
-        from uv import find_uv_bin
+    if uv_name is None:
+        with contextlib.suppress(ImportError, FileNotFoundError):
+            from uv import find_uv_bin
 
-        uv_bin = find_uv_bin()
+            uv_bin = find_uv_bin()
 
-        uv_vers = uv_version(uv_bin)
-        if uv_vers > version.Version("0"):
-            # If the returned value is the same as calling "uv" already, don't
-            # expand (simpler logging)
-            if uv_on_path and Path(uv_bin).samefile(uv_on_path):
-                return True, "uv", uv_vers
+            uv_vers = uv_version(uv_bin)
+            if uv_vers > version.Version("0"):
+                # If the returned value is the same as calling "uv" already, don't
+                # expand (simpler logging)
+                if uv_on_path and Path(uv_bin).samefile(uv_on_path):
+                    return True, "uv", uv_vers
 
-            return True, uv_bin, uv_vers
+                return True, uv_bin, uv_vers
 
     # Fall back to PATH.
-    uv_vers = uv_version("uv")
+    uv_vers = uv_version(uv_name or "uv")
     return uv_on_path is not None and uv_vers > version.Version("0"), "uv", uv_vers
 
 
@@ -108,7 +110,7 @@ def uv_version(uv_bin: str) -> version.Version:
     """Returns uv's version defaulting to 0.0 if uv is not available"""
     try:
         ret = subprocess.run(
-            [uv_bin, "version", "--output-format", "json"],
+            [uv_bin, "self", "version", "--output-format", "json"],
             check=False,
             text=True,
             capture_output=True,
@@ -118,8 +120,19 @@ def uv_version(uv_bin: str) -> version.Version:
         logger.info("uv binary not found.")
         return version.Version("0.0")
 
+    if ret.returncode == 2:
+        # uv < 0.7
+        ret = subprocess.run(
+            [uv_bin, "version", "--output-format", "json"],
+            check=False,
+            text=True,
+            capture_output=True,
+            encoding="utf-8",
+        )
+
     if ret.returncode == 0 and ret.stdout:
         return version.Version(json.loads(ret.stdout).get("version"))
+
     logger.info("Failed to establish uv's version.")
     return version.Version("0.0")
 
