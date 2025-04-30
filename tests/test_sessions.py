@@ -697,12 +697,11 @@ class TestSession:
         session = SessionNoSlots(runner=runner)
 
         if version_constraint == "no":
-            pkg_requirement = passed_arg = "urllib3"
+            pkg_requirement = "urllib3"
         elif version_constraint == "yes":
             pkg_requirement = "urllib3<1.25"
-            passed_arg = f'"{pkg_requirement}"'
         elif version_constraint == "already_dbl_quoted":
-            pkg_requirement = passed_arg = '"urllib3<1.25"'
+            pkg_requirement = '"urllib3<1.25"'
         else:
             raise ValueError(version_constraint)
 
@@ -715,8 +714,7 @@ class TestSession:
                 "--prefix",
                 "/path/to/conda/env",
                 "requests",
-                # this will be double quoted if unquoted constraint is present
-                passed_arg,
+                pkg_requirement,
                 **_run_with_defaults(silent=False, external="error"),
             )
 

@@ -218,16 +218,16 @@ def test_condaenv_create_with_params(
 def test_condaenv_create_interpreter(
     make_conda: Callable[..., tuple[CondaEnv, Path]],
 ) -> None:
-    venv, dir_ = make_conda(interpreter="3.8")
+    venv, dir_ = make_conda(interpreter="3.12")
     venv.create()
     if IS_WINDOWS:
         assert dir_.joinpath("python.exe").exists()
-        assert dir_.joinpath("python38.dll").exists()
-        assert dir_.joinpath("python38.pdb").exists()
-        assert not dir_.joinpath("python38.exe").exists()
+        assert dir_.joinpath("python312.dll").exists()
+        assert dir_.joinpath("python312.pdb").exists()
+        assert not dir_.joinpath("python312.exe").exists()
     else:
         assert dir_.joinpath("bin", "python").exists()
-        assert dir_.joinpath("bin", "python3.8").exists()
+        assert dir_.joinpath("bin", "python3.12").exists()
 
 
 @has_conda
