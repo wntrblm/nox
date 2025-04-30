@@ -74,6 +74,7 @@ def conda_tests(session: nox.Session) -> None:
         "--file", "requirements-conda-test.txt", channel="conda-forge"
     )
     session.install("-e.", "--no-deps")
+    session.conda_install("requests<99")
     session.run("pytest", *session.posargs)
 
 
@@ -84,6 +85,7 @@ def mamba_tests(session: nox.Session) -> None:
         "--file", "requirements-conda-test.txt", channel="conda-forge"
     )
     session.install("-e.", "--no-deps")
+    session.conda_install("requests<99")
     session.run("pytest", *session.posargs)
 
 
@@ -94,6 +96,7 @@ def micromamba_tests(session: nox.Session) -> None:
         "--file", "requirements-conda-test.txt", channel="conda-forge"
     )
     session.install("-e.", "--no-deps")
+    session.conda_install("requests<99")
     session.run("pytest", *session.posargs)
 
 
