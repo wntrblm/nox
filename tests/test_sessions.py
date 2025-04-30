@@ -646,7 +646,7 @@ class TestSession:
             else:
                 args += [f"--channel={c}" for c in channel]
             session.conda_install(
-                "requests", "urllib3", auto_offline=auto_offline, channel=channel
+                "requests<99", "urllib3", auto_offline=auto_offline, channel=channel
             )
             run.assert_called_once_with(
                 conda,
@@ -655,7 +655,7 @@ class TestSession:
                 *args,
                 "--prefix",
                 "/path/to/conda/env",
-                "requests",
+                "requests<99",
                 "urllib3",
                 **_run_with_defaults(silent=True, external="error"),
             )
