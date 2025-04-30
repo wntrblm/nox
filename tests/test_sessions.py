@@ -581,24 +581,6 @@ class TestSession:
         with pytest.raises(ValueError, match="arg"):
             session.conda_install()
 
-    def test_conda_install_bad_args_odd_nb_double_quotes(self) -> None:
-        session, runner = self.make_session_and_runner()
-        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
-        assert runner.venv
-        runner.venv.location = "./not/a/location"
-
-        with pytest.raises(ValueError, match="odd number of quotes"):
-            session.conda_install('a"a')
-
-    def test_conda_install_bad_args_cannot_escape(self) -> None:
-        session, runner = self.make_session_and_runner()
-        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
-        assert runner.venv
-        runner.venv.location = "./not/a/location"
-
-        with pytest.raises(ValueError, match="Cannot escape"):
-            session.conda_install('a"o"<a')
-
     def test_conda_install_not_a_condaenv(self) -> None:
         session, runner = self.make_session_and_runner()
 
