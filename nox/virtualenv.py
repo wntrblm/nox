@@ -108,7 +108,7 @@ def uv_version(uv_bin: str) -> version.Version:
     """Returns uv's version defaulting to 0.0 if uv is not available"""
     try:
         ret = subprocess.run(
-            [uv_bin, "version", "--output-format", "json"],
+            [uv_bin, "self", "version", "--output-format", "json"],
             check=False,
             text=True,
             capture_output=True,
