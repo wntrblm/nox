@@ -751,7 +751,7 @@ def test_find_uv(
 
     def mock_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(
-            args=["uv", "version", "--output-format", "json"],
+            args=["uv", "self", "version", "--output-format", "json"],
             stdout=f'{{"version": "{vers}", "commit_info": null}}',
             returncode=vers_rc,
         )
@@ -787,7 +787,7 @@ def test_uv_version(
 ) -> None:
     def mock_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(
-            args=["uv", "version", "--output-format", "json"],
+            args=["uv", "self", "version", "--output-format", "json"],
             stdout=stdout,
             returncode=return_code,
         )
