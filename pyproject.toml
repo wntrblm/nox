@@ -14,7 +14,7 @@ keywords = [
   "testing",
   "tox",
 ]
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [
   { name = "Alethea Katherine Flowers", email = "me@thea.codes" },
 ]
@@ -23,7 +23,6 @@ classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
   "Operating System :: MacOS",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
@@ -109,7 +108,7 @@ lint.extend-select = [
   "RUF", # Ruff-specific
   "S",   # eval -> literal_eval
   "SIM", # flake8-simplify
-  "TCH", # flake8-type-checking
+  "TC",  # flake8-type-checking
   "TRY", # tryceratops
   "UP",  # pyupgrade
   "YTT", # flake8-2020
@@ -138,7 +137,7 @@ minversion = "7.0"
 addopts = [ "-ra", "--strict-markers", "--strict-config" ]
 xfail_strict = true
 filterwarnings = [ "error" ]
-log_cli_level = "info"
+log_cli_level = "INFO"
 testpaths = [ "tests" ]
 pythonpath = [ ".github/" ]
 
