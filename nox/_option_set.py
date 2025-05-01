@@ -19,7 +19,6 @@ and surfaced in documentation."""
 from __future__ import annotations
 
 import argparse
-import collections
 import functools
 import os
 from argparse import ArgumentError, ArgumentParser, Namespace
@@ -254,10 +253,8 @@ class OptionSet:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.parser_args = args
         self.parser_kwargs = kwargs
-        self.options: collections.OrderedDict[str, Option] = collections.OrderedDict()
-        self.groups: collections.OrderedDict[str, OptionGroup] = (
-            collections.OrderedDict()
-        )
+        self.options: dict[str, Option] = {}
+        self.groups: dict[str, OptionGroup] = {}
 
     def add_options(self, *args: Option) -> None:
         """Adds a sequence of Options to the OptionSet.

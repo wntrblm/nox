@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import itertools
-from collections import OrderedDict
 from typing import Hashable, Iterable, Iterator, Mapping, TypeVar
 
 __all__ = ["CycleError", "lazy_stable_topo_sort"]
@@ -130,7 +129,7 @@ def lazy_stable_topo_sort(
 
     def prepended_by_dependencies(
         node: Node,
-        walk: OrderedDict[Node, None] | None = None,
+        walk: dict[Node, None] | None = None,
     ) -> Iterator[Node]:
         """Yields a node's dependencies depth-first, followed by the node itself.
 
@@ -142,10 +141,10 @@ def lazy_stable_topo_sort(
         Args:
             node (~nox._resolver.Node):
                 A node in the dependency graph.
-            walk (OrderedDict[~nox._resolver.Node, None] | None):
-                An ``OrderedDict`` whose keys are the nodes traversed when walking a
+            walk (dict[~nox._resolver.Node, None] | None):
+                An ordered ``dict`` whose keys are the nodes traversed when walking a
                 path leading up to ``node`` on the reversed-edge dependency graph.
-                Defaults to ``OrderedDict()``.
+                Defaults to ``{}``.
 
         Yields:
             ~nox._resolver.Node: ``node``'s direct dependencies, each
@@ -159,9 +158,9 @@ def lazy_stable_topo_sort(
         # We would like for ``walk`` to be an ordered set so that we get (a) O(1) ``node
         # in walk`` and (b) so that we can use the order to report to the user what the
         # dependency cycle is, if one is encountered. The standard library does not have
-        # an ordered set type, so we instead use the keys of an ``OrderedDict[Node,
-        # None]`` as an ordered set.
-        walk = walk or OrderedDict()
+        # an ordered set type, so we instead use the keys of an ``dict[Node, None]`` as
+        # an ordered set.
+        walk = walk or {}
         walk = extend_walk(walk, node)
         if not visited[node]:
             visited[node] = True
@@ -175,19 +174,17 @@ def lazy_stable_topo_sort(
         else:
             return
 
-    def extend_walk(
-        walk: OrderedDict[Node, None], node: Node
-    ) -> OrderedDict[Node, None]:
+    def extend_walk(walk: dict[Node, None], node: Node) -> dict[Node, None]:
         """Extend a walk by a node, checking for dependency cycles.
 
         Args:
-            walk (OrderedDict[~nox._resolver.Node, None]):
+            walk (dict[~nox._resolver.Node, None]):
                 See ``prepended_by_dependencies``.
             nodes (~nox._resolver.Node):
                 A node to extend the walk with.
 
         Returns:
-            OrderedDict[~nox._resolver.Node, None]: ``walk``, extended by
+            dict[~nox._resolver.Node, None]: ``walk``, extended by
             ``node``.
 
         Raises:

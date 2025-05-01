@@ -17,7 +17,6 @@ from __future__ import annotations
 import ast
 import itertools
 import operator
-from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Mapping, cast
 
 from nox._decorators import Call, Func
@@ -40,7 +39,7 @@ WARN_PYTHONS_IGNORED = "python_ignored"
 
 def _unique_list(*args: str) -> list[str]:
     """Return a list without duplicates, while preserving order."""
-    return list(OrderedDict.fromkeys(args))
+    return list(dict.fromkeys(args))
 
 
 class Manifest:

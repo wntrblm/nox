@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import collections
 import typing
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
@@ -37,8 +36,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-def create_mock_sessions() -> collections.OrderedDict[str, mock.Mock]:
-    sessions = collections.OrderedDict()
+def create_mock_sessions() -> dict[str, mock.Mock]:
+    sessions = {}
     sessions["foo"] = mock.Mock(spec=(), python=None, venv_backend=None, tags=["baz"])
     sessions["bar"] = mock.Mock(
         spec=(),
