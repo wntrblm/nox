@@ -581,6 +581,7 @@ class TestSession:
         with pytest.raises(ValueError, match="arg"):
             session.conda_install()
 
+    @pytest.mark.skipif(not sys.platform.startswith("win32"), reason="Only on Windows")
     def test_conda_install_bad_args_odd_nb_double_quotes(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
@@ -590,6 +591,7 @@ class TestSession:
         with pytest.raises(ValueError, match="odd number of quotes"):
             session.conda_install('a"a')
 
+    @pytest.mark.skipif(not sys.platform.startswith("win32"), reason="Only on Windows")
     def test_conda_install_bad_args_cannot_escape(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
@@ -646,7 +648,7 @@ class TestSession:
             else:
                 args += [f"--channel={c}" for c in channel]
             session.conda_install(
-                "requests", "urllib3", auto_offline=auto_offline, channel=channel
+                "requests<99", "urllib3", auto_offline=auto_offline, channel=channel
             )
             run.assert_called_once_with(
                 conda,
@@ -655,7 +657,7 @@ class TestSession:
                 *args,
                 "--prefix",
                 "/path/to/conda/env",
-                "requests",
+                '"requests<99"' if sys.platform.startswith("win32") else "requests<99",
                 "urllib3",
                 **_run_with_defaults(silent=True, external="error"),
             )
@@ -716,7 +718,9 @@ class TestSession:
 
         if version_constraint == "no":
             pkg_requirement = passed_arg = "urllib3"
-        elif version_constraint == "yes":
+        elif version_constraint == "yes" and not sys.platform.startswith("win32"):
+            pkg_requirement = passed_arg = "urllib3<1.25"
+        elif version_constraint == "yes" and sys.platform.startswith("win32"):
             pkg_requirement = "urllib3<1.25"
             passed_arg = f'"{pkg_requirement}"'
         elif version_constraint == "already_dbl_quoted":

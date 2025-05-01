@@ -724,7 +724,8 @@ class Session:
             return
 
         # Escape args that should be (conda-specific; pip install does not need this)
-        args = _dblquote_pkg_install_args(args)
+        if sys.platform.startswith("win32"):
+            args = _dblquote_pkg_install_args(args)
 
         if silent is None:
             silent = True
