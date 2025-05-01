@@ -15,9 +15,9 @@ We'd like to thank the following folks who contributed to this release:
 
 Bugfixes:
 
-* `uv version` is now `uv self version`, support UV by @henryiii in https://github.com/wntrblm/nox/pull/955
-* Never ignore URL dependencies in PEP 723 noxfiles by @gschaffner in https://github.com/wntrblm/nox/pull/935
+* `uv version` is now `uv self version`, respect `UV` by @henryiii in https://github.com/wntrblm/nox/pull/955
 * Add `UV_PYTHON` to disallowed vars by @henryiii in https://github.com/wntrblm/nox/pull/959
+* Never ignore URL dependencies in PEP 723 noxfiles by @gschaffner in https://github.com/wntrblm/nox/pull/935
 * Support forcing Python on parametrized session by @henryiii in https://github.com/wntrblm/nox/pull/958
 * Fix `conda_install` issue with newer conda (only Unix) by @henryiii in https://github.com/wntrblm/nox/pull/957
 * Show skip reason by default by @chirizxc in https://github.com/wntrblm/nox/pull/941
