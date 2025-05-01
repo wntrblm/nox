@@ -12,10 +12,11 @@ We'd like to thank the following folks who contributed to this release:
 * @gschaffner
 * @henryiii
 * @living180
+* @Spectre5 (first contribution)
 
 Bugfixes:
 
-* `uv version` is now `uv self version`, respect `UV` by @henryiii in https://github.com/wntrblm/nox/pull/955
+* `uv version` is now `uv self version`, respect `UV` by @henryiii and @Spectre5 in https://github.com/wntrblm/nox/pull/955
 * Add `UV_PYTHON` to disallowed vars by @henryiii in https://github.com/wntrblm/nox/pull/959
 * Never ignore URL dependencies in PEP 723 noxfiles by @gschaffner in https://github.com/wntrblm/nox/pull/935
 * Support forcing Python on parametrized session by @henryiii in https://github.com/wntrblm/nox/pull/958
