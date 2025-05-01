@@ -1,5 +1,42 @@
 # Changelog
 
+
+## 2025.05.01
+
+This is a bugfix release that primarily adds support for uv 0.7+. A few other
+small fixes were made.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @chirizxc
+* @gschaffner
+* @henryiii
+* @living180
+
+Bugfixes:
+
+* `uv version` is now `uv self version`, support UV by @henryiii in https://github.com/wntrblm/nox/pull/955
+* Never ignore URL dependencies in PEP 723 noxfiles by @gschaffner in https://github.com/wntrblm/nox/pull/935
+* Add `UV_PYTHON` to disallowed vars by @henryiii in https://github.com/wntrblm/nox/pull/959
+* Support forcing Python on parametrized session by @henryiii in https://github.com/wntrblm/nox/pull/958
+* Fix `conda_install` issue with newer conda (only Unix) by @henryiii in https://github.com/wntrblm/nox/pull/957
+* Show skip reason by default by @chirizxc in https://github.com/wntrblm/nox/pull/941
+* Support `Path` for envdir by @henryiii in https://github.com/wntrblm/nox/pull/932
+* Use Python 3.12 for action, allow 3.13, drop 3.8 from auto versions by @henryiii in https://github.com/wntrblm/nox/pull/946
+
+Documentation:
+
+* Fix a typo in the changelog by @gschaffner in https://github.com/wntrblm/nox/pull/936
+* Update uv recipe by @henryiii in https://github.com/wntrblm/nox/pull/933
+* Fix parametrized session tagging example by @living180 in https://github.com/wntrblm/nox/pull/942
+* uv now supports `pip install .` reinstallation by @henryiii in https://github.com/wntrblm/nox/pull/947
+
+Internal changes:
+
+* Use PEP 639 license info by @henryiii in https://github.com/wntrblm/nox/pull/956
+* Make test skips a bit smarter by @henryiii in https://github.com/wntrblm/nox/pull/929
+* Add our own requirements to conda too by @henryiii in https://github.com/wntrblm/nox/pull/945
+
 ## 2025.02.09
 
 This release improves PEP 723 support, including adding dependencies to the noxfile itself ("plugins"). It adds the long-awaited "requires" option, allowing sessions to require other sessions. And it brings further improvements to the `pyproject.toml` support, including helpers for dependency-groups and Python version lists.
