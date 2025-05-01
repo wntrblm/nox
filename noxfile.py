@@ -74,7 +74,9 @@ def conda_tests(session: nox.Session) -> None:
         "--file", "requirements-conda-test.txt", channel="conda-forge"
     )
     session.install("-e.", "--no-deps")
-    session.conda_install("requests<99")
+    # Currently, this doesn't work on Windows either with or without quoting
+    if not sys.platform.startswith("win32"):
+        session.conda_install("requests<99")
     session.run("pytest", *session.posargs)
 
 
@@ -85,7 +87,8 @@ def mamba_tests(session: nox.Session) -> None:
         "--file", "requirements-conda-test.txt", channel="conda-forge"
     )
     session.install("-e.", "--no-deps")
-    session.conda_install("requests<99")
+    if not sys.platform.startswith("win32"):
+        session.conda_install("requests<99")
     session.run("pytest", *session.posargs)
 
 
@@ -95,8 +98,10 @@ def micromamba_tests(session: nox.Session) -> None:
     session.conda_install(
         "--file", "requirements-conda-test.txt", channel="conda-forge"
     )
+    # Currently, this doesn't work on Windows either with or without quoting
     session.install("-e.", "--no-deps")
-    session.conda_install("requests<99")
+    if not sys.platform.startswith("win32"):
+        session.conda_install("requests<99")
     session.run("pytest", *session.posargs)
 
 
