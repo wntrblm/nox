@@ -358,8 +358,11 @@ class Manifest:
         calls = Call.generate_calls(func, parametrize)
         for call in calls:
             long_names = []
-            if not multi:
+            if not multi or (
+                self._config.force_pythons and call.python in self._config.extra_pythons
+            ):
                 long_names.append(f"{name}{call.session_signature}")
+
             if func.python:
                 long_names.append(f"{name}-{func.python}{call.session_signature}")
                 # Ensure that specifying session-python will run all parameterizations.

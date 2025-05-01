@@ -150,6 +150,31 @@ def test_main_no_venv_error() -> None:
         nox.main()
 
 
+def test_main_param_force_python(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Check that Python can be forced if something is parametrized over other things.
+    """
+
+    # Check that --no-venv overrides force_venv_backend
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "nox",
+            "--noxfile",
+            os.path.join(RESOURCES, "noxfile_parametrize.py"),
+            "--sessions",
+            "check_package_files(7.5.0)",
+            "--force-python",
+            ".".join(str(v) for v in sys.version_info[:2]),
+        ],
+    )
+
+    with mock.patch("sys.exit") as sys_exit:
+        nox.main()
+        sys_exit.assert_called_once_with(0)
+
+
 def test_main_short_form_args(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         sys,
