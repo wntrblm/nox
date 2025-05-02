@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import collections
 import copy
 import functools
 from typing import TYPE_CHECKING, Any, Callable, overload
@@ -35,7 +34,7 @@ def __dir__() -> list[str]:
 
 RawFunc = Callable[..., Any]
 
-_REGISTRY: collections.OrderedDict[str, Func] = collections.OrderedDict()
+_REGISTRY: dict[str, Func] = {}
 
 
 @overload
@@ -122,7 +121,7 @@ def session_decorator(
     return fn
 
 
-def get() -> collections.OrderedDict[str, Func]:
+def get() -> dict[str, Func]:
     """Return a shallow copy of the registry.
 
     This ensures that the registry is not accidentally modified by
