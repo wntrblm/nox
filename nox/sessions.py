@@ -942,7 +942,9 @@ class SessionRunner:
             self.multi = True
 
     def __repr__(self) -> str:
-        return f"<SessionRunner {self.name}: {self.signatures!r} {self.multi}>"
+        return (
+            f"<{self.__class__.__name__} {self.name}: {self.signatures!r} {self.multi}>"
+        )
 
     @property
     def description(self) -> str | None:

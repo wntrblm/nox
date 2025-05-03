@@ -145,7 +145,12 @@ pythonpath = [ ".github/" ]
 run.branch = true
 run.relative_files = true
 run.source_pkgs = [ "nox" ]
-report.exclude_also = [ "def __dir__()", "if TYPE_CHECKING:", "@overload" ]
+report.exclude_also = [
+  "@overload",
+  "def __dir__()",
+  "def __repr__",
+  "if TYPE_CHECKING:",
+]
 report.omit = [ "nox/_typing.py" ]
 
 [tool.mypy]
