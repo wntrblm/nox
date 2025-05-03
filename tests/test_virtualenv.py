@@ -45,7 +45,9 @@ RAISE_ERROR = "RAISE_ERROR"
 VIRTUALENV_VERSION = metadata.version("virtualenv")
 
 has_uv = pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
-has_conda = pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+has_conda = pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")(
+    pytest.mark.xdist_group(name="conda")
+)
 
 
 class TextProcessResult(NamedTuple):
