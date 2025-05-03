@@ -6,5 +6,6 @@ httpx
 jinja2
 pbs-installer[all]>=2025.1.6
 pytest
+pytest-xdist
 tox>=4.0.0
 virtualenv >=20.14.1
