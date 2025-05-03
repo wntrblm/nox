@@ -90,6 +90,9 @@ class Func(FunctionDecorator):
         self.default = default
         self.requires = list(requires or [])
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(name={self.name!r})"
+
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
 
@@ -165,6 +168,9 @@ class Call(Func):
         )
         self.call_spec = call_spec
         self.session_signature = session_signature
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(name={self.name!r}, call_spec={self.call_spec!r}, session_signature={self.session_signature!r})"
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         kwargs.update(self.call_spec)
