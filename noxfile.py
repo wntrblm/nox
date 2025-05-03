@@ -43,7 +43,7 @@ ALL_PYTHONS = nox.project.python_versions(PYPROJECT)
 def tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
 
-    coverage_file = f".coverage.{sys.platform}.{session.python}"
+    coverage_file = f".coverage.pypi.{sys.platform}.{session.python}"
 
     session.create_tmp()  # Fixes permission errors on Windows
     session.install(*PYPROJECT["dependency-groups"]["test"], "uv")
@@ -55,10 +55,13 @@ def tests(session: nox.Session) -> None:
         "--cov-config",
         "pyproject.toml",
         "--cov-report=",
+        "--numprocesses=auto",
+        "-m",
+        "not conda",
         *session.posargs,
         env={
+            "PYTHONWARNDEFAULTENCODING": "1",
             "COVERAGE_FILE": coverage_file,
-            **extra_env,
         },
     )
 
@@ -78,9 +81,11 @@ def minimums(session: nox.Session) -> None:
     session.run("pytest", *session.posargs)
 
 
-@nox.session(venv_backend="conda", default=bool(shutil.which("conda")))
-def conda_tests(session: nox.Session) -> None:
-    """Run test suite set up with conda."""
+def xonda_tests(session: nox.Session, xonda: str) -> None:
+    """Run test suite set up with conda/mamba/etc."""
+
+    coverage_file = f".coverage.{xonda}.{sys.platform}.{session.python}"
+
     session.conda_install(
         "--file", "requirements-conda-test.txt", channel="conda-forge"
     )
@@ -88,32 +93,35 @@ def conda_tests(session: nox.Session) -> None:
     # Currently, this doesn't work on Windows either with or without quoting
     if not sys.platform.startswith("win32"):
         session.conda_install("requests<99")
-    session.run("pytest", *session.posargs)
+    session.run(
+        "pytest",
+        "--cov",
+        "--cov-config",
+        "pyproject.toml",
+        "--cov-report=",
+        "-m",
+        "conda",
+        *session.posargs,
+        env={"COVERAGE_FILE": coverage_file},
+    )
+
+
+@nox.session(venv_backend="conda", default=bool(shutil.which("conda")))
+def conda_tests(session: nox.Session) -> None:
+    """Run test suite set up with conda."""
+    xonda_tests(session, "conda")
 
 
 @nox.session(venv_backend="mamba", default=shutil.which("mamba"))
 def mamba_tests(session: nox.Session) -> None:
     """Run test suite set up with mamba."""
-    session.conda_install(
-        "--file", "requirements-conda-test.txt", channel="conda-forge"
-    )
-    session.install("-e.", "--no-deps")
-    if not sys.platform.startswith("win32"):
-        session.conda_install("requests<99")
-    session.run("pytest", *session.posargs)
+    xonda_tests(session, "mamba")
 
 
 @nox.session(venv_backend="micromamba", default=shutil.which("micromamba"))
 def micromamba_tests(session: nox.Session) -> None:
     """Run test suite set up with micromamba."""
-    session.conda_install(
-        "--file", "requirements-conda-test.txt", channel="conda-forge"
-    )
-    # Currently, this doesn't work on Windows either with or without quoting
-    session.install("-e.", "--no-deps")
-    if not sys.platform.startswith("win32"):
-        session.conda_install("requests<99")
-    session.run("pytest", *session.posargs)
+    xonda_tests(session, "micromamba")
 
 
 @nox.session(default=False)
