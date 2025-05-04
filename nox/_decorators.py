@@ -71,7 +71,7 @@ class Func(FunctionDecorator):
         python: _typing.Python = None,
         reuse_venv: bool | None = None,
         name: str | None = None,
-        venv_backend: Any = None,
+        venv_backend: str | None = None,
         venv_params: Sequence[str] = (),
         should_warn: Mapping[str, Any] | None = None,
         tags: Sequence[str] | None = None,
