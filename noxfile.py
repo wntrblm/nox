@@ -67,7 +67,17 @@ def tests(session: nox.Session) -> None:
             con.execute("DELETE FROM file WHERE SUBSTR(path, 2, 1) == ':'")
 
 
-@nox.session(venv_backend="conda", default=shutil.which("conda"))
+@nox.session(venv_backend="uv", default=False)
+def minimums(session: nox.Session) -> None:
+    """Run test suite with the lowest supported versions of everything. Requires uv."""
+    session.create_tmp()
+
+    session.install("-e.", "--group=test", "--resolution=lowest-direct")
+    session.run("uv", "pip", "list")
+    session.run("pytest", *session.posargs)
+
+
+@nox.session(venv_backend="conda", default=bool(shutil.which("conda")))
 def conda_tests(session: nox.Session) -> None:
     """Run test suite set up with conda."""
     session.conda_install(
