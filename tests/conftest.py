@@ -14,11 +14,14 @@
 from __future__ import annotations
 
 import re
+import shutil
 from pathlib import Path
 from string import Template
 from typing import Callable
 
 import pytest
+
+HAS_CONDA = shutil.which("conda") is not None
 
 
 @pytest.fixture(autouse=True)
@@ -58,3 +61,15 @@ def generate_noxfile_options(tmp_path: Path) -> Callable[..., str]:
         return str(path)
 
     return generate_noxfile
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    for item in items:
+        if "make_conda" in getattr(item, "fixturenames", ()):
+            item.add_marker("conda")
+        if "conda" in item.keywords:
+            item.add_marker(
+                pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+            )
+            item.add_marker(pytest.mark.xdist_group(name="conda"))

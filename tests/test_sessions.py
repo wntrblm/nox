@@ -40,11 +40,6 @@ import nox.virtualenv
 from nox import _options
 from nox.logger import logger
 
-HAS_CONDA = shutil.which("conda") is not None
-has_conda = pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")(
-    pytest.mark.xdist_group(name="conda")
-)
-
 DIR = Path(__file__).parent.resolve()
 
 
@@ -1152,7 +1147,7 @@ class TestSessionRunner:
                 "nox.virtualenv.CondaEnv.create",
                 "conda",
                 nox.virtualenv.CondaEnv,
-                marks=has_conda,
+                marks=pytest.mark.conda,
             ),
         ],
     )
