@@ -28,6 +28,12 @@ def reset_color_envvars(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NO_COLOR", raising=False)
 
 
+@pytest.fixture(autouse=True)
+def clear_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Clear the cache for each test."""
+    monkeypatch.setattr("nox.registry._REGISTRY", {})
+
+
 RESOURCES = Path(__file__).parent.joinpath("resources")
 
 
