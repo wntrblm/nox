@@ -1015,9 +1015,16 @@ def test_inner_functions_reusing_venv(
     venv, location = make_one(reuse_existing=True)
     venv.create()
 
+    txt = location.joinpath("pyvenv.cfg").read_text(encoding="utf-8")
+    cfg = {
+        (v := line.partition("="))[0].strip(): v[-1].strip()
+        for line in txt.splitlines()
+    }
+    home = cfg["home"]
+
     # Drop a venv-style pyvenv.cfg into the environment.
-    pyvenv_cfg = """\
-    home = /usr/bin
+    pyvenv_cfg = f"""\
+    home = {home}
     include-system-site-packages = false
     version = 3.10
     base-prefix = foo

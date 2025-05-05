@@ -70,7 +70,8 @@ dev = [
 ]
 test = [
   "coverage[toml]>=7.2",
-  "pytest>=6",
+  "pytest>=7.4; python_version>='3.12'",
+  "pytest>=7; python_version<'3.12'",
   "pytest-cov>=3",
 ]
 docs = [
