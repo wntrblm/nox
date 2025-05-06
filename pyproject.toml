@@ -39,12 +39,14 @@ classifiers = [
 ]
 dependencies = [
   "argcomplete>=1.9.4,<4",
-  "attrs>=23.1",
+  "attrs>=24.1",
   "colorlog>=2.6.1,<7",
   "dependency-groups>=1.1",
-  "packaging>=20.9",
-  "tomli>=1; python_version<'3.11'",
-  "virtualenv>=20.14.1",
+  "packaging>=20.9; python_version<'3.10'",
+  "packaging>=21; python_version>='3.10'",
+  "tomli>=1.1; python_version<'3.11'",
+  "virtualenv>=20.14.1; python_version<'3.10'",
+  "virtualenv>=20.15; python_version>='3.10'",
 ]
 optional-dependencies.tox_to_nox = [
   "importlib-resources; python_version<'3.9'",
@@ -68,8 +70,9 @@ dev = [
 ]
 test = [
   "coverage[toml]>=7.2",
-  "pytest>=6",
-  "pytest-cov",
+  "pytest>=7.4; python_version>='3.12'",
+  "pytest>=7; python_version<'3.12'",
+  "pytest-cov>=3",
 ]
 docs = [
   "myst-parser",
