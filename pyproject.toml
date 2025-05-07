@@ -144,6 +144,9 @@ filterwarnings = [ "error" ]
 log_cli_level = "INFO"
 testpaths = [ "tests" ]
 pythonpath = [ ".github/" ]
+markers = [
+  "conda: test requires conda",
+]
 
 [tool.coverage]
 run.branch = true
