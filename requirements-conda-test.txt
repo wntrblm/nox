@@ -4,5 +4,6 @@ colorlog >=2.6.1,<7.0.0
 dependency-groups >=1.1
 jinja2
 pytest
+pytest-xdist
 tox>=4.0.0
 virtualenv >=20.14.1
