@@ -55,6 +55,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
+        if: matrix.python-version != '3.14'
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
