@@ -8,7 +8,6 @@
 [![License](https://img.shields.io/github/license/wntrblm/nox)](https://github.com/wntrblm/nox)
 [![PyPI](https://img.shields.io/pypi/v/nox.svg?logo=python)](https://pypi.python.org/pypi/nox)
 [![GitHub](https://img.shields.io/github/v/release/wntrblm/nox?logo=github&sort=semver)](https://github.com/wntrblm/nox)
-[![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/wntrblm/nox)
 [![CI](https://github.com/wntrblm/nox/workflows/CI/badge.svg)](https://github.com/wntrblm/nox/actions?query=workflow%3ACI)
 [![Downloads](https://static.pepy.tech/personalized-badge/nox?period=total&units=international_system&left_color=grey&right_color=green&left_text=Downloads)](https://pepy.tech/project/nox)
 
