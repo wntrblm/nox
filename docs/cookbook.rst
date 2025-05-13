@@ -140,7 +140,7 @@ If you use a tool like ``uv`` to lock your dependencies, you can use that inside
         session.run("pytest", *session.posargs)
 
 
-Here we run ``uv sync`` on the nox virtual environment. Other useful flags might include ``--frozen`` (won't touch the lockfile) and ``--inexact`` (will allow you to install other packages as well).
+Here we run ``uv sync`` on the nox virtual environment. Other useful flags might include ``--locked`` (validate lockfile is up-to-date) and ``--inexact`` (will allow you to install other packages as well).
 
 
 Generating a matrix with GitHub Actions
