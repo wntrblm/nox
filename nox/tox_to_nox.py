@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import os
 import re
 import sys
@@ -68,7 +69,10 @@ def write_output_to_file(output: str, filename: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Converts toxfiles to noxfiles.")
+    make_parser = functools.partial(argparse.ArgumentParser, allow_abbrev=False)
+    if sys.version_info >= (3, 14):
+        make_parser = functools.partial(make_parser, color=True, suggest_on_error=True)
+    parser = make_parser(description="Converts toxfiles to noxfiles.")
     parser.add_argument("--output", default="noxfile.py")
 
     args = parser.parse_args()
