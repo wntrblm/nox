@@ -96,18 +96,13 @@ def test_run_verbosity(
     assert logs[0].message.strip() == "123"
 
 
-def test_run_verbosity_failed_command(
-    capsys: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture
-) -> None:
+def test_run_verbosity_failed_command(caplog: pytest.LogCaptureFixture) -> None:
     caplog.clear()
     with caplog.at_level(logging.DEBUG):
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run([PYTHON, "-c", "print(123); exit(1)"], silent=True)
 
-        out, err = capsys.readouterr()
-
-        assert "123" in err
-        assert out == ""
+        assert "123" in caplog.text
 
     logs = [rec for rec in caplog.records if rec.levelname == "OUTPUT"]
     assert not logs
@@ -117,10 +112,7 @@ def test_run_verbosity_failed_command(
         with pytest.raises(nox.command.CommandFailed):
             nox.command.run([PYTHON, "-c", "print(123); exit(1)"], silent=True)
 
-        out, err = capsys.readouterr()
-
-        assert "123" in err
-        assert out == ""
+        assert "123" in caplog.text
 
     # Nothing is logged but the error is still written to stderr
     assert not logs
@@ -251,7 +243,10 @@ def test_exit_codes() -> None:
     )
 
 
-def test_fail_with_silent(capsys: pytest.CaptureFixture[str]) -> None:
+def test_fail_with_silent(
+    caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str]
+) -> None:
+    caplog.clear()
     with pytest.raises(nox.command.CommandFailed):
         nox.command.run(
             [
@@ -264,9 +259,11 @@ def test_fail_with_silent(capsys: pytest.CaptureFixture[str]) -> None:
             ],
             silent=True,
         )
-    _out, err = capsys.readouterr()
-    assert "out" in err
-    assert "err" in err
+    out, err = capsys.readouterr()
+    assert "out" not in err
+    assert "err" not in err
+    assert "out" in caplog.text
+    assert "err" in caplog.text
 
 
 @pytest.fixture
