@@ -73,6 +73,7 @@ Nox is lucky to have `over 3,000 <https://github.com/search?type=code&q=path%3An
 - `pip <https://github.com/pypa/pip>`__
 - `pipx <https://github.com/pypa/pipx>`__
 - `pybind11 <https://github.com/pybind/pybind11>`__
+- `rustworkx <https://github.com/Qiskit/rustworkx>`__
 - `Salt <https://github.com/saltstack/salt>`__
 - `Scikit-build <https://github.com/scikit-build/scikit-build>`__
 - `Scikit-HEP <https://scikit-hep.org>`__
