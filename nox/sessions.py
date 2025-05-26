@@ -1079,7 +1079,7 @@ class SessionRunner:
         )
 
     def execute(self) -> Result:
-        logger.warning(f"Running session {self.friendly_name}")
+        logger.session_info(f"Running session {self.friendly_name}")
 
         for dependency in self.get_direct_dependencies():
             if not dependency.result:
