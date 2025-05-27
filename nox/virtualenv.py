@@ -180,7 +180,7 @@ class ProcessEnv(abc.ABC):
         self._reused = False
 
         # .command's env supports None, meaning don't include value even if in parent
-        self.env = {**{k: None for k in _BLACKLISTED_ENV_VARS}, **(env or {})}
+        self.env = {**dict.fromkeys(_BLACKLISTED_ENV_VARS), **(env or {})}
 
     @property
     def bin_paths(self) -> list[str] | None:
