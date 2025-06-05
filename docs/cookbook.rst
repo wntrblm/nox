@@ -142,7 +142,7 @@ If you use a tool like ``uv`` to lock your dependencies, you can use that inside
 
 Here we run ``uv sync`` on the nox virtual environment. Other useful flags might include ``--locked`` (validate lockfile is up-to-date) and ``--inexact`` (will allow you to install other packages as well).
 
-The `nox-uv <https://github.com/dantebben/nox-uv>` package can be used to reduce the boilerplate needed to ``uv sync`` specific dependency groups or extras into the nox virtual environment.
+The `nox-uv <https://github.com/dantebben/nox-uv>`_ package can be used to reduce the boilerplate needed to ``uv sync`` specific dependency groups or extras into the nox virtual environment.
 By default, ``nox-uv`` also validates that the lockfile is up-to-date.
 
 .. code-block:: python
