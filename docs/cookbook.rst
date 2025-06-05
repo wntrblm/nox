@@ -147,14 +147,14 @@ By default, ``nox-uv`` also validates that the lockfile is up-to-date.
 
 .. code-block:: python
 
-    from nox import Session
+    from nox import Session, options
     from nox_uv import session
 
+    options.default_venv_backend = "uv"
 
     @session(
         python=["3.10", "3.11", "3.12", "3.13"],
         uv_groups=["test"],
-        venv_backend="uv",
     )
     def test(s: Session) -> None:
         """`uv sync` main dependencies and the `test` dependency group."""
