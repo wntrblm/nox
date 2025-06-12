@@ -21,7 +21,6 @@ import json
 import os
 import re
 import shutil
-import stat
 import subprocess
 import sys
 import sysconfig
@@ -81,22 +80,6 @@ _BLACKLISTED_ENV_VARS = frozenset(
         "UV_PYTHON",
     ]
 )
-
-
-def _remove_readonly(func: Callable[[str], None], path: str, _: object) -> None:
-    os.chmod(path, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
-    try:
-        func(path)
-    except PermissionError:
-        logger.warning("PermissionError on %s", path)
-
-
-def _rmtree(path: str) -> None:
-    with contextlib.suppress(FileNotFoundError, OSError):
-        if sys.version_info >= (3, 12):
-            shutil.rmtree(path, onexc=_remove_readonly)
-        else:
-            shutil.rmtree(path, onerror=_remove_readonly)
 
 
 def find_uv() -> tuple[bool, str, version.Version]:
@@ -388,7 +371,7 @@ class CondaEnv(ProcessEnv):
             if self.reuse_existing and is_conda:
                 return False
             if not is_conda:
-                _rmtree(self.location)
+                shutil.rmtree(self.location, ignore_errors=True)
             else:
                 cmd = [
                     self.conda_cmd,
@@ -400,7 +383,7 @@ class CondaEnv(ProcessEnv):
                 ]
                 nox.command.run(cmd, silent=True, log=False)
             # Make sure that location is clean
-            _rmtree(self.location)
+            shutil.rmtree(self.location, ignore_errors=True)
 
         return True
 
@@ -532,7 +515,9 @@ class VirtualEnv(ProcessEnv):
                 and self._check_reused_environment_interpreter()
             ):
                 return False
-            _rmtree(self.location)
+            # uv clears it for us, and it balks at files left around
+            if self.venv_backend != "uv":
+                shutil.rmtree(self.location, ignore_errors=True)
         return True
 
     def _read_pyvenv_cfg(self) -> dict[str, str] | None:
