@@ -147,6 +147,12 @@ By default, ``nox-uv`` also validates that the lockfile is up-to-date.
 
 .. code-block:: python
 
+    #!/usr/bin/env -S uv run -q
+
+    # /// script
+    # dependencies = ["nox", "nox-uv"]
+    # ///
+
     from nox import Session, options
     from nox_uv import session
 
@@ -170,6 +176,10 @@ By default, ``nox-uv`` also validates that the lockfile is up-to-date.
         """`uv sync` only the `lint` dependency group."""
         s.run("ruff", "check", ".")
         s.run("ruff", "format", "--check", ".")
+
+
+    if __name__ == "__main__":
+        nox.main()
 
 
 Generating a matrix with GitHub Actions
