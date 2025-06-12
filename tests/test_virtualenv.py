@@ -304,6 +304,9 @@ def test_uv_creation(
     venv.create()
     assert venv._check_reused_environment_type()
 
+    venv.create()
+    assert venv._check_reused_environment_type()
+
 
 @has_uv
 def test_uv_managed_python(

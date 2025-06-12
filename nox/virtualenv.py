@@ -515,7 +515,9 @@ class VirtualEnv(ProcessEnv):
                 and self._check_reused_environment_interpreter()
             ):
                 return False
-            shutil.rmtree(self.location, ignore_errors=True)
+            # uv clears it for us, and it balks at files left around
+            if self.venv_backend != "uv":
+                shutil.rmtree(self.location, ignore_errors=True)
         return True
 
     def _read_pyvenv_cfg(self) -> dict[str, str] | None:
