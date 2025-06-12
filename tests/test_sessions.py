@@ -1423,30 +1423,32 @@ class TestResult:
     def test__bool_true(self) -> None:
         for status in (nox.sessions.Status.SUCCESS, nox.sessions.Status.SKIPPED):
             result = nox.sessions.Result(
-                session=typing.cast(nox.sessions.SessionRunner, object()), status=status
+                session=typing.cast("nox.sessions.SessionRunner", object()),
+                status=status,
             )
             assert bool(result)
 
     def test__bool_false(self) -> None:
         for status in (nox.sessions.Status.FAILED, nox.sessions.Status.ABORTED):
             result = nox.sessions.Result(
-                session=typing.cast(nox.sessions.SessionRunner, object()), status=status
+                session=typing.cast("nox.sessions.SessionRunner", object()),
+                status=status,
             )
             assert not bool(result)
 
     def test__imperfect(self) -> None:
         result = nox.sessions.Result(
-            typing.cast(nox.sessions.SessionRunner, object()),
+            typing.cast("nox.sessions.SessionRunner", object()),
             nox.sessions.Status.SUCCESS,
         )
         assert result.imperfect == "was successful"
         result = nox.sessions.Result(
-            typing.cast(nox.sessions.SessionRunner, object()),
+            typing.cast("nox.sessions.SessionRunner", object()),
             nox.sessions.Status.FAILED,
         )
         assert result.imperfect == "failed"
         result = nox.sessions.Result(
-            typing.cast(nox.sessions.SessionRunner, object()),
+            typing.cast("nox.sessions.SessionRunner", object()),
             nox.sessions.Status.FAILED,
             reason="meep",
         )
@@ -1454,7 +1456,7 @@ class TestResult:
 
     def test__log_success(self) -> None:
         result = nox.sessions.Result(
-            typing.cast(nox.sessions.SessionRunner, object()),
+            typing.cast("nox.sessions.SessionRunner", object()),
             nox.sessions.Status.SUCCESS,
         )
         with mock.patch.object(logger, "success") as success:
@@ -1463,7 +1465,7 @@ class TestResult:
 
     def test__log_warning(self) -> None:
         result = nox.sessions.Result(
-            typing.cast(nox.sessions.SessionRunner, object()),
+            typing.cast("nox.sessions.SessionRunner", object()),
             nox.sessions.Status.SKIPPED,
         )
         with mock.patch.object(logger, "warning") as warning:
@@ -1472,7 +1474,7 @@ class TestResult:
 
     def test__log_error(self) -> None:
         result = nox.sessions.Result(
-            typing.cast(nox.sessions.SessionRunner, object()),
+            typing.cast("nox.sessions.SessionRunner", object()),
             nox.sessions.Status.FAILED,
         )
         with mock.patch.object(logger, "error") as error:
@@ -1482,7 +1484,7 @@ class TestResult:
     def test__serialize(self) -> None:
         result = nox.sessions.Result(
             session=typing.cast(
-                nox.sessions.SessionRunner,
+                "nox.sessions.SessionRunner",
                 argparse.Namespace(
                     signatures=["siggy"], name="namey", func=mock.Mock()
                 ),
