@@ -84,12 +84,12 @@ _BLACKLISTED_ENV_VARS = frozenset(
 
 
 def _remove_readonly(func: Callable[[str], None], path: str, _: object) -> None:
-    os.chmod(path, stat.S_IWRITE)
+    os.chmod(path, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
     func(path)
 
 
 def _rmtree(path: str) -> None:
-    if Path(path).exists():
+    with contextlib.suppress(FileNotFoundError):
         if sys.version_info >= (3, 12):
             shutil.rmtree(path, onexc=_remove_readonly)
         else:
