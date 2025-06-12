@@ -142,6 +142,45 @@ If you use a tool like ``uv`` to lock your dependencies, you can use that inside
 
 Here we run ``uv sync`` on the nox virtual environment. Other useful flags might include ``--locked`` (validate lockfile is up-to-date) and ``--inexact`` (will allow you to install other packages as well).
 
+The `nox-uv <https://github.com/dantebben/nox-uv>`_ package can be used to reduce the boilerplate needed to ``uv sync`` specific dependency groups or extras into the nox virtual environment.
+By default, ``nox-uv`` also validates that the lockfile is up-to-date.
+
+.. code-block:: python
+
+    #!/usr/bin/env -S uv run -q
+
+    # /// script
+    # dependencies = ["nox", "nox-uv"]
+    # ///
+
+    import nox
+    import nox_uv
+
+    nox.options.default_venv_backend = "uv"
+
+    @nox_uv.session(
+        python=["3.10", "3.11", "3.12", "3.13"],
+        uv_groups=["test"],
+    )
+    def test(s: nox.Session) -> None:
+        """`uv sync` main dependencies and the `test` dependency group."""
+        s.run("python", "-m", "pytest")
+
+    @nox_uv.session(uv_groups=["type_check"])
+    def type_check(s: nox.Session) -> None:
+        """`uv sync` main dependencies and the `type_check` dependency group."""
+        s.run("mypy", "src")
+
+    @nox_uv.session(uv_only_groups=["lint"])
+    def type_check(s: nox.Session) -> None:
+        """`uv sync` only the `lint` dependency group."""
+        s.run("ruff", "check", ".")
+        s.run("ruff", "format", "--check", ".")
+
+
+    if __name__ == "__main__":
+        nox.main()
+
 
 Generating a matrix with GitHub Actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
