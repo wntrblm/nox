@@ -88,10 +88,7 @@ def _remove_readonly(func: Callable[[str], None], path: str, _: object) -> None:
     try:
         func(path)
     except PermissionError:
-        if os.path.isfile(path) or os.path.islink(path):
-            os.remove(path)
-        else:
-            logger.warn("PermissionError on %s", path)
+        logger.warning("PermissionError on %s", path)
 
 
 def _rmtree(path: str) -> None:
