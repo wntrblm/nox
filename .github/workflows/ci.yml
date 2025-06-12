@@ -64,7 +64,7 @@ jobs:
       - name: Run tests on ${{ matrix.os }}
         run: nox --session "tests-${{ matrix.python-version }}" -- --full-trace
       - name: Run min-version tests on ${{ matrix.os }}
-        run: nox --session "tests-${{ matrix.python-version }}" -- --full-trace
+        run: nox --session minimums --force-python="${{ matrix.python-version }}" -- --full-trace
       - name: Run Conda tests
         if: matrix.python-version == '3.12'
         run: nox --session "conda_tests" -- --full-trace
