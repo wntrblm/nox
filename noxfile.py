@@ -54,6 +54,7 @@ def tests(session: nox.Session) -> None:
         "--cov-config",
         "pyproject.toml",
         "--cov-report=",
+        "--numprocesses=auto",
         *session.posargs,
         env={
             "COVERAGE_FILE": coverage_file,
@@ -87,7 +88,7 @@ def conda_tests(session: nox.Session) -> None:
     # Currently, this doesn't work on Windows either with or without quoting
     if not sys.platform.startswith("win32"):
         session.conda_install("requests<99")
-    session.run("pytest", *session.posargs)
+    session.run("pytest", "--numprocesses=auto", *session.posargs)
 
 
 @nox.session(venv_backend="mamba", default=shutil.which("mamba"))
@@ -99,7 +100,7 @@ def mamba_tests(session: nox.Session) -> None:
     session.install("-e.", "--no-deps")
     if not sys.platform.startswith("win32"):
         session.conda_install("requests<99")
-    session.run("pytest", *session.posargs)
+    session.run("pytest", "--numprocesses=auto", *session.posargs)
 
 
 @nox.session(venv_backend="micromamba", default=shutil.which("micromamba"))
@@ -112,7 +113,7 @@ def micromamba_tests(session: nox.Session) -> None:
     session.install("-e.", "--no-deps")
     if not sys.platform.startswith("win32"):
         session.conda_install("requests<99")
-    session.run("pytest", *session.posargs)
+    session.run("pytest", "--numprocesses=auto", *session.posargs)
 
 
 @nox.session(default=False)
