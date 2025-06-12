@@ -149,6 +149,9 @@ pythonpath = [ ".github/" ]
 run.branch = true
 run.relative_files = true
 run.source_pkgs = [ "nox" ]
+run.disable_warnings = [
+  "no-ctracer",
+]
 report.exclude_also = [
   "@overload",
   "def __dir__()",
