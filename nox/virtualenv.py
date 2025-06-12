@@ -89,11 +89,15 @@ def _remove_readonly(func: Callable[[str], None], path: str, _: object) -> None:
 
 
 def _rmtree(path: str) -> None:
-    with contextlib.suppress(FileNotFoundError):
+    try:
         if sys.version_info >= (3, 12):
             shutil.rmtree(path, onexc=_remove_readonly)
         else:
             shutil.rmtree(path, onerror=_remove_readonly)
+    except FileNotFoundError:
+        pass
+    except PermissionError:
+        logger.warn("PermissionError on %s", path)
 
 
 def find_uv() -> tuple[bool, str, version.Version]:
