@@ -92,7 +92,7 @@ def _remove_readonly(func: Callable[[str], None], path: str, _: object) -> None:
 
 
 def _rmtree(path: str) -> None:
-    with contextlib.suppress(FileNotFoundError):
+    with contextlib.suppress(FileNotFoundError, OSError):
         if sys.version_info >= (3, 12):
             shutil.rmtree(path, onexc=_remove_readonly)
         else:
