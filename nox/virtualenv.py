@@ -85,19 +85,21 @@ _BLACKLISTED_ENV_VARS = frozenset(
 
 def _remove_readonly(func: Callable[[str], None], path: str, _: object) -> None:
     os.chmod(path, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
-    func(path)
+    try:
+        func(path)
+    except PermissionError:
+        if os.path.isfile(path) or os.path.islink(path):
+            os.remove(path)
+        else:
+            logger.warn("PermissionError on %s", path)
 
 
 def _rmtree(path: str) -> None:
-    try:
+    with contextlib.suppress(FileNotFoundError):
         if sys.version_info >= (3, 12):
             shutil.rmtree(path, onexc=_remove_readonly)
         else:
             shutil.rmtree(path, onerror=_remove_readonly)
-    except FileNotFoundError:
-        pass
-    except PermissionError:
-        logger.warn("PermissionError on %s", path)
 
 
 def find_uv() -> tuple[bool, str, version.Version]:
