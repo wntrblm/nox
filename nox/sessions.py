@@ -728,7 +728,7 @@ class Session:
             args = _dblquote_pkg_install_args(args)
 
         if silent is None:
-            silent = True
+            silent = not self._runner.global_config.verbose
 
         extraopts: list[str] = []
         if auto_offline and venv.is_offline():
@@ -838,7 +838,7 @@ class Session:
             return
 
         if silent is None:
-            silent = True
+            silent = not self._runner.global_config.verbose
 
         if isinstance(venv, VirtualEnv) and venv.venv_backend == "uv":
             cmd = ["uv", "pip", "install"]
