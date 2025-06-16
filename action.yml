@@ -2,9 +2,9 @@ name: Setup Nox
 description: "Prepares all python versions for nox"
 inputs:
   python-versions:
-    description: "comma-separated list of python versions to install"
+    description: "Comma or newline separated list of python versions to install. Last version will be active and run nox."
     required: false
-    default: "3.9, 3.10, 3.11, 3.12, 3.13"
+    default: ""
 branding:
   icon: package
   color: blue
@@ -12,22 +12,31 @@ branding:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-python@v5
-      id: localpython
-      with:
-        python-version: "3.9 - 3.13"
-        update-environment: false
-
-    - name: "Validate input"
+    - name: "Transform commas in input"
       id: helper
-      run: >
-        '${{ steps.localpython.outputs.python-path }}' '${{ github.action_path }}/.github/action_helper.py' '${{ inputs.python-versions }}' >>${GITHUB_OUTPUT}
+      run: |
+        input="${{ inputs.python-versions }}"
+        os="${{ runner.os }}"
+        arch="${{ runner.arch }}"
+
+        if [[ -z "$input" ]]; then
+          if [[ "$os" == "Windows" && "$arch" == "ARM64" ]]; then
+            input="3.11,3.12,3.13"
+          else
+            input="3.9,3.10,3.11,3.12,3.13"
+          fi
+        fi
+        versions=$(echo "$input" | tr ',' '\n')
+
+        echo "interpreters<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$versions" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
       shell: bash
 
     - uses: actions/setup-python@v5
       id: allpython
       with:
-        python-version: "${{ join(fromJSON(steps.helper.outputs.interpreters), '\n') }}"
+        python-version: "${{ steps.helper.outputs.interpreters }}"
         allow-prereleases: true
 
     - name: "Install nox"
