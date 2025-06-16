@@ -147,7 +147,7 @@ By default, ``nox-uv`` also validates that the lockfile is up-to-date.
 
 .. code-block:: python
 
-    #!/usr/bin/env -S uv run --script -q
+    #!/usr/bin/env -S uv run --script --quiet
 
     # /// script
     # dependencies = ["nox", "nox-uv"]
