@@ -26,7 +26,6 @@ jobs:
           - ubuntu-22.04
           - ubuntu-24.04
           - ubuntu-24.04-arm
-          - windows-2019
           - windows-2022
           - windows-2025
           - macos-13
@@ -48,8 +47,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.12
       - uses: ./
         with:
-          python-versions: "3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, pypy-2.7, pypy-3.7, pypy-3.8, pypy-3.9, pypy-3.10, pypy-3.11"
+          python-versions: "pypy-2.7, pypy-3.8, pypy-3.9, pypy-3.10, pypy-3.11, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14"
       - run: nox --session github_actions_all_tests
