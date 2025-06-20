@@ -376,7 +376,7 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
         results.append(result)
 
         # Sanity check: If we are supposed to stop on the first error case,
-        # the abort now.
+        # then abort now.
         if not result and global_config.stop_on_first_error:
             return results
 
