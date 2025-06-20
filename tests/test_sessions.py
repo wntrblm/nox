@@ -840,6 +840,80 @@ class TestSession:
         ):
             session.install("requests", "urllib3")
 
+    @pytest.mark.parametrize(
+        ("verbose", "expected_silent"),
+        [
+            (True, False),
+            (False, True),
+        ],
+    )
+    def test_install_verbose(self, verbose: bool, expected_silent: bool) -> None:
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=[], verbose=verbose),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = make_fake_env()
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.install("requests", "urllib3")
+            run.assert_called_once_with(
+                "python",
+                "-m",
+                "pip",
+                "install",
+                "requests",
+                "urllib3",
+                **_run_with_defaults(silent=expected_silent, external="error"),
+            )
+
+    @pytest.mark.parametrize(
+        ("verbose", "expected_silent"),
+        [
+            (True, False),
+            (False, True),
+        ],
+    )
+    def test_conda_install_verbose(self, verbose: bool, expected_silent: bool) -> None:
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=[], verbose=verbose),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.CondaEnv)
+        assert runner.venv
+        runner.venv.location = "/path/to/conda/env"
+        runner.venv.env = {}
+        runner.venv.is_offline = lambda: False  # type: ignore[attr-defined]
+        runner.venv.conda_cmd = "conda"  # type: ignore[attr-defined]
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.conda_install("requests", "urllib3")
+            run.assert_called_once_with(
+                "conda",
+                "install",
+                "--yes",
+                "--prefix",
+                "/path/to/conda/env",
+                "requests",
+                "urllib3",
+                **_run_with_defaults(silent=expected_silent, external="error"),
+            )
+
     def test_notify(self) -> None:
         session, runner = self.make_session_and_runner()
 
