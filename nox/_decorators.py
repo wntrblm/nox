@@ -78,7 +78,7 @@ class Func(FunctionDecorator):
         *,
         default: bool = True,
         requires: Sequence[str] | None = None,
-        download_python: Literal["auto", "never", "always"] = "auto",
+        download_python: Literal["auto", "never", "always"] | None = None,
     ) -> None:
         self.func = func
         self.python = python
