@@ -55,7 +55,7 @@ def session_decorator(
     *,
     default: bool = ...,
     requires: Sequence[str] | None = ...,
-    download_python: Literal["auto", "never", "always"] | None = None
+    download_python: Literal["auto", "never", "always"] | None = None,
 ) -> Callable[[RawFunc | Func], Func]: ...
 
 

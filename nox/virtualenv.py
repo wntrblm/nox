@@ -181,7 +181,7 @@ def pbs_install_python(python_version: str) -> str | None:
 
     # version_without_impl = python_version.removeprefix(implementation)  # until support for 3.8 is not dropped
     if python_version.startswith(implementation):
-        version_without_impl = python_version[len(implementation):]
+        version_without_impl = python_version[len(implementation) :]
     else:
         version_without_impl = python_version
 
