@@ -1510,3 +1510,50 @@ def test_download_python_download_fails(
     else:
         pbs_install_mock.assert_called_once_with("python3.11")
         uv_install_mock.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("implementation", "version", "dir_name", "expected"),
+    [
+        ("cpython", "3.11", "cpython@3.11.5", True),
+        ("pypy", "3.8", "pypy@3.8.16", True),
+        ("cpython", "3.12", "cpython@3.11.5", False),
+        ("pypy", "3.11", "cpython@3.11.5", False),
+    ],
+)
+def test_find_pbs_python(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    implementation: str,
+    version: str,
+    dir_name: str,
+    expected: bool,
+) -> None:
+    """Test the _find_pbs_python function."""
+    nox_pbs_pythons = tmp_path / "nox_pbs_pythons"
+    monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", nox_pbs_pythons)
+
+    python_dir = nox_pbs_pythons / dir_name
+    if IS_WINDOWS:
+        python_dir.mkdir(parents=True)
+        python = python_dir / "python.exe"
+    else:
+        bin_dir = python_dir / "bin"
+        bin_dir.mkdir(parents=True)
+        python = bin_dir / "python"
+    python.touch()
+
+    result = nox.virtualenv._find_pbs_python(implementation, version)
+    if expected:
+        assert result == str(python)
+    else:
+        assert result is None
+
+
+def test_find_pbs_python_no_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test _find_pbs_python with missing dir"""
+    nox_pbs_pythons = tmp_path / "nox_pbs_pythons"
+    monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", nox_pbs_pythons)
+    assert nox.virtualenv._find_pbs_python("cpython", "3.11") is None

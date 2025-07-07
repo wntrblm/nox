@@ -156,10 +156,12 @@ def _find_pbs_python(implementation: str, version: str) -> str | None:
     """Check for an existing pbs-installer installation
     by default it creates dirs with this format:
     "pypy@3.8.16", "cpython@3.13.3" """
+    executable = "python.exe" if _PLATFORM.startswith("win") else "bin/python"
+
     if NOX_PBS_PYTHONS.exists():
         for path in NOX_PBS_PYTHONS.iterdir():
             if path.is_dir() and path.name.startswith(f"{implementation}@{version}."):
-                python_exe = path / "bin" / "python"
+                python_exe = path / executable
                 if python_exe.exists():
                     return str(python_exe)
     return None
