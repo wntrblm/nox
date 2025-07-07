@@ -402,6 +402,7 @@ class CondaEnv(ProcessEnv):
         reuse_existing: bool = False,
         venv_params: Sequence[str] = (),
         conda_cmd: str = "conda",
+        **kwargs,
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
