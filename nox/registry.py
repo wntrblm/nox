@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import copy
 import functools
-from typing import TYPE_CHECKING, Any, Callable, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, overload
 
 from ._decorators import Func
 
@@ -55,6 +55,7 @@ def session_decorator(
     *,
     default: bool = ...,
     requires: Sequence[str] | None = ...,
+    download_python: Literal["auto", "never", "always"] | None = None
 ) -> Callable[[RawFunc | Func], Func]: ...
 
 
@@ -71,6 +72,7 @@ def session_decorator(
     *,
     default: bool = True,
     requires: Sequence[str] | None = None,
+    download_python: Literal["auto", "never", "always"] | None = None,
 ) -> Func | Callable[[RawFunc | Func], Func]:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
@@ -92,6 +94,7 @@ def session_decorator(
             tags=tags,
             default=default,
             requires=requires,
+            download_python=download_python,
         )
 
     if py is not None and python is not None:
@@ -116,6 +119,7 @@ def session_decorator(
         tags=tags,
         default=default,
         requires=requires,
+        download_python=download_python,
     )
     _REGISTRY[name or func.__name__] = fn
     return fn

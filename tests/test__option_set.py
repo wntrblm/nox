@@ -136,6 +136,7 @@ class TestOptionSet:
     def test_validation_options(self) -> None:
         options = _option_set.NoxOptions(
             default_venv_backend=None,
+            download_python="auto",
             envdir=None,
             error_on_external_run=False,
             error_on_missing_interpreters=False,

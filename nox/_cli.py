@@ -23,7 +23,7 @@ import subprocess
 import sys
 import urllib.parse
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, Literal, NoReturn
 
 import packaging.requirements
 import packaging.utils
@@ -32,7 +32,7 @@ import nox.command
 import nox.virtualenv
 from nox import _options, tasks, workflow
 from nox._version import get_nox_version
-from nox.logger import setup_logging
+from nox.logger import logger, setup_logging
 from nox.project import load_toml
 
 if TYPE_CHECKING:
@@ -137,12 +137,18 @@ def check_url_dependency(dep_url: str, dist: importlib.metadata.Distribution) ->
 
 
 def run_script_mode(
-    envdir: Path, *, reuse: bool, dependencies: list[str], venv_backend: str
+    envdir: Path,
+    *,
+    reuse: bool,
+    dependencies: list[str],
+    venv_backend: str,
+    download_python: Literal["auto", "never", "always"] = "auto",
 ) -> NoReturn:
     envdir.mkdir(exist_ok=True)
     noxenv = envdir.joinpath("_nox_script_mode")
     venv = nox.virtualenv.get_virtualenv(
         *venv_backend.split("|"),
+        download_python=download_python,
         reuse_existing=reuse,
         envdir=str(noxenv),
     )
@@ -208,12 +214,29 @@ def main() -> None:
                     )
                 )
 
+                download_python = (
+                    os.environ.get("NOX_SCRIPT_DOWNLOAD_PYTHON")
+                    or (
+                        toml_config.get("tool", {})
+                        .get("nox", {})
+                        .get("script-download-python", "auto")
+                    )
+                    or args.download_python
+                )
+
+                if download_python not in ("auto", "never", "always"):
+                    logger.warning(
+                        f"Invalid parameter for {download_python=}. Defaulting to 'auto'"
+                    )
+                    download_python = "auto"
+
                 envdir = Path(args.envdir or ".nox")
                 run_script_mode(
                     envdir,
                     reuse=nox_script_mode == "reuse",
                     dependencies=dependencies,
                     venv_backend=venv_backend,
+                    download_python=download_python,
                 )
 
     exit_code = execute_workflow(args)
