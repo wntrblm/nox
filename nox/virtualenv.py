@@ -179,7 +179,11 @@ def pbs_install_python(python_version: str) -> str | None:
         logger.warning(f"{python_version=} is not a valid version to install with pbs")
         return None
 
-    version_without_impl = python_version.removeprefix(implementation)
+    # version_without_impl = python_version.removeprefix(implementation)  # until support for 3.8 is not dropped
+    if python_version.startswith(implementation):
+        version_without_impl = python_version[len(implementation):]
+    else:
+        version_without_impl = python_version
 
     if python_exe := _find_pbs_python(implementation, version_without_impl):
         return python_exe
