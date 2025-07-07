@@ -1375,7 +1375,11 @@ def test_download_python_never(
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
         _ = venv._resolved_interpreter
 
-    which.assert_called_with("python3.11")
+    if IS_WINDOWS:
+        which.assert_called_with("py")
+    else:
+        which.assert_called_with("python3.11")
+
     uv_install_mock.assert_not_called()
     pbs_install_mock.assert_not_called()
 
