@@ -1296,7 +1296,7 @@ def test__resolved_interpreter_not_found(
 ) -> None:
     # Establish that if an interpreter cannot be found at a standard
     # location on Windows, we raise a useful error.
-    venv, _ = make_one(interpreter="python3.6")
+    venv, _ = make_one(interpreter="python3.6", download_python="never")
 
     # We are on Windows, and nothing can be found.
     which.return_value = None
