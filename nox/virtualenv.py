@@ -173,26 +173,28 @@ def pbs_install_python(python_version: str) -> str | None:
     Returns the full path to the installed  executable, or None if installation failed.
     """
 
-    if python_version.startswith("pypy"):
-        implementation = "pypy"
-    elif python_version.startswith(("cpython", "python")):
-        implementation = "cpython"
-    else:
+    # separate implementation / xyz version
+    match = re.match(
+        r"^(?P<impl>pypy|cpython|python)?[-_\.]?(?P<xyz_ver>\d(\.\d+)?(\.\d+))?$",
+        python_version,
+        re.IGNORECASE,
+    )
+
+    if not match:
         logger.warning(f"{python_version=} is not a valid version to install with pbs")
         return None
 
-    # version_without_impl = python_version.removeprefix(implementation)  # until support for 3.8 is not dropped
-    if python_version.startswith(implementation):
-        version_without_impl = python_version[len(implementation) :]
-    else:
-        version_without_impl = python_version
+    implementation = (
+        "cpython" if match.group("impl").lower() in ("cpython", "python") else "pypy"
+    )
+    xyz_ver = match.group("xyz_ver")
 
-    if python_exe := _find_pbs_python(implementation, version_without_impl):
+    if python_exe := _find_pbs_python(implementation, xyz_ver):
         return python_exe
 
     try:
         pbs_installer.install(
-            version_without_impl,
+            xyz_ver,
             destination=NOX_PBS_PYTHONS,
             version_dir=True,
             implementation=implementation,
@@ -201,7 +203,7 @@ def pbs_install_python(python_version: str) -> str | None:
         logger.warning(f"Failed to install a pbs version for {python_version=}: {err}")
         return None
 
-    return _find_pbs_python(implementation, version_without_impl)
+    return _find_pbs_python(implementation, xyz_ver)
 
 
 HAS_UV, UV, UV_VERSION = find_uv()
