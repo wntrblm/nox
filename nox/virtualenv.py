@@ -184,7 +184,7 @@ def pbs_install_python(python_version: str) -> str | None:
         logger.warning(f"{python_version=} is not a valid version to install with pbs")
         return None
 
-    implementation = (
+    implementation: Literal["cpython", "pypy"] = (
         "cpython" if match.group("impl").lower() in ("cpython", "python") else "pypy"
     )
     xyz_ver = match.group("xyz_ver")
@@ -410,7 +410,7 @@ class CondaEnv(ProcessEnv):
         reuse_existing: bool = False,
         venv_params: Sequence[str] = (),
         conda_cmd: str = "conda",
-        **kwargs,
+        **kwargs: Any,
     ):
         self.location_name = location
         self.location = os.path.abspath(location)

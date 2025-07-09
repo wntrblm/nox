@@ -45,6 +45,7 @@ repos:
           - jinja2
           - orjson # Faster mypy
           - packaging
+          - pbs_installer
           - pytest
           - importlib_metadata
           - importlib_resources

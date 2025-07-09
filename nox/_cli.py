@@ -23,7 +23,7 @@ import subprocess
 import sys
 import urllib.parse
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, NoReturn
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, cast
 
 import packaging.requirements
 import packaging.utils
@@ -142,7 +142,7 @@ def run_script_mode(
     reuse: bool,
     dependencies: list[str],
     venv_backend: str,
-    download_python: Literal["auto", "never", "always"] = "auto",
+    download_python: Literal["auto", "never", "always"],
 ) -> NoReturn:
     envdir.mkdir(exist_ok=True)
     noxenv = envdir.joinpath("_nox_script_mode")
@@ -229,6 +229,9 @@ def main() -> None:
                         f"Invalid parameter for {download_python=}. Defaulting to 'auto'"
                     )
                     download_python = "auto"
+                download_python = cast(
+                    "Literal['auto', 'never', 'always']", download_python
+                )
 
                 envdir = Path(args.envdir or ".nox")
                 run_script_mode(
