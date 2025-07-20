@@ -132,8 +132,20 @@ def setup_logging(
         root_logger.setLevel(OUTPUT)
     else:
         root_logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler()
 
+    active_handlers = [
+        handler
+        for handler in root_logger.handlers
+        if handler.get_name() == "nox-stream-handler"
+    ]
+    for handler in active_handlers:
+        # Avoid duplicate handlers by removing all we've previously created
+        # this causes trouble in tests where setup_logging is called multiple
+        # times
+        root_logger.removeHandler(handler)
+
+    handler = logging.StreamHandler()
+    handler.set_name("nox-stream-handler")
     handler.setFormatter(_get_formatter(color=color, add_timestamp=add_timestamp))
     root_logger.addHandler(handler)
 
