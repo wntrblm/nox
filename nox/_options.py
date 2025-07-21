@@ -421,15 +421,12 @@ options.add_options(
         help="Arguments following ``--`` that are passed through to the session(s).",
         finalizer_func=_posargs_finalizer,
     ),
-    _option_set.Option(
+    *_option_set.make_flag_pair(
         "verbose",
-        "-v",
-        "--verbose",
+        ("-v", "--verbose"),
+        ("--no-verbose",),
         group=options.groups["reporting"],
-        action="store_true",
-        default=False,
         help="Logs the output of all commands run including commands marked silent.",
-        noxfile=True,
     ),
     _option_set.Option(
         "add_timestamp",
