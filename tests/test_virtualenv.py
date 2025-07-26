@@ -1276,7 +1276,7 @@ def test__resolved_interpreter_windows_path_and_version_fails(
 ) -> None:
     # Establish that if we get a standard pythonX.Y path, we look it
     # up via the path on Windows.
-    venv, _ = make_one(interpreter=input_)
+    venv, _ = make_one(interpreter=input_, download_python="never")
 
     # Trick the system into thinking that it cannot find
     # pythonX.Y up until the python-in-path check at the end.
