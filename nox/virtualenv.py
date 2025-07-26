@@ -187,7 +187,7 @@ def _find_pbs_python(implementation: str, version: str) -> str | None:
         for path in NOX_PBS_PYTHONS.iterdir():
             if path.is_dir() and path.name.startswith(f"{implementation}@{version}."):
                 python_exe = path / executable
-                if python_exe.exists():  # TODO sauco coverage
+                if python_exe.exists():
                     return str(python_exe)
     return None
 
@@ -215,7 +215,7 @@ def pbs_install_python(python_version: str) -> str | None:
     xyz_ver = match.group("xyz_ver")
 
     if python_exe := _find_pbs_python(implementation, xyz_ver):
-        return python_exe  # TODO sauco coverage
+        return python_exe
 
     try:
         pbs_installer.install(
@@ -713,7 +713,7 @@ class VirtualEnv(ProcessEnv):
         # never -> check for interpreters
         if self.download_python == "never":
             if resolved := _find_python(cleaned_interpreter, xy_version):
-                self._resolved = resolved  # TODO sauco coverage
+                self._resolved = resolved
                 return self._resolved
 
         # always -> skip check, always install
@@ -734,7 +734,7 @@ class VirtualEnv(ProcessEnv):
                 return self._resolved
 
         # auto -> check interpreters -> fallback to installing
-        elif self.download_python == "auto":  # TODO sauco coverage
+        elif self.download_python == "auto":
             if resolved := _find_python(cleaned_interpreter, xy_version):
                 self._resolved = resolved
                 return self._resolved
@@ -748,7 +748,7 @@ class VirtualEnv(ProcessEnv):
                 if uv_python_success:
                     self._resolved = cleaned_interpreter
                     return self._resolved
-            elif self.venv_backend in ("venv", "virtualenv"):  # TODO sauco coverage
+            elif self.venv_backend in ("venv", "virtualenv"):
                 pbs_python_path = pbs_install_python(cleaned_interpreter)
                 if pbs_python_path:
                     self._resolved = pbs_python_path
