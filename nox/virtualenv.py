@@ -112,6 +112,31 @@ def find_uv() -> tuple[bool, str, version.Version]:
     )
 
 
+def _find_python(interpreter: str, xy_ver: str) -> str | None:
+    """Find a python executable matching the requested interpreter"""
+    if shutil.which(interpreter):
+        return interpreter
+
+    # Windows only search for the executable
+    if _PLATFORM.startswith("win"):
+        # Allow versions of the form ``X.Y-32`` for Windows.
+        match = re.match(r"^\d\.\d+-32?$", interpreter)
+        if match:
+            # preserve the "-32" suffix, as the Python launcher expects it.
+            xy_ver = interpreter
+
+        path_from_launcher = locate_via_py(xy_ver)
+        if path_from_launcher:
+            return path_from_launcher
+
+        path_from_version_param = locate_using_path_and_version(xy_ver)
+        if path_from_version_param:
+            return path_from_version_param
+
+    # not found case
+    return None
+
+
 def uv_version(uv_bin: str) -> version.Version:
     """Returns uv's version defaulting to 0.0 if uv is not available"""
     try:
@@ -162,7 +187,7 @@ def _find_pbs_python(implementation: str, version: str) -> str | None:
         for path in NOX_PBS_PYTHONS.iterdir():
             if path.is_dir() and path.name.startswith(f"{implementation}@{version}."):
                 python_exe = path / executable
-                if python_exe.exists():
+                if python_exe.exists():  # TODO sauco coverage
                     return str(python_exe)
     return None
 
@@ -190,7 +215,7 @@ def pbs_install_python(python_version: str) -> str | None:
     xyz_ver = match.group("xyz_ver")
 
     if python_exe := _find_pbs_python(implementation, xyz_ver):
-        return python_exe
+        return python_exe  # TODO sauco coverage
 
     try:
         pbs_installer.install(
@@ -687,8 +712,8 @@ class VirtualEnv(ProcessEnv):
 
         # never -> check for interpreters
         if self.download_python == "never":
-            if shutil.which(cleaned_interpreter):
-                self._resolved = cleaned_interpreter
+            if resolved := _find_python(cleaned_interpreter, xy_version):
+                self._resolved = resolved  # TODO sauco coverage
                 return self._resolved
 
         # always -> skip check, always install
@@ -709,53 +734,26 @@ class VirtualEnv(ProcessEnv):
                 return self._resolved
 
         # auto -> check interpreters -> fallback to installing
-        elif self.download_python == "auto" and self.venv_backend == "uv":
-            if shutil.which(cleaned_interpreter):
-                self._resolved = cleaned_interpreter
+        elif self.download_python == "auto":  # TODO sauco coverage
+            if resolved := _find_python(cleaned_interpreter, xy_version):
+                self._resolved = resolved
                 return self._resolved
-            if HAS_UV and version.Version("0.4.16") <= UV_VERSION:
+
+            if (
+                self.venv_backend == "uv"
+                and HAS_UV
+                and version.Version("0.4.16") <= UV_VERSION
+            ):
                 uv_python_success = uv_install_python(cleaned_interpreter)
                 if uv_python_success:
                     self._resolved = cleaned_interpreter
                     return self._resolved
+            elif self.venv_backend in ("venv", "virtualenv"):  # TODO sauco coverage
+                pbs_python_path = pbs_install_python(cleaned_interpreter)
+                if pbs_python_path:
+                    self._resolved = pbs_python_path
+                    return self._resolved
 
-        elif self.download_python == "auto" and self.venv_backend in (
-            "venv",
-            "virtualenv",
-        ):
-            if shutil.which(cleaned_interpreter):
-                self._resolved = cleaned_interpreter
-                return self._resolved
-            pbs_python_path = pbs_install_python(cleaned_interpreter)
-            if pbs_python_path:
-                self._resolved = pbs_python_path
-                return self._resolved
-
-        # The rest of this is only applicable to Windows, so if we don't have
-        # an interpreter by now, raise.
-        if not _PLATFORM.startswith("win"):
-            self._resolved = InterpreterNotFound(self.interpreter)
-            raise self._resolved
-
-        # Allow versions of the form ``X.Y-32`` for Windows.
-        match = re.match(r"^\d\.\d+-32?$", cleaned_interpreter)
-        if match:
-            # preserve the "-32" suffix, as the Python launcher expects
-            # it.
-            xy_version = cleaned_interpreter
-
-        path_from_launcher = locate_via_py(xy_version)
-        if path_from_launcher:
-            self._resolved = path_from_launcher
-            return self._resolved
-
-        path_from_version_param = locate_using_path_and_version(xy_version)
-        if path_from_version_param:
-            self._resolved = path_from_version_param
-            return self._resolved
-
-        # If we got this far, then we were unable to resolve the interpreter
-        # to an actual executable; raise an exception.
         self._resolved = InterpreterNotFound(self.interpreter)
         raise self._resolved
 

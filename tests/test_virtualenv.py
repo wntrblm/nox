@@ -1356,10 +1356,29 @@ def test__resolved_interpreter_cache_failure(
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
+@mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
+def test_download_python_never_with_found_interpreter(
+    which: mock.Mock,
+    venv_backend: str,
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+) -> None:
+    """Test download_python='never' when interpreter is found on system"""
+    venv, _ = make_one(
+        interpreter="python3.11",
+        venv_backend=venv_backend,
+        download_python="never",
+    )
+
+    resolved_interpreter = venv._resolved_interpreter
+    assert resolved_interpreter == "python3.11"
+    which.assert_called_once_with("python3.11")
+
+
+@pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
 @mock.patch("nox.virtualenv.pbs_install_python")
 @mock.patch("nox.virtualenv.uv_install_python")
 @mock.patch.object(shutil, "which", return_value=None)
-def test_download_python_never(
+def test_download_python_never_missing_python(
     which: mock.Mock,
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
@@ -1554,10 +1573,28 @@ def test_find_pbs_python(
         assert result is None
 
 
-def test_find_pbs_python_no_directory(
+def test_find_pbs_python_missing_executable(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test _find_pbs_python with missing dir"""
+    """Test _find_pbs_python when python executable doesn't exist"""
     nox_pbs_pythons = tmp_path / "nox_pbs_pythons"
     monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", nox_pbs_pythons)
+
+    python_dir = nox_pbs_pythons / "cpython@3.11.5"
+    if IS_WINDOWS:
+        python_dir.mkdir(parents=True)
+    else:
+        bin_dir = python_dir / "bin"
+        bin_dir.mkdir(parents=True)
+
     assert nox.virtualenv._find_pbs_python("cpython", "3.11") is None
+
+
+@mock.patch("nox.virtualenv._find_pbs_python", return_value="/existing/python/path")
+def test_pbs_install_python_early_return(find_pbs_mock: mock.Mock) -> None:
+    """Test pbs_install_python early return when python already exists"""
+
+    result = nox.virtualenv.pbs_install_python("python3.11")
+
+    assert result == "/existing/python/path"
+    find_pbs_mock.assert_called_once_with("cpython", "3.11")
