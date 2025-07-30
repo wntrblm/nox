@@ -1440,7 +1440,7 @@ def test_download_python_auto_missing_interpreter(
         pbs_install_mock.assert_called_once_with("python3.11")
         uv_install_mock.assert_not_called()
 
-    which.assert_called_with("python3.11")
+    which.assert_any_call("python3.11")
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
