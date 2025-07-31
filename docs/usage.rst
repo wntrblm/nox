@@ -295,7 +295,7 @@ python-build-standalone, by using ``--download-python``:
 .. code-block:: console
 
     nox --download-python auto    # Download if interpreter not found (default)
-    nox --download-python never   # Never download interpreters  
+    nox --download-python never   # Never download interpreters
     nox --download-python always  # Always download interpreters
 
 You can also set this option with the ``NOX_DOWNLOAD_PYTHON`` environment
