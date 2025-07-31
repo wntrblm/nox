@@ -6,3 +6,4 @@ jinja2
 pytest
 tox>=4.0.0
 virtualenv >=20.14.1
+pbs_installer[all]>=2025.1.6
