@@ -2,6 +2,7 @@ argcomplete >=1.9.4,<3.0
 attrs >=23.1
 colorlog >=2.6.1,<7.0.0
 dependency-groups >=1.1
+httpx
 jinja2
 pbs-installer[all]>=2025.1.6
 pytest
