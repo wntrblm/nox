@@ -1633,24 +1633,53 @@ def test_pbs_install_python_installation_success_resturn_value(
 
 @pytest.mark.parametrize("download_python", ["always", "auto"])
 @mock.patch("nox.virtualenv.HAS_UV", new=True)
-@mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.5.0"))
-@mock.patch("nox.virtualenv.uv_install_python", return_value=True)
+@mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.6.0"))
+@mock.patch("nox.virtualenv.uv_install_python", return_value=False)
 @mock.patch.object(shutil, "which", return_value=None)
-def test_download_python_uv_success(
+def test_download_python_uv_failed_install(
     which: mock.Mock,
     uv_install_mock: mock.Mock,
     download_python: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
 ) -> None:
-    """uv install success case"""
+    """uv bad version"""
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend="uv",
         download_python=download_python,
     )
 
-    assert venv._resolved_interpreter == "python3.11"
-    uv_install_mock.assert_called_once_with("python3.11")
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+        _ = venv._resolved_interpreter
+    uv_install_mock.assert_called_once()
+
+    if download_python == "always":
+        which.assert_not_called()
+    else:  # auto
+        which.assert_any_call("python3.11")
+
+
+@pytest.mark.parametrize("download_python", ["always", "auto"])
+@mock.patch("nox.virtualenv.HAS_UV", new=True)
+@mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.4.0"))
+@mock.patch("nox.virtualenv.uv_install_python", return_value=True)
+@mock.patch.object(shutil, "which", return_value=None)
+def test_download_python_uv_bad_version(
+    which: mock.Mock,
+    uv_install_mock: mock.Mock,
+    download_python: str,
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+) -> None:
+    """uv bad version"""
+    venv, _ = make_one(
+        interpreter="python3.11",
+        venv_backend="uv",
+        download_python=download_python,
+    )
+
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+        _ = venv._resolved_interpreter
+    uv_install_mock.assert_not_called()
 
     if download_python == "always":
         which.assert_not_called()
