@@ -1632,6 +1632,8 @@ def test_pbs_install_python_installation_success_resturn_value(
 
 
 @pytest.mark.parametrize("download_python", ["always", "auto"])
+@mock.patch("nox.virtualenv.HAS_UV", new=True)
+@mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.5.0"))
 @mock.patch("nox.virtualenv.uv_install_python", return_value=True)
 @mock.patch.object(shutil, "which", return_value=None)
 def test_download_python_uv_success(
