@@ -1598,3 +1598,34 @@ def test_pbs_install_python_early_return(find_pbs_mock: mock.Mock) -> None:
 
     assert result == "/existing/python/path"
     find_pbs_mock.assert_called_once_with("cpython", "3.11")
+
+
+@mock.patch("nox.virtualenv.pbs_installer")
+def test_pbs_install_python_installation_success_resturn_value(
+    pbs_installer_mock: mock.Mock,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """pbs_install should return a path not a boolean"""
+    nox_pbs_pythons = tmp_path / "nox_pbs_pythons"
+    monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", nox_pbs_pythons)
+
+    # Mock the installation
+    python_dir = nox_pbs_pythons / "cpython@3.11.5"
+    if IS_WINDOWS:
+        python_dir.mkdir(parents=True)
+        python_exe = python_dir / "python.exe"
+    else:
+        bin_dir = python_dir / "bin"
+        bin_dir.mkdir(parents=True)
+        python_exe = bin_dir / "python"
+
+    def mock_install(*args: Any, **kwargs: Any) -> None:
+        python_exe.touch()
+
+    pbs_installer_mock.install.side_effect = mock_install
+
+    result = nox.virtualenv.pbs_install_python("python3.11")
+
+    # ensure we find the newly installed python
+    assert result == str(python_exe)

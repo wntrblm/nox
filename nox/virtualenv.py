@@ -734,7 +734,7 @@ class VirtualEnv(ProcessEnv):
                 return self._resolved
 
         # auto -> check interpreters -> fallback to installing
-        elif self.download_python == "auto":
+        else:
             if resolved := _find_python(cleaned_interpreter, xy_version):
                 self._resolved = resolved
                 return self._resolved
