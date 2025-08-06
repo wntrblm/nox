@@ -1357,12 +1357,15 @@ def test__resolved_interpreter_cache_failure(
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
 @mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
-def test_download_python_never_with_found_interpreter(
+@mock.patch("nox.virtualenv.pbs_install_python")
+@mock.patch("nox.virtualenv.uv_install_python")
+def test_download_python_never_preexisting_interpreter(
     which: mock.Mock,
+    uv_install_mock: mock.Mock,
+    pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
 ) -> None:
-    """Test download_python='never' when interpreter is found on system"""
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
@@ -1373,19 +1376,22 @@ def test_download_python_never_with_found_interpreter(
     assert resolved_interpreter == "python3.11"
     which.assert_called_once_with("python3.11")
 
+    # should never try to install
+    uv_install_mock.assert_not_called()
+    pbs_install_mock.assert_not_called()
+
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
 @mock.patch("nox.virtualenv.pbs_install_python")
 @mock.patch("nox.virtualenv.uv_install_python")
 @mock.patch.object(shutil, "which", return_value=None)
-def test_download_python_never_missing_python(
+def test_download_python_never_missing_interpreter(
     which: mock.Mock,
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
 ) -> None:
-    # Test that python is never downloaded when download_python="never"
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
@@ -1399,8 +1405,34 @@ def test_download_python_never_missing_python(
     else:
         which.assert_called_with("python3.11")
 
+    # should never try to install
     uv_install_mock.assert_not_called()
     pbs_install_mock.assert_not_called()
+
+
+@pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
+@mock.patch("nox.virtualenv.pbs_install_python")
+@mock.patch("nox.virtualenv.uv_install_python")
+@mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
+def test_download_python_auto_preexisting_interpreter(
+    which: mock.Mock,
+    uv_install_mock: mock.Mock,
+    pbs_install_mock: mock.Mock,
+    venv_backend: str,
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+) -> None:
+    venv, _ = make_one(
+        interpreter="python3.11",
+        venv_backend=venv_backend,
+        download_python="auto",
+    )
+
+    # no install needed
+    uv_install_mock.assert_not_called()
+    pbs_install_mock.assert_not_called()
+
+    assert venv._resolved_interpreter == "python3.11"
+    which.assert_called_with("python3.11")
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
@@ -1420,52 +1452,27 @@ def test_download_python_auto_missing_interpreter(
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
 ) -> None:
-    # Test that Python is downloaded when download_python="auto" and there is
-    # an available interpreter
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
         download_python="auto",
     )
 
+    # make sure we tried to find an interpreter first
+    which.assert_any_call("python3.11")
+
+    # the resolved interpreter should be the one we install
     if venv_backend == "uv":
-        assert venv._resolved_interpreter == "python3.11"
         uv_install_mock.assert_called_once_with("python3.11")
         pbs_install_mock.assert_not_called()
+        assert venv._resolved_interpreter == "python3.11"
     else:
+        pbs_install_mock.assert_called_once_with("python3.11")
+        uv_install_mock.assert_not_called()
         assert (
             venv._resolved_interpreter
             == "/.local/share/nox/cpython@3.11.3/bin/python3.11"
         )
-        pbs_install_mock.assert_called_once_with("python3.11")
-        uv_install_mock.assert_not_called()
-
-    which.assert_any_call("python3.11")
-
-
-@pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
-@mock.patch("nox.virtualenv.pbs_install_python")
-@mock.patch("nox.virtualenv.uv_install_python")
-@mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
-def test_download_python_auto_existing_interpreter(
-    which: mock.Mock,
-    uv_install_mock: mock.Mock,
-    pbs_install_mock: mock.Mock,
-    venv_backend: str,
-    make_one: Callable[..., tuple[VirtualEnv, Path]],
-) -> None:
-    # Test that existing Python is used when download_python="auto" and
-    # interpreter exists
-    venv, _ = make_one(
-        interpreter="python3.11",
-        venv_backend=venv_backend,
-        download_python="auto",
-    )
-
-    assert venv._resolved_interpreter == "python3.11"
-    which.assert_called_with("python3.11")
-    uv_install_mock.assert_not_called()
-    pbs_install_mock.assert_not_called()
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
@@ -1478,46 +1485,45 @@ def test_download_python_auto_existing_interpreter(
     return_value=True,
 )
 @mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
-def test_download_python_always_existing_interpreter(
+def test_download_python_always_preexisting_interpreter(
     which: mock.Mock,
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
 ) -> None:
-    # Test that Python is downloaded when download_python="always" even if
-    # interpreter exists
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
         download_python="always",
     )
 
+    # We should not try to find an existing interpreter
+    which.assert_not_called()
+
+    # the resolved interpreter should be the one we install
     if venv_backend == "uv":
-        assert venv._resolved_interpreter == "python3.11"
         uv_install_mock.assert_called_once_with("python3.11")
         pbs_install_mock.assert_not_called()
+        assert venv._resolved_interpreter == "python3.11"
     else:
+        pbs_install_mock.assert_called_once_with("python3.11")
+        uv_install_mock.assert_not_called()
         assert (
             venv._resolved_interpreter
             == "/.local/share/nox/cpython@3.11.3/bin/python3.11"
         )
-        pbs_install_mock.assert_called_once_with("python3.11")
-        uv_install_mock.assert_not_called()
-
-    which.assert_not_called()
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
 @mock.patch("nox.virtualenv.pbs_install_python", return_value=None)
 @mock.patch("nox.virtualenv.uv_install_python", return_value=False)
-def test_download_python_download_fails(
+def test_download_python_failed_install(
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
 ) -> None:
-    # Test failed download case
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
@@ -1552,7 +1558,7 @@ def test_find_pbs_python(
     dir_name: str,
     expected: bool,
 ) -> None:
-    """Test the _find_pbs_python function."""
+    """Test find_pbs_python deals with different python implementations/versions"""
     nox_pbs_pythons = tmp_path / "nox_pbs_pythons"
     monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", nox_pbs_pythons)
 
@@ -1573,10 +1579,9 @@ def test_find_pbs_python(
         assert result is None
 
 
-def test_find_pbs_python_missing_executable(
+def test_find_pbs_python_missing_interpreter(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test _find_pbs_python when python executable doesn't exist"""
     nox_pbs_pythons = tmp_path / "nox_pbs_pythons"
     monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", nox_pbs_pythons)
 
@@ -1591,9 +1596,8 @@ def test_find_pbs_python_missing_executable(
 
 
 @mock.patch("nox.virtualenv._find_pbs_python", return_value="/existing/python/path")
-def test_pbs_install_python_early_return(find_pbs_mock: mock.Mock) -> None:
-    """Test pbs_install_python early return when python already exists"""
-
+def test_pbs_install_python_already_installed(find_pbs_mock: mock.Mock) -> None:
+    """Test pbs_install_python early return when it was already installed"""
     result = nox.virtualenv.pbs_install_python("python3.11")
 
     assert result == "/existing/python/path"
@@ -1601,16 +1605,15 @@ def test_pbs_install_python_early_return(find_pbs_mock: mock.Mock) -> None:
 
 
 @mock.patch("nox.virtualenv.pbs_installer")
-def test_pbs_install_python_installation_success_resturn_value(
+def test_pbs_install_python_success(
     pbs_installer_mock: mock.Mock,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """pbs_install should return a path not a boolean"""
     nox_pbs_pythons = tmp_path / "nox_pbs_pythons"
     monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", nox_pbs_pythons)
 
-    # Mock the installation
+    # fake the installation
     python_dir = nox_pbs_pythons / "cpython@3.11.5"
     if IS_WINDOWS:
         python_dir.mkdir(parents=True)
@@ -1626,37 +1629,36 @@ def test_pbs_install_python_installation_success_resturn_value(
     pbs_installer_mock.install.side_effect = mock_install
 
     result = nox.virtualenv.pbs_install_python("python3.11")
-
-    # ensure we find the newly installed python
+    # return value is a path to the executable
     assert result == str(python_exe)
 
 
-@pytest.mark.parametrize("download_python", ["always", "auto"])
-@mock.patch("nox.virtualenv.HAS_UV", new=True)
-@mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.6.0"))
-@mock.patch("nox.virtualenv.uv_install_python", return_value=False)
-@mock.patch.object(shutil, "which", return_value=None)
-def test_download_python_uv_failed_install(
-    which: mock.Mock,
-    uv_install_mock: mock.Mock,
-    download_python: str,
-    make_one: Callable[..., tuple[VirtualEnv, Path]],
-) -> None:
-    """uv bad version"""
-    venv, _ = make_one(
-        interpreter="python3.11",
-        venv_backend="uv",
-        download_python=download_python,
-    )
-
-    with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        _ = venv._resolved_interpreter
-    uv_install_mock.assert_called_once()
-
-    if download_python == "always":
-        which.assert_not_called()
-    else:  # auto
-        which.assert_any_call("python3.11")
+# @pytest.mark.parametrize("download_python", ["always", "auto"])
+# @mock.patch("nox.virtualenv.HAS_UV", new=True)
+# @mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.6.0"))
+# @mock.patch("nox.virtualenv.uv_install_python", return_value=False)
+# @mock.patch.object(shutil, "which", return_value=None)
+# def test_download_python_uv_failed_install(
+#     which: mock.Mock,
+#     uv_install_mock: mock.Mock,
+#     download_python: str,
+#     make_one: Callable[..., tuple[VirtualEnv, Path]],
+# ) -> None:
+#     """"""
+#     venv, _ = make_one(
+#         interpreter="python3.11",
+#         venv_backend="uv",
+#         download_python=download_python,
+#     )
+#
+#     with pytest.raises(nox.virtualenv.InterpreterNotFound):
+#         _ = venv._resolved_interpreter
+#
+#     uv_install_mock.assert_called_once()
+#     if download_python == "always":
+#         which.assert_not_called()
+#     else:  # auto
+#         which.assert_any_call("python3.11")
 
 
 @pytest.mark.parametrize("download_python", ["always", "auto"])
@@ -1664,13 +1666,13 @@ def test_download_python_uv_failed_install(
 @mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.4.0"))
 @mock.patch("nox.virtualenv.uv_install_python", return_value=True)
 @mock.patch.object(shutil, "which", return_value=None)
-def test_download_python_uv_bad_version(
+def test_download_python_uv_unsupported_version(
     which: mock.Mock,
     uv_install_mock: mock.Mock,
     download_python: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
 ) -> None:
-    """uv bad version"""
+    """Test we dont install for unsupported uv versions"""
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend="uv",
@@ -1679,39 +1681,39 @@ def test_download_python_uv_bad_version(
 
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
         _ = venv._resolved_interpreter
+
     uv_install_mock.assert_not_called()
-
     if download_python == "always":
         which.assert_not_called()
     else:  # auto
         which.assert_any_call("python3.11")
 
 
-@pytest.mark.parametrize("download_python", ["always", "auto"])
-@mock.patch(
-    "nox.virtualenv.pbs_install_python",
-    return_value="/.local/share/nox/cpython@3.11.3/bin/python3.11",
-)
-@mock.patch.object(shutil, "which", return_value=None)
-def test_download_python_pbs_success(
-    which: mock.Mock,
-    pbs_install_mock: mock.Mock,
-    download_python: str,
-    make_one: Callable[..., tuple[VirtualEnv, Path]],
-) -> None:
-    """pbs install success case"""
-    venv, _ = make_one(
-        interpreter="python3.11",
-        venv_backend="venv",
-        download_python=download_python,
-    )
-
-    assert (
-        venv._resolved_interpreter == "/.local/share/nox/cpython@3.11.3/bin/python3.11"
-    )
-    pbs_install_mock.assert_called_once_with("python3.11")
-
-    if download_python == "always":
-        which.assert_not_called()
-    else:  # auto
-        which.assert_any_call("python3.11")
+# @pytest.mark.parametrize("download_python", ["always", "auto"])
+# @mock.patch(
+#     "nox.virtualenv.pbs_install_python",
+#     return_value="/.local/share/nox/cpython@3.11.3/bin/python3.11",
+# )
+# @mock.patch.object(shutil, "which", return_value=None)
+# def test_download_python_pbs_success(
+#     which: mock.Mock,
+#     pbs_install_mock: mock.Mock,
+#     download_python: str,
+#     make_one: Callable[..., tuple[VirtualEnv, Path]],
+# ) -> None:
+#     """pbs install success case"""
+#     venv, _ = make_one(
+#         interpreter="python3.11",
+#         venv_backend="venv",
+#         download_python=download_python,
+#     )
+#
+#     assert (
+#         venv._resolved_interpreter == "/.local/share/nox/cpython@3.11.3/bin/python3.11"
+#     )
+#     pbs_install_mock.assert_called_once_with("python3.11")
+#
+#     if download_python == "always":
+#         which.assert_not_called()
+#     else:  # auto
+#         which.assert_any_call("python3.11")
