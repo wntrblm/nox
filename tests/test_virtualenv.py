@@ -1356,9 +1356,9 @@ def test__resolved_interpreter_cache_failure(
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
-@mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
 @mock.patch("nox.virtualenv.pbs_install_python")
 @mock.patch("nox.virtualenv.uv_install_python")
+@mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
 def test_download_python_never_preexisting_interpreter(
     which: mock.Mock,
     uv_install_mock: mock.Mock,
@@ -1458,6 +1458,8 @@ def test_download_python_auto_missing_interpreter(
         download_python="auto",
     )
 
+    resolved_interpreter = venv._resolved_interpreter
+
     # make sure we tried to find an interpreter first
     which.assert_any_call("python3.11")
 
@@ -1465,14 +1467,11 @@ def test_download_python_auto_missing_interpreter(
     if venv_backend == "uv":
         uv_install_mock.assert_called_once_with("python3.11")
         pbs_install_mock.assert_not_called()
-        assert venv._resolved_interpreter == "python3.11"
+        assert resolved_interpreter == "python3.11"
     else:
         pbs_install_mock.assert_called_once_with("python3.11")
         uv_install_mock.assert_not_called()
-        assert (
-            venv._resolved_interpreter
-            == "/.local/share/nox/cpython@3.11.3/bin/python3.11"
-        )
+        assert resolved_interpreter == "/.local/share/nox/cpython@3.11.3/bin/python3.11"
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
@@ -1498,21 +1497,20 @@ def test_download_python_always_preexisting_interpreter(
         download_python="always",
     )
 
-    # We should not try to find an existing interpreter
+    resolved_interpreter = venv._resolved_interpreter
+
+    # We should NOT try to find an existing interpreter
     which.assert_not_called()
 
     # the resolved interpreter should be the one we install
     if venv_backend == "uv":
         uv_install_mock.assert_called_once_with("python3.11")
         pbs_install_mock.assert_not_called()
-        assert venv._resolved_interpreter == "python3.11"
+        assert resolved_interpreter == "python3.11"
     else:
         pbs_install_mock.assert_called_once_with("python3.11")
         uv_install_mock.assert_not_called()
-        assert (
-            venv._resolved_interpreter
-            == "/.local/share/nox/cpython@3.11.3/bin/python3.11"
-        )
+        assert resolved_interpreter == "/.local/share/nox/cpython@3.11.3/bin/python3.11"
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
