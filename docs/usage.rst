@@ -286,6 +286,21 @@ using the ``python`` specified for the current ``PATH``:
 
          NOXFORCEPYTHON=python NOXSESSION=lint nox
 
+Downloading Python interpreters
+-------------------------------
+
+Nox can download Python interpreters, either via uv or directly from
+python-build-standalone, by using ``--download-python``:
+
+.. code-block:: console
+
+    nox --download-python auto    # Download if interpreter not found (default)
+    nox --download-python never   # Never download interpreters
+    nox --download-python always  # Always download interpreters
+
+You can also set this option with the ``NOX_DOWNLOAD_PYTHON`` environment
+variable.
+
 .. _opt-stop-on-first-error:
 
 Stopping if any session fails

@@ -61,6 +61,9 @@ av_bool = av.instance_of(bool)
 @attrs.define(slots=True, kw_only=True)
 class NoxOptions:
     default_venv_backend: None | str = attrs.field(validator=av_opt_str)
+    download_python: None | Literal["auto", "never", "always"] = attrs.field(
+        default=None, validator=av.optional(av.in_(["auto", "never", "always"]))
+    )
     envdir: None | str | os.PathLike[str] = attrs.field(validator=av_opt_path)
     error_on_external_run: bool = attrs.field(validator=av_bool)
     error_on_missing_interpreters: bool = attrs.field(validator=av_bool)

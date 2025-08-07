@@ -34,11 +34,14 @@ def test_get_dependencies() -> None:
             "attrs",
             "colorlog",
             "dependency-groups",
+            "httpx",
             "jinja2",
             "nox",
             "packaging",
+            "pbs-installer",
             "tox",
             "virtualenv",
+            "zstandard",
         }
         if sys.version_info < (3, 9):
             dep_list.add("importlib-resources")

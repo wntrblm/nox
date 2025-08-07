@@ -1017,10 +1017,15 @@ class SessionRunner:
             or "virtualenv"
         ).split("|")
 
+        download_python = (
+            self.global_config.download_python or self.func.download_python or "auto"
+        )
+
         self.venv = get_virtualenv(
             *backends,
-            reuse_existing=reuse_existing,
+            download_python=download_python,
             envdir=self.envdir,
+            reuse_existing=reuse_existing,
             interpreter=self.func.python,
             venv_params=self.func.venv_params,
         )
