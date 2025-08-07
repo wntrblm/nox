@@ -1514,21 +1514,25 @@ def test_download_python_always_preexisting_interpreter(
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
+@pytest.mark.parametrize("download_python", ["always", "auto"])
 @mock.patch("nox.virtualenv.pbs_install_python", return_value=None)
 @mock.patch("nox.virtualenv.uv_install_python", return_value=False)
 def test_download_python_failed_install(
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
+    download_python: str,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
 ) -> None:
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
-        download_python="always",
+        download_python=download_python,
     )
 
-    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+    with mock.patch.object(shutil, "which", return_value=None) as _, pytest.raises(
+        nox.virtualenv.InterpreterNotFound
+    ):
         _ = venv._resolved_interpreter
 
     if venv_backend == "uv":
