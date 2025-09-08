@@ -12,7 +12,7 @@ branding:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       id: localpython
       with:
         python-version: "3.9 - 3.13"
@@ -24,7 +24,7 @@ runs:
         '${{ steps.localpython.outputs.python-path }}' '${{ github.action_path }}/.github/action_helper.py' '${{ inputs.python-versions }}' >>${GITHUB_OUTPUT}
       shell: bash
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       id: allpython
       with:
         python-version: "${{ join(fromJSON(steps.helper.outputs.interpreters), '\n') }}"
