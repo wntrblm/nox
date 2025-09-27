@@ -1097,6 +1097,8 @@ def test__resolved_interpreter_none(
         ("3.6.2", "python3.6"),
         ("3.10", "python3.10"),
         ("2.7.15", "python2.7"),
+        ("3.13t", "python3.13t"),
+        ("3.14.1t", "python3.14t"),
     ],
 )
 @mock.patch("nox.virtualenv._PLATFORM", new="linux")
