@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import platform
 import sys
 
 
@@ -20,6 +21,11 @@ def filter_version(version: str) -> str:
     # remove extra specifier e.g. "3.12-dev" => "3.12", "~3.12.0-0" => "3.12"
     version_ = version_.split("-")[0]
 
+    # Handle free-threaded
+    free_threaded = version_.endswith("t")
+    if free_threaded:
+        version_ = version_[:-1]
+
     version_parts = version_.split(".")
     if len(version_parts) < 2:
         msg = f"invalid version: {version}"
@@ -30,7 +36,17 @@ def filter_version(version: str) -> str:
     if not version_parts[1].isdigit():
         msg = f"invalid minor python version: {version}"
         raise ValueError(msg)
-    return ".".join(version_parts[:2])
+    return ".".join(version_parts[:2]) + ("t" if free_threaded else "")
+
+
+def valid_version(version: str) -> bool:
+    if sys.platform.startswith("win32") and platform.machine().lower() in {
+        "arm64",
+        "aarch64",
+    }:
+        if version in {"2.7", "3.6", "3.7", "3.8", "3.9", "3.10"}:
+            return False
+    return True
 
 
 def setup_action(input_: str, *, self_version: str = "3.12") -> None:
@@ -58,7 +74,7 @@ def setup_action(input_: str, *, self_version: str = "3.12") -> None:
 
     # cpython shall be installed last because
     # other interpreters also define pythonX.Y symlinks.
-    versions = pypy_versions + cpython_versions
+    versions = [v for v in pypy_versions + cpython_versions if valid_version(v)]
 
     # we want to install our own self version last to ease nox set-up
     if self_version in cpython_versions_filtered:
