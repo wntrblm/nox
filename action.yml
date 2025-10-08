@@ -4,7 +4,7 @@ inputs:
   python-versions:
     description: "comma-separated list of python versions to install"
     required: false
-    default: "3.9, 3.10, 3.11, 3.12, 3.13"
+    default: "3.10, 3.11, 3.12, 3.13, 3.14"
 branding:
   icon: package
   color: blue
@@ -15,7 +15,7 @@ runs:
     - uses: actions/setup-python@v6
       id: localpython
       with:
-        python-version: "3.9 - 3.13"
+        python-version: "3.9 - 3.14"
         update-environment: false
 
     - name: "Validate input"
