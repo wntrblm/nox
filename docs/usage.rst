@@ -434,14 +434,18 @@ However, this will never output colorful logs:
     nox --nocolor
 
 
-.. _opt-report:
+.. _opt-verbose:
 
 
 Controlling commands verbosity
 ------------------------------
 
 By default, Nox will only show output of commands that fail, or, when the commands get passed ``silent=False``.
-By passing ``--verbose`` to Nox, all output of all commands run is shown, regardless of the silent argument.
+By either passing ``--verbose`` to Nox or setting ``nox.options.verbose = True``, all output of all commands
+run is shown, regardless of the silent argument.
+
+
+.. _opt-report:
 
 
 Outputting a machine-readable report
