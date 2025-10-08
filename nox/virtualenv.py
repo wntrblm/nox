@@ -26,8 +26,9 @@ import sys
 import sysconfig
 from pathlib import Path
 from socket import gethostbyname
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
+import pbs_installer
 from packaging import version
 
 import nox
@@ -52,10 +53,8 @@ __all__ = [
     "VirtualEnv",
     "find_uv",
     "get_virtualenv",
-    "get_virtualenv",
+    "pbs_install_python",
     "uv_install_python",
-    "uv_install_python",
-    "uv_version",
     "uv_version",
 ]
 
@@ -80,6 +79,8 @@ _BLACKLISTED_ENV_VARS = frozenset(
         "UV_PYTHON",
     ]
 )
+
+NOX_PBS_PYTHONS = Path.home() / ".local" / "share" / "nox" / "pythons"
 
 
 def find_uv() -> tuple[bool, str, version.Version]:
@@ -109,6 +110,31 @@ def find_uv() -> tuple[bool, str, version.Version]:
         uv_name or "uv",
         uv_vers,
     )
+
+
+def _find_python(interpreter: str, xy_ver: str) -> str | None:
+    """Find a python executable matching the requested interpreter"""
+    if shutil.which(interpreter):
+        return interpreter
+
+    # Windows only search for the executable
+    if _PLATFORM.startswith("win"):
+        # Allow versions of the form ``X.Y-32`` for Windows.
+        match = re.match(r"^\d\.\d+-32?$", interpreter)
+        if match:
+            # preserve the "-32" suffix, as the Python launcher expects it.
+            xy_ver = interpreter
+
+        path_from_launcher = locate_via_py(xy_ver)
+        if path_from_launcher:
+            return path_from_launcher
+
+        path_from_version_param = locate_using_path_and_version(xy_ver)
+        if path_from_version_param:
+            return path_from_version_param
+
+    # not found case
+    return None
 
 
 def uv_version(uv_bin: str) -> version.Version:
@@ -149,6 +175,60 @@ def uv_install_python(python_version: str) -> bool:
         check=False,
     )
     return ret.returncode == 0
+
+
+def _find_pbs_python(implementation: str, version: str) -> str | None:
+    """Check for an existing pbs-installer installation
+    by default it creates dirs with this format:
+    "pypy@3.8.16", "cpython@3.13.3" """
+    executable = "python.exe" if _PLATFORM.startswith("win") else "bin/python"
+
+    if NOX_PBS_PYTHONS.exists():
+        for path in NOX_PBS_PYTHONS.iterdir():
+            if path.is_dir() and path.name.startswith(f"{implementation}@{version}."):
+                python_exe = path / executable
+                if python_exe.exists():
+                    return str(python_exe)
+    return None
+
+
+def pbs_install_python(python_version: str) -> str | None:
+    """Attempts to install a given python version with pbs-installer.
+
+    Returns the full path to the installed  executable, or None if installation failed.
+    """
+
+    # separate implementation / xyz version
+    match = re.match(
+        r"^(?P<impl>pypy|cpython|python)?[-_\.]?(?P<xyz_ver>\d(\.\d+)?(\.\d+))?$",
+        python_version,
+        re.IGNORECASE,
+    )
+
+    if not match:
+        logger.warning(f"{python_version=} is not a valid version to install with pbs")
+        return None
+
+    implementation: Literal["cpython", "pypy"] = (
+        "cpython" if match.group("impl").lower() in ("cpython", "python") else "pypy"
+    )
+    xyz_ver = match.group("xyz_ver")
+
+    if python_exe := _find_pbs_python(implementation, xyz_ver):
+        return python_exe
+
+    try:
+        pbs_installer.install(
+            xyz_ver,
+            destination=NOX_PBS_PYTHONS,
+            version_dir=True,
+            implementation=implementation,
+        )
+    except Exception as err:
+        logger.warning(f"Failed to install a pbs version for {python_version=}: {err}")
+        return None
+
+    return _find_pbs_python(implementation, xyz_ver)
 
 
 HAS_UV, UV, UV_VERSION = find_uv()
@@ -355,6 +435,7 @@ class CondaEnv(ProcessEnv):
         reuse_existing: bool = False,
         venv_params: Sequence[str] = (),
         conda_cmd: str = "conda",
+        **kwargs: Any,
     ):
         self.location_name = location
         self.location = os.path.abspath(location)
@@ -486,6 +567,7 @@ class VirtualEnv(ProcessEnv):
         location: str,
         interpreter: str | None = None,
         *,
+        download_python: Literal["auto", "never", "always"] = "auto",
         reuse_existing: bool = False,
         venv_backend: str = "virtualenv",
         venv_params: Sequence[str] = (),
@@ -501,6 +583,7 @@ class VirtualEnv(ProcessEnv):
         self.reuse_existing = reuse_existing
         self._venv_backend = venv_backend
         self.venv_params = venv_params or []
+        self.download_python = download_python
         if venv_backend not in {"virtualenv", "venv", "uv"}:
             msg = f"venv_backend {venv_backend!r} not recognized"
             raise ValueError(msg)
@@ -628,48 +711,50 @@ class VirtualEnv(ProcessEnv):
             t = match.group("t")
             cleaned_interpreter = f"python{xy_version}{t}"
 
-        # If the cleaned interpreter is on the PATH, go ahead and return it.
-        if shutil.which(cleaned_interpreter):
-            self._resolved = cleaned_interpreter
-            return self._resolved
-
-        # Supported since uv 0.3 but 0.4.16 is the first version that doesn't cause
-        # issues for nox with pypy/cpython confusion
-        if (
-            self.venv_backend == "uv"
-            and HAS_UV
-            and version.Version("0.4.16") <= UV_VERSION
-        ):  # pragma: nocover
-            uv_python_success = uv_install_python(cleaned_interpreter)
-            if uv_python_success:
-                self._resolved = cleaned_interpreter
+        # never -> check for interpreters
+        if self.download_python == "never":
+            if resolved := _find_python(cleaned_interpreter, xy_version):
+                self._resolved = resolved
                 return self._resolved
 
-        # The rest of this is only applicable to Windows, so if we don't have
-        # an interpreter by now, raise.
-        if not _PLATFORM.startswith("win"):
-            self._resolved = InterpreterNotFound(self.interpreter)
-            raise self._resolved
+        # always -> skip check, always install
+        elif self.download_python == "always" and self.venv_backend == "uv":
+            if HAS_UV and version.Version("0.4.16") <= UV_VERSION:
+                uv_python_success = uv_install_python(cleaned_interpreter)
+                if uv_python_success:
+                    self._resolved = cleaned_interpreter
+                    return self._resolved
 
-        # Allow versions of the form ``X.Y-32`` for Windows.
-        match = re.match(r"^\d\.\d+-32?$", cleaned_interpreter)
-        if match:
-            # preserve the "-32" suffix, as the Python launcher expects
-            # it.
-            xy_version = cleaned_interpreter
+        elif self.download_python == "always" and self.venv_backend in (
+            "venv",
+            "virtualenv",
+        ):
+            pbs_python_path = pbs_install_python(cleaned_interpreter)
+            if pbs_python_path:
+                self._resolved = pbs_python_path
+                return self._resolved
 
-        path_from_launcher = locate_via_py(xy_version)
-        if path_from_launcher:
-            self._resolved = path_from_launcher
-            return self._resolved
+        # auto -> check interpreters -> fallback to installing
+        else:
+            if resolved := _find_python(cleaned_interpreter, xy_version):
+                self._resolved = resolved
+                return self._resolved
 
-        path_from_version_param = locate_using_path_and_version(xy_version)
-        if path_from_version_param:
-            self._resolved = path_from_version_param
-            return self._resolved
+            if (
+                self.venv_backend == "uv"
+                and HAS_UV
+                and version.Version("0.4.16") <= UV_VERSION
+            ):
+                uv_python_success = uv_install_python(cleaned_interpreter)
+                if uv_python_success:
+                    self._resolved = cleaned_interpreter
+                    return self._resolved
+            elif self.venv_backend in ("venv", "virtualenv"):
+                pbs_python_path = pbs_install_python(cleaned_interpreter)
+                if pbs_python_path:
+                    self._resolved = pbs_python_path
+                    return self._resolved
 
-        # If we got this far, then we were unable to resolve the interpreter
-        # to an actual executable; raise an exception.
         self._resolved = InterpreterNotFound(self.interpreter)
         raise self._resolved
 
@@ -751,6 +836,7 @@ OPTIONAL_VENVS = {
 
 def get_virtualenv(
     *backends: str,
+    download_python: Literal["auto", "never", "always"],
     envdir: str,
     reuse_existing: bool,
     interpreter: Python = None,
@@ -780,6 +866,7 @@ def get_virtualenv(
 
     return ALL_VENVS[backend](
         envdir,
+        download_python=download_python,
         interpreter=interpreter,
         reuse_existing=reuse_existing,
         venv_params=venv_params,

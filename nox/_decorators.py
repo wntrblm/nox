@@ -18,7 +18,7 @@ import copy
 import functools
 import inspect
 import types
-from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar, cast
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
@@ -78,6 +78,7 @@ class Func(FunctionDecorator):
         *,
         default: bool = True,
         requires: Sequence[str] | None = None,
+        download_python: Literal["auto", "never", "always"] | None = None,
     ) -> None:
         self.func = func
         self.python = python
@@ -89,6 +90,7 @@ class Func(FunctionDecorator):
         self.tags = list(tags or [])
         self.default = default
         self.requires = list(requires or [])
+        self.download_python = download_python
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r})"
@@ -110,6 +112,7 @@ class Func(FunctionDecorator):
             self.tags,
             default=self.default,
             requires=self._requires,
+            download_python=self.download_python,
         )
 
     @property
@@ -165,6 +168,7 @@ class Call(Func):
             func.tags + param_spec.tags,
             default=func.default,
             requires=func.requires,
+            download_python=func.download_python,
         )
         self.call_spec = call_spec
         self.session_signature = session_signature

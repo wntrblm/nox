@@ -528,6 +528,20 @@ options.add_options(
         completer=argcomplete.completers.DirectoriesCompleter(),  # type: ignore[no-untyped-call]
     ),
     _option_set.Option(
+        "download_python",
+        "--download-python",
+        "--download-python",
+        noxfile=True,
+        group=options.groups["python"],
+        default=lambda: os.getenv("NOX_DOWNLOAD_PYTHON"),
+        help=(
+            "When should nox download python standalone builds to run the sessions,"
+            " defaults to 'auto' which will download when the version requested can't"
+            " be found in the running environment."
+        ),
+        choices=["auto", "never", "always"],
+    ),
+    _option_set.Option(
         "extra_pythons",
         "--extra-pythons",
         "--extra-python",

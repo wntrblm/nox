@@ -151,3 +151,5 @@ def setup_logging(
 
     # Silence noisy loggers
     logging.getLogger("sh").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)

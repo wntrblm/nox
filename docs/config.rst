@@ -125,6 +125,8 @@ When you provide a version number, Nox automatically prepends python to determin
     def tests(session):
         pass
 
+If the specified python interpreter is not found, Nox can automatically download it when ``--download-python`` is set to ``auto`` (the default) or ``always``. ``never`` avoids the download.
+
 When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sessions when running ``nox --list``. For example this Noxfile:
 
 .. code-block:: python
@@ -511,6 +513,7 @@ The following options can be specified in the Noxfile:
 * ``nox.options.stop_on_first_error`` is equivalent to specifying :ref:`--stop-on-first-error <opt-stop-on-first-error>`. You can force this off by specifying ``--no-stop-on-first-error`` during invocation.
 * ``nox.options.error_on_missing_interpreters`` is equivalent to specifying :ref:`--error-on-missing-interpreters <opt-error-on-missing-interpreters>`. You can force this off by specifying ``--no-error-on-missing-interpreters`` during invocation.
 * ``nox.options.error_on_external_run`` is equivalent to specifying :ref:`--error-on-external-run <opt-error-on-external-run>`. You can force this off by specifying ``--no-error-on-external-run`` during invocation.
+* ``nox.options.download_python`` is equivalent to specifying ``--download-python``.
 * ``nox.options.report`` is equivalent to specifying :ref:`--report <opt-report>`.
 * ``nox.options.verbose`` is equivalent to specifying :ref:`-v or --verbose <opt-verbose>`. You can force this off by specifying ``--no-verbose`` during invocation.
 
