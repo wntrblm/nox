@@ -23,9 +23,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version:
-          - "3.8"
-          - "3.10"
-          - "3.13"
+          - "3.9"
+          - "3.11"
           - "3.14"
         include:
           - os: ubuntu-22.04
@@ -53,7 +52,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v3
-        if: matrix.python-version == '3.13'
+        if: matrix.python-version == '3.11'
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}

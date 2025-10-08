@@ -24,15 +24,14 @@ import sys
 from configparser import ConfigParser
 from pathlib import Path
 from subprocess import check_output
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import jinja2
 
-if sys.version_info < (3, 9):
-    from importlib_resources import files
-else:
-    from importlib.resources import files
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
+from importlib.resources import files
 
 __all__ = ["main"]
 
