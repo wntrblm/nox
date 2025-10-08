@@ -622,10 +622,11 @@ class VirtualEnv(ProcessEnv):
 
         # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
         # part and add Python to the front of it.
-        match = re.match(r"^(?P<xy_ver>\d(\.\d+)?)(\.\d+)?$", self.interpreter)
+        match = re.match(r"^(?P<xy_ver>\d(\.\d+)?)(\.\d+)?(?P<t>t?)$", self.interpreter)
         if match:
             xy_version = match.group("xy_ver")
-            cleaned_interpreter = f"python{xy_version}"
+            t = match.group("t")
+            cleaned_interpreter = f"python{xy_version}{t}"
 
         # If the cleaned interpreter is on the PATH, go ahead and return it.
         if shutil.which(cleaned_interpreter):
