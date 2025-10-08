@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from nox.project import dependency_groups, python_versions
@@ -29,7 +31,9 @@ def test_no_classifiers() -> None:
 
 def test_no_requires_python() -> None:
     pyproject = {"project": {"classifiers": ["Programming Language :: Python :: 3.12"]}}
-    with pytest.raises(ValueError, match='No "project.requires-python" value set'):
+    with pytest.raises(
+        ValueError, match=re.escape('No "project.requires-python" value set')
+    ):
         python_versions(pyproject, max_version="3.13")
 
 

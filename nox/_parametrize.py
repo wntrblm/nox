@@ -73,6 +73,7 @@ class Param:
         return ", ".join(args)
 
     __repr__ = __str__
+    __hash__ = None  # type: ignore[assignment]
 
     def copy(self) -> Param:
         return self.__class__(

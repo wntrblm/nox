@@ -47,7 +47,7 @@ def session_decorator(
     /,
     python: Python | None = ...,
     py: Python | None = ...,
-    reuse_venv: bool | None = ...,
+    reuse_venv: bool | None = ...,  # noqa: FBT001
     name: str | None = ...,
     venv_backend: str | None = ...,
     venv_params: Sequence[str] = ...,
@@ -63,7 +63,7 @@ def session_decorator(
     /,
     python: Python | None = None,
     py: Python | None = None,
-    reuse_venv: bool | None = None,
+    reuse_venv: bool | None = None,  # noqa: FBT001
     name: str | None = None,
     venv_backend: str | None = None,
     venv_params: Sequence[str] = (),

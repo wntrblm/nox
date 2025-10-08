@@ -702,7 +702,7 @@ Other changes:
 ## v0.19.0
 
 * Add missing parameter in docs (#89)
-* Don't skip install commands when re-using existing virtualenvs. (#86)
+* Don't skip install commands when reusing existing virtualenvs. (#86)
 * Add --nocolor and --forcecolor options (#85)
 * Simulating `unittest.mock` backport in the Python 2 standard library. (#81)
 * Fixing tox-to-nox docs reference. (#80)

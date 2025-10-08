@@ -96,7 +96,7 @@ class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore[misc
 
 
 logging.setLoggerClass(LoggerWithSuccessAndOutput)
-logger = cast(LoggerWithSuccessAndOutput, logging.getLogger("nox"))
+logger = cast("LoggerWithSuccessAndOutput", logging.getLogger("nox"))
 
 
 def _get_formatter(*, color: bool, add_timestamp: bool) -> logging.Formatter:

@@ -264,7 +264,7 @@ class Manifest:
         }
 
         # Resolve the dependency graph.
-        root = cast(SessionRunner, object())  # sentinel
+        root = cast("SessionRunner", object())  # sentinel
         try:
             resolved_graph = list(
                 lazy_stable_topo_sort({**dependency_graph, root: self._queue}, root)

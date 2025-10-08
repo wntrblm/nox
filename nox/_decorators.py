@@ -43,7 +43,7 @@ class FunctionDecorator:
     ) -> FunctionDecorator:
         self = super().__new__(cls)
         functools.update_wrapper(self, func)
-        return cast(FunctionDecorator, self)
+        return cast("FunctionDecorator", self)
 
 
 def _copy_func(src: T, name: str | None = None) -> T:
@@ -59,7 +59,7 @@ def _copy_func(src: T, name: str | None = None) -> T:
     dst.__dict__.update(copy.deepcopy(src.__dict__))
     dst = functools.update_wrapper(dst, src)  # type: ignore[assignment]
     dst.__kwdefaults__ = src.__kwdefaults__
-    return cast(T, dst)
+    return cast("T", dst)
 
 
 class Func(FunctionDecorator):
@@ -69,7 +69,7 @@ class Func(FunctionDecorator):
         self,
         func: Callable[..., Any],
         python: _typing.Python = None,
-        reuse_venv: bool | None = None,
+        reuse_venv: bool | None = None,  # noqa: FBT001
         name: str | None = None,
         venv_backend: str | None = None,
         venv_params: Sequence[str] = (),
