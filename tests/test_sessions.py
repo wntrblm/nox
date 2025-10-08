@@ -893,8 +893,8 @@ class TestSession:
         assert runner.venv
         runner.venv.location = "/path/to/conda/env"
         runner.venv.env = {}
-        runner.venv.is_offline = lambda: False  # type: ignore[attr-defined]
-        runner.venv.conda_cmd = "conda"  # type: ignore[attr-defined]
+        runner.venv.is_offline = lambda: False  # type: ignore[union-attr]
+        runner.venv.conda_cmd = "conda"  # type: ignore[union-attr]
 
         class SessionNoSlots(nox.sessions.Session):
             pass
