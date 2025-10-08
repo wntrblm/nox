@@ -43,8 +43,6 @@ def test_get_dependencies() -> None:
             "virtualenv",
             "zstandard",
         }
-        if sys.version_info < (3, 9):
-            dep_list.add("importlib-resources")
         if sys.version_info < (3, 11):
             dep_list.add("tomli")
         assert {d.name for d in deps} == dep_list
