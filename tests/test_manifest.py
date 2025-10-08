@@ -395,7 +395,7 @@ def test_notify() -> None:
     def my_session_raw(session: nox.Session) -> None:
         pass
 
-    my_session = typing.cast(Func, my_session_raw)
+    my_session = typing.cast("Func", my_session_raw)
 
     my_session.python = None
     my_session.venv_backend = None
@@ -403,7 +403,7 @@ def test_notify() -> None:
     def notified_raw(session: nox.Session) -> None:
         pass
 
-    notified = typing.cast(Func, notified_raw)
+    notified = typing.cast("Func", notified_raw)
 
     notified.python = None
     notified.venv_backend = None
@@ -431,7 +431,7 @@ def test_notify_noop() -> None:
     def my_session_raw(session: nox.Session) -> None:
         pass
 
-    my_session = typing.cast(Func, my_session_raw)
+    my_session = typing.cast("Func", my_session_raw)
 
     my_session.python = None
     my_session.venv_backend = None
@@ -500,7 +500,7 @@ def test_no_venv_backend_but_some_pythons() -> None:
     def my_session_raw(session: nox.Session) -> None:
         pass
 
-    my_session = typing.cast(Func, my_session_raw)
+    my_session = typing.cast("Func", my_session_raw)
 
     # the session sets "no venv backend" but declares some pythons
     my_session.python = ["3.7", "3.8"]

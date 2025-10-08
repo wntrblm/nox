@@ -118,7 +118,6 @@ lint.extend-select = [
   "YTT", # flake8-2020
 ]
 lint.ignore = [
-  "ISC001",  # Conflicts with formatter
   "N802",    # Function name should be lowercase
   "N818",    # Error suffix for errors
   "PLR09",   # Too many X
@@ -161,7 +160,7 @@ report.exclude_also = [
 report.omit = [ "nox/_typing.py" ]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"
 strict = true
 warn_unreachable = true
 enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]

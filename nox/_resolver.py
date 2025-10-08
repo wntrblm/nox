@@ -195,7 +195,7 @@ def lazy_stable_topo_sort(
         if node in walk:
             # Dependency cycle found.
             walk_list = list(walk)
-            cycle = walk_list[walk_list.index(node) :] + [node]
+            cycle = [*walk_list[walk_list.index(node) :], node]
             msg = "Nodes are in a dependency cycle"
             raise CycleError(msg, tuple(cycle))
         walk[node] = None

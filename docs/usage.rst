@@ -185,8 +185,8 @@ Finally note that the ``--no-venv`` flag is a shortcut for ``--force-venv-backen
 .. _opt-reuse-existing-virtualenvs:
 .. _opt-reuse-venv:
 
-Re-using virtualenvs
---------------------
+Reusing virtualenvs
+-------------------
 
 By default, Nox deletes and recreates virtualenvs every time it is run. This is
 usually fine for most projects and continuous integration environments as

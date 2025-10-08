@@ -163,7 +163,7 @@ class Option:
 
 def flag_pair_merge_func(
     enable_name: str,
-    enable_default: bool | Callable[[], bool],
+    enable_default: bool | Callable[[], bool],  # noqa: FBT001
     disable_name: str,
     command_args: Namespace,
     noxfile_args: NoxOptions,

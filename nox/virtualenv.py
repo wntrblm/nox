@@ -89,7 +89,7 @@ def find_uv() -> tuple[bool, str, version.Version]:
     # Look for uv in Nox's environment, to handle `pipx install nox[uv]`.
     if uv_name is None:
         with contextlib.suppress(ImportError, FileNotFoundError):
-            from uv import find_uv_bin
+            from uv import find_uv_bin  # noqa: PLC0415
 
             uv_bin = find_uv_bin()
 
@@ -180,7 +180,7 @@ class ProcessEnv(abc.ABC):
         self._reused = False
 
         # .command's env supports None, meaning don't include value even if in parent
-        self.env = {**{k: None for k in _BLACKLISTED_ENV_VARS}, **(env or {})}
+        self.env = {**dict.fromkeys(_BLACKLISTED_ENV_VARS), **(env or {})}
 
     @property
     def bin_paths(self) -> list[str] | None:
@@ -406,7 +406,7 @@ class CondaEnv(ProcessEnv):
     def create(self) -> bool:
         """Create the conda env."""
         if not self._clean_location():
-            logger.debug(f"Re-using existing conda env at {self.location_name}.")
+            logger.debug(f"Reusing existing conda env at {self.location_name}.")
 
             self._reused = True
 
@@ -683,7 +683,7 @@ class VirtualEnv(ProcessEnv):
         """Create the virtualenv or venv."""
         if not self._clean_location():
             logger.debug(
-                f"Re-using existing virtual environment at {self.location_name}."
+                f"Reusing existing virtual environment at {self.location_name}."
             )
 
             self._reused = True
