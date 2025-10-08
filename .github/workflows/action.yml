@@ -23,13 +23,12 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-22.04
           - ubuntu-24.04
           - ubuntu-24.04-arm
           - windows-2022
           - windows-2025
-          - macos-13
-          - macos-14
+          - windows-11-arm
+          - macos-15-intel
           - macos-15
     steps:
       - uses: actions/checkout@v5
@@ -50,5 +49,5 @@ jobs:
           python-version: 3.12
       - uses: ./
         with:
-          python-versions: "pypy-2.7, pypy-3.8, pypy-3.9, pypy-3.10, pypy-3.11, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14"
+          python-versions: "pypy-2.7, pypy-3.8, pypy-3.9, pypy-3.10, pypy-3.11, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.13t, 3.14t"
       - run: nox --session github_actions_all_tests
