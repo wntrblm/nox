@@ -1098,6 +1098,25 @@ def test_noxfile_no_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "No module named 'cowsay'" in job.stderr
 
 
+def test_noxfile_script_mode_exec(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
+    job = subprocess.run(
+        [
+            Path(RESOURCES) / "noxfile_script_mode_exec.py",
+            "-s",
+            "exec_example",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    print(job.stdout)
+    print(job.stderr)
+    assert job.returncode == 0
+    assert "another_world" in job.stdout
+
+
 def test_noxfile_script_mode_url_req() -> None:
     job = subprocess.run(
         [
