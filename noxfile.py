@@ -190,8 +190,6 @@ def _check_python_version(session: nox.Session) -> None:
     python=[
         *ALL_PYTHONS,
         "pypy-3.10",
-        "3.13t",
-        "3.14t",
     ],
     default=False,
 )
