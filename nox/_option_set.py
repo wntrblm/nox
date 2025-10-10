@@ -21,7 +21,6 @@ from __future__ import annotations
 import argparse
 import functools
 import os
-import sys
 from argparse import ArgumentError, ArgumentParser, Namespace
 from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, Literal
@@ -284,12 +283,11 @@ class OptionSet:
         Generally, you won't use this directly. Instead, use
         :func:`parse_args`.
         """
-        parser_kwargs = {"allow_abbrev": False, **self.parser_kwargs}
-        if sys.version_info >= (3, 14):
-            parser_kwargs["color"] = True
-            parser_kwargs["suggest_on_error"] = True
-
-        parser = argparse.ArgumentParser(*self.parser_args, **parser_kwargs)
+        extra_args = {"allow_abbrev": False, **self.parser_kwargs}
+        parser = argparse.ArgumentParser(
+            *self.parser_args,
+            **extra_args,
+        )
 
         groups = {
             name: parser.add_argument_group(*option_group.args, **option_group.kwargs)
