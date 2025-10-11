@@ -21,7 +21,7 @@ import functools
 import itertools
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Callable, Literal, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import argcomplete
 
@@ -30,7 +30,7 @@ from nox.tasks import discover_manifest, filter_manifest, load_nox_module
 from nox.virtualenv import ALL_VENVS
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
     from nox._option_set import NoxOptions
 
