@@ -283,10 +283,10 @@ class OptionSet:
         Generally, you won't use this directly. Instead, use
         :func:`parse_args`.
         """
-        extra_args = {"allow_abbrev": False, **self.parser_kwargs}
+        parser_kwargs = {"allow_abbrev": False, **self.parser_kwargs}
         parser = argparse.ArgumentParser(
             *self.parser_args,
-            **extra_args,
+            **parser_kwargs,
         )
 
         groups = {
