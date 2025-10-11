@@ -19,13 +19,14 @@ from typing import Any, cast
 
 from colorlog import ColoredFormatter
 
-__all__ = ["OUTPUT", "SUCCESS", "logger", "setup_logging"]
+__all__ = ["OUTPUT", "SESSION_INFO", "SUCCESS", "logger", "setup_logging"]
 
 
 def __dir__() -> list[str]:
     return __all__
 
 
+SESSION_INFO = logging.WARNING - 1
 SUCCESS = 25
 OUTPUT = logging.DEBUG - 1
 
@@ -83,8 +84,13 @@ class NoxColoredFormatter(ColoredFormatter):
 class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore[misc]
     def __init__(self, name: str, level: int = logging.NOTSET):
         super().__init__(name, level)
+        logging.addLevelName(SESSION_INFO, "SESSION_INFO")
         logging.addLevelName(SUCCESS, "SUCCESS")
         logging.addLevelName(OUTPUT, "OUTPUT")
+
+    def session_info(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        if self.isEnabledFor(SESSION_INFO):  # pragma: no cover
+            self._log(SESSION_INFO, msg, args, **kwargs)
 
     def success(self, msg: str, *args: Any, **kwargs: Any) -> None:
         if self.isEnabledFor(SUCCESS):  # pragma: no cover
@@ -106,6 +112,7 @@ def _get_formatter(*, color: bool, add_timestamp: bool) -> logging.Formatter:
             log_colors={
                 "DEBUG": "cyan",
                 "INFO": "blue",
+                "SESSION_INFO": "purple",
                 "WARNING": "yellow",
                 "ERROR": "red",
                 "CRITICAL": "red,bg_white",
