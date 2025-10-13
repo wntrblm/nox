@@ -68,7 +68,7 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
         types.ModuleType: The initialised Nox module.
     """
     spec = importlib.util.spec_from_file_location(
-        "user_nox_module", global_config.noxfile
+        "user_nox_module", str(global_config.noxfile)
     )
     assert spec is not None  # If None, fatal importlib error, would crash anyway
 
@@ -107,8 +107,9 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     # Save the absolute path to the Noxfile.
     # This will inoculate it if Nox changes paths because of an implicit
     # or explicit chdir (like the one below).
-    global_config.noxfile = os.path.join(
-        noxfile_parent_dir, os.path.basename(global_config_noxfile)
+    # Keeps the class of the original string
+    global_config.noxfile = global_config.noxfile.__class__(
+        os.path.join(noxfile_parent_dir, os.path.basename(global_config_noxfile))
     )
 
     try:

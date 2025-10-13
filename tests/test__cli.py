@@ -87,6 +87,8 @@ def test_invalid_backend_envvar(
 ) -> None:
     monkeypatch.setenv("NOX_SCRIPT_VENV_BACKEND", "invalid")
     monkeypatch.setattr(sys, "argv", ["nox"])
+    # This will return pytest's filename instead, so patching it to None
+    monkeypatch.setattr(nox._cli, "get_main_filename", lambda: None)
     monkeypatch.chdir(tmp_path)
     tmp_path.joinpath("noxfile.py").write_text(
         "# /// script\n# dependencies=['nox', 'invalid']\n# ///",
@@ -101,6 +103,8 @@ def test_invalid_backend_inline(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr(sys, "argv", ["nox"])
+    # This will return pytest's filename instead, so patching it to None
+    monkeypatch.setattr(nox._cli, "get_main_filename", lambda: None)
     monkeypatch.chdir(tmp_path)
     tmp_path.joinpath("noxfile.py").write_text(
         "# /// script\n# dependencies=['nox', 'invalid']\n# tool.nox.script-venv-backend = 'invalid'\n# ///",

@@ -21,7 +21,7 @@ control to :meth:``nox.workflow.execute``.
 
 from __future__ import annotations  # pragma: no cover
 
-from nox._cli import main  # pragma: no cover
+from nox._cli import nox_main as main  # pragma: no cover
 
 __all__ = ["main"]  # pragma: no cover
 

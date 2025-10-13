@@ -42,6 +42,11 @@ def __dir__() -> list[str]:
     return __all__
 
 
+# User-specified arguments will be a regular string
+class DefaultStr(str):
+    __slots__ = ()
+
+
 ReuseVenvType = Literal["no", "yes", "never", "always"]
 
 options = _option_set.OptionSet(
@@ -515,7 +520,7 @@ options.add_options(
         "-f",
         "--noxfile",
         group=options.groups["general"],
-        default="noxfile.py",
+        default=DefaultStr("noxfile.py"),
         help="Location of the Python file containing Nox sessions.",
     ),
     _option_set.Option(
