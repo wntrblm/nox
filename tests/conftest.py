@@ -91,4 +91,4 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 # Protection to make sure every conda-using test requests it
 def pytest_runtest_setup(item: pytest.Item) -> None:
     if not any(mark.name == "conda" for mark in item.iter_markers()):
-        item.fixturenames = [*item.fixturenames, "prevent_conda"]  # type: ignore[attr-defined]
+        item.add_marker(pytest.mark.usefixtures("prevent_conda"))
