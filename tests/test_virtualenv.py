@@ -39,13 +39,11 @@ if TYPE_CHECKING:
     from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
 IS_WINDOWS = sys.platform.startswith("win")
-HAS_CONDA = shutil.which("conda") is not None
 HAS_UV = shutil.which("uv") is not None
 RAISE_ERROR = "RAISE_ERROR"
 VIRTUALENV_VERSION = metadata.version("virtualenv")
 
 has_uv = pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
-has_conda = pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
 
 
 class TextProcessResult(NamedTuple):
@@ -171,7 +169,6 @@ def test_condaenv_constructor_explicit(
     assert venv.reuse_existing is True
 
 
-@has_conda
 def test_condaenv_create(make_conda: Callable[..., tuple[CondaEnv, Path]]) -> None:
     venv, dir_ = make_conda()
     venv.create()
@@ -200,7 +197,6 @@ def test_condaenv_create(make_conda: Callable[..., tuple[CondaEnv, Path]]) -> No
     assert venv._reused
 
 
-@has_conda
 def test_condaenv_create_with_params(
     make_conda: Callable[..., tuple[CondaEnv, Path]],
 ) -> None:
@@ -214,7 +210,6 @@ def test_condaenv_create_with_params(
         assert dir_.joinpath("bin", "pip").exists()
 
 
-@has_conda
 def test_condaenv_create_interpreter(
     make_conda: Callable[..., tuple[CondaEnv, Path]],
 ) -> None:
@@ -230,7 +225,6 @@ def test_condaenv_create_interpreter(
         assert dir_.joinpath("bin", "python3.12").exists()
 
 
-@has_conda
 def test_conda_env_create_verbose(
     make_conda: Callable[..., tuple[CondaEnv, Path]],
 ) -> None:
@@ -262,13 +256,11 @@ def test_condaenv_bin_windows(make_conda: Callable[..., tuple[CondaEnv, Path]]) 
     ] == venv.bin_paths
 
 
-@has_conda
 def test_condaenv_(make_conda: Callable[..., tuple[CondaEnv, Path]]) -> None:
     venv, _dir = make_conda()
     assert not venv.is_offline()
 
 
-@has_conda
 def test_condaenv_detection(make_conda: Callable[..., tuple[CondaEnv, Path]]) -> None:
     venv, dir_ = make_conda()
     venv.create()
@@ -556,7 +548,7 @@ def test_not_stale_virtualenv_environment(
     assert reused
 
 
-@has_conda
+@pytest.mark.conda
 def test_stale_virtualenv_to_conda_environment(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
 ) -> None:
@@ -571,7 +563,7 @@ def test_stale_virtualenv_to_conda_environment(
     assert not reused
 
 
-@has_conda
+@pytest.mark.conda
 def test_reuse_conda_environment(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
 ) -> None:
@@ -587,7 +579,7 @@ def test_reuse_conda_environment(
 
 
 # This mocks micromamba so that it doesn't need to be installed.
-@has_conda
+@pytest.mark.conda
 def test_micromamba_environment(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
     monkeypatch: pytest.MonkeyPatch,
@@ -612,7 +604,7 @@ def test_micromamba_environment(
     "params",
     [["--channel=default"], ["-cdefault"], ["-c", "default"], ["--channel", "default"]],
 )
-@has_conda
+@pytest.mark.conda
 def test_micromamba_channel_environment(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
     monkeypatch: pytest.MonkeyPatch,
@@ -643,7 +635,7 @@ def test_micromamba_channel_environment(
         ("venv", "virtualenv", True),
         ("virtualenv", "uv", True),
         pytest.param("uv", "virtualenv", False, marks=has_uv),
-        pytest.param("conda", "virtualenv", False, marks=has_conda),
+        pytest.param("conda", "virtualenv", False, marks=pytest.mark.conda),
     ],
 )
 def test_stale_environment(
