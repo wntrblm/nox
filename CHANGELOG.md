@@ -1,5 +1,60 @@
 # Changelog
 
+## 2025.10.14
+
+This release updates the default for the GitHub Action to target the current range of recommended Pythons (3.10-3.14). There's now a mechanism to control if nox downloads Python (even when not using uv). Several fixes include better free-threading support, custom filenames in script mode, and support for GitHub Actions Windows ARM runners.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @agriyakhetarpal (first contribution)
+* @henryiii
+* @IvanIsCoding (first contribution)
+* @johnthagen
+* @saucoide
+* @shenxianpeng (first contribution)
+* @zzzeek (first contribution)
+
+Features:
+
+* Add `--download-python` python option by @saucoide in https://github.com/wntrblm/nox/pull/989
+
+Changes:
+
+* GitHub Action 3.10-3.14 default by @henryiii in https://github.com/wntrblm/nox/pull/1003
+* Percolate the `verbose` global option to the `silent` argument for session installation commands, and document it by @agriyakhetarpal in https://github.com/wntrblm/nox/pull/983
+* Disallow abbreviated options by @henryiii in https://github.com/wntrblm/nox/pull/973
+
+Bugfixes:
+
+* Support scripts with custom names by @henryiii in https://github.com/wntrblm/nox/pull/1007
+* Correctly match free-threaded python versions by @zzzeek in https://github.com/wntrblm/nox/pull/999
+* Let uv replace the directory instead of deleting it ourselves by @henryiii in https://github.com/wntrblm/nox/pull/981
+* Tighten type for `venv_backend` by @henryiii in https://github.com/wntrblm/nox/pull/967
+* GitHub Actions Windows ARM support by @henryiii in https://github.com/wntrblm/nox/pull/1002
+
+Documentation:
+
+* Add `--script` to `uv run` inline metadata for nox-uv example by @johnthagen in https://github.com/wntrblm/nox/pull/984
+* Document `nox-uv` third party package by @johnthagen in https://github.com/wntrblm/nox/pull/978
+* Recommend `--locked` over `--frozen` for `uv sync` by @johnthagen in https://github.com/wntrblm/nox/pull/972
+* Tweak the grammar in a comment in tasks.py by @brettcannon in https://github.com/wntrblm/nox/pull/987
+* Add rustworkx as an example user by @IvanIsCoding in https://github.com/wntrblm/nox/pull/975
+* Update badge from black to ruff by @shenxianpeng in https://github.com/wntrblm/nox/pull/971
+
+Internal changes:
+
+* Hide new coverage warning on 3.14 by @henryiii in https://github.com/wntrblm/nox/pull/980
+* Correct minimum versions and test by @henryiii in https://github.com/wntrblm/nox/pull/962
+* CI ensure there are no duplicate log handlers by @saucoide in https://github.com/wntrblm/nox/pull/991
+* Add 3.14 beta 1 support by @henryiii in https://github.com/wntrblm/nox/pull/970
+* Add better reprs for some internal classes by @henryiii in https://github.com/wntrblm/nox/pull/966
+* Drop Windows 2019 by @henryiii in https://github.com/wntrblm/nox/pull/985
+* Modernize and remove rc conda channel by @henryiii in https://github.com/wntrblm/nox/pull/964
+* Restore minimums test by @henryiii in https://github.com/wntrblm/nox/pull/982
+* Use dict instead of OrderedDict by @henryiii in https://github.com/wntrblm/nox/pull/963
+* Add conda marker to tests by @henryiii in https://github.com/wntrblm/nox/pull/969
+* Clear the registry in tests by @henryiii in https://github.com/wntrblm/nox/pull/968
+
 
 ## 2025.05.01
 
