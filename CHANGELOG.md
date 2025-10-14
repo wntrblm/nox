@@ -9,20 +9,24 @@ We'd like to thank the following folks who contributed to this release:
 * @agriyakhetarpal (first contribution)
 * @henryiii
 * @IvanIsCoding (first contribution)
+* @jbdyn (first contribution)
 * @johnthagen
 * @saucoide
 * @shenxianpeng (first contribution)
+* @Spacetown (first contribution)
 * @zzzeek (first contribution)
 
 Features:
 
 * Add `--download-python` python option by @saucoide in https://github.com/wntrblm/nox/pull/989
+* Add `session.env_dir` to get the Path to the environment by @jbdyn in https://github.com/wntrblm/nox/pull/974
 
 Changes:
 
 * GitHub Action 3.10-3.14 default by @henryiii in https://github.com/wntrblm/nox/pull/1003
 * Percolate the `verbose` global option to the `silent` argument for session installation commands, and document it by @agriyakhetarpal in https://github.com/wntrblm/nox/pull/983
 * Disallow abbreviated options by @henryiii in https://github.com/wntrblm/nox/pull/973
+* Log output of failed process by @jbdyn in https://github.com/wntrblm/nox/pull/974
 
 Bugfixes:
 
