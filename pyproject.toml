@@ -67,7 +67,6 @@ scripts.tox-to-nox = "nox.tox_to_nox:main"
 
 [dependency-groups]
 dev = [
-  { include-group = "docs" },
   { include-group = "test" },
 ]
 test = [
