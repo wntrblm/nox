@@ -365,9 +365,9 @@ def test_filter_manifest_tags_not_found(
 
 
 @pytest.mark.usefixtures("reset_global_nox_options")
-def test_merge_sessions_and_tags(generate_noxfile_options: Callable[..., str]) -> None:
+def test_merge_tags(generate_noxfile_options: Callable[..., str]) -> None:
     @nox.session(tags=["foobar"])
-    def test() -> None:
+    def testing() -> None:
         pass
 
     @nox.session(tags=["foobar"])
@@ -386,7 +386,7 @@ def test_merge_sessions_and_tags(generate_noxfile_options: Callable[..., str]) -
     nox_module = tasks.load_nox_module(config)
     assert not isinstance(nox_module, int)
     tasks.merge_noxfile_options(nox_module, config)
-    manifest = Manifest({"test": test, "bar": bar}, config)
+    manifest = Manifest({"testing": testing, "bar": bar}, config)
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
     assert len(manifest) == 2
