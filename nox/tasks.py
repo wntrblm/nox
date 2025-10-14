@@ -408,7 +408,7 @@ def print_summary(
 
     # Iterate over the results and print the result for each in a
     # human-readable way.
-    logger.warning("Ran multiple sessions:")
+    logger.session_info("Ran multiple sessions:")
     for result in results:
         name = result.session.friendly_name
         status = result.status.name.lower()
