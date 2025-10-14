@@ -196,13 +196,13 @@ def run(
         )
 
         if return_code not in success_codes:
-            suffix = ":" if silent else ""
+            suffix = ":" if (silent and output) else ""
             logger.error(
                 f"Command {full_cmd} failed with exit code {return_code}{suffix}"
             )
 
-            if silent:
-                sys.stderr.write(output)
+            if silent and output:
+                logger.error(output)
 
             msg = f"Returned code {return_code}"
             raise CommandFailed(msg)
