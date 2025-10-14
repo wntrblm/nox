@@ -67,7 +67,7 @@ class NoxOptions:
     error_on_external_run: bool = attrs.field(validator=av_bool)
     error_on_missing_interpreters: bool = attrs.field(validator=av_bool)
     force_venv_backend: None | str = attrs.field(validator=av_opt_str)
-    keywords: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
+    keywords: None | str = attrs.field(validator=av_opt_str)
     pythons: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
     report: None | str = attrs.field(validator=av_opt_str)
     reuse_existing_virtualenvs: bool = attrs.field(validator=av_bool)
