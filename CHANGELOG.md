@@ -27,6 +27,7 @@ Changes:
 * Percolate the `verbose` global option to the `silent` argument for session installation commands, and document it by @agriyakhetarpal in https://github.com/wntrblm/nox/pull/983
 * Disallow abbreviated options by @henryiii in https://github.com/wntrblm/nox/pull/973
 * Log output of failed process by @jbdyn in https://github.com/wntrblm/nox/pull/974
+* Use a separate logging level (`SESSION_INFO`) for session info instead of warning by @Spacetown in https://github.com/wntrblm/nox/pull/990
 
 Bugfixes:
 
