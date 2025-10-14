@@ -195,6 +195,13 @@ class TestSession:
 
         assert session.venv_backend == "none"
 
+    def test_virtualenv_directory(self) -> None:
+        session, runner = self.make_session_and_runner()
+
+        with tempfile.TemporaryDirectory() as root:
+            runner.global_config.envdir = root
+            assert session.env_dir == Path(runner.envdir)
+
     def test_interactive(self) -> None:
         session, _runner = self.make_session_and_runner()
 

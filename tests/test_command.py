@@ -259,7 +259,7 @@ def test_fail_with_silent(
             ],
             silent=True,
         )
-    out, err = capsys.readouterr()
+    _out, err = capsys.readouterr()
     assert "out" not in err
     assert "err" not in err
     assert "out" in caplog.text
