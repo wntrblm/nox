@@ -198,6 +198,11 @@ class Session:
         return self.virtualenv.env
 
     @property
+    def env_dir(self) -> pathlib.Path:
+        """The path to the environment of this session."""
+        return pathlib.Path(self._runner.envdir)
+
+    @property
     def posargs(self) -> list[str]:
         """Any extra arguments from the ``nox`` commandline or :class:`Session.notify`."""
         return self._runner.posargs
