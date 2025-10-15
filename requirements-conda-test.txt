@@ -5,8 +5,7 @@ dependency-groups >=1.1
 httpx
 jinja2
 pbs-installer>=2025.1.6
-httpx
-zstandard
 pytest
 tox>=4.0.0
 virtualenv >=20.14.1
+zstandard
