@@ -28,7 +28,6 @@ from pathlib import Path
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
-import pbs_installer
 from packaging import version
 
 import nox
@@ -195,7 +194,7 @@ def _find_pbs_python(implementation: str, version: str) -> str | None:
 def pbs_install_python(python_version: str) -> str | None:
     """Attempts to install a given python version with pbs-installer.
 
-    Returns the full path to the installed  executable, or None if installation failed.
+    Returns the full path to the installed executable, or None if installation failed.
     """
 
     # separate implementation / xyz version
@@ -216,6 +215,15 @@ def pbs_install_python(python_version: str) -> str | None:
 
     if python_exe := _find_pbs_python(implementation, xyz_ver):
         return python_exe
+
+    # Requires the [pbs] extra to make it past here
+    try:
+        import pbs_installer  # noqa: PLC0415
+    except ModuleNotFoundError:  # pragma: nocover
+        logger.warning(
+            "Nox was installed without the `[pbs]` extra, can't download Python"
+        )
+        return None
 
     try:
         pbs_installer.install(

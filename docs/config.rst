@@ -125,7 +125,7 @@ When you provide a version number, Nox automatically prepends python to determin
     def tests(session):
         pass
 
-If the specified python interpreter is not found, Nox can automatically download it when ``--download-python`` is set to ``auto`` (the default) or ``always``. ``never`` avoids the download.
+If the specified python interpreter is not found, Nox can automatically download it when ``--download-python`` is set to ``auto`` (the default) or ``always``. ``never`` avoids the download. This requires the ``[pbs]`` extra when not using uv as a backend.
 
 When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sessions when running ``nox --list``. For example this Noxfile:
 

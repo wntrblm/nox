@@ -290,7 +290,8 @@ Downloading Python interpreters
 -------------------------------
 
 Nox can download Python interpreters, either via uv or directly from
-python-build-standalone, by using ``--download-python``:
+python-build-standalone (requires the ``[pbs]`` extra), by using
+``--download-python``:
 
 .. code-block:: console
 

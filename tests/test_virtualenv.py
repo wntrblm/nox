@@ -1600,14 +1600,13 @@ def test_pbs_install_python_already_installed(find_pbs_mock: mock.Mock) -> None:
     find_pbs_mock.assert_called_once_with("cpython", "3.11")
 
 
-@mock.patch("nox.virtualenv.pbs_installer")
 def test_pbs_install_python_success(
-    pbs_installer_mock: mock.Mock,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     nox_pbs_pythons = tmp_path / "nox_pbs_pythons"
     monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", nox_pbs_pythons)
+    pytest.importorskip("pbs_installer")
 
     # fake the installation
     python_dir = nox_pbs_pythons / "cpython@3.11.5"
@@ -1622,7 +1621,7 @@ def test_pbs_install_python_success(
     def mock_install(*args: Any, **kwargs: Any) -> None:
         python_exe.touch()
 
-    pbs_installer_mock.install.side_effect = mock_install
+    monkeypatch.setattr("pbs_installer.install", mock_install)
 
     result = nox.virtualenv.pbs_install_python("python3.11")
     # return value is a path to the executable
