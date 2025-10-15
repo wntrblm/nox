@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import copy
 import functools
+import warnings
 from typing import TYPE_CHECKING, Any, Callable, Literal, overload
 
 from ._decorators import Func
@@ -121,7 +122,15 @@ def session_decorator(
         requires=requires,
         download_python=download_python,
     )
-    _REGISTRY[name or func.__name__] = fn
+    reg_name = name or func.__name__
+    if reg_name in _REGISTRY:
+        msg = (
+            f"The session {reg_name!r} has already been registered; "
+            "this will be an error in a future version of nox. "
+            "Overriding the old session for now."
+        )
+        warnings.warn(msg, FutureWarning, stacklevel=2)
+    _REGISTRY[reg_name] = fn
     return fn
 
 

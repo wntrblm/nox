@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -629,6 +630,15 @@ def test_main_requries_modern_param(
     noxfile = os.path.join(RESOURCES, "noxfile_requires.py")
     returncode, _, _stderr = run_nox(f"--noxfile={noxfile}", f"--session={session}")
     assert returncode == 0
+
+
+def test_main_duplicate_session(
+    run_nox: Callable[..., tuple[Any, Any, Any]],
+) -> None:
+    noxfile = os.path.join(RESOURCES, "noxfile_duplicate_sessions.py")
+    msg = "The session 'foo' has already been registered"
+    with pytest.warns(FutureWarning, match=re.escape(msg)):
+        run_nox(f"--noxfile={noxfile}")
 
 
 def test_main_noxfile_options(
