@@ -4,7 +4,9 @@ colorlog >=2.6.1,<7.0.0
 dependency-groups >=1.1
 httpx
 jinja2
-pbs-installer[all]>=2025.1.6
+pbs-installer>=2025.1.6
+httpx
+zstandard
 pytest
 tox>=4.0.0
 virtualenv >=20.14.1
