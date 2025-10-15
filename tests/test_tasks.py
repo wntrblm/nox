@@ -773,6 +773,7 @@ def test_create_report() -> None:
                             "result": "success",
                             "result_code": 1,
                             "args": {},
+                            "duration": 0.0,
                         }
                     ],
                 },

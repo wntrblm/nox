@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import contextlib
+import datetime
 import enum
 import hashlib
 import os
@@ -23,12 +24,15 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import unicodedata
 from typing import (
     TYPE_CHECKING,
     Any,
     NoReturn,
 )
+
+import humanize
 
 import nox.command
 import nox.virtualenv
@@ -1100,9 +1104,11 @@ class SessionRunner:
                         f"Prerequisite session {dependency.friendly_name} was not"
                         " successful"
                     ),
+                    duration=0,
                 )
                 return self.result
 
+        start = time.perf_counter()
         try:
             cwd = os.path.realpath(os.path.dirname(self.global_config.noxfile))
 
@@ -1113,25 +1119,49 @@ class SessionRunner:
                 self.func(session)
 
             # Nothing went wrong; return a success.
-            self.result = Result(self, Status.SUCCESS)
+            self.result = Result(
+                self, Status.SUCCESS, duration=time.perf_counter() - start
+            )
 
         except nox.virtualenv.InterpreterNotFound as exc:
             if self.global_config.error_on_missing_interpreters:
-                self.result = Result(self, Status.FAILED, reason=str(exc))
+                self.result = Result(
+                    self,
+                    Status.FAILED,
+                    reason=str(exc),
+                    duration=time.perf_counter() - start,
+                )
             else:
                 logger.warning(
                     "Missing interpreters will error by default on CI systems."
                 )
-                self.result = Result(self, Status.SKIPPED, reason=str(exc))
+                self.result = Result(
+                    self,
+                    Status.SKIPPED,
+                    reason=str(exc),
+                    duration=time.perf_counter() - start,
+                )
 
         except _SessionQuit as exc:
-            self.result = Result(self, Status.ABORTED, reason=str(exc))
+            self.result = Result(
+                self,
+                Status.ABORTED,
+                reason=str(exc),
+                duration=time.perf_counter() - start,
+            )
 
         except _SessionSkip as exc:
-            self.result = Result(self, Status.SKIPPED, reason=str(exc))
+            self.result = Result(
+                self,
+                Status.SKIPPED,
+                reason=str(exc),
+                duration=time.perf_counter() - start,
+            )
 
         except nox.command.CommandFailed:
-            self.result = Result(self, Status.FAILED)
+            self.result = Result(
+                self, Status.FAILED, duration=time.perf_counter() - start
+            )
 
         except KeyboardInterrupt:
             logger.error(f"Session {self.friendly_name} interrupted.")
@@ -1139,7 +1169,9 @@ class SessionRunner:
 
         except Exception as exc:
             logger.exception(f"Session {self.friendly_name} raised exception {exc!r}")
-            self.result = Result(self, Status.FAILED)
+            self.result = Result(
+                self, Status.FAILED, duration=time.perf_counter() - start
+            )
 
         return self.result
 
@@ -1148,7 +1180,12 @@ class Result:
     """An object representing the result of a session."""
 
     def __init__(
-        self, session: SessionRunner, status: Status, reason: str | None = None
+        self,
+        session: SessionRunner,
+        status: Status,
+        reason: str | None = None,
+        *,
+        duration: float = 0.0,
     ) -> None:
         """Initialize the Result object.
 
@@ -1157,10 +1194,12 @@ class Result:
                 The session runner which ran.
             status (~nox.sessions.Status): The final result status.
             reason (str): Additional info.
+            duration (float): Time taken in seconds.
         """
         self.session = session
         self.status = status
         self.reason = reason
+        self.duration = duration
 
     def __bool__(self) -> bool:
         return self.status.value > 0
@@ -1172,12 +1211,17 @@ class Result:
         Returns:
             str: A word or phrase representing the status.
         """
+        # Might be "a moment" if short
+        time_str = humanize.naturaldelta(datetime.timedelta(seconds=self.duration))
+
         if self.status == Status.SUCCESS:
-            return "was successful"
+            time_msg = "" if time_str == "a moment" else f" in {time_str}"
+            return f"was successful{time_msg}"
 
         status = self.status.name.lower()
         if self.reason:
-            return f"{status}: {self.reason}"
+            time_err = "" if time_str == "a moment" else f" (took {time_str})"
+            return f"{status}: {self.reason}{time_err}"
 
         return status
 
@@ -1208,4 +1252,5 @@ class Result:
             "result": self.status.name.lower(),
             "result_code": self.status.value,
             "signatures": self.session.signatures,
+            "duration": self.duration,
         }

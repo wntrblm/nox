@@ -34,6 +34,7 @@ def test_get_dependencies() -> None:
             "attrs",
             "colorlog",
             "dependency-groups",
+            "humanize",
             "jinja2",
             "nox",
             "packaging",
