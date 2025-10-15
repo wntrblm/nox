@@ -36,6 +36,8 @@ Bugfixes:
 * Let uv replace the directory instead of deleting it ourselves by @henryiii in https://github.com/wntrblm/nox/pull/981
 * Tighten type for `venv_backend` by @henryiii in https://github.com/wntrblm/nox/pull/967
 * GitHub Actions Windows ARM support by @henryiii in https://github.com/wntrblm/nox/pull/1002
+* Show a warning (eventually error) if a duplicate session is encountered by @henryiii in https://github.com/wntrblm/nox/pull/1013
+* Fix validation error for `nox.options.keywords` by @henryiii in https://github.com/wntrblm/nox/pull/1011
 
 Documentation:
 
