@@ -1176,6 +1176,16 @@ class SessionRunner:
         return self.result
 
 
+def _duration_str(seconds: float, text: str) -> str:
+    time_str = humanize.naturaldelta(datetime.timedelta(seconds=seconds))
+
+    # Might be "a moment" if short, return empty string in that case
+    if time_str == "a moment":
+        return ""
+
+    return text.format(time=time_str)
+
+
 class Result:
     """An object representing the result of a session."""
 
@@ -1211,18 +1221,13 @@ class Result:
         Returns:
             str: A word or phrase representing the status.
         """
-        # Might be "a moment" if short
-        time_str = humanize.naturaldelta(datetime.timedelta(seconds=self.duration))
-
         if self.status == Status.SUCCESS:
-            time_msg = "" if time_str == "a moment" else f" in {time_str}"
-            return f"was successful{time_msg}"
+            return "was successful" + _duration_str(self.duration, " in {time}")
 
         status = self.status.name.lower()
         if self.reason:
-            time_err = "" if time_str == "a moment" else f" (took {time_str})"
-            return f"{status}: {self.reason}{time_err}"
-
+            duration_err = _duration_str(self.duration, " (took {time})")
+            return f"{status}: {self.reason}{duration_err}"
         return status
 
     def log(self, message: str) -> None:
