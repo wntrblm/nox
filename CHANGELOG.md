@@ -1,5 +1,26 @@
 # Changelog
 
+## 2025.10.16
+
+This is a quick release to make our new dependency, pbs-installer, optional.
+This is only needed to install Python if you are not using the uv backend.
+We've also added the time taken to the output when it's over a second.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @henryiii
+
+Changes:
+
+* Make pbs-installer an optional dependency by @henryiii in https://github.com/wntrblm/nox/pull/1017
+* Include time on longer runs (adds `humanize` dependency) by @henryiii in https://github.com/wntrblm/nox/pull/1014
+
+Internal:
+
+* Run conda on Windows/Linux again by @henryiii in https://github.com/wntrblm/nox/pull/1015
+
+
+
 ## 2025.10.14
 
 This release updates the default for the GitHub Action to target the current range of recommended Pythons (3.10-3.14). There's now a mechanism to control if nox downloads Python (even when not using uv). Several fixes include better free-threading support, custom filenames in script mode, and support for GitHub Actions Windows ARM runners.
