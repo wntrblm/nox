@@ -3,6 +3,7 @@ attrs >=23.1
 colorlog >=2.6.1,<7.0.0
 dependency-groups >=1.1
 httpx
+humanize
 jinja2
 pbs-installer>=2025.1.6
 pytest

@@ -42,6 +42,7 @@ repos:
           - attrs
           - colorlog
           - dependency-groups>=1.2
+          - humanize
           - jinja2
           - orjson # Faster mypy
           - packaging

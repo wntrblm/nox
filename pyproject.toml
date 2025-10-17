@@ -43,6 +43,7 @@ dependencies = [
   "attrs>=24.1",
   "colorlog>=2.6.1,<7",
   "dependency-groups>=1.1",
+  "humanize>=4",
   "packaging>=20.9; python_version<'3.10'",
   "packaging>=21; python_version>='3.10'",
   "tomli>=1.1; python_version<'3.11'",
