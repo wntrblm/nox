@@ -339,8 +339,9 @@ def test_main_positional_args(
     fake_exit = mock.Mock(side_effect=ValueError("asdf!"))
 
     monkeypatch.setattr(sys, "argv", [sys.executable, "1", "2", "3"])
-    with mock.patch.object(sys, "exit", fake_exit), pytest.raises(
-        ValueError, match="asdf!"
+    with (
+        mock.patch.object(sys, "exit", fake_exit),
+        pytest.raises(ValueError, match="asdf!"),
     ):
         nox.main()
     _, stderr = capsys.readouterr()
@@ -349,8 +350,9 @@ def test_main_positional_args(
 
     fake_exit.reset_mock()
     monkeypatch.setattr(sys, "argv", [sys.executable, "1", "2", "3", "--"])
-    with mock.patch.object(sys, "exit", fake_exit), pytest.raises(
-        ValueError, match="asdf!"
+    with (
+        mock.patch.object(sys, "exit", fake_exit),
+        pytest.raises(ValueError, match="asdf!"),
     ):
         nox.main()
     _, stderr = capsys.readouterr()
