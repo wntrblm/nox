@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
     from ._typing import Python
 
-__all__ = ["get", "session_decorator"]
+__all__ = ["get", "reset", "session_decorator"]
 
 
 def __dir__() -> list[str]:
@@ -36,6 +36,10 @@ def __dir__() -> list[str]:
 RawFunc = Callable[..., Any]
 
 _REGISTRY: dict[str, Func] = {}
+
+
+def reset() -> None:
+    _REGISTRY.clear()
 
 
 @overload
