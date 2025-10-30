@@ -203,7 +203,6 @@ def github_actions_default_tests(session: nox.Session) -> None:
 @nox.session(
     python=[
         *ALL_PYTHONS,
-        "pypy3.8",
         "pypy3.9",
         "pypy3.10",
         "pypy3.11",
