@@ -79,3 +79,7 @@ target/
 
 # Standard venv location
 .venv
+
+# Lockfiles
+uv.lock
+*pylock.toml

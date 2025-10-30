@@ -29,6 +29,7 @@ import packaging.requirements
 import packaging.utils
 
 import nox.command
+import nox.registry
 import nox.virtualenv
 from nox import _options, tasks, workflow
 from nox._options import DefaultStr
@@ -270,6 +271,7 @@ def _main(*, main_ep: bool) -> None:
                     download_python=download_python,
                 )
 
+    nox.registry.reset()
     exit_code = execute_workflow(args)
 
     # Done; exit.
