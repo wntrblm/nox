@@ -21,6 +21,7 @@ import json
 import os
 import platform
 import typing
+from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
@@ -33,7 +34,6 @@ from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, Generator
-    from pathlib import Path
     from types import ModuleType
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
@@ -531,7 +531,7 @@ def test_honor_list_json_request(capsys: pytest.CaptureFixture[builtins.str]) ->
                 name="bar",
                 friendly_name="foo",
                 description="simple",
-                func=argparse.Namespace(python="123"),
+                func=argparse.Namespace(python=Path("123")),
                 tags=[],
             ),
             True,

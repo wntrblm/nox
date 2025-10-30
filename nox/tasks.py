@@ -314,7 +314,7 @@ def _produce_json_listing(manifest: Manifest, global_config: Namespace) -> None:
                     "call_spec": getattr(session.func, "call_spec", {}),
                 }
             )
-    print(json.dumps(report))
+    print(json.dumps(report, default=str))
 
 
 def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest | int:
