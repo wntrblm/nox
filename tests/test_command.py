@@ -118,6 +118,19 @@ def test_run_verbosity_failed_command(caplog: pytest.LogCaptureFixture) -> None:
     assert not logs
 
 
+def test__get_cmd_for_log():
+    get_cmd_for_log = nox.command._get_cmd_for_log
+    assert get_cmd_for_log(None, "test", []) == "test"
+    assert get_cmd_for_log(1, "test", []) == "test"
+    arg_list = ["a", "b", "c"]
+    assert get_cmd_for_log(None, "test", arg_list) == "test a b c"
+    assert get_cmd_for_log(4, "test", arg_list) == "test a b c"
+    assert get_cmd_for_log(3, "test", arg_list) == "test a b c"
+    assert get_cmd_for_log(2, "test", arg_list) == "test a b ... (1 more argument)"
+    assert get_cmd_for_log(1, "test", arg_list) == "test a ... (2 more arguments)"
+    assert get_cmd_for_log(0, "test", arg_list) == "test ... (3 arguments)"
+
+
 @pytest.mark.skipif(
     sys.platform.startswith("win"),
     reason="See https://github.com/python/cpython/issues/85815",
