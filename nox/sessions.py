@@ -775,7 +775,7 @@ class Session:
     def install(
         self,
         *args: str,
-        env: Mapping[str, str] | None = None,
+        env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
         silent: bool | None = None,
         success_codes: Iterable[int] | None = None,
