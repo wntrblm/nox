@@ -47,7 +47,7 @@ repos:
           - orjson # Faster mypy
           - packaging
           - pbs_installer
-          - pytest
+          - pytest<9  # pytest 9 requires 3.10+
           - importlib_metadata
           - importlib_resources
           - tomli
