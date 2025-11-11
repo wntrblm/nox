@@ -97,12 +97,15 @@ lint.extend-select = [
   "C4",   # flake8-comprehensions
   "EM",   # flake8-errmsg
   "EXE",  # flake8-executable
+  "FA",   # flake8-future-annotations
   "FBT",  # flake8-boolean-trap
   "FLY",  # flynt
   "FURB", # refurb
+  "G",    # flake8-logging-format
   "I",    # isort
   "ICN",  # flake8-import-conventions
   "ISC",  # flake8-implicit-str-concat
+  "LOG",  # flake8-logging
   "N",    # flake8-naming
   "PERF", # perflint
   "PGH",  # pygrep-hooks
@@ -110,15 +113,18 @@ lint.extend-select = [
   "PL",   # pylint
   "PT",   # flake8-pytest-style
   # "PTH",  # flake8-use-pathlib
-  "PYI", # flake8-pyi
-  "RET", # flake8-return
-  "RUF", # Ruff-specific
-  "S",   # eval -> literal_eval
-  "SIM", # flake8-simplify
-  "TC",  # flake8-type-checking
-  "TRY", # tryceratops
-  "UP",  # pyupgrade
-  "YTT", # flake8-2020
+  "PYI",  # flake8-pyi
+  "Q",    # flake8-quotes
+  "RET",  # flake8-return
+  "RUF",  # Ruff-specific
+  "S",    # eval -> literal_eval
+  "SIM",  # flake8-simplify
+  "SLOT", # flake8-slots
+  "T10",  # flake8-debugger
+  "TC",   # flake8-type-checking
+  "TRY",  # tryceratops
+  "UP",   # pyupgrade
+  "YTT",  # flake8-2020
 ]
 lint.ignore = [
   "N802",    # Function name should be lowercase
