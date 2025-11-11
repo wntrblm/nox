@@ -1,5 +1,26 @@
 # Changelog
 
+## 2025.11.11
+
+This is a small release to fix a warning when running in script mode before we
+drop Python 3.8.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @henryiii
+
+Bugfixes:
+
+* Avoid warnings when running in script mode by @henryiii in https://github.com/wntrblm/nox/pull/1025
+* `nox --report <file> ` should support `Path` by @henryiii in https://github.com/wntrblm/nox/pull/1026
+* Install env was typed differently by @henryiii in https://github.com/wntrblm/nox/pull/1028
+
+Internal changes:
+
+* pytest `log_level` is better than `log_cli_level` by @henryiii in https://github.com/wntrblm/nox/pull/1029
+* Use last intel macOS image by @henryiii in https://github.com/wntrblm/nox/pull/1031
+* Add a few more passing ruff checks by @henryiii in https://github.com/wntrblm/nox/pull/1030
+
 ## 2025.10.16
 
 This is a quick release to make our new dependency, pbs-installer, optional.
@@ -15,7 +36,7 @@ Changes:
 * Make pbs-installer an optional dependency by @henryiii in https://github.com/wntrblm/nox/pull/1017
 * Include time on longer runs (adds `humanize` dependency) by @henryiii in https://github.com/wntrblm/nox/pull/1014
 
-Internal:
+Internal changes:
 
 * Run conda on Windows/Linux again by @henryiii in https://github.com/wntrblm/nox/pull/1015
 
