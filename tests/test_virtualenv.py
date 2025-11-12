@@ -1524,8 +1524,9 @@ def test_download_python_failed_install(
         download_python=download_python,
     )
 
-    with mock.patch.object(shutil, "which", return_value=None) as _, pytest.raises(
-        nox.virtualenv.InterpreterNotFound
+    with (
+        mock.patch.object(shutil, "which", return_value=None) as _,
+        pytest.raises(nox.virtualenv.InterpreterNotFound),
     ):
         _ = venv._resolved_interpreter
 
