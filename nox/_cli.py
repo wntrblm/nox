@@ -166,6 +166,8 @@ def run_script_mode(
         reuse_existing=reuse,
         envdir=str(noxenv),
     )
+    print(sys.version_info)
+    raise SystemExit("Failure A")
     venv.create()
     env = {k: v for k, v in venv._get_env({}).items() if v is not None}
     env["NOX_SCRIPT_MODE"] = "none"
@@ -221,6 +223,8 @@ def _main(*, main_ep: bool) -> None:
         msg = f"Invalid NOX_SCRIPT_MODE: {nox_script_mode!r}, must be one of 'none', 'reuse', or 'fresh'"
         raise SystemExit(msg)
     if nox_script_mode != "none":
+        print(sys.version_info)
+        raise SystemExit("Failure B")
         noxfile = (
             args.noxfile
             if main_ep or not isinstance(args.noxfile, DefaultStr)
