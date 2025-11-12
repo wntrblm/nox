@@ -1,6 +1,6 @@
 # Changelog
 
-## 2025.11.11
+## 2025.11.12
 
 This is a small release to fix a warning when running in script mode before we
 drop Python 3.8.
