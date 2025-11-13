@@ -67,7 +67,6 @@ def tests(session: nox.Session) -> None:
     session.run("coverage", "report", env=env)
 
 
-
 @nox.session(venv_backend="uv", default=False)
 def minimums(session: nox.Session) -> None:
     """Run test suite with the lowest supported versions of everything. Requires uv."""
