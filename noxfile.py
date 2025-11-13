@@ -21,11 +21,9 @@
 
 from __future__ import annotations
 
-import contextlib
 import functools
 import os
 import shutil
-import sqlite3
 import sys
 
 import nox
@@ -44,30 +42,33 @@ def tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
 
     coverage_file = f".coverage.pypi.{sys.platform}.{session.python}"
+    env = {
+        "PYTHONWARNDEFAULTENCODING": "1",
+        "COVERAGE_FILE": coverage_file,
+    }
 
     session.create_tmp()  # Fixes permission errors on Windows
     session.install(*PYPROJECT["dependency-groups"]["test"], "uv")
     session.install("-e.[tox_to_nox,pbs]")
+    session.run("coverage", "erase", env=env)
     session.run(
+        "coverage",
+        "run",
+        "-m",
         "pytest",
-        "--cov",
-        "--cov-config",
-        "pyproject.toml",
-        "--cov-report=",
         "--numprocesses=auto",
         "-m",
         "not conda",
         *session.posargs,
-        env={
-            "PYTHONWARNDEFAULTENCODING": "1",
-            "COVERAGE_FILE": coverage_file,
-        },
+        env=env,
     )
+    session.run("coverage", "combine", env=env)
+    session.run("coverage", "report", env=env)
 
-    if sys.platform.startswith("win"):
-        with contextlib.closing(sqlite3.connect(coverage_file)) as con, con:
-            con.execute("UPDATE file SET path = REPLACE(path, '\\', '/')")
-            con.execute("DELETE FROM file WHERE SUBSTR(path, 2, 1) == ':'")
+    # if sys.platform.startswith("win"):
+    #    with contextlib.closing(sqlite3.connect(coverage_file)) as con, con:
+    #        con.execute("UPDATE file SET path = REPLACE(path, '\\', '/')")
+    #        con.execute("DELETE FROM file WHERE SUBSTR(path, 2, 1) == ':'")
 
 
 @nox.session(venv_backend="uv", default=False)
@@ -84,6 +85,7 @@ def xonda_tests(session: nox.Session, xonda: str) -> None:
     """Run test suite set up with conda/mamba/etc."""
 
     coverage_file = f".coverage.{xonda}.{sys.platform}.{session.python}"
+    env = {"COVERAGE_FILE": coverage_file}
 
     session.conda_install(
         "--file", "requirements-conda-test.txt", channel="conda-forge"
@@ -92,17 +94,20 @@ def xonda_tests(session: nox.Session, xonda: str) -> None:
     # Currently, this doesn't work on Windows either with or without quoting
     if not sys.platform.startswith("win32"):
         session.conda_install("requests<99")
+
+    session.run("coverage", "erase", env=env)
     session.run(
+        "coverage",
+        "run",
+        "-m",
         "pytest",
-        "--cov",
-        "--cov-config",
-        "pyproject.toml",
-        "--cov-report=",
         "-m",
         "conda",
         *session.posargs,
-        env={"COVERAGE_FILE": coverage_file},
+        env=env,
     )
+    session.run("coverage", "combine", env=env)
+    session.run("coverage", "report", env=env)
 
 
 @nox.session(venv_backend="conda", default=bool(shutil.which("conda")))
