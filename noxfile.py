@@ -79,7 +79,7 @@ def minimums(session: nox.Session) -> None:
 
     session.install("-e.", "--group=test", "--resolution=lowest-direct")
     session.run("uv", "pip", "list")
-    session.run("pytest", *session.posargs)
+    session.run("pytest", "-m", "not conda", *session.posargs)
 
 
 def xonda_tests(session: nox.Session, xonda: str) -> None:
