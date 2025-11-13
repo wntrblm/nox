@@ -66,10 +66,6 @@ def tests(session: nox.Session) -> None:
     session.run("coverage", "combine", env=env)
     session.run("coverage", "report", env=env)
 
-    # if sys.platform.startswith("win"):
-    #    with contextlib.closing(sqlite3.connect(coverage_file)) as con, con:
-    #        con.execute("UPDATE file SET path = REPLACE(path, '\\', '/')")
-    #        con.execute("DELETE FROM file WHERE SUBSTR(path, 2, 1) == ':'")
 
 
 @nox.session(venv_backend="uv", default=False)
