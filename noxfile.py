@@ -46,6 +46,7 @@ def tests(session: nox.Session) -> None:
         "PYTHONWARNDEFAULTENCODING": "1",
         "COVERAGE_FILE": coverage_file,
     }
+    parallel = [] if sys.platform.startswith("win32") else ["--numprocesses=auto"]
 
     session.create_tmp()  # Fixes permission errors on Windows
     session.install(*PYPROJECT["dependency-groups"]["test"], "uv")
@@ -57,7 +58,7 @@ def tests(session: nox.Session) -> None:
         "run",
         "-m",
         "pytest",
-        "--numprocesses=auto",
+        *parallel,
         "-m",
         "not conda",
         *session.posargs,
