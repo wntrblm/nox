@@ -51,7 +51,6 @@ def tests(session: nox.Session) -> None:
     session.create_tmp()  # Fixes permission errors on Windows
     session.install(*PYPROJECT["dependency-groups"]["test"], "uv")
     session.install("-e.[tox-to-nox,pbs]")
-    extra_env = {"PYTHONWARNDEFAULTENCODING": "1"}
     session.run("coverage", "erase", env=env)
     session.run(
         "coverage",
@@ -67,11 +66,6 @@ def tests(session: nox.Session) -> None:
     session.run("coverage", "combine", env=env)
     session.run("coverage", "report", env=env)
 
-    # if sys.platform.startswith("win"):
-    #    with contextlib.closing(sqlite3.connect(coverage_file)) as con, con:
-    #        con.execute("UPDATE file SET path = REPLACE(path, '\\', '/')")
-    #        con.execute("DELETE FROM file WHERE SUBSTR(path, 2, 1) == ':'")
-
 
 @nox.session(venv_backend="uv", default=False)
 def minimums(session: nox.Session) -> None:
@@ -80,7 +74,7 @@ def minimums(session: nox.Session) -> None:
 
     session.install("-e.", "--group=test", "--resolution=lowest-direct")
     session.run("uv", "pip", "list")
-    session.run("pytest", *session.posargs)
+    session.run("pytest", "-m", "not conda", *session.posargs)
 
 
 def xonda_tests(session: nox.Session, xonda: str) -> None:
