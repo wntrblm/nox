@@ -139,7 +139,7 @@ run.core = "sysmon"
 run.branch = true
 run.patch = [ "subprocess" ]
 run.relative_files = true
-run.source_dirs = [ "nox" ]
+run.source_pkgs = [ "nox" ]
 run.disable_warnings = [
   "no-sysmon",
 ]
