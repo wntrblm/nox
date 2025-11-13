@@ -65,7 +65,7 @@ jobs:
       - name: Run min-version tests on ${{ matrix.os }}
         run: nox --session minimums --force-python="${{ matrix.python-version }}" -- --full-trace
       - name: Run Conda tests
-        if: matrix.python-version == '3.13'
+        if: matrix.python-version == '3.11'
         run: nox --session "conda_tests" -- --full-trace
       - name: Save coverage report
         uses: actions/upload-artifact@v5
