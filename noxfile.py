@@ -171,7 +171,8 @@ def _check_python_version(session: nox.Session) -> None:
         python_version = session.python.lstrip("py-")
         implementation = "pypy"
     else:
-        python_version = session.python
+        # TODO: check free threaded match
+        python_version = session.python.rstrip("t")
         implementation = "cpython"
     session.run(
         "python",
@@ -179,12 +180,11 @@ def _check_python_version(session: nox.Session) -> None:
         "import sys; assert '.'.join(str(v) for v in sys.version_info[:2]) =="
         f" '{python_version}'",
     )
-    if python_version[:2] != "2.":
-        session.run(
-            "python",
-            "-c",
-            f"import sys; assert sys.implementation.name == '{implementation}'",
-        )
+    session.run(
+        "python",
+        "-c",
+        f"import sys; assert sys.implementation.name == '{implementation}'",
+    )
 
 
 @nox.session(
