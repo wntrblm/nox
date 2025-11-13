@@ -155,12 +155,13 @@ markers = [
 ]
 
 [tool.coverage]
+run.core = "sysmon"
 run.branch = true
 run.patch = [ "subprocess" ]
 run.relative_files = true
 run.source_pkgs = [ "nox" ]
 run.disable_warnings = [
-  "no-ctracer",
+  "no-sysmon",
 ]
 report.exclude_also = [
   "@overload",
