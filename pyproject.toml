@@ -88,7 +88,7 @@ metadata.allow-ambiguous-features = true # disable normalization (tox-to-nox) fo
 
 [tool.ruff]
 show-fixes = true
-lint.extend-select = [ "ALL" ]
+lint.select = [ "ALL" ]
 lint.ignore = [
   "A002",    # Function arguments can shadow builtins
   "ANN401",  # Any allowed (TODO: some maybe can be removed)
