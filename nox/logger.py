@@ -82,7 +82,7 @@ class NoxColoredFormatter(ColoredFormatter):
 
 
 class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore[misc]
-    def __init__(self, name: str, level: int = logging.NOTSET):
+    def __init__(self, name: str, level: int = logging.NOTSET) -> None:
         super().__init__(name, level)
         logging.addLevelName(SESSION_INFO, "SESSION_INFO")
         logging.addLevelName(SUCCESS, "SUCCESS")

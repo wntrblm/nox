@@ -55,9 +55,9 @@ def test_main_no_args(monkeypatch: pytest.MonkeyPatch, main: Any) -> None:
         execute.return_value = 0
 
         # Call the function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             main()
-            exit.assert_called_once_with(0)
+            mock_exit.assert_called_once_with(0)
         assert execute.called
 
         # Verify that the config looks correct.
@@ -93,9 +93,9 @@ def test_main_long_form_args() -> None:
         execute.return_value = 0
 
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_once_with(0)
+            mock_exit.assert_called_once_with(0)
         assert execute.called
 
         # Verify that the config looks correct.
@@ -202,9 +202,9 @@ def test_main_short_form_args(monkeypatch: pytest.MonkeyPatch) -> None:
         execute.return_value = 0
 
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_once_with(0)
+            mock_exit.assert_called_once_with(0)
         assert execute.called
 
         # Verify that the config looks correct.
@@ -223,9 +223,9 @@ def test_main_explicit_sessions(monkeypatch: pytest.MonkeyPatch) -> None:
         execute.return_value = 0
 
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_once_with(0)
+            mock_exit.assert_called_once_with(0)
         assert execute.called
 
         # Verify that the explicit sessions are listed in the config.
@@ -243,9 +243,9 @@ def test_main_explicit_sessions_with_spaces_in_names(
         execute.return_value = 0
 
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_once_with(0)
+            mock_exit.assert_called_once_with(0)
         assert execute.called
 
         # Verify that the explicit sessions are listed in the config.
@@ -290,9 +290,9 @@ def test_main_list_option_from_nox_env_var(
         execute.return_value = 0
 
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_once_with(0)
+            mock_exit.assert_called_once_with(0)
         assert execute.called
 
         # Verify that the sessions from the env var are listed in the config.
@@ -323,9 +323,9 @@ def test_default_venv_backend_option(
         execute.return_value = 0
 
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_once_with(0)
+            mock_exit.assert_called_once_with(0)
         assert execute.called
 
         # Verify that the default venv backend is set in the config.
@@ -366,9 +366,9 @@ def test_main_positional_with_double_hyphen(monkeypatch: pytest.MonkeyPatch) -> 
         execute.return_value = 0
 
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_once_with(0)
+            mock_exit.assert_called_once_with(0)
         assert execute.called
 
         # Verify that the positional args are listed in the config.
@@ -386,9 +386,9 @@ def test_main_positional_flag_like_with_double_hyphen(
         execute.return_value = 0
 
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_once_with(0)
+            mock_exit.assert_called_once_with(0)
         assert execute.called
 
         # Verify that the positional args are listed in the config.
@@ -430,9 +430,9 @@ def test_main_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "argv", [sys.executable])
     with mock.patch("nox.workflow.execute") as execute:
         execute.return_value = 1
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_once_with(1)
+            mock_exit.assert_called_once_with(1)
 
 
 def test_main_nested_config(
@@ -869,9 +869,9 @@ def test_main_color_conflict(
         execute.return_value = 1
 
         # Call the main function.
-        with mock.patch.object(sys, "exit") as exit:
+        with mock.patch.object(sys, "exit") as mock_exit:
             nox.main()
-            exit.assert_called_with(1)
+            mock_exit.assert_called_with(1)
 
     _, err = capsys.readouterr()
 
