@@ -27,7 +27,7 @@ def __dir__() -> list[str]:
 
 
 SESSION_INFO = logging.WARNING - 1
-SUCCESS = 25
+SUCCESS = logging.INFO + 5
 OUTPUT = logging.DEBUG - 1
 
 
