@@ -34,7 +34,7 @@ jobs:
           - os: macos-15-intel
             python-version: "3.12"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Set up non-default Pythons
@@ -68,7 +68,7 @@ jobs:
         if: matrix.python-version == '3.14'
         run: nox --session "conda_tests" -- --full-trace
       - name: Save coverage report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: .coverage.*
@@ -79,7 +79,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Set up Python 3.12
@@ -91,7 +91,7 @@ jobs:
       - name: Install Nox-under-test
         run:  uv pip install --system .
       - name: Download individual coverage reports
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: coverage-*
           merge-multiple: true
@@ -103,7 +103,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Set up Python 3.12
@@ -118,7 +118,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Set up Python 3.12
