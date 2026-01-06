@@ -96,7 +96,7 @@ lint.ignore = [
   "COM812",  # Trailing commas inform the formatter
   "D",       # Too many docs
   "E501",    # Line too long
-  "FIX",     # We have todo's
+  "FIX",     # We have todos
   "N802",    # Function name should be lowercase
   "N818",    # Error suffix for errors
   "PLR09",   # Too many X
