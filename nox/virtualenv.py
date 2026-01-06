@@ -537,7 +537,7 @@ class CondaEnv(ProcessEnv):
         try:
             # DNS resolution to detect situation (1) or (2).
             host = gethostbyname("repo.anaconda.com")
-        except BaseException:  # pragma: no cover  # noqa: BLE001
+        except OSError:  # pragma: no cover
             return True
         return host is None
 
