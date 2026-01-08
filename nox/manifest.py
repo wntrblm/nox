@@ -453,8 +453,8 @@ class KeywordLocals(Mapping[str, bool]):
 def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
     """See if an expression matches the given set of keywords."""
     # TODO: see if we can use ast.literal_eval here.
-    locals = KeywordLocals(set(keywords))
-    return eval(expression, {}, locals)  # noqa: S307
+    my_locals = KeywordLocals(set(keywords))
+    return eval(expression, {}, my_locals)  # noqa: S307
 
 
 def _null_session_func_(session: Session) -> None:

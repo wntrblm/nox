@@ -23,7 +23,7 @@ import subprocess
 import sys
 import urllib.parse
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, NoReturn, cast
+from typing import TYPE_CHECKING, Literal, NoReturn, cast
 
 import packaging.requirements
 import packaging.utils
@@ -38,6 +38,7 @@ from nox.logger import logger, setup_logging
 from nox.project import load_toml
 
 if TYPE_CHECKING:
+    from argparse import Namespace
     from collections.abc import Generator
 
 __all__ = ["execute_workflow", "main", "nox_main"]
@@ -47,7 +48,7 @@ def __dir__() -> list[str]:
     return __all__
 
 
-def execute_workflow(args: Any) -> int:
+def execute_workflow(args: Namespace) -> int:
     """
     Execute the appropriate tasks.
     """

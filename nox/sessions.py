@@ -25,12 +25,8 @@ import shutil
 import subprocess
 import sys
 import time
+import typing
 import unicodedata
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    NoReturn,
-)
 
 import humanize
 
@@ -46,7 +42,7 @@ from nox.virtualenv import (
     get_virtualenv,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     import argparse
     from collections.abc import (
         Callable,
@@ -57,7 +53,12 @@ if TYPE_CHECKING:
         Sequence,
     )
     from types import TracebackType
-    from typing import IO
+    from typing import (
+        IO,
+        Any,
+        Literal,
+        NoReturn,
+    )
 
     from nox._decorators import Func
     from nox.command import ExternalType
@@ -279,7 +280,7 @@ class Session:
         stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
-    ) -> Any | None:
+    ) -> str | bool | None:
         """
         Install dependencies and run a Python script.
         """
@@ -342,6 +343,54 @@ class Session:
             logger.exception(f"Function {func!r} raised {e!r}.")
             raise nox.command.CommandFailed() from e
 
+    @typing.overload
+    def run(
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str | None] | None = None,
+        include_outer_env: bool = True,
+        silent: Literal[False] = ...,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        external: ExternalType | None = None,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> bool | None: ...
+
+    @typing.overload
+    def run(
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str | None] | None = None,
+        include_outer_env: bool = True,
+        silent: Literal[True],
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        external: ExternalType | None = None,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> str | None: ...
+
+    @typing.overload
+    def run(
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str | None] | None = None,
+        include_outer_env: bool = True,
+        silent: bool,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        external: ExternalType | None = None,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> str | bool | None: ...
+
     def run(
         self,
         *args: str | os.PathLike[str],
@@ -355,7 +404,7 @@ class Session:
         stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
-    ) -> Any | None:
+    ) -> str | bool | None:
         """Run a command.
 
         Commands must be specified as a list of strings, for example::
@@ -495,7 +544,7 @@ class Session:
         stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
-    ) -> Any | None:
+    ) -> str | bool | None:
         """Run a command in the install step.
 
         This is a variant of :meth:`run` that runs even in the presence of
@@ -578,7 +627,7 @@ class Session:
         stderr: int | IO[str] | None = subprocess.STDOUT,
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
-    ) -> Any | None:
+    ) -> str | bool | None:
         """This is an alias to ``run_install``, which better describes the use case.
 
         :meta private:
@@ -611,7 +660,7 @@ class Session:
         stderr: int | IO[str] | None,
         interrupt_timeout: float | None,
         terminate_timeout: float | None,
-    ) -> Any:
+    ) -> str | bool:
         """Like run(), except that it runs even if --install-only is provided."""
         # Legacy support - run a function given.
         if callable(args[0]):
@@ -1167,7 +1216,7 @@ class SessionRunner:
             logger.error(f"Session {self.friendly_name} interrupted.")
             raise
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.exception(f"Session {self.friendly_name} raised exception {exc!r}")
             self.result = Result(
                 self, Status.FAILED, duration=time.perf_counter() - start
