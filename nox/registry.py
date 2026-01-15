@@ -102,6 +102,9 @@ def session_decorator(
             download_python=download_python,
         )
 
+    if isinstance(func, Func):
+        func = func.func
+
     if py is not None and python is not None:
         msg = (
             "The py argument to nox.session is an alias for the python "
