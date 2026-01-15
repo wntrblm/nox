@@ -17,7 +17,8 @@ from __future__ import annotations
 import copy
 import functools
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, Literal, overload
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 from ._decorators import Func
 

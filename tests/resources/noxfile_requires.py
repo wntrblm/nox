@@ -67,7 +67,7 @@ def j(session):
     print(session.name)
 
 
-@nox.session(python=["3.9", "3.10"])
+@nox.session(python=["3.10", "3.11"])
 def k(session):
     print(session.name)
 
@@ -77,7 +77,7 @@ def m(session):
     print(session.name)
 
 
-@nox.session(python="3.10", requires=["k-{python}"])
+@nox.session(python="3.11", requires=["k-{python}"])
 def n(session):
     print(session.name)
 
@@ -87,7 +87,7 @@ def o(session):
     print(session.name)
 
 
-@nox.session(python=["3.9", "3.10"])
+@nox.session(python=["3.10", "3.11"])
 def p(session):
     print(session.name)
 
