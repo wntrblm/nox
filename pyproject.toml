@@ -18,7 +18,7 @@ license = "Apache-2.0"
 authors = [
   { name = "Alethea Katherine Flowers", email = "me@thea.codes" },
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
@@ -29,7 +29,6 @@ classifiers = [
   "Operating System :: Unix",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -45,8 +44,7 @@ dependencies = [
   "humanize>=4",
   "packaging>=22",
   "tomli>=1.1; python_version<'3.11'",
-  "virtualenv>=20.14.1; python_version<'3.10'",
-  "virtualenv>=20.15; python_version>='3.10'",
+  "virtualenv>=20.15",
 ]
 optional-dependencies.pbs = [
   "pbs-installer[all]>=2025.1.6",
@@ -149,7 +147,7 @@ report.exclude_also = [
 report.omit = [ "nox/_typing.py" ]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 strict = true
 warn_unreachable = true
 enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]

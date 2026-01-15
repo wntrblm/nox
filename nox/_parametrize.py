@@ -17,7 +17,7 @@ from __future__ import annotations
 import functools
 import itertools
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -64,7 +64,7 @@ class Param:
 
     @property
     def call_spec(self) -> dict[str, Any]:
-        return dict(zip(self.arg_names, self.args))
+        return dict(zip(self.arg_names, self.args, strict=True))
 
     def __str__(self) -> str:
         if self.id:
@@ -96,7 +96,7 @@ class Param:
                 and self.tags == other.tags
             )
         if isinstance(other, dict):
-            return dict(zip(self.arg_names, self.args)) == other
+            return dict(zip(self.arg_names, self.args, strict=True)) == other
 
         return NotImplemented
 
@@ -108,7 +108,7 @@ def _apply_param_specs(param_specs: Iterable[Param], f: Any) -> Any:
     return f
 
 
-ArgValue = Union[Param, Iterable[Any]]
+ArgValue = Param | Iterable[Any]
 
 
 def parametrize_decorator(
