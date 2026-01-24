@@ -172,7 +172,7 @@ By default, ``nox-uv`` also validates that the lockfile is up-to-date.
         s.run("mypy", "src")
 
     @nox_uv.session(uv_only_groups=["lint"])
-    def type_check(s: nox.Session) -> None:
+    def lint(s: nox.Session) -> None:
         """`uv sync` only the `lint` dependency group."""
         s.run("ruff", "check", ".")
         s.run("ruff", "format", "--check", ".")
