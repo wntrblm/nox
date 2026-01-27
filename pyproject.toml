@@ -81,6 +81,7 @@ docs = [
   "sphinx-autobuild",
   "sphinx-tabs",
   "witchhazel",
+  "docutils<0.22",  # Waiting for sphinx-tabs release
 ]
 
 [tool.hatch]
