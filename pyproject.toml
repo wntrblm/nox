@@ -76,6 +76,7 @@ test = [
   "pytest-cov>=3",
 ]
 docs = [
+  "docutils<0.22",    # Waiting for sphinx-tabs release
   "myst-parser",
   "sphinx>=3",
   "sphinx-autobuild",
