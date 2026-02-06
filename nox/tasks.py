@@ -273,7 +273,11 @@ def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     skipped_color = parse_colors("white") if global_config.color else ""
 
     for session, selected in manifest.list_all_sessions():
+        tag_color = parse_colors("purple") if selected else parse_colors("light_purple") if global_config.color else ""
         output = "{marker} {color}{session}{reset}"
+        if session.tags:
+            tags = ",".join(session.tags)
+            output += f" {{tag_color}}[{tags}]{{reset}}"
 
         if selected:
             marker = "*"
@@ -292,6 +296,7 @@ def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
                 session=session.friendly_name,
                 description=session.description,
                 marker=marker,
+                tag_color=tag_color,
             )
         )
 
