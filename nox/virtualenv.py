@@ -802,6 +802,8 @@ class VirtualEnv(ProcessEnv):
                 self._resolved_interpreter if self.interpreter else sys.executable,
                 self.location,
             ]
+            if version.Version("0.8") <= UV_VERSION:
+                cmd += ["--clear"]
         else:
             cmd = [self._resolved_interpreter, "-m", "venv", self.location]
         cmd.extend(self.venv_params)
