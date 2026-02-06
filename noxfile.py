@@ -193,6 +193,7 @@ def _check_python_version(session: nox.Session) -> None:
         "3.14t",
     ],
     default=False,
+    tags=["gha"],
 )
 def github_actions_default_tests(session: nox.Session) -> None:
     """Check default versions installed by the nox GHA Action"""
@@ -208,6 +209,7 @@ def github_actions_default_tests(session: nox.Session) -> None:
         "pypy3.11",
     ],
     default=False,
+    tags=["gha"],
 )
 def github_actions_all_tests(session: nox.Session) -> None:
     """Check all versions installed by the nox GHA Action"""
