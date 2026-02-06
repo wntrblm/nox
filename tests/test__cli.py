@@ -22,12 +22,12 @@ def test_get_dependencies() -> None:
         with pytest.raises(ModuleNotFoundError):
             list(
                 nox._cli.get_dependencies(
-                    packaging.requirements.Requirement("nox[tox_to_nox]")
+                    packaging.requirements.Requirement("nox[tox-to-nox]")
                 )
             )
     else:
         deps = nox._cli.get_dependencies(
-            packaging.requirements.Requirement("nox[tox_to_nox]")
+            packaging.requirements.Requirement("nox[tox-to-nox]")
         )
         dep_list = {
             "argcomplete",

@@ -1331,7 +1331,7 @@ def test__resolved_interpreter_not_found(
 
 
 @mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch("nox.virtualenv.locate_via_py", new=lambda _: None)  # type: ignore[misc]  # noqa: PT008
+@mock.patch("nox.virtualenv.locate_via_py", new=lambda _: None)  # type: ignore[untyped-decorator]  # noqa: PT008
 def test__resolved_interpreter_nonstandard(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
 ) -> None:
