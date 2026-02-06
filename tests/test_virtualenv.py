@@ -283,6 +283,36 @@ def test_condaenv_detection(make_conda: Callable[..., tuple[CondaEnv, Path]]) ->
     assert dir_.samefile(output_match.group("env_dir"))
 
 
+def test_create_args_new_uv(
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_mock = mock.Mock()
+    monkeypatch.setattr(nox.command, "run", run_mock)
+    monkeypatch.setattr(nox.virtualenv, "UV", "uv")
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version("0.10.0"))
+    venv, _ = make_one(venv_backend="uv")
+    venv.create()
+    run_mock.assert_called_once()
+    assert run_mock.call_args.args[0][-1] == "--clear"
+
+
+def test_create_args_old_uv(
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_mock = mock.Mock()
+    monkeypatch.setattr(nox.virtualenv, "UV", "uv")
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version("0.7.0"))
+    monkeypatch.setattr(nox.command, "run", run_mock)
+    venv, _ = make_one(venv_backend="uv")
+    venv.create()
+    run_mock.assert_called_once()
+    assert run_mock.call_args.args[0][-1] != "--clear"
+
+
 @has_uv
 def test_uv_creation(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
