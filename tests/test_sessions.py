@@ -1276,7 +1276,7 @@ class TestSessionRunner:
         with mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True):
             runner._create_venv()
         assert runner.venv
-        assert runner.venv.venv_backend == venv_backend.split("|")[-1]
+        assert runner.venv.venv_backend == venv_backend.rsplit("|", maxsplit=1)[-1]
 
     @pytest.mark.parametrize(
         "venv_backend",

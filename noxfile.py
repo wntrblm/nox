@@ -47,7 +47,7 @@ def tests(session: nox.Session) -> None:
 
     session.create_tmp()  # Fixes permission errors on Windows
     session.install(*PYPROJECT["dependency-groups"]["test"], "uv")
-    session.install("-e.[tox_to_nox,pbs]")
+    session.install("-e.[tox-to-nox,pbs]")
     extra_env = {"PYTHONWARNDEFAULTENCODING": "1"}
     session.run(
         "pytest",
