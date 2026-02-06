@@ -61,12 +61,12 @@ jobs:
       - name: Install Nox-under-test (uv)
         run:  uv pip install --system .
       - name: Run tests on ${{ matrix.os }}
-        run: nox --session "tests-${{ matrix.python-version }}" -- --full-trace
+        run: nox --session "tests-${{ matrix.python-version }}" -- --durations=10
       - name: Run min-version tests on ${{ matrix.os }}
-        run: nox --session minimums --force-python="${{ matrix.python-version }}" -- --full-trace
+        run: nox --session minimums --force-python="${{ matrix.python-version }}" -- --durations=10
       - name: Run Conda tests
         if: matrix.python-version == '3.14'
-        run: nox --session "conda_tests" -- --full-trace
+        run: nox --session "conda_tests" -- --durations=5
       - name: Save coverage report
         uses: actions/upload-artifact@v6
         with:
