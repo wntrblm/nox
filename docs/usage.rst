@@ -479,11 +479,11 @@ Converting from tox
 
 Nox has experimental support for converting ``tox.ini`` files into ``noxfile.py`` files. This doesn't support every feature of tox and is intended to just do most of the mechanical work of converting over- you'll likely still need to make a few changes to the converted ``noxfile.py``.
 
-To use the converter, install ``nox`` with the ``tox_to_nox`` extra:
+To use the converter, install ``nox`` with the ``tox-to-nox`` extra:
 
 .. code-block:: console
 
-    pip install --upgrade nox[tox_to_nox]
+    pip install --upgrade nox[tox-to-nox]
 
 Then, just run ``tox-to-nox`` in the directory where your ``tox.ini`` resides:
 

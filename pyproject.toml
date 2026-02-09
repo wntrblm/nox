@@ -51,7 +51,7 @@ dependencies = [
 optional-dependencies.pbs = [
   "pbs-installer[all]>=2025.1.6",
 ]
-optional-dependencies.tox_to_nox = [
+optional-dependencies.tox-to-nox = [
   "jinja2",
   "tox>=4",
 ]
@@ -83,9 +83,6 @@ docs = [
   "sphinx-tabs",
   "witchhazel",
 ]
-
-[tool.hatch]
-metadata.allow-ambiguous-features = true # disable normalization (tox-to-nox) for back-compat
 
 [tool.ruff]
 show-fixes = true
