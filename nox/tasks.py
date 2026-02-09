@@ -273,27 +273,18 @@ def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     skipped_color = parse_colors("white") if global_config.color else ""
 
     for session, selected in manifest.list_all_sessions():
-        output = "{marker} {color}{session}{reset}"
-
-        if selected:
-            marker = "*"
-            color = selected_color
-        else:
-            marker = "-"
-            color = skipped_color
-
-        if session.description is not None:
-            output += " -> {description}"
-
-        print(
-            output.format(
-                color=color,
-                reset=reset,
-                session=session.friendly_name,
-                description=session.description,
-                marker=marker,
-            )
+        marker = "*" if selected else "-"
+        color = selected_color if selected else skipped_color
+        tag_color = (
+            (parse_colors("purple") if selected else parse_colors("light_purple"))
+            if global_config.color
+            else ""
         )
+
+        tags = f" {tag_color}[{','.join(session.tags)}]{reset}" if session.tags else ""
+        description = f" -> {session.description}" if session.description else ""
+
+        print(f"{marker} {color}{session.friendly_name}{reset}{tags}{description}")
 
     print(
         f"\nsessions marked with {selected_color}*{reset} are selected, sessions marked"

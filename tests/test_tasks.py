@@ -451,7 +451,10 @@ def test_honor_list_request(
     manifest = mock.create_autospec(Manifest)
     manifest.module_docstring = module_docstring
     manifest.list_all_sessions.return_value = [
-        (argparse.Namespace(friendly_name="foo", description=description), True)
+        (
+            argparse.Namespace(friendly_name="foo", description=description, tags=[]),
+            True,
+        )
     ]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
@@ -466,8 +469,8 @@ def test_honor_list_request_skip_and_selected(
     manifest = mock.create_autospec(Manifest)
     manifest.module_docstring = None
     manifest.list_all_sessions.return_value = [
-        (argparse.Namespace(friendly_name="foo", description=None), True),
-        (argparse.Namespace(friendly_name="bar", description=None), False),
+        (argparse.Namespace(friendly_name="foo", description=None, tags=[]), True),
+        (argparse.Namespace(friendly_name="bar", description=None, tags=[]), False),
     ]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
@@ -487,8 +490,8 @@ def test_honor_list_request_prints_docstring_if_present(
     manifest = mock.create_autospec(Manifest)
     manifest.module_docstring = "Hello I'm a docstring"
     manifest.list_all_sessions.return_value = [
-        (argparse.Namespace(friendly_name="foo", description=None), True),
-        (argparse.Namespace(friendly_name="bar", description=None), False),
+        (argparse.Namespace(friendly_name="foo", description=None, tags=[]), True),
+        (argparse.Namespace(friendly_name="bar", description=None, tags=[]), False),
     ]
 
     return_value = tasks.honor_list_request(manifest, global_config=config)
@@ -508,8 +511,8 @@ def test_honor_list_request_doesnt_print_docstring_if_not_present(
     manifest = mock.create_autospec(Manifest)
     manifest.module_docstring = None
     manifest.list_all_sessions.return_value = [
-        (argparse.Namespace(friendly_name="foo", description=None), True),
-        (argparse.Namespace(friendly_name="bar", description=None), False),
+        (argparse.Namespace(friendly_name="foo", description=None, tags=[]), True),
+        (argparse.Namespace(friendly_name="bar", description=None, tags=[]), False),
     ]
 
     return_value = tasks.honor_list_request(manifest, global_config=config)
