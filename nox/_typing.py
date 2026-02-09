@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Union
 
 __all__ = ["Python"]
 
@@ -24,4 +23,4 @@ def __dir__() -> list[str]:
     return __all__
 
 
-Python = Union[str, Sequence[str], bool, None]
+Python = str | Sequence[str] | bool | None
