@@ -15,8 +15,7 @@
 from __future__ import annotations
 
 import itertools
-from collections.abc import Hashable, Iterable, Iterator, Mapping
-from typing import TypeVar
+from typing import Hashable, Iterable, Iterator, Mapping, TypeVar
 
 __all__ = ["CycleError", "lazy_stable_topo_sort"]
 

@@ -529,12 +529,11 @@ class TestSession:
 
         subp_popen_instance = mock.Mock()
         subp_popen_instance.communicate.side_effect = KeyboardInterrupt()
-        with (
-            mock.patch("nox.popen.shutdown_process", autospec=True) as shutdown_process,
-            mock.patch(
-                "nox.popen.subprocess.Popen",
-                new=mock.Mock(return_value=subp_popen_instance),
-            ),
+        with mock.patch(
+            "nox.popen.shutdown_process", autospec=True
+        ) as shutdown_process, mock.patch(
+            "nox.popen.subprocess.Popen",
+            new=mock.Mock(return_value=subp_popen_instance),
         ):
             shutdown_process.return_value = ("", "")
 
@@ -1297,12 +1296,11 @@ class TestSessionRunner:
             "OPTIONAL_VENVS",
             {"uv": False, "conda": False, "mamba": False},
         )
-        with (
-            mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True),
-            pytest.raises(
-                ValueError,
-                match=r"No backends present|Only optional backends|Expected venv_backend",
-            ),
+        with mock.patch(
+            "nox.virtualenv.VirtualEnv.create", autospec=True
+        ), pytest.raises(
+            ValueError,
+            match=r"No backends present|Only optional backends|Expected venv_backend",
         ):
             runner._create_venv()
 

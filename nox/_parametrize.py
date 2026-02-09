@@ -16,8 +16,7 @@ from __future__ import annotations
 
 import functools
 import itertools
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Iterable, Union
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
