@@ -19,8 +19,7 @@ import importlib.util
 import json
 import os
 import sys
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Sequence, TypeVar
 
 from colorlog.escape_codes import parse_colors
 
