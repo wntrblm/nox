@@ -1,5 +1,41 @@
 # Changelog
 
+
+## 2026.02.09
+
+This small release supports uv 0.10's new requirement that `--clear` be passed
+to clear an environment. Python 3.8 support was temporarily re-added since uv
+0.10 still supports 3.8, so nox on 3.8 was affected.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @henryiii
+* @kai687 (first contribution)
+* @wu-zhao-min (first contribution)
+
+
+Bugfixes:
+
+* Support uv 0.10.0 by @henryiii in https://github.com/wntrblm/nox/pull/1055
+* Show tags by @henryiii in https://github.com/wntrblm/nox/pull/1058
+* Better support for multiple session decorators by @henryiii in https://github.com/wntrblm/nox/pull/1048
+* Normalize extra `tox-to-nox` by @henryiii in https://github.com/wntrblm/nox/pull/1059
+* Better typing for `.run` by @henryiii in https://github.com/wntrblm/nox/pull/1037
+
+Internal changes:
+
+* Fix conda CI job by @henryiii in https://github.com/wntrblm/nox/pull/1035
+* Drop Python 3.8 by @henryiii in https://github.com/wntrblm/nox/pull/1004 and revert in https://github.com/wntrblm/nox/pull/1060
+* Fix action test by @henryiii in https://github.com/wntrblm/nox/pull/1036
+* Bump packaging dep to remove pyparsing by @henryiii in https://github.com/wntrblm/nox/pull/1047
+* Avoid newest docutils until sphinx-tabs updates by @henryiii in https://github.com/wntrblm/nox/pull/1052
+* Optimize the naming of constants to enhance readability by @wu-zhao-min in https://github.com/wntrblm/nox/pull/1041
+
+Documentation:
+
+* Duplicated session name in cookbook by @kai687 in https://github.com/wntrblm/nox/pull/1050
+
+
 ## 2025.11.12
 
 This is a small release to fix a warning when running in script mode before we
