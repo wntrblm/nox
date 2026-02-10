@@ -17,7 +17,8 @@ from __future__ import annotations
 import ast
 import itertools
 import operator
-from typing import TYPE_CHECKING, Any, Mapping, cast
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, cast
 
 from nox._decorators import Call, Func
 from nox._resolver import CycleError, lazy_stable_topo_sort
