@@ -191,6 +191,8 @@ def _check_python_version(session: nox.Session) -> None:
     python=[
         *ALL_PYTHONS,
         "pypy-3.11",
+        "3.13t",
+        "3.14t",
     ],
     default=False,
 )
@@ -203,7 +205,6 @@ def github_actions_default_tests(session: nox.Session) -> None:
 @nox.session(
     python=[
         *ALL_PYTHONS,
-        "pypy3.8",
         "pypy3.9",
         "pypy3.10",
         "pypy3.11",
