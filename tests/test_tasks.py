@@ -823,6 +823,28 @@ def test_honor_usage_request_no_docstring() -> None:
     assert return_value == 1
 
 
+def test_honor_usage_request_skips_non_matching_sessions(
+    capsys: pytest.CaptureFixture[builtins.str],
+) -> None:
+    config = _options.options.namespace(usage=["second"])
+    manifest = mock.create_autospec(Manifest)
+    first = argparse.Namespace(
+        name="first",
+        signatures=["first"],
+        full_description="First docstring",
+    )
+    second = argparse.Namespace(
+        name="second",
+        signatures=["second"],
+        full_description="Second docstring",
+    )
+    manifest._all_sessions = [first, second]
+    return_value = tasks.honor_usage_request(manifest, global_config=config)
+    assert return_value == 0
+    out = capsys.readouterr().out
+    assert "Second docstring" in out
+
+
 def test_honor_usage_request_session_not_found() -> None:
     config = _options.options.namespace(usage=["nonexistent"])
     manifest = mock.create_autospec(Manifest)
