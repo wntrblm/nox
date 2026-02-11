@@ -54,7 +54,7 @@ The ``nox --list`` command will show:
     Available sessions:
     * tests -> Run the test suite.
 
-The ``--list`` command shows the first line of the docstring as the session's description. You can also 
+The ``--list`` command shows the first line of the docstring as the session's description. You can also
 show the full docstring of a session using the ``--usage`` option, especially if it has multiple lines.
 For example:
 
