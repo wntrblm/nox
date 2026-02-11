@@ -130,14 +130,12 @@ def cover(session: nox.Session) -> None:
 
 @nox.session(python="3.12")
 def lint(session: nox.Session) -> None:
-    """Run pre-commit linting."""
-    session.install("pre-commit")
+    """Run the linters."""
+    session.install("prek")
     session.run(
-        "pre-commit",
+        "prek",
         "run",
         "--all-files",
-        "--show-diff-on-failure",
-        "--hook-stage=manual",
         *session.posargs,
     )
 
