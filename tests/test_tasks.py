@@ -786,6 +786,51 @@ def test_create_report() -> None:
         open_.assert_called_once_with("/path/to/report", "w", encoding="utf-8")
 
 
+def test_honor_usage_request_noop() -> None:
+    config = _options.options.namespace(usage=None)
+    manifest = typing.cast("Manifest", {"thing": mock.sentinel.THING})
+    return_value = tasks.honor_usage_request(manifest, global_config=config)
+    assert return_value is manifest
+
+
+def test_honor_usage_request_with_docstring(
+    capsys: pytest.CaptureFixture[builtins.str],
+) -> None:
+    config = _options.options.namespace(usage=["my_session"])
+    manifest = mock.create_autospec(Manifest)
+    session = argparse.Namespace(
+        name="my_session",
+        signatures=["my_session"],
+        full_description="Full docstring\n\nWith details",
+    )
+    manifest._all_sessions = [session]
+    return_value = tasks.honor_usage_request(manifest, global_config=config)
+    assert return_value == 0
+    out = capsys.readouterr().out
+    assert "Full docstring\n\nWith details" in out
+
+
+def test_honor_usage_request_no_docstring() -> None:
+    config = _options.options.namespace(usage=["my_session"])
+    manifest = mock.create_autospec(Manifest)
+    session = argparse.Namespace(
+        name="my_session",
+        signatures=["my_session"],
+        full_description=None,
+    )
+    manifest._all_sessions = [session]
+    return_value = tasks.honor_usage_request(manifest, global_config=config)
+    assert return_value == 1
+
+
+def test_honor_usage_request_session_not_found() -> None:
+    config = _options.options.namespace(usage=["nonexistent"])
+    manifest = mock.create_autospec(Manifest)
+    manifest._all_sessions = []
+    return_value = tasks.honor_usage_request(manifest, global_config=config)
+    assert return_value == 1
+
+
 def test_final_reduce() -> None:
     config = argparse.Namespace()
     true = typing.cast("sessions.Result", True)  # noqa: FBT003
