@@ -369,7 +369,7 @@ options.add_options(
         "--usage",
         group=options.groups["sessions"],
         nargs=1,
-        help="Print the full docstring of a given session and exit.",
+        help="Print the full docstring of a given session and exit. Raises if there is no docstring.",
     ),
     _option_set.Option(
         "json",
