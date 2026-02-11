@@ -352,9 +352,15 @@ def honor_usage_request(manifest: Manifest, global_config: Namespace) -> Manifes
 
     name = global_config.usage[0]
 
-    try:
-        session = manifest[name]
-    except KeyError:
+    # Search all sessions, not just the filtered queue, so that
+    # non-default sessions can also be looked up.
+    session = None
+    for _ in manifest._all_sessions:
+        if _.name == name or name in _.signatures:
+            session = _
+            break
+
+    if session is None:
         logger.error("Session %s not found.", name)
         return 1
 
