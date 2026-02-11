@@ -67,6 +67,12 @@ python3 -m pip install --user nox
 nox -l/--list
 ```
 
+### Get help on a particular session (if it has a docstring)
+
+```shell
+nox --usage test
+```
+
 ### Run all sessions
 
 ```shell
