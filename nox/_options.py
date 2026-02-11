@@ -365,6 +365,13 @@ options.add_options(
         help="List all available sessions and exit.",
     ),
     _option_set.Option(
+        "usage",
+        "--usage",
+        group=options.groups["sessions"],
+        nargs=1,
+        help="Print the full docstring of a given session and exit. Raises if there is no docstring.",
+    ),
+    _option_set.Option(
         "json",
         "--json",
         group=options.groups["sessions"],

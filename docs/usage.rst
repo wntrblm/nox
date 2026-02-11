@@ -35,6 +35,11 @@ get json output for the selected session. Fields include ``session`` (pretty
 name), ``name``, ``description``, ``python`` (null if not specified), ``tags``,
 and ``call_spec`` (for parametrized sessions).
 
+To get more information about one particular session at a time, you can use ``--usage``:
+
+.. code-block:: console
+
+    nox --usage tests
 
 .. _session_execution_order:
 
