@@ -18,6 +18,7 @@ import contextlib
 import datetime
 import enum
 import hashlib
+import inspect
 import os
 import pathlib
 import re
@@ -1009,6 +1010,13 @@ class SessionRunner:
         doc = self.func.__doc__
         if doc:
             return doc.strip().split("\n")[0]
+        return None
+
+    @property
+    def full_description(self) -> str | None:
+        doc = self.func.__doc__
+        if doc:
+            return inspect.cleandoc(doc)
         return None
 
     def __str__(self) -> str:
