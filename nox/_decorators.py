@@ -18,7 +18,8 @@ import copy
 import functools
 import inspect
 import types
-from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence

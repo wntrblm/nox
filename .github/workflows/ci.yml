@@ -23,14 +23,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version:
-          - "3.9"
-          - "3.11"
+          - "3.10"
+          - "3.12"
           - "3.14"
         include:
           - os: ubuntu-22.04
-            python-version: "3.9"
-          - os: ubuntu-22.04
             python-version: "3.11"
+          - os: ubuntu-22.04
+            python-version: "3.13"
           - os: macos-15-intel
             python-version: "3.12"
     steps:
@@ -41,8 +41,8 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: |
-            3.9
             3.10
+            3.11
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
