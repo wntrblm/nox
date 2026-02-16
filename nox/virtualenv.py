@@ -598,8 +598,7 @@ class VirtualEnv(ProcessEnv):
         env = {"VIRTUAL_ENV": self.location, "CONDA_PREFIX": None}
         if self._venv_backend == "uv":
             env["UV_PROJECT_ENVIRONMENT"] = self.location
-            if self.interpreter is not None:
-                env["UV_PYTHON"] = self.location
+            env["UV_PYTHON"] = self.location
         super().__init__(env=env)
 
     def _clean_location(self) -> bool:
