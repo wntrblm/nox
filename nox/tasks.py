@@ -336,6 +336,44 @@ def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest
     return 0
 
 
+def honor_usage_request(manifest: Manifest, global_config: Namespace) -> Manifest | int:
+    """If --usage was passed, print the full docstring of the session and exit.
+    Raise an error if the session does not exist or has no docstring to print.
+
+    Args:
+        manifest (~.Manifest): The manifest of sessions to be run.
+        global_config (~nox.main.GlobalConfig): The global configuration.
+
+    Returns:
+        Union[~.Manifest,int]: ``0`` if usage is printed,
+            the manifest otherwise (to be sent to the next task).
+    """
+    if not global_config.usage:
+        return manifest
+
+    name = global_config.usage[0]
+
+    # Search all sessions, not just the filtered queue, so that
+    # non-default sessions can also be looked up.
+    session = None
+    for _ in manifest._all_sessions:
+        if _.name == name or name in _.signatures:
+            session = _
+            break
+
+    if session is None:
+        logger.error("Session %s not found.", name)
+        return 1
+
+    full_description = session.full_description
+    if full_description is None:
+        logger.error("Session %s has no docstring.", name)
+        return 1
+
+    print(full_description)
+    return 0
+
+
 def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
     """Run the full manifest of sessions.
 

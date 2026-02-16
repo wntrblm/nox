@@ -1196,6 +1196,37 @@ class TestSessionRunner:
         runner.func = foo  # type: ignore[assignment]
         assert runner.description is None
 
+    def test_full_description_property_one_line(self) -> None:
+        def foo() -> None:
+            """Just one line"""
+
+        runner = self.make_runner()
+        runner.func = foo  # type: ignore[assignment]
+        assert runner.full_description == "Just one line"
+
+    def test_full_description_property_multi_line(self) -> None:
+        def foo() -> None:
+            """Multiline
+
+            Extra description
+            with more details
+            """
+
+        runner = self.make_runner()
+        runner.func = foo  # type: ignore[assignment]
+        assert (
+            runner.full_description
+            == "Multiline\n\nExtra description\nwith more details"
+        )
+
+    def test_full_description_property_no_doc(self) -> None:
+        def foo() -> None:
+            pass
+
+        runner = self.make_runner()
+        runner.func = foo  # type: ignore[assignment]
+        assert runner.full_description is None
+
     def test__create_venv_process_env(self) -> None:
         runner = self.make_runner()
         runner.func.python = False
