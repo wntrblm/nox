@@ -595,7 +595,11 @@ class VirtualEnv(ProcessEnv):
         if venv_backend not in {"virtualenv", "venv", "uv"}:
             msg = f"venv_backend {venv_backend!r} not recognized"
             raise ValueError(msg)
-        super().__init__(env={"VIRTUAL_ENV": self.location, "CONDA_PREFIX": None})
+        env = {"VIRTUAL_ENV": self.location, "CONDA_PREFIX": None}
+        if self._venv_backend == "uv":
+            env["UV_PROJECT_ENVIRONMENT"] = self.location
+            env["UV_PYTHON"] = self.location
+        super().__init__(env=env)
 
     def _clean_location(self) -> bool:
         """Deletes any existing virtual environment"""
