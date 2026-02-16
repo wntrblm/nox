@@ -18,7 +18,7 @@ license = "Apache-2.0"
 authors = [
   { name = "Alethea Katherine Flowers", email = "me@thea.codes" },
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
@@ -29,7 +29,6 @@ classifiers = [
   "Operating System :: Unix",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -53,7 +52,6 @@ optional-dependencies.pbs = [
   "pbs-installer[all]>=2025.1.6",
 ]
 optional-dependencies.tox-to-nox = [
-  "importlib-resources; python_version<'3.9'",
   "jinja2",
   "tox>=4",
 ]
@@ -72,7 +70,7 @@ dev = [
   { include-group = "test" },
 ]
 test = [
-  "coverage[toml]>=7.2",
+  "coverage[toml]>=7.10.3",
   "pytest>=7.4; python_version>='3.12'",
   "pytest>=7; python_version<'3.12'",
   "pytest-cov>=3",
@@ -134,7 +132,9 @@ markers = [
 ]
 
 [tool.coverage]
+run.core = "sysmon"
 run.branch = true
+run.patch = [ "subprocess" ]
 run.relative_files = true
 run.source_pkgs = [ "nox" ]
 run.disable_warnings = [
