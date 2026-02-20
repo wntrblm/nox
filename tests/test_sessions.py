@@ -50,6 +50,7 @@ def run_with_defaults(**kwargs: Any) -> dict[str, Any]:
         "paths": None,
         "success_codes": None,
         "log": True,
+        "max_log_args": None,
         "external": False,
         "stdout": None,
         "stderr": subprocess.STDOUT,

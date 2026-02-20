@@ -80,8 +80,21 @@ def _clean_env(env: Mapping[str, str | None] | None = None) -> dict[str, str] | 
     return clean_env
 
 
-def _shlex_join(args: Sequence[str | os.PathLike[str]]) -> str:
-    return " ".join(shlex.quote(os.fspath(arg)) for arg in args)
+def _get_cmd_for_log(
+    max_log_args: int | None,
+    cmd: str | os.PathLike[str],
+    args: Sequence[str | os.PathLike[str]],
+) -> str:
+    num_more_args = len(args) - (max_log_args or 0)
+    args = args[:max_log_args]
+    output_list = [str(cmd)]
+    if args:
+        output_list.extend(shlex.quote(os.fspath(arg)) for arg in args)
+    if (max_log_args is not None) and num_more_args > 0:
+        more_note = "more " if max_log_args > 0 else ""
+        args_note = "arguments" if num_more_args > 1 else "argument"
+        output_list.append(f"... ({num_more_args} {more_note}{args_note})")
+    return " ".join(output_list)
 
 
 @overload
@@ -143,6 +156,7 @@ def run(
     paths: Sequence[str | os.PathLike[str]] | None = None,
     success_codes: Iterable[int] | None = None,
     log: bool = True,
+    max_log_args: int | None = None,
     external: ExternalType = False,
     stdout: int | IO[str] | None = None,
     stderr: int | IO[str] | None = subprocess.STDOUT,
@@ -155,7 +169,7 @@ def run(
         success_codes = [0]
 
     cmd, args = args[0], args[1:]
-    full_cmd = f"{cmd} {_shlex_join(args)}"
+    full_cmd = _get_cmd_for_log(max_log_args, cmd, args)
 
     cmd_path = which(os.fspath(cmd), paths)
     str_args = [os.fspath(arg) for arg in args]

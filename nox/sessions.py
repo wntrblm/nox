@@ -704,6 +704,7 @@ class Session:
             silent=silent,
             success_codes=success_codes,
             log=log,
+            max_log_args=self._runner.global_config.max_log_args,
             external=external,
             stdout=stdout,
             stderr=stderr,
