@@ -68,7 +68,7 @@ jobs:
         if: matrix.python-version == '3.14'
         run: nox --session "conda_tests" -- --full-trace
       - name: Save coverage report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: .coverage.*
@@ -91,7 +91,7 @@ jobs:
       - name: Install Nox-under-test
         run:  uv pip install --system .
       - name: Download individual coverage reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: coverage-*
           merge-multiple: true
