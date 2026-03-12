@@ -242,6 +242,20 @@ def pbs_install_python(python_version: str) -> str | None:
 HAS_UV, UV, UV_VERSION = find_uv()
 
 
+def _ensure_gitignore(envdir: Path) -> None:
+    """Ensure the shared environment directory has a broad gitignore."""
+    envdir.mkdir(parents=True, exist_ok=True)
+
+    gitignore = envdir.joinpath(".gitignore")
+    if gitignore.exists():
+        return
+
+    try:
+        gitignore.write_text("*\n", encoding="utf-8")
+    except OSError:
+        logger.debug(f"Failed to write {gitignore!s}")
+
+
 class InterpreterNotFound(OSError):
     def __init__(self, interpreter: str) -> None:
         super().__init__(f"Python interpreter {interpreter} not found")
@@ -520,6 +534,7 @@ class CondaEnv(ProcessEnv):
         logger.info(
             f"Creating {self.conda_cmd} env in {self.location_name} with {python_dep}"
         )
+        _ensure_gitignore(Path(self.location).parent)
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
@@ -814,6 +829,7 @@ class VirtualEnv(ProcessEnv):
             f"Creating virtual environment ({self.venv_backend}) using"
             f" {resolved_interpreter_name} in {self.location_name}"
         )
+        _ensure_gitignore(Path(self.location).parent)
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
