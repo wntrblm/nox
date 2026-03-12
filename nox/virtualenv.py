@@ -252,7 +252,7 @@ def _ensure_gitignore(envdir: Path) -> None:
 
     try:
         gitignore.write_text("*\n", encoding="utf-8")
-    except OSError:
+    except OSError:  # pragma: no cover
         logger.debug(f"Failed to write {gitignore!s}")
 
 
