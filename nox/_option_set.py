@@ -47,7 +47,7 @@ def __dir__() -> list[str]:
 
 
 av_opt_str = av.optional(av.instance_of(str))
-av_opt_path = av.optional(av.or_(av.instance_of(str), av.instance_of(os.PathLike)))
+av_opt_path = av.optional(av.or_(av.instance_of(str), av.instance_of(os.PathLike)))  # type: ignore[type-abstract]
 av_opt_list_str = av.optional(
     av.deep_iterable(
         member_validator=av.instance_of(str),
