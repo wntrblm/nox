@@ -861,6 +861,43 @@ def test_main_color_options(
         assert config.color == expected
 
 
+@pytest.mark.parametrize(
+    "force_color_value",
+    ["0", "false", "False", "FALSE", "no", "No", "NO", "off", "Off", "OFF", ""],
+)
+def test_main_force_color_falsy(
+    monkeypatch: pytest.MonkeyPatch, force_color_value: str
+) -> None:
+    """FORCE_COLOR set to a falsey value should not enable force color."""
+    monkeypatch.setenv("FORCE_COLOR", force_color_value)
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setattr(sys, "argv", [sys.executable])
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+        with (
+            mock.patch("sys.stdout.isatty", return_value=False),
+            mock.patch.object(sys, "exit"),
+        ):
+            nox.main()
+        config = execute.call_args[1]["global_config"]
+        assert config.color is False
+
+
+def test_main_no_color_and_force_color_zero(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """NO_COLOR=1 and FORCE_COLOR=0 should not conflict (issue #1069)."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.setenv("FORCE_COLOR", "0")
+    monkeypatch.setattr(sys, "argv", [sys.executable])
+    with mock.patch("nox.workflow.execute") as execute:
+        execute.return_value = 0
+        with mock.patch.object(sys, "exit"):
+            nox.main()
+        config = execute.call_args[1]["global_config"]
+        assert config.color is False
+
+
 def test_main_color_conflict(
     capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

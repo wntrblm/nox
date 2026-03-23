@@ -655,7 +655,10 @@ options.add_options(
         "--forcecolor",
         "--force-color",
         group=options.groups["reporting"],
-        default=lambda: "FORCE_COLOR" in os.environ,
+        default=lambda: (
+            os.environ.get("FORCE_COLOR", "").lower()
+            not in {"", "0", "false", "no", "off"}
+        ),
         action="store_true",
         help="Force color output, even if stdout is not an interactive terminal.",
     ),
