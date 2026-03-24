@@ -242,6 +242,36 @@ def pbs_install_python(python_version: str) -> str | None:
 HAS_UV, UV, UV_VERSION = find_uv()
 
 
+def _ensure_gitignore(envdir: Path) -> None:
+    """Ensure the shared environment directory has a broad gitignore."""
+    envdir.mkdir(parents=True, exist_ok=True)
+
+    gitignore = envdir.joinpath(".gitignore")
+    if gitignore.exists():
+        return
+
+    try:
+        gitignore.write_text("*\n", encoding="utf-8")
+    except OSError:  # pragma: no cover
+        logger.debug(f"Failed to write {gitignore!s}")
+
+
+def _ensure_cachedir_tag(envdir: Path) -> None:
+    """Ensure the shared environment directory has a CACHEDIR.TAG"""
+    envdir.mkdir(parents=True, exist_ok=True)
+
+    cachedir_tag = envdir.joinpath("CACHEDIR.TAG")
+    if cachedir_tag.exists():
+        return
+
+    try:
+        cachedir_tag.write_text(
+            "Signature: 8a477f597d28d172789f06886806bc55\n", encoding="utf-8"
+        )
+    except OSError:  # pragma: no cover
+        logger.debug(f"Failed to write {cachedir_tag!s}")
+
+
 class InterpreterNotFound(OSError):
     def __init__(self, interpreter: str) -> None:
         super().__init__(f"Python interpreter {interpreter} not found")
@@ -520,6 +550,9 @@ class CondaEnv(ProcessEnv):
         logger.info(
             f"Creating {self.conda_cmd} env in {self.location_name} with {python_dep}"
         )
+        nox_dir = Path(self.location).parent
+        _ensure_gitignore(nox_dir)
+        _ensure_cachedir_tag(nox_dir)
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
@@ -814,6 +847,9 @@ class VirtualEnv(ProcessEnv):
             f"Creating virtual environment ({self.venv_backend}) using"
             f" {resolved_interpreter_name} in {self.location_name}"
         )
+        nox_dir = Path(self.location).parent
+        _ensure_gitignore(nox_dir)
+        _ensure_cachedir_tag(nox_dir)
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
