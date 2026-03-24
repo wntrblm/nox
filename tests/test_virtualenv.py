@@ -151,6 +151,18 @@ def test_ensure_gitignore_creates_file(tmp_path: Path) -> None:
     assert envdir.joinpath(".gitignore").read_text(encoding="utf-8") == "*\n"
 
 
+def test_ensure_cachedir_tag_creates_file(tmp_path: Path) -> None:
+    envdir = tmp_path.joinpath(".nox")
+    location = envdir.joinpath("session")
+
+    nox.virtualenv._ensure_cachedir_tag(location.parent)
+
+    assert (
+        envdir.joinpath("CACHEDIR.TAG").read_text(encoding="utf-8")
+        == "Signature: 8a477f597d28d172789f06886806bc55\n"
+    )
+
+
 def test_ensure_parent_gitignore_keeps_existing_file(tmp_path: Path) -> None:
     envdir = tmp_path.joinpath(".nox")
     envdir.mkdir()
@@ -160,6 +172,17 @@ def test_ensure_parent_gitignore_keeps_existing_file(tmp_path: Path) -> None:
     nox.virtualenv._ensure_gitignore(envdir)
 
     assert gitignore.read_text(encoding="utf-8") == "!keep\n"
+
+
+def test_ensure_parent_cachedir_tag_keeps_existing_file(tmp_path: Path) -> None:
+    envdir = tmp_path.joinpath(".nox")
+    envdir.mkdir()
+    cachedir_tag = envdir.joinpath("CACHEDIR.TAG")
+    cachedir_tag.write_text("!keep\n", encoding="utf-8")
+
+    nox.virtualenv._ensure_cachedir_tag(envdir)
+
+    assert cachedir_tag.read_text(encoding="utf-8") == "!keep\n"
 
 
 def test_invalid_venv_create(
