@@ -20,8 +20,10 @@ runs:
 
     - name: "Validate input"
       id: helper
+      env:
+        NOX_PYTHON_VERSIONS: ${{ inputs.python-versions }}
       run: >
-        '${{ steps.localpython.outputs.python-path }}' '${{ github.action_path }}/.github/action_helper.py' '${{ inputs.python-versions }}' >>${GITHUB_OUTPUT}
+        '${{ steps.localpython.outputs.python-path }}' '${{ github.action_path }}/.github/action_helper.py' "$NOX_PYTHON_VERSIONS" >>${GITHUB_OUTPUT}
       shell: bash
 
     - uses: actions/setup-python@v6
