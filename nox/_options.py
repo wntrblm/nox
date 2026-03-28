@@ -449,6 +449,16 @@ options.add_options(
         help="Adds a timestamp to logged output.",
     ),
     _option_set.Option(
+        "max_log_args",
+        "-ma",
+        "--max-log-args",
+        group=options.groups["reporting"],
+        default=None,
+        type=int,
+        help="Set a limit on the maximum number of arguments that are logged.",
+        noxfile=True,
+    ),
+    _option_set.Option(
         "default_venv_backend",
         "-db",
         "--default-venv-backend",
