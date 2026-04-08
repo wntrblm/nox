@@ -123,10 +123,7 @@ max_supported_python = "3.14"
 minversion = "7.0"
 addopts = [ "-ra", "--strict-markers", "--strict-config" ]
 xfail_strict = true
-filterwarnings = [
-  "error",
-  "ignore::EncodingWarning:conda.*",
-]
+filterwarnings = ["error"]
 log_level = "INFO"
 testpaths = [ "tests" ]
 pythonpath = [ ".github/" ]

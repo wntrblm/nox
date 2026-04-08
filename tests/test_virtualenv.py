@@ -72,7 +72,9 @@ def make_one(
 
 
 @pytest.fixture
-def make_conda(tmp_path: Path) -> Callable[..., tuple[CondaEnv, Path]]:
+def make_conda(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Callable[..., tuple[CondaEnv, Path]]:
+    # Conda produces a warning that we interpret as an error in tests; we can ignore it once we are Python 3.10+ only.
+    monkeypatch.delenv("PYTHONWARNDEFAULTENCODING", raising=False)
     def factory(*args: Any, **kwargs: Any) -> tuple[CondaEnv, Path]:
         location = tmp_path.joinpath("condaenv")
         venv = nox.virtualenv.CondaEnv(str(location), *args, **kwargs)
