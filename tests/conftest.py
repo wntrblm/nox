@@ -33,6 +33,16 @@ def reset_color_envvars(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def reset_python_warn_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove PYTHONWARNDEFAULTENCODING to fix conda tests on Windows.
+
+    Conda produces a warning when this environment variable is set,
+    which can cause issues in tests, especially on Windows Python 3.14+.
+    """
+    monkeypatch.delenv("PYTHONWARNDEFAULTENCODING", raising=False)
+
+
+@pytest.fixture(autouse=True)
 def clear_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     """Clear the cache for each test."""
     monkeypatch.setattr("nox.registry._REGISTRY", {})
