@@ -83,3 +83,6 @@ target/
 # Lockfiles
 uv.lock
 *pylock.toml
+
+# OS files
+.DS_Store
