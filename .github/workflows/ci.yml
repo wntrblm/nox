@@ -58,10 +58,6 @@ jobs:
           conda-remove-defaults: true
           conda-version: '25.11.1'
           activate-environment:
-      - name: Check conda version
-        if: matrix.python-version == '3.14'
-        run: conda --version
-        shell: bash -el {0}
       - name: Install Nox-under-test (uv)
         run:  uv pip install --system .
       - name: Run tests on ${{ matrix.os }}
