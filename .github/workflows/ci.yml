@@ -54,10 +54,13 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         if: matrix.python-version == '3.14'
         with:
-          auto-update-conda: true
           channels: conda-forge
           conda-remove-defaults: true
           activate-environment:
+      - name: Check conda version
+        if: matrix.python-version == '3.14'
+        run: conda --version
+        shell: bash -el {0}
       - name: Install Nox-under-test (uv)
         run:  uv pip install --system .
       - name: Run tests on ${{ matrix.os }}
