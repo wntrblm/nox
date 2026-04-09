@@ -343,9 +343,11 @@ class ProcessEnv(abc.ABC):
         if include_outer_env:
             computed_env = {**os.environ, **computed_env}
         if self.bin_paths:
-            computed_env["PATH"] = os.pathsep.join(
-                [*self.bin_paths, computed_env.get("PATH") or ""]
-            )
+            path_parts = [*self.bin_paths]
+            prior_path = computed_env.get("PATH")
+            if prior_path:
+                path_parts.append(prior_path)
+            computed_env["PATH"] = os.pathsep.join(path_parts)
         return computed_env
 
 
@@ -524,6 +526,10 @@ class CondaEnv(ProcessEnv):
 
     def create(self) -> bool:
         """Create the conda env."""
+        nox_dir = Path(self.location).parent
+        _ensure_gitignore(nox_dir)
+        _ensure_cachedir_tag(nox_dir)
+
         if not self._clean_location():
             logger.debug(f"Reusing existing conda env at {self.location_name}.")
 
@@ -550,9 +556,6 @@ class CondaEnv(ProcessEnv):
         logger.info(
             f"Creating {self.conda_cmd} env in {self.location_name} with {python_dep}"
         )
-        nox_dir = Path(self.location).parent
-        _ensure_gitignore(nox_dir)
-        _ensure_cachedir_tag(nox_dir)
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
@@ -808,6 +811,10 @@ class VirtualEnv(ProcessEnv):
 
     def create(self) -> bool:
         """Create the virtualenv or venv."""
+        nox_dir = Path(self.location).parent
+        _ensure_gitignore(nox_dir)
+        _ensure_cachedir_tag(nox_dir)
+
         if not self._clean_location():
             logger.debug(
                 f"Reusing existing virtual environment at {self.location_name}."
@@ -847,9 +854,6 @@ class VirtualEnv(ProcessEnv):
             f"Creating virtual environment ({self.venv_backend}) using"
             f" {resolved_interpreter_name} in {self.location_name}"
         )
-        nox_dir = Path(self.location).parent
-        _ensure_gitignore(nox_dir)
-        _ensure_cachedir_tag(nox_dir)
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True

@@ -154,7 +154,7 @@ def test_process_env_get_env_exclude_outer() -> None:
     penv = nox.virtualenv.PassthroughEnv(bin_paths=["/test/bin"], env={"TEST": "value"})
     env = penv._get_env({}, include_outer_env=False)
     assert env["TEST"] == "value"
-    assert env["PATH"] == os.pathsep.join(["/test/bin", ""])
+    assert env["PATH"] == "/test/bin"
 
 
 def test_ensure_gitignore_creates_file(tmp_path: Path) -> None:
