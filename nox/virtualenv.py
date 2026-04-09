@@ -242,6 +242,36 @@ def pbs_install_python(python_version: str) -> str | None:
 HAS_UV, UV, UV_VERSION = find_uv()
 
 
+def _ensure_gitignore(envdir: Path) -> None:
+    """Ensure the shared environment directory has a broad gitignore."""
+    envdir.mkdir(parents=True, exist_ok=True)
+
+    gitignore = envdir.joinpath(".gitignore")
+    if gitignore.exists():
+        return
+
+    try:
+        gitignore.write_text("*\n", encoding="utf-8")
+    except OSError:  # pragma: no cover
+        logger.debug(f"Failed to write {gitignore!s}")
+
+
+def _ensure_cachedir_tag(envdir: Path) -> None:
+    """Ensure the shared environment directory has a CACHEDIR.TAG"""
+    envdir.mkdir(parents=True, exist_ok=True)
+
+    cachedir_tag = envdir.joinpath("CACHEDIR.TAG")
+    if cachedir_tag.exists():
+        return
+
+    try:
+        cachedir_tag.write_text(
+            "Signature: 8a477f597d28d172789f06886806bc55\n", encoding="utf-8"
+        )
+    except OSError:  # pragma: no cover
+        logger.debug(f"Failed to write {cachedir_tag!s}")
+
+
 class InterpreterNotFound(OSError):
     def __init__(self, interpreter: str) -> None:
         super().__init__(f"Python interpreter {interpreter} not found")
@@ -313,9 +343,11 @@ class ProcessEnv(abc.ABC):
         if include_outer_env:
             computed_env = {**os.environ, **computed_env}
         if self.bin_paths:
-            computed_env["PATH"] = os.pathsep.join(
-                [*self.bin_paths, computed_env.get("PATH") or ""]
-            )
+            path_parts = [*self.bin_paths]
+            prior_path = computed_env.get("PATH")
+            if prior_path:
+                path_parts.append(prior_path)
+            computed_env["PATH"] = os.pathsep.join(path_parts)
         return computed_env
 
 
@@ -494,6 +526,10 @@ class CondaEnv(ProcessEnv):
 
     def create(self) -> bool:
         """Create the conda env."""
+        nox_dir = Path(self.location).parent
+        _ensure_gitignore(nox_dir)
+        _ensure_cachedir_tag(nox_dir)
+
         if not self._clean_location():
             logger.debug(f"Reusing existing conda env at {self.location_name}.")
 
@@ -797,6 +833,10 @@ class VirtualEnv(ProcessEnv):
 
     def create(self) -> bool:
         """Create the virtualenv or venv."""
+        nox_dir = Path(self.location).parent
+        _ensure_gitignore(nox_dir)
+        _ensure_cachedir_tag(nox_dir)
+
         if not self._clean_location():
             logger.debug(
                 f"Reusing existing virtual environment at {self.location_name}."
