@@ -539,6 +539,35 @@ def test_create_reuse_environment_with_different_interpreter(
     assert not location.joinpath("marker").exists()
 
 
+@pytest.mark.skipif(IS_WINDOWS, reason="Uses POSIX symlinks.")
+@pytest.mark.parametrize(
+    "venv_backend",
+    [
+        "venv",
+        "virtualenv",
+        pytest.param("uv", marks=has_uv),
+    ],
+)
+def test_create_reuse_environment_with_broken_interpreter_symlink(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
+    venv_backend: str,
+) -> None:
+    venv, location = make_one(reuse_existing=True, venv_backend=venv_backend)
+    venv.create()
+
+    marker = location.joinpath("marker")
+    marker.touch()
+
+    python = location.joinpath("bin", "python")
+    python.unlink()
+    python.symlink_to("/definitely/missing/python")
+
+    reused = not venv.create()
+
+    assert not reused
+    assert not marker.exists()
+
+
 @has_uv
 def test_create_reuse_stale_venv_environment(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],

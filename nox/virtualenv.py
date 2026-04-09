@@ -603,12 +603,30 @@ class VirtualEnv(ProcessEnv):
             if (
                 self.reuse_existing
                 and self._check_reused_environment_type()
+                and self._check_reused_environment_links()
                 and self._check_reused_environment_interpreter()
             ):
                 return False
             # uv clears it for us, and it balks at files left around
             if self.venv_backend != "uv":
                 shutil.rmtree(self.location, ignore_errors=True)
+        return True
+
+    def _check_reused_environment_links(self) -> bool:
+        """Check that interpreter links in the reused environment are not broken."""
+        bin_dir = self.bin
+        names = (
+            ["python.exe"]
+            if _PLATFORM.startswith("win") and not _IS_MINGW
+            else ["python", "python3"]
+        )
+
+        for name in names:
+            path = os.path.join(bin_dir, name)
+            # ``lexists`` catches broken symlinks, ``exists`` verifies the target.
+            if os.path.lexists(path) and not os.path.exists(path):
+                return False
+
         return True
 
     def _read_pyvenv_cfg(self) -> dict[str, str] | None:
