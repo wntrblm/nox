@@ -58,6 +58,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           use-mamba: true
           channels: conda-forge
+          conda-remove-defaults: true
       - name: Install Nox-under-test (uv)
         run:  uv pip install --system .
       - name: Run tests on ${{ matrix.os }}
