@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026.04.10
+
+This release drops Python 3.8 and adds a `--usage` command for full docstrings.
+Our `.nox` dir is now ignored by default, virtualenvs are recreated if symlinks
+are broken (such as after a Python upgrade), and `-t` now selects from all
+available sessions.
+
+Features:
+
+* Drop Python 3.8 (reapply #1004) by @henryiii in https://github.com/wntrblm/nox/pull/1062
+* Add a `nox --usage <session>` command to print full docstrings for provided sessions by @agriyakhetarpal in https://github.com/wntrblm/nox/pull/1064
+* Write out `.gitignore`/`CACHEDIR.TAG` to `.nox` dir by @henryiii in https://github.com/wntrblm/nox/pull/1072
+
+Fixes:
+
+* Recreate venv if broken symlinks are present by @henryiii in https://github.com/wntrblm/nox/pull/1078
+* Ignore default selection for tags and keywords by @henryiii in https://github.com/wntrblm/nox/pull/1057
+* More uv variables set by @henryiii in https://github.com/wntrblm/nox/pull/1056
+* Ignore forcecolor falsy by @henryiii in https://github.com/wntrblm/nox/pull/1073
+* Fully pin actions in composite action by @henryiii in https://github.com/wntrblm/nox/pull/1080
+
+Internal changes:
+
+* Pin CI to working conda version by @henryiii in https://github.com/wntrblm/nox/pull/1079
+* Use prek by @agriyakhetarpal in https://github.com/wntrblm/nox/pull/1065
+* Switch artifact attestations to actions/attest by @scop in https://github.com/wntrblm/nox/pull/1070
+* Use zizmor by @henryiii in https://github.com/wntrblm/nox/pull/1082
+
 
 ## 2026.02.09
 
