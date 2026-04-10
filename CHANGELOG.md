@@ -7,6 +7,13 @@ Our `.nox` dir is now ignored by default, virtualenvs are recreated if symlinks
 are broken (such as after a Python upgrade), and `-t` now selects from all
 available sessions.
 
+We'd like to thank the following folks who contributed to this release:
+
+* @henryiii
+* @agriyakhetarpal
+* @scop
+
+
 Features:
 
 * Drop Python 3.8 (reapply #1004) by @henryiii in https://github.com/wntrblm/nox/pull/1062
