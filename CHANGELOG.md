@@ -26,7 +26,7 @@ Internal changes:
 * Pin CI to working conda version by @henryiii in https://github.com/wntrblm/nox/pull/1079
 * Use prek by @agriyakhetarpal in https://github.com/wntrblm/nox/pull/1065
 * Switch artifact attestations to actions/attest by @scop in https://github.com/wntrblm/nox/pull/1070
-
+* Use zizmor by @henryiii in https://github.com/wntrblm/nox/pull/1082
 
 
 ## 2026.02.09
