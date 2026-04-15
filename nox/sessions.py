@@ -1278,14 +1278,15 @@ class Result:
         Returns:
             str: A word or phrase representing the status.
         """
-        if self.status == Status.SUCCESS:
-            return "was successful" + _duration_str(self.duration, " in {time}")
-
-        status = self.status.name.lower()
-        if self.reason:
-            duration_err = _duration_str(self.duration, " (took {time})")
-            return f"{status}: {self.reason}{duration_err}"
-        return status
+        match self.status:
+            case Status.SUCCESS:
+                return "was successful" + _duration_str(self.duration, " in {time}")
+            case _:
+                status = self.status.name.lower()
+                if self.reason:
+                    duration_err = _duration_str(self.duration, " (took {time})")
+                    return f"{status}: {self.reason}{duration_err}"
+                return status
 
     def log(self, message: str) -> None:
         """Log a message using the appropriate log function.
@@ -1293,13 +1294,13 @@ class Result:
         Args:
             message (str): The message to be logged.
         """
-        log_function = logger.info
-        if self.status == Status.SUCCESS:
-            log_function = logger.success
-        if self.status == Status.SKIPPED:
-            log_function = logger.warning
-        if self.status.value <= 0:
-            log_function = logger.error
+        match self.status:
+            case Status.SUCCESS:
+                log_function = logger.success
+            case Status.SKIPPED:
+                log_function = logger.warning
+            case status:
+                log_function = logger.error if status.value <= 0 else logger.info
         log_function(message)
 
     def serialize(self) -> dict[str, Any]:

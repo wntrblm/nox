@@ -57,12 +57,14 @@ def load_toml(
             session.install(*myscript_options["dependencies"])
     """
     filepath = Path(filename)
-    if filepath.suffix == ".toml":
-        return _load_toml_file(filepath)
-    if filepath.suffix in {".py", ""}:
-        return _load_script_block(filepath, missing_ok=missing_ok)
-    msg = f"Extension must be .py or .toml, got {filepath.suffix}"
-    raise ValueError(msg)
+    match filepath.suffix:
+        case ".toml":
+            return _load_toml_file(filepath)
+        case ".py" | "":
+            return _load_script_block(filepath, missing_ok=missing_ok)
+        case suffix:
+            msg = f"Extension must be .py or .toml, got {suffix}"
+            raise ValueError(msg)
 
 
 def _load_toml_file(filepath: Path) -> dict[str, Any]:

@@ -777,49 +777,47 @@ class VirtualEnv(ProcessEnv):
             t = match.group("t")
             cleaned_interpreter = f"python{xy_version}{t}"
 
-        # never -> check for interpreters
-        if self.download_python == "never":
-            if resolved := _find_python(cleaned_interpreter, xy_version):
-                self._resolved = resolved
-                return self._resolved
-
-        # always -> skip check, always install
-        elif self.download_python == "always" and self.venv_backend == "uv":
-            if HAS_UV and version.Version("0.4.16") <= UV_VERSION:
-                uv_python_success = uv_install_python(cleaned_interpreter)
-                if uv_python_success:
-                    self._resolved = cleaned_interpreter
+        match self.download_python, self.venv_backend:
+            # never -> check for interpreters
+            case "never", _:
+                if resolved := _find_python(cleaned_interpreter, xy_version):
+                    self._resolved = resolved
                     return self._resolved
 
-        elif self.download_python == "always" and self.venv_backend in (
-            "venv",
-            "virtualenv",
-        ):
-            pbs_python_path = pbs_install_python(cleaned_interpreter)
-            if pbs_python_path:
-                self._resolved = pbs_python_path
-                return self._resolved
+            # always -> skip check, always install
+            case "always", "uv":
+                if HAS_UV and version.Version("0.4.16") <= UV_VERSION:
+                    uv_python_success = uv_install_python(cleaned_interpreter)
+                    if uv_python_success:
+                        self._resolved = cleaned_interpreter
+                        return self._resolved
 
-        # auto -> check interpreters -> fallback to installing
-        else:
-            if resolved := _find_python(cleaned_interpreter, xy_version):
-                self._resolved = resolved
-                return self._resolved
-
-            if (
-                self.venv_backend == "uv"
-                and HAS_UV
-                and version.Version("0.4.16") <= UV_VERSION
-            ):
-                uv_python_success = uv_install_python(cleaned_interpreter)
-                if uv_python_success:
-                    self._resolved = cleaned_interpreter
-                    return self._resolved
-            elif self.venv_backend in ("venv", "virtualenv"):
+            case "always", "venv" | "virtualenv":
                 pbs_python_path = pbs_install_python(cleaned_interpreter)
                 if pbs_python_path:
                     self._resolved = pbs_python_path
                     return self._resolved
+
+            case "auto", venv_backend:
+                # auto -> check interpreters -> fallback to installing
+                if resolved := _find_python(cleaned_interpreter, xy_version):
+                    self._resolved = resolved
+                    return self._resolved
+
+                if (
+                    venv_backend == "uv"
+                    and HAS_UV
+                    and version.Version("0.4.16") <= UV_VERSION
+                ):
+                    uv_python_success = uv_install_python(cleaned_interpreter)
+                    if uv_python_success:
+                        self._resolved = cleaned_interpreter
+                        return self._resolved
+                elif venv_backend in {"venv", "virtualenv"}:
+                    pbs_python_path = pbs_install_python(cleaned_interpreter)
+                    if pbs_python_path:
+                        self._resolved = pbs_python_path
+                        return self._resolved
 
         self._resolved = InterpreterNotFound(self.interpreter)
         raise self._resolved
@@ -846,28 +844,29 @@ class VirtualEnv(ProcessEnv):
 
             return False
 
-        if self.venv_backend == "virtualenv":
-            cmd = [
-                sys.executable,
-                "-m",
-                "virtualenv",
-                self.location,
-                "--no-periodic-update",
-            ]
-            if self.interpreter:
-                cmd.extend(["-p", self._resolved_interpreter])
-        elif self.venv_backend == "uv":
-            cmd = [
-                UV,
-                "venv",
-                "-p",
-                self._resolved_interpreter if self.interpreter else sys.executable,
-                self.location,
-            ]
-            if version.Version("0.8") <= UV_VERSION:
-                cmd += ["--clear"]
-        else:
-            cmd = [self._resolved_interpreter, "-m", "venv", self.location]
+        match self.venv_backend:
+            case "virtualenv":
+                cmd = [
+                    sys.executable,
+                    "-m",
+                    "virtualenv",
+                    self.location,
+                    "--no-periodic-update",
+                ]
+                if self.interpreter:
+                    cmd.extend(["-p", self._resolved_interpreter])
+            case "uv":
+                cmd = [
+                    UV,
+                    "venv",
+                    "-p",
+                    self._resolved_interpreter if self.interpreter else sys.executable,
+                    self.location,
+                ]
+                if version.Version("0.8") <= UV_VERSION:
+                    cmd += ["--clear"]
+            case _:
+                cmd = [self._resolved_interpreter, "-m", "venv", self.location]
         cmd.extend(self.venv_params)
 
         resolved_interpreter_name = os.path.basename(self._resolved_interpreter)

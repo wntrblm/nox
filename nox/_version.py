@@ -41,27 +41,23 @@ def get_nox_version() -> str:
     return metadata.version("nox")
 
 
-def _parse_string_constant(node: ast.AST) -> str | None:  # pragma: no cover
-    """Return the value of a string constant."""
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
-    return None
-
-
 def _parse_needs_version(source: str, filename: str = "<unknown>") -> str | None:
     """Parse ``nox.needs_version`` from the user's Noxfile."""
     value: str | None = None
     module: ast.Module = ast.parse(source, filename=filename)
     for statement in module.body:
-        if isinstance(statement, ast.Assign):
-            for target in statement.targets:
-                if (
-                    isinstance(target, ast.Attribute)
-                    and isinstance(target.value, ast.Name)
-                    and target.value.id == "nox"
-                    and target.attr == "needs_version"
-                ):
-                    value = _parse_string_constant(statement.value)
+        match statement:
+            case ast.Assign(
+                targets=[
+                    ast.Attribute(
+                        value=ast.Name(id="nox"),
+                        attr="needs_version",
+                    ),
+                    *_,
+                ],
+                value=ast.Constant(value=str() as constant_value),
+            ):
+                value = constant_value
     return value
 
 
