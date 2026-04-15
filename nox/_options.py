@@ -389,7 +389,10 @@ options.add_options(
         merge_func=functools.partial(_sessions_merge_func, "sessions"),
         nargs="*",
         default=default_env_var_list_factory("NOXSESSION"),
-        help="Which sessions to run. By default, all sessions will run.",
+        help=(
+            "Which sessions to run. By default, all sessions will run."
+            " Environment variable: NOXSESSION"
+        ),
         completer=_session_completer,
     ),
     _option_set.Option(
@@ -401,7 +404,10 @@ options.add_options(
         noxfile=True,
         nargs="*",
         default=default_env_var_list_factory("NOXPYTHON"),
-        help="Only run sessions that use the given python interpreter versions.",
+        help=(
+            "Only run sessions that use the given python interpreter versions."
+            " Environment variable: NOXPYTHON"
+        ),
         completer=_python_completer,
     ),
     _option_set.Option(
@@ -549,7 +555,7 @@ options.add_options(
         help=(
             "When should nox download python standalone builds to run the sessions,"
             " defaults to 'auto' which will download when the version requested can't"
-            " be found in the running environment."
+            " be found in the running environment. Environment variable: NOX_DOWNLOAD_PYTHON"
         ),
         choices=["auto", "never", "always"],
     ),
@@ -560,7 +566,10 @@ options.add_options(
         group=options.groups["python"],
         nargs="*",
         default=default_env_var_list_factory("NOXEXTRAPYTHON"),
-        help="Additionally, run sessions using the given python interpreter versions.",
+        help=(
+            "Additionally, run sessions using the given python interpreter versions."
+            " Environment variable: NOXEXTRAPYTHON"
+        ),
         completer=_python_completer,
     ),
     _option_set.Option(
@@ -575,6 +584,7 @@ options.add_options(
             "Run sessions with the given interpreters instead of those listed in the"
             " Noxfile. This is a shorthand for ``--python=X.Y --extra-python=X.Y``."
             " It will also work on sessions that don't have any interpreter parametrized."
+            " Environment variable: NOXFORCEPYTHON"
         ),
         finalizer_func=_force_pythons_finalizer,
         completer=_python_completer,
@@ -648,7 +658,7 @@ options.add_options(
         group=options.groups["reporting"],
         default=lambda: "NO_COLOR" in os.environ,
         action="store_true",
-        help="Disable all color output.",
+        help="Disable all color output. Environment variable: NO_COLOR",
     ),
     _option_set.Option(
         "forcecolor",
