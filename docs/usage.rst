@@ -245,11 +245,11 @@ In addition to Nox supporting executing single sessions, it also supports runnin
 
    .. code-tab:: console CLI options
 
-         nox --extra-pythons 3.8 3.9 3.10
+         nox --extra-pythons 3.12 3.13 3.14
 
    .. code-tab:: console Environment variables
 
-         NOXEXTRAPYTHON=3.8,3.9,3.10 nox
+         NOXEXTRAPYTHON=3.12,3.13,3.14 nox
 
 
 This will, in addition to specified Python versions in the Noxfile, also create sessions for the specified versions.

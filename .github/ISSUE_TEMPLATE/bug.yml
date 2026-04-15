@@ -31,9 +31,9 @@ body:
       label: Environment
       description: |
         examples:
-          - **OS**: Ubuntu 20.04
-          - **Python**: 3.9.7
-          - **Nox**: 0.14.2
+          - **OS**: Ubuntu 24.04
+          - **Python**: 3.14.3
+          - **Nox**: 2026.04.10
       value: |
         - OS:
         - Python:

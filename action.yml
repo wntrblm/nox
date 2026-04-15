@@ -15,7 +15,7 @@ runs:
     - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       id: localpython
       with:
-        python-version: "3.9 - 3.14"
+        python-version: "3.10 - 3.14"
         update-environment: false
 
     - name: "Validate input"

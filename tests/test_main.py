@@ -258,12 +258,12 @@ def test_main_explicit_sessions_with_spaces_in_names(
     [
         ("NOXSESSION", "sessions", "foo", ["foo"]),
         ("NOXSESSION", "sessions", "foo,bar", ["foo", "bar"]),
-        ("NOXPYTHON", "pythons", "3.9", ["3.9"]),
-        ("NOXPYTHON", "pythons", "3.9,3.10", ["3.9", "3.10"]),
-        ("NOXEXTRAPYTHON", "extra_pythons", "3.9", ["3.9"]),
-        ("NOXEXTRAPYTHON", "extra_pythons", "3.9,3.10", ["3.9", "3.10"]),
-        ("NOXFORCEPYTHON", "force_pythons", "3.9", ["3.9"]),
-        ("NOXFORCEPYTHON", "force_pythons", "3.9,3.10", ["3.9", "3.10"]),
+        ("NOXPYTHON", "pythons", "3.10", ["3.10"]),
+        ("NOXPYTHON", "pythons", "3.10,3.11", ["3.10", "3.11"]),
+        ("NOXEXTRAPYTHON", "extra_pythons", "3.10", ["3.10"]),
+        ("NOXEXTRAPYTHON", "extra_pythons", "3.10,3.11", ["3.10", "3.11"]),
+        ("NOXFORCEPYTHON", "force_pythons", "3.10", ["3.10"]),
+        ("NOXFORCEPYTHON", "force_pythons", "3.10,3.11", ["3.10", "3.11"]),
     ],
     ids=[
         "single_session",
