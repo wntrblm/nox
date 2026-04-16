@@ -34,6 +34,36 @@ import nox
 import nox.command
 from nox.logger import logger
 
+
+def _python_discovery_get_interpreter() -> Any:
+    """Lazy import of get_interpreter from python-discovery."""
+    import python_discovery  # noqa: PLC0415
+
+    return python_discovery.get_interpreter
+
+
+def _python_discovery_DiskCache() -> Any:
+    """Lazy import of DiskCache from python-discovery."""
+    import python_discovery  # noqa: PLC0415
+
+    return python_discovery.DiskCache
+
+
+def _get_python_discovery_cache() -> Any:
+    """Get or create the DiskCache for python-discovery.
+
+    Returns:
+        DiskCache instance or None if caching should not be used
+    """
+    cache_dir = Path.home() / ".cache" / "nox" / "python-discovery"
+    try:
+        disk_cache_cls = _python_discovery_DiskCache()
+        return disk_cache_cls(root=cache_dir)
+    except OSError:
+        # If cache directory can't be created, return None (no caching)
+        return None
+
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
@@ -111,10 +141,45 @@ def find_uv() -> tuple[bool, str, version.Version]:
     )
 
 
+def _is_version_range_spec(spec: str) -> bool:
+    """Check if the spec is a version range spec (e.g., '>=3.11,<3.13')."""
+    # Check for PEP 440 version comparison operators
+    return any(op in spec for op in [">=", ">", "<=", "<", "~=", "==", "!=", ","])
+
+
 def _find_python(interpreter: str, xy_ver: str) -> str | None:
-    """Find a python executable matching the requested interpreter"""
+    """Find a python executable matching the requested interpreter.
+
+    Uses traditional methods first for backwards compatibility, with python-discovery
+    as a fallback for advanced version specs or when traditional methods fail.
+    """
+    # For version range specs (e.g., ">=3.11,<3.13"), use python-discovery directly
+    if _is_version_range_spec(interpreter):
+        try:
+            cache = _get_python_discovery_cache()
+            get_interpreter = _python_discovery_get_interpreter()
+            result = get_interpreter(interpreter, cache=cache)
+            if result is not None:
+                return str(result.executable)
+        except (OSError, ValueError, RuntimeError):
+            # Fall back to traditional discovery on error
+            pass
+        return None
+
+    # Try traditional discovery first for backwards compatibility
     if shutil.which(interpreter):
         return interpreter
+
+    # Fall back to python-discovery for other interpreters that weren't found
+    try:
+        cache = _get_python_discovery_cache()
+        get_interpreter = _python_discovery_get_interpreter()
+        result = get_interpreter(interpreter, cache=cache)
+        if result is not None:
+            return str(result.executable)
+    except (OSError, ValueError, RuntimeError):
+        # Fall back to platform-specific discovery on error
+        pass
 
     # Windows only search for the executable
     if _PLATFORM.startswith("win"):
@@ -776,6 +841,14 @@ class VirtualEnv(ProcessEnv):
             xy_version = match.group("xy_ver")
             t = match.group("t")
             cleaned_interpreter = f"python{xy_version}{t}"
+
+        # For version range specs (e.g., ">=3.11,<3.13"), check directly
+        # This enables new functionality for specifying version ranges
+        if _is_version_range_spec(self.interpreter) and (
+            resolved := _find_python(self.interpreter, xy_version)
+        ):
+            self._resolved = resolved
+            return self._resolved
 
         match self.download_python, self.venv_backend:
             # never -> check for interpreters
