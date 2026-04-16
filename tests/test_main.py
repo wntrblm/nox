@@ -258,12 +258,12 @@ def test_main_explicit_sessions_with_spaces_in_names(
     [
         ("NOXSESSION", "sessions", "foo", ["foo"]),
         ("NOXSESSION", "sessions", "foo,bar", ["foo", "bar"]),
-        ("NOXPYTHON", "pythons", "3.9", ["3.9"]),
-        ("NOXPYTHON", "pythons", "3.9,3.10", ["3.9", "3.10"]),
-        ("NOXEXTRAPYTHON", "extra_pythons", "3.9", ["3.9"]),
-        ("NOXEXTRAPYTHON", "extra_pythons", "3.9,3.10", ["3.9", "3.10"]),
-        ("NOXFORCEPYTHON", "force_pythons", "3.9", ["3.9"]),
-        ("NOXFORCEPYTHON", "force_pythons", "3.9,3.10", ["3.9", "3.10"]),
+        ("NOXPYTHON", "pythons", "3.10", ["3.10"]),
+        ("NOXPYTHON", "pythons", "3.10,3.11", ["3.10", "3.11"]),
+        ("NOXEXTRAPYTHON", "extra_pythons", "3.10", ["3.10"]),
+        ("NOXEXTRAPYTHON", "extra_pythons", "3.10,3.11", ["3.10", "3.11"]),
+        ("NOXFORCEPYTHON", "force_pythons", "3.10", ["3.10"]),
+        ("NOXFORCEPYTHON", "force_pythons", "3.10,3.11", ["3.10", "3.11"]),
     ],
     ids=[
         "single_session",
@@ -560,9 +560,9 @@ def test_main_with_bad_session_names(
     assert session in stderr
 
 
-py39py310 = pytest.mark.skipif(
-    shutil.which("python3.10") is None or shutil.which("python3.9") is None,
-    reason="Python 3.9 and 3.10 required",
+py310py311 = pytest.mark.skipif(
+    shutil.which("python3.10") is None or shutil.which("python3.11") is None,
+    reason="Python 3.10 and 3.11 required",
 )
 
 
@@ -570,8 +570,8 @@ py39py310 = pytest.mark.skipif(
     ("sessions", "expected_order"),
     [
         (("g", "a", "d"), ("b", "c", "h", "g", "a", "e", "d")),
-        pytest.param(("m",), ("k-3.9", "k-3.10", "m"), marks=py39py310),
-        pytest.param(("n",), ("k-3.10", "n"), marks=py39py310),
+        pytest.param(("m",), ("k-3.10", "k-3.11", "m"), marks=py310py311),
+        pytest.param(("n",), ("k-3.11", "n"), marks=py310py311),
         (("v",), ("u(django='1.9')", "u(django='2.0')", "v")),
         (("w",), ("u(django='1.9')", "u(django='2.0')", "w")),
     ],

@@ -114,8 +114,8 @@ You can tell Nox to use a different Python interpreter/version by specifying the
 .. note::
 
     The Python binaries on Windows are found via the Python `Launcher`_ for
-    Windows (``py``). For example, Python 3.9 can be found by determining which
-    executable is invoked by ``py -3.9``. If a given test needs to use the 32-bit
+    Windows (``py``). For example, Python 3.10 can be found by determining which
+    executable is invoked by ``py -3.10``. If a given test needs to use the 32-bit
     version of a given Python, then ``X.Y-32`` should be used as the version.
 
     .. _Launcher: https://docs.python.org/3/using/windows.html#python-launcher-for-windows
@@ -142,7 +142,7 @@ When collecting your sessions, Nox will create a separate session for each inter
 
 .. code-block:: python
 
-    @nox.session(python=['2.7', '3.6', '3.7', '3.8', '3.9'])
+    @nox.session(python=['3.10', '3.11', '3.12', '3.13', '3.14'])
     def tests(session):
         pass
 
@@ -150,11 +150,11 @@ Will produce these sessions:
 
 .. code-block:: console
 
-    * tests-2.7
-    * tests-3.6
-    * tests-3.7
-    * tests-3.8
-    * tests-3.9
+    * tests-3.10
+    * tests-3.11
+    * tests-3.12
+    * tests-3.13
+    * tests-3.14
 
 Note that this expansion happens *before* parameterization occurs, so you can still parametrize sessions with multiple interpreters.
 

@@ -9,8 +9,8 @@ def test_classifiers() -> None:
     pyproject = {
         "project": {
             "classifiers": [
-                "Programming Language :: Python :: 3.7",
-                "Programming Language :: Python :: 3.9",
+                "Programming Language :: Python :: 3.10",
+                "Programming Language :: Python :: 3.11",
                 "Programming Language :: Python :: 3.12",
                 "Programming Language :: Python",
                 "Programming Language :: Python :: 3 :: Only",
@@ -20,11 +20,11 @@ def test_classifiers() -> None:
         }
     }
 
-    assert python_versions(pyproject) == ["3.7", "3.9", "3.12"]
+    assert python_versions(pyproject) == ["3.10", "3.11", "3.12"]
 
 
 def test_no_classifiers() -> None:
-    pyproject = {"project": {"requires-python": ">=3.9"}}
+    pyproject = {"project": {"requires-python": ">=3.10"}}
     with pytest.raises(ValueError, match="No Python version classifiers"):
         python_versions(pyproject)
 
@@ -41,8 +41,8 @@ def test_python_range() -> None:
     pyproject = {
         "project": {
             "classifiers": [
-                "Programming Language :: Python :: 3.7",
-                "Programming Language :: Python :: 3.9",
+                "Programming Language :: Python :: 3.10",
+                "Programming Language :: Python :: 3.11",
                 "Programming Language :: Python :: 3.12",
                 "Programming Language :: Python",
                 "Programming Language :: Python :: 3 :: Only",

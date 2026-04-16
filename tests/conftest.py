@@ -18,9 +18,12 @@ import shutil
 import subprocess
 from pathlib import Path
 from string import Template
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 HAS_CONDA = shutil.which("conda") is not None
 
