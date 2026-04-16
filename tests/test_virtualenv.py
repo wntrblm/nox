@@ -114,6 +114,19 @@ def patch_sysfind(
 
         monkeypatch.setattr(shutil, "which", special_which)
 
+        # Also mock python-discovery's get_interpreter for backwards compatibility
+        # with tests that rely on the mocked shutil.which behavior
+        def mock_get_interpreter(*args: object, **kwargs: object) -> None:
+            # For tests, we want to respect who the traditional discovery would have found
+            # Since special_which returns None for unknown interpreters, we also return None
+            return None
+
+        monkeypatch.setattr(
+            nox.virtualenv,
+            "_python_discovery_get_interpreter",
+            lambda: mock_get_interpreter,
+        )
+
         def special_run(cmd: Any, *args: Any, **kwargs: Any) -> TextProcessResult:  # noqa: ARG001
             return TextProcessResult(sysexec_result)
 
@@ -1596,12 +1609,26 @@ def test_download_python_never_missing_interpreter(
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Test that InterpreterNotFound is raised when interpreter is missing."""
+
+    def mock_get_interpreter(*args: object, **kwargs: object) -> None:
+        return None
+
+    # Mock at the nox module level to prevent python-discovery from finding
+    monkeypatch.setattr(
+        nox.virtualenv,
+        "_python_discovery_get_interpreter",
+        lambda: mock_get_interpreter,
+    )
+
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
         download_python="never",
     )
+
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
         _ = venv._resolved_interpreter
 
@@ -1656,7 +1683,19 @@ def test_download_python_auto_missing_interpreter(
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+
+    # Mock python-discovery to return None (simulating missing interpreter)
+    def mock_get_interpreter(*args: object, **kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(
+        nox.virtualenv,
+        "_python_discovery_get_interpreter",
+        lambda: mock_get_interpreter,
+    )
+
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
@@ -1688,14 +1727,26 @@ def test_download_python_auto_missing_interpreter(
     "nox.virtualenv.uv_install_python",
     return_value=True,
 )
-@mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
+@mock.patch.object(shutil, "which", return_value=None)
 def test_download_python_always_preexisting_interpreter(
     which: mock.Mock,
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+
+    # Mock python-discovery to return None (simulating missing interpreter)
+    def mock_get_interpreter(*args: object, **kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(
+        nox.virtualenv,
+        "_python_discovery_get_interpreter",
+        lambda: mock_get_interpreter,
+    )
+
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
@@ -1728,17 +1779,27 @@ def test_download_python_failed_install(
     download_python: str,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+
+    # Mock python-discovery to return None (simulating missing interpreter)
+    def mock_get_interpreter(*args: object, **kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(
+        nox.virtualenv,
+        "_python_discovery_get_interpreter",
+        lambda: mock_get_interpreter,
+    )
+    monkeypatch.setattr(shutil, "which", lambda _x: None)
+
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
         download_python=download_python,
     )
 
-    with (
-        mock.patch.object(shutil, "which", return_value=None) as _,
-        pytest.raises(nox.virtualenv.InterpreterNotFound),
-    ):
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
         _ = venv._resolved_interpreter
 
     if venv_backend == "uv":
@@ -1850,8 +1911,20 @@ def test_download_python_uv_unsupported_version(
     uv_install_mock: mock.Mock,
     download_python: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test we dont install for unsupported uv versions"""
+
+    # Mock python-discovery to return None (simulating missing interpreter)
+    def mock_get_interpreter(*args: object, **kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(
+        nox.virtualenv,
+        "_python_discovery_get_interpreter",
+        lambda: mock_get_interpreter,
+    )
+
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend="uv",
@@ -1866,3 +1939,23 @@ def test_download_python_uv_unsupported_version(
         which.assert_not_called()
     else:  # auto
         which.assert_any_call("python3.11")
+
+
+@pytest.mark.parametrize(
+    ("spec", "is_version_range"),
+    [
+        (">=3.11,<3.13", True),
+        (">=3.9", True),
+        ("<3.14", True),
+        ("~=3.11", True),
+        ("==3.12.1", True),
+        ("!=3.11", True),
+        ("3.12", False),
+        ("python3.12", False),
+        ("pypy3.10", False),
+    ],
+)
+def test_is_version_range_spec(spec: str, is_version_range: bool) -> None:
+    """Test the _is_version_range_spec function correctly identifies version specs."""
+    result = nox.virtualenv._is_version_range_spec(spec)
+    assert result == is_version_range
