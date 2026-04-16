@@ -48,6 +48,7 @@ repos:
           - packaging
           - pbs_installer
           - pytest<9  # pytest 9 requires 3.10+
+          - python-discovery
           - importlib_metadata
           - importlib_resources
           - tomli
