@@ -798,8 +798,9 @@ class VirtualEnv(ProcessEnv):
                     self._resolved = pbs_python_path
                     return self._resolved
 
-            case "auto", venv_backend:
+            case _:
                 # auto -> check interpreters -> fallback to installing
+                venv_backend = self.venv_backend
                 if resolved := _find_python(cleaned_interpreter, xy_version):
                     self._resolved = resolved
                     return self._resolved
