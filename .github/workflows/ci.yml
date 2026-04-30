@@ -51,7 +51,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v8.1.0
       - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         if: matrix.python-version == '3.14'
         with:
           channels: conda-forge
