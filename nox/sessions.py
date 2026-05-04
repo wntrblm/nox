@@ -304,6 +304,44 @@ class Session:
             terminate_timeout=terminate_timeout,
         )
 
+    def uv_run_script(
+        self,
+        script: str | os.PathLike[str],
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str | None] | None = None,
+        include_outer_env: bool = True,
+        silent: bool = False,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> str | bool | None:
+        """
+        Run a PEP 723 script using ``uv run``.
+        """
+        if not nox.virtualenv.HAS_UV:
+            msg = "uv_run_script requires uv to be installed."
+            raise ValueError(msg)
+
+        return self.run(
+            nox.virtualenv.UV,
+            "run",
+            script,
+            *args,
+            env=env,
+            include_outer_env=include_outer_env,
+            silent=silent,
+            success_codes=success_codes,
+            external=True,
+            log=log,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
+        )
+
     @property
     def invoked_from(self) -> str:
         """The directory that Nox was originally invoked from.
