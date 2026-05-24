@@ -351,3 +351,59 @@ def test_commands_with_requirements(makeconfig: Callable[[str], str]) -> None:
         session.install('-e', '.')
     """).lstrip()
     )
+
+
+def test_wrapjoin_empty() -> None:
+    assert tox_to_nox.wrapjoin([]) == ""
+
+
+def test_wrapjoin_single() -> None:
+    assert tox_to_nox.wrapjoin(["foo"]) == "'foo'"
+
+
+def test_wrapjoin_multiple() -> None:
+    assert tox_to_nox.wrapjoin(["foo", "bar"]) == "'foo', 'bar'"
+
+
+def test_fixname_dash() -> None:
+    assert tox_to_nox.fixname("test-with-dash") == "test_with_dash"
+
+
+def test_fixname_testenv_prefix() -> None:
+    assert tox_to_nox.fixname("testenv:lint") == "lint"
+
+
+def test_fixname_combined() -> None:
+    assert tox_to_nox.fixname("testenv:py-test") == "py_test"
+
+
+def test_deps_with_extras(makeconfig: Callable[[str], str]) -> None:
+    result = makeconfig(
+        textwrap.dedent(
+            f"""
+    [tox]
+    envlist = lint
+
+    [testenv:lint]
+    basepython = python{PYTHON_VERSION}
+    deps =
+        requests[security]>=2.0
+        package[extra1,extra2]
+    """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent(
+            f"""
+    import nox
+
+
+    @nox.session(python='python{PYTHON_VERSION}')
+    def lint(session):
+        session.install('requests[security]>=2.0', 'package[extra1,extra2]')
+        session.install('.')
+    """
+        ).lstrip()
+    )
