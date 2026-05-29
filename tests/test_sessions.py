@@ -384,6 +384,13 @@ class TestSession:
         ):
             session.uv_run_script(DIR / "resources/pep723example1.py")
 
+    @pytest.mark.network
+    @pytest.mark.skipif(not nox.virtualenv.HAS_UV, reason="uv not available")
+    def test_uv_run_script_integration(self) -> None:
+        session, _ = self.make_session_and_runner()
+        result = session.uv_run_script(DIR / "resources/pep723example1.py", silent=True)
+        assert result
+
     def test_run_overly_env(self) -> None:
         session, runner = self.make_session_and_runner()
         assert runner.venv
