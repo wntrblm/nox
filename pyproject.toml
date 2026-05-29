@@ -127,6 +127,7 @@ testpaths = [ "tests" ]
 pythonpath = [ ".github/" ]
 markers = [
   "conda: test requires conda",
+  "network: test requires network access",
 ]
 
 [tool.coverage]
