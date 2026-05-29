@@ -308,6 +308,7 @@ class Session:
         self,
         script: str | os.PathLike[str],
         *args: str | os.PathLike[str],
+        uv_args: Sequence[str] = (),
         env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
         silent: bool = False,
@@ -328,6 +329,7 @@ class Session:
         return self.run(
             nox.virtualenv.UV,
             "run",
+            *uv_args,
             script,
             *args,
             env=env,
