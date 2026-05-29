@@ -347,7 +347,7 @@ class TestSession:
         session, _ = self.make_session_and_runner()
 
         with (
-            mock.patch.object(nox.virtualenv, "HAS_UV", True),
+            mock.patch.object(nox.virtualenv, "HAS_UV", new=True),
             mock.patch.object(nox.virtualenv, "UV", "uv"),
             mock.patch.object(nox.command, "run") as run,
         ):
@@ -363,7 +363,7 @@ class TestSession:
         session, _ = self.make_session_and_runner()
 
         with (
-            mock.patch.object(nox.virtualenv, "HAS_UV", True),
+            mock.patch.object(nox.virtualenv, "HAS_UV", new=True),
             mock.patch.object(nox.virtualenv, "UV", "uv"),
             mock.patch.object(nox.command, "run") as run,
         ):
@@ -387,7 +387,7 @@ class TestSession:
         session, _ = self.make_session_and_runner()
 
         with (
-            mock.patch.object(nox.virtualenv, "HAS_UV", True),
+            mock.patch.object(nox.virtualenv, "HAS_UV", new=True),
             mock.patch.object(nox.virtualenv, "UV", "uv"),
             mock.patch.object(nox.command, "run") as run,
         ):
@@ -403,7 +403,7 @@ class TestSession:
         session, _ = self.make_session_and_runner()
 
         with (
-            mock.patch.object(nox.virtualenv, "HAS_UV", False),
+            mock.patch.object(nox.virtualenv, "HAS_UV", new=False),
             pytest.raises(ValueError, match="uv"),
         ):
             session.uv_run_script(DIR / "resources/pep723example1.py")

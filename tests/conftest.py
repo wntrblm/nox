@@ -32,9 +32,10 @@ HAS_CONDA = shutil.which("conda") is not None
 def _has_network() -> bool:
     try:
         gethostbyname("pypi.org")
-        return True
     except OSError:
         return False
+    else:
+        return True
 
 
 HAS_NETWORK = _has_network()
