@@ -219,7 +219,10 @@ is provided:
 
 If you have ``nox[uv]`` installed, you can alternatively delegate the entire
 run to ``uv``, which handles dependency resolution and caching itself and also
-respects ``tool.uv.sources`` configuration in the script block:
+respects uv-specific configuration in the script block such as
+``tool.uv.sources`` (package source overrides), ``tool.uv.index`` (custom
+indexes), and ``tool.uv.exclude-newer`` (reproducibility pins). See the
+`uv scripts documentation`_ for the full list of supported settings.
 
 .. code-block:: python
 
@@ -241,6 +244,8 @@ inject a package not declared in the script or to pin a Python version:
 
 Other helpers for ``pyproject.toml`` based projects are also available in
 ``nox.project``.
+
+.. _uv scripts documentation: https://docs.astral.sh/uv/guides/scripts/
 
 Running commands
 ----------------

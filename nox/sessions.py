@@ -308,6 +308,12 @@ class Session:
 
         Additional keyword arguments are the same as for :meth:`run`.
 
+        .. note::
+
+            ``tool.uv.sources`` and other uv-specific configuration in the
+            script block are ignored. Use :meth:`uv_run_script` instead if
+            you need those.
+
         .. _PEP 723: https://peps.python.org/pep-0723/
         """
         deps = (nox.project.load_toml(script) or {}).get("dependencies", [])
@@ -348,7 +354,8 @@ class Session:
 
         Unlike :meth:`install_and_run_script`, this delegates entirely to
         ``uv``, which handles dependency resolution, caching, and any
-        ``tool.uv.sources`` configuration declared in the script block.
+        uv-specific configuration declared in the script block such as
+        ``tool.uv.sources``, ``tool.uv.index``, and ``tool.uv.exclude-newer``.
         The script runs outside the session's virtualenv in an environment
         managed by uv.
 
