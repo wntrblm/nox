@@ -350,7 +350,9 @@ invoking Nox in :doc:`usage`.
 Queuing sessions
 -----------------
 
-If you want to queue up (or "notify") another session from the current one, you can use the ``session.notify`` function:
+If you want to queue up (or "notify") another session from the current one, you
+can use the ``session.notify`` function. Pass the session name string, the same
+name you would use with ``nox --session``:
 
 .. code-block:: python
 
