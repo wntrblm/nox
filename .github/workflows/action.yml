@@ -31,7 +31,7 @@ jobs:
           - macos-15-intel
           - macos-15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@v8.1.0
@@ -41,7 +41,7 @@ jobs:
   action-all-tests:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
