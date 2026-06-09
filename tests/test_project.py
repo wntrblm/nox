@@ -23,6 +23,34 @@ def test_classifiers() -> None:
     assert python_versions(pyproject) == ["3.10", "3.11", "3.12"]
 
 
+def test_classifiers_are_sorted_by_default() -> None:
+    pyproject = {
+        "project": {
+            "classifiers": [
+                "Programming Language :: Python :: 3.12",
+                "Programming Language :: Python :: 3.10",
+                "Programming Language :: Python :: 3.11",
+            ],
+        }
+    }
+
+    assert python_versions(pyproject) == ["3.10", "3.11", "3.12"]
+
+
+def test_classifiers_can_preserve_order() -> None:
+    pyproject = {
+        "project": {
+            "classifiers": [
+                "Programming Language :: Python :: 3.12",
+                "Programming Language :: Python :: 3.10",
+                "Programming Language :: Python :: 3.11",
+            ],
+        }
+    }
+
+    assert python_versions(pyproject, sort=False) == ["3.12", "3.10", "3.11"]
+
+
 def test_no_classifiers() -> None:
     pyproject = {"project": {"requires-python": ">=3.10"}}
     with pytest.raises(ValueError, match="No Python version classifiers"):
