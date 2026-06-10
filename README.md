@@ -53,7 +53,7 @@ You can also use [pip][] in your global python:
 python3 -m pip install nox
 ```
 
-You may want to user the [user-site][] to avoid messing with your Global python install:
+You may want to use the [user-site][] to avoid messing with your Global python install:
 
 ```shell
 python3 -m pip install --user nox
