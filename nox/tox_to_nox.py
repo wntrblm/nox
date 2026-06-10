@@ -48,7 +48,7 @@ _TEMPLATE = jinja2.Template(
 )
 
 
-def wrapjoin(seq: Iterable[Any]) -> str:
+def wrapjoin(seq: Iterable[str]) -> str:
     """Wrap each item in single quotes and join them with a comma."""
     return ", ".join([f"'{item}'" for item in seq])
 
@@ -87,7 +87,7 @@ def main() -> None:
 
         config[name] = dict(section)
         # Convert set_env from string to dict
-        set_env = {}
+        set_env: dict[str, str] = {}
         for var in section.get("set_env", "").strip().splitlines():
             k, v = var.split("=")
             if k not in {
