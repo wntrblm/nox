@@ -56,7 +56,7 @@ jobs:
         with:
           channels: conda-forge
           conda-remove-defaults: true
-          conda-version: '25.11.1'
+          conda-version: '26.5.2'
           activate-environment:
       - name: Install Nox-under-test (uv)
         run:  uv pip install --system .
