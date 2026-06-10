@@ -943,9 +943,9 @@ class Session:
         Now if you run `nox -s test`, the coverage session will run afterwards.
 
         Args:
-            target (Union[str, Callable]): The session to be notified. This
-                may be specified as the appropriate string (same as used for
-                ``nox -s``) or using the function object.
+            target (str): The session name to notify, as used for ``nox -s``.
+                Passing the decorated function object is not currently
+                supported.
             posargs (Optional[Iterable[str]]): If given, sets the positional
                 arguments *only* for the queued session. Otherwise, the
                 standard globally available positional arguments will be
