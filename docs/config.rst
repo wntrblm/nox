@@ -197,6 +197,22 @@ or ``micromamba|mamba|conda``, and the first available backend will be selected.
 You cannot put anything after a backend that can't be missing like ``venv`` or
 ``virtualenv``.
 
+.. tip::
+
+    If a session targets an end-of-life Python version while Nox itself runs on
+    a newer Python, prefer the ``venv`` backend for that session. The
+    ``virtualenv`` backend runs from Nox's interpreter and may no longer support
+    bootstrapping older target interpreters after they reach end of life, which
+    can seed incompatible packages into the session environment. The ``venv``
+    backend uses the target interpreter's standard library ``venv`` module
+    instead.
+
+    .. code-block:: python
+
+        @nox.session(python='3.7', venv_backend='venv')
+        def tests(session):
+            pass
+
 Finally, custom backend parameters are supported:
 
 .. code-block:: python
