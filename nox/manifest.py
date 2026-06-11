@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import ast
+import functools
 import itertools
 import operator
 from collections.abc import Mapping
@@ -466,14 +467,16 @@ def _normalized_session_match(session_name: str, session: SessionRunner) -> bool
     """Checks if session_name matches session."""
     if session_name == session.name or session_name in session.signatures:
         return True
+    normalized_name = _normalize_arg(session_name)
     for name in session.signatures:
-        equal_rep = _normalize_arg(session_name) == _normalize_arg(name)
+        equal_rep = normalized_name == _normalize_arg(name)
         if equal_rep:
             return True
     # Exhausted
     return False
 
 
+@functools.cache
 def _normalize_arg(arg: str) -> str:
     """Normalize arg for comparison."""
     try:
