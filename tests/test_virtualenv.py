@@ -1416,6 +1416,30 @@ def test__resolved_interpreter_windows_pyexe(
     which.assert_has_calls([mock.call(input_), mock.call("py")])
 
 
+@pytest.mark.parametrize(
+    ("interpreter", "expected_py_arg"),
+    [
+        ("3.10-32", "3.10-32"),
+        # Only a literal "-32" suffix is meaningful to the py launcher.
+        ("3.10-3", ""),
+    ],
+)
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
+@mock.patch("nox.virtualenv.locate_using_path_and_version", return_value=None)
+@mock.patch("nox.virtualenv.locate_via_py", return_value=None)
+@mock.patch.object(shutil, "which", return_value=None)
+def test_find_python_windows_32_bit_suffix(
+    which: mock.Mock,  # noqa: ARG001
+    locate_via_py_mock: mock.Mock,
+    locate_using_path_and_version_mock: mock.Mock,  # noqa: ARG001
+    interpreter: str,
+    expected_py_arg: str,
+) -> None:
+    # Only an exact "-32" suffix is preserved for the Windows py launcher.
+    assert nox.virtualenv._find_python(interpreter, "") is None
+    locate_via_py_mock.assert_called_once_with(expected_py_arg)
+
+
 @mock.patch("nox.virtualenv._PLATFORM", new="win32")
 @mock.patch.object(subprocess, "run")
 @mock.patch.object(shutil, "which")
@@ -1756,6 +1780,10 @@ def test_download_python_failed_install(
         ("pypy", "3.8", "pypy@3.8.16", True),
         ("cpython", "3.12", "cpython@3.11.5", False),
         ("pypy", "3.11", "cpython@3.11.5", False),
+        # Exact X.Y.Z installs are stored without a suffix (version_dir=True)
+        ("cpython", "3.13.2", "cpython@3.13.2", True),
+        ("pypy", "3.10.14", "pypy@3.10.14", True),
+        ("cpython", "3.1", "cpython@3.13.2", False),
     ],
 )
 def test_find_pbs_python(
@@ -1810,6 +1838,24 @@ def test_pbs_install_python_already_installed(find_pbs_mock: mock.Mock) -> None:
 
     assert result == "/existing/python/path"
     find_pbs_mock.assert_called_once_with("cpython", "3.11")
+
+
+@mock.patch("nox.virtualenv._find_pbs_python", return_value="/existing/python/path")
+def test_pbs_install_python_no_implementation(find_pbs_mock: mock.Mock) -> None:
+    """A bare version with no implementation prefix defaults to CPython."""
+    result = nox.virtualenv.pbs_install_python("3.12")
+
+    assert result == "/existing/python/path"
+    find_pbs_mock.assert_called_once_with("cpython", "3.12")
+
+
+@pytest.mark.parametrize("python_version", ["", "cpython", "not-a-python"])
+def test_pbs_install_python_invalid_version(
+    python_version: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Version-less or unparsable requests warn and return None."""
+    assert nox.virtualenv.pbs_install_python(python_version) is None
+    assert "not a valid version" in caplog.text
 
 
 def test_pbs_install_python_success(
