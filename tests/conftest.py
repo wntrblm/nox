@@ -22,8 +22,10 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+import nox.virtualenv
+
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
 
 HAS_CONDA = shutil.which("conda") is not None
 
@@ -39,6 +41,18 @@ def reset_color_envvars(monkeypatch: pytest.MonkeyPatch) -> None:
 def clear_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     """Clear the cache for each test."""
     monkeypatch.setattr("nox.registry._REGISTRY", {})
+
+
+@pytest.fixture(autouse=True)
+def clear_virtualenv_caches() -> Generator[None, None, None]:
+    """Clear cached uv and interpreter discovery around each test.
+
+    Tests monkeypatch ``shutil.which``, ``subprocess.run``, ``_PLATFORM``, and
+    the ``UV`` environment variable, all of which feed these caches.
+    """
+    nox.virtualenv.find_uv.cache_clear()
+    yield
+    nox.virtualenv.find_uv.cache_clear()
 
 
 RESOURCES = Path(__file__).parent.joinpath("resources")
