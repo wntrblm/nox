@@ -116,13 +116,13 @@ def session_decorator(
     if python is None:
         python = py
 
-    final_name = name or func.__name__
+    reg_name = name or func.__name__
 
     fn = Func(
         func,
         python,
         reuse_venv,
-        final_name,
+        reg_name,
         venv_backend,
         venv_params,
         tags=tags,
@@ -130,7 +130,6 @@ def session_decorator(
         requires=requires,
         download_python=download_python,
     )
-    reg_name = name or func.__name__
     if reg_name in _REGISTRY:
         msg = (
             f"The session {reg_name!r} has already been registered; "

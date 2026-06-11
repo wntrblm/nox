@@ -80,18 +80,20 @@ class Manifest:
                 self.add_session(session)
 
     def __contains__(self, needle: str | SessionRunner) -> bool:
-        if needle in self._queue or needle in self._consumed:
-            return True
-        for session in self._queue + self._consumed:
-            if session.name == needle or needle in session.signatures:
-                return True
-        return False
+        return (
+            needle in self._queue
+            or needle in self._consumed
+            or any(
+                session.name == needle or needle in session.signatures
+                for session in itertools.chain(self._queue, self._consumed)
+            )
+        )
 
     def __iter__(self) -> Manifest:
         return self
 
     def __getitem__(self, key: str) -> SessionRunner:
-        for session in self._queue + self._consumed:
+        for session in itertools.chain(self._queue, self._consumed):
             if session.name == key or key in session.signatures:
                 return session
         raise KeyError(key)
@@ -102,7 +104,7 @@ class Manifest:
         Raises:
             StopIteration: If the queue has been entirely consumed.
         """
-        if not len(self._queue):
+        if not self._queue:
             raise StopIteration
         session = self._queue.pop(0)
         self._consumed.append(session)

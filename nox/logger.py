@@ -30,6 +30,10 @@ SESSION_INFO = logging.WARNING - 1
 SUCCESS = logging.INFO + 5
 OUTPUT = logging.DEBUG - 1
 
+logging.addLevelName(SESSION_INFO, "SESSION_INFO")
+logging.addLevelName(SUCCESS, "SUCCESS")
+logging.addLevelName(OUTPUT, "OUTPUT")
+
 
 def _get_format(*, colorlog: bool, add_timestamp: bool) -> str:
     if colorlog:
@@ -43,18 +47,23 @@ def _get_format(*, colorlog: bool, add_timestamp: bool) -> str:
     return "%(name)s > %(message)s"
 
 
-class NoxFormatter(logging.Formatter):
-    def __init__(self, *, add_timestamp: bool = False) -> None:
-        super().__init__(fmt=_get_format(colorlog=False, add_timestamp=add_timestamp))
-        self._simple_fmt = logging.Formatter("%(message)s")
+class _SimpleOutputMixin(logging.Formatter):
+    """Format ``OUTPUT``-level records as plain, unprefixed messages."""
 
-    def format(self, record: Any) -> str:
+    _simple_fmt = logging.Formatter("%(message)s")
+
+    def format(self, record: logging.LogRecord) -> str:
         if record.levelname == "OUTPUT":
             return self._simple_fmt.format(record)
         return super().format(record)
 
 
-class NoxColoredFormatter(ColoredFormatter):
+class NoxFormatter(_SimpleOutputMixin, logging.Formatter):
+    def __init__(self, *, add_timestamp: bool = False) -> None:
+        super().__init__(fmt=_get_format(colorlog=False, add_timestamp=add_timestamp))
+
+
+class NoxColoredFormatter(_SimpleOutputMixin, ColoredFormatter):
     def __init__(
         self,
         *,
@@ -73,21 +82,9 @@ class NoxColoredFormatter(ColoredFormatter):
             reset=reset,
             secondary_log_colors=secondary_log_colors,
         )
-        self._simple_fmt = logging.Formatter("%(message)s")
-
-    def format(self, record: Any) -> str:
-        if record.levelname == "OUTPUT":
-            return self._simple_fmt.format(record)
-        return super().format(record)
 
 
 class LoggerWithSuccessAndOutput(logging.getLoggerClass()):  # type: ignore[misc]
-    def __init__(self, name: str, level: int = logging.NOTSET) -> None:
-        super().__init__(name, level)
-        logging.addLevelName(SESSION_INFO, "SESSION_INFO")
-        logging.addLevelName(SUCCESS, "SUCCESS")
-        logging.addLevelName(OUTPUT, "OUTPUT")
-
     def session_info(self, msg: str, *args: Any, **kwargs: Any) -> None:
         if self.isEnabledFor(SESSION_INFO):  # pragma: no cover
             self._log(SESSION_INFO, msg, args, **kwargs)

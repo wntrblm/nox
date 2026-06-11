@@ -840,53 +840,45 @@ class VirtualEnv(ProcessEnv):
             t = match.group("t")
             cleaned_interpreter = f"python{xy_version}{t}"
 
-        match self.download_python, self.venv_backend:
+        match self.download_python:
             # never -> check for interpreters
-            case "never", _:
+            case "never":
                 if resolved := _find_python(cleaned_interpreter, xy_version):
                     self._resolved = resolved
                     return self._resolved
 
             # always -> skip check, always install
-            case "always", "uv":
-                has_uv, _, uv_ver = _uv_state()
-                if has_uv and version.Version("0.4.16") <= uv_ver:
-                    uv_python_success = uv_install_python(cleaned_interpreter)
-                    if uv_python_success:
-                        self._resolved = cleaned_interpreter
-                        return self._resolved
-
-            case "always", "venv" | "virtualenv":
-                pbs_python_path = pbs_install_python(cleaned_interpreter)
-                if pbs_python_path:
-                    self._resolved = pbs_python_path
+            case "always":
+                if resolved := self._install_python(cleaned_interpreter):
+                    self._resolved = resolved
                     return self._resolved
 
             case _:
                 # auto -> check interpreters -> fallback to installing
-                venv_backend = self.venv_backend
-                if resolved := _find_python(cleaned_interpreter, xy_version):
+                if resolved := _find_python(
+                    cleaned_interpreter, xy_version
+                ) or self._install_python(cleaned_interpreter):
                     self._resolved = resolved
                     return self._resolved
 
-                has_uv, _, uv_ver = _uv_state()
-                if (
-                    venv_backend == "uv"
-                    and has_uv
-                    and version.Version("0.4.16") <= uv_ver
-                ):
-                    uv_python_success = uv_install_python(cleaned_interpreter)
-                    if uv_python_success:
-                        self._resolved = cleaned_interpreter
-                        return self._resolved
-                elif venv_backend in {"venv", "virtualenv"}:
-                    pbs_python_path = pbs_install_python(cleaned_interpreter)
-                    if pbs_python_path:
-                        self._resolved = pbs_python_path
-                        return self._resolved
-
         self._resolved = InterpreterNotFound(self.interpreter)
         raise self._resolved
+
+    def _install_python(self, cleaned_interpreter: str) -> str | None:
+        """Install the requested interpreter for this backend, if possible.
+
+        Returns the resolved interpreter on success, or ``None`` on failure.
+        """
+        if self.venv_backend == "uv":
+            has_uv, _, uv_ver = _uv_state()
+            if (
+                has_uv
+                and version.Version("0.4.16") <= uv_ver
+                and uv_install_python(cleaned_interpreter)
+            ):
+                return cleaned_interpreter
+            return None
+        return pbs_install_python(cleaned_interpreter)
 
     @property
     def bin_paths(self) -> list[str]:
