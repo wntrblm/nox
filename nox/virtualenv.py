@@ -119,8 +119,14 @@ def find_uv() -> tuple[bool, str, version.Version]:
     )
 
 
+@functools.cache
 def _find_python(interpreter: str, xy_ver: str) -> str | None:
-    """Find a python executable matching the requested interpreter"""
+    """Find a python executable matching the requested interpreter.
+
+    Cached: discovery is pure PATH/launcher lookup, and on Windows a miss
+    spawns ``py -X.Y`` subprocesses, which would otherwise repeat for every
+    session using the same interpreter.
+    """
     if shutil.which(interpreter):
         return interpreter
 

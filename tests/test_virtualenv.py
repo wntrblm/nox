@@ -1190,6 +1190,21 @@ def test_allowed_globals(
     assert venv.allowed_globals == ("/some/uv", "/some/uvx")
 
 
+def test_find_python_cached(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Repeated interpreter discovery (one lookup per session) is cached."""
+    calls: list[str] = []
+
+    def fake_which(name: str) -> str | None:
+        calls.append(name)
+        return "/usr/bin/python3.99"
+
+    monkeypatch.setattr(shutil, "which", fake_which)
+
+    assert nox.virtualenv._find_python("python3.99", "3.99") == "python3.99"
+    assert nox.virtualenv._find_python("python3.99", "3.99") == "python3.99"
+    assert calls == ["python3.99"]
+
+
 @pytest.mark.parametrize(
     ("return_code", "stdout", "expected_result"),
     [

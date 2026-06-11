@@ -51,8 +51,10 @@ def clear_virtualenv_caches() -> Generator[None, None, None]:
     the ``UV`` environment variable, all of which feed these caches.
     """
     nox.virtualenv.find_uv.cache_clear()
+    nox.virtualenv._find_python.cache_clear()
     yield
     nox.virtualenv.find_uv.cache_clear()
+    nox.virtualenv._find_python.cache_clear()
 
 
 RESOURCES = Path(__file__).parent.joinpath("resources")
