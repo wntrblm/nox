@@ -460,14 +460,17 @@ def locate_using_path_and_version(version: str) -> str | None:
     script = "import platform; print(platform.python_version())"
     path_python = shutil.which("python")
     if path_python:
-        prefix = f"{version}"
         ret = subprocess.run(
             [path_python, "-c", script],
             check=False,
             text=True,
             capture_output=True,
         )
-        if ret.returncode == 0 and ret.stdout and ret.stdout.strip().startswith(prefix):
+        if (
+            ret.returncode == 0
+            and ret.stdout
+            and ret.stdout.strip().startswith(version)
+        ):
             return path_python
 
     return None
@@ -539,7 +542,7 @@ class CondaEnv(ProcessEnv):
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
         self.reuse_existing = reuse_existing
-        self.venv_params = venv_params or []
+        self.venv_params = list(venv_params)
         self.conda_cmd = conda_cmd
         super().__init__(env={"CONDA_PREFIX": self.location, "VIRTUAL_ENV": None})
 
@@ -630,10 +633,10 @@ class CondaEnv(ProcessEnv):
         """
         try:
             # DNS resolution to detect situation (1) or (2).
-            host = gethostbyname("repo.anaconda.com")
+            gethostbyname("repo.anaconda.com")
         except OSError:  # pragma: no cover
             return True
-        return host is None
+        return False
 
     @property
     def venv_backend(self) -> str:
@@ -689,7 +692,7 @@ class VirtualEnv(ProcessEnv):
         self._resolved: None | str | InterpreterNotFound = None
         self.reuse_existing = reuse_existing
         self._venv_backend = venv_backend
-        self.venv_params = venv_params or []
+        self.venv_params = list(venv_params)
         self.download_python = download_python
         if venv_backend not in {"virtualenv", "venv", "uv"}:
             msg = f"venv_backend {venv_backend!r} not recognized"

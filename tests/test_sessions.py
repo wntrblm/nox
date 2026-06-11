@@ -1158,6 +1158,7 @@ class TestSessionRunner:
         func = mock.Mock()
         func.python = None
         func.venv_backend = None
+        func.venv_params = []
         func.reuse_venv = False
         func.requires = []
         return nox.sessions.SessionRunner(

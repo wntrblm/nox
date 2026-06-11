@@ -293,7 +293,7 @@ class Session:
         """
         Install dependencies and run a Python script.
         """
-        deps = (nox.project.load_toml(script) or {}).get("dependencies", [])
+        deps = nox.project.load_toml(script).get("dependencies", [])
         self.install(*deps)
 
         return self.run(
@@ -791,7 +791,7 @@ class Session:
             return
 
         # Escape args that should be (conda-specific; pip install does not need this)
-        if sys.platform.startswith("win32"):
+        if sys.platform.startswith("win"):
             args = _dblquote_pkg_install_args(args)
 
         if silent is None:

@@ -22,7 +22,6 @@ import argparse
 import functools
 import os
 from argparse import ArgumentError, ArgumentParser, Namespace
-from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, Literal
 
 import argcomplete

@@ -113,10 +113,7 @@ def main() -> None:
 
         for option in "skip_install", "use_develop":
             if section.get(option):
-                if section[option] == "False":
-                    config[name][option] = False
-                else:
-                    config[name][option] = True
+                config[name][option] = section[option] != "False"
 
         if os.path.isabs(section["base_python"]) or re.match(
             r"py\d+", section["base_python"]

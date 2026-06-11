@@ -80,7 +80,7 @@ def _load_script_block(filepath: Path, *, missing_ok: bool) -> dict[str, Any]:
         if missing_ok:
             return {}
         raise
-    matches = list(filter(lambda m: m.group("type") == name, REGEX.finditer(script)))
+    matches = [m for m in REGEX.finditer(script) if m.group("type") == name]
 
     if not matches:
         if missing_ok:

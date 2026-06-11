@@ -19,7 +19,6 @@ import shlex
 import shutil
 import subprocess
 import sys
-from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Literal, overload
 
 from nox.logger import logger
