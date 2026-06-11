@@ -102,6 +102,20 @@ def test__normalize_path_give_up() -> None:
     assert "any-path" in norm_path
 
 
+def test__normalize_path_non_ascii() -> None:
+    envdir = "envdir"
+    normalize = nox.sessions._normalize_path
+
+    norm_path = normalize(envdir, "测试")
+    # The result must be a subdirectory of envdir, not envdir itself.
+    assert os.path.dirname(norm_path) == envdir
+    assert os.path.basename(norm_path)
+    # The result must be stable across calls.
+    assert normalize(envdir, "测试") == norm_path
+    # Two different non-ASCII names must not collide.
+    assert normalize(envdir, "тест") != norm_path
+
+
 class FakeEnv(mock.MagicMock):
     _get_env = nox.virtualenv.VirtualEnv._get_env
 
