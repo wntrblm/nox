@@ -46,6 +46,37 @@ def test_get_dependencies() -> None:
         assert {d.name for d in deps} == dep_list
 
 
+def test_get_dependencies_memoized(monkeypatch: pytest.MonkeyPatch) -> None:
+    requires: dict[str, list[str]] = {
+        "a": ['b[x]; extra == "y"', 'c; extra == "y"'],
+        "b": ['c; extra == "x"', 'a[y]; extra == "x"'],  # cycle back to a
+        "c": [],
+    }
+    metadata_reads: list[str] = []
+
+    @dataclasses.dataclass
+    class FakeMetadataMessage:
+        name: str
+
+        def get_all(self, key: str) -> list[str] | None:
+            assert key == "requires-dist"
+            return requires[self.name] or None
+
+    def fake_metadata(name: str) -> FakeMetadataMessage:
+        metadata_reads.append(name)
+        return FakeMetadataMessage(name)
+
+    monkeypatch.setattr(importlib.metadata, "metadata", fake_metadata)
+
+    deps = list(nox._cli.get_dependencies(packaging.requirements.Requirement("a[y]")))
+
+    # Every encountered requirement is still yielded (so all specifiers get
+    # checked), but each package's metadata is read at most once, and the
+    # dependency cycle terminates.
+    assert [d.name for d in deps] == ["a", "b", "c", "a", "c"]
+    assert metadata_reads == ["a", "b", "c"]
+
+
 def test_version_check() -> None:
     current_version = packaging.version.Version(importlib.metadata.version("nox"))
 
