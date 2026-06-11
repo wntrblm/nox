@@ -74,7 +74,12 @@ def _load_toml_file(filepath: Path) -> dict[str, Any]:
 
 def _load_script_block(filepath: Path, *, missing_ok: bool) -> dict[str, Any]:
     name = "script"
-    script = filepath.read_text(encoding="utf-8")
+    try:
+        script = filepath.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        if missing_ok:
+            return {}
+        raise
     matches = list(filter(lambda m: m.group("type") == name, REGEX.finditer(script)))
 
     if not matches:

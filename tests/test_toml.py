@@ -109,3 +109,14 @@ def test_load_non_recognised_extension() -> None:
     msg = "Extension must be .py or .toml, got .txt"
     with pytest.raises(ValueError, match=msg):
         nox.project.load_toml("some.txt")
+
+
+def test_load_missing_script_missing_ok(tmp_path: Path) -> None:
+    filepath = tmp_path / "noxfile.py"
+    assert nox.project.load_toml(filepath, missing_ok=True) == {}
+
+
+def test_load_missing_script_default_raises(tmp_path: Path) -> None:
+    filepath = tmp_path / "noxfile.py"
+    with pytest.raises(FileNotFoundError):
+        nox.project.load_toml(filepath)
