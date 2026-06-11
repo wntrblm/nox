@@ -47,6 +47,7 @@ if typing.TYPE_CHECKING:
     import argparse
     from collections.abc import (
         Callable,
+        Generator,
         Iterable,
         Iterator,
         Mapping,
@@ -72,7 +73,7 @@ def __dir__() -> list[str]:
 
 
 @contextlib.contextmanager
-def _chdir(path: str) -> Iterator[None]:
+def _chdir(path: str) -> Generator[None, None, None]:
     """
     Change the current working directory to the given path.
     Follows python 3.11's chdir behaviour.
