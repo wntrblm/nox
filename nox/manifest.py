@@ -264,6 +264,14 @@ class Manifest:
             for session in sessions_by_id.values()
         }
 
+        # Sessions without any signatures (e.g. the placeholder session created
+        # when a parametrized session has an empty list of parameters) are not
+        # in ``sessions_by_id``, so add any missing queued sessions to the graph.
+        for session in self._queue:
+            dependency_graph.setdefault(
+                session, session.get_direct_dependencies(sessions_by_id)
+            )
+
         # Resolve the dependency graph.
         root = cast("SessionRunner", object())  # sentinel
         try:
