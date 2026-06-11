@@ -395,9 +395,6 @@ class Manifest:
         # Return the list of sessions.
         return sessions
 
-    def next(self) -> SessionRunner:
-        return next(self)
-
     def notify(
         self, session: str | SessionRunner, posargs: Iterable[str] | None = None
     ) -> bool:

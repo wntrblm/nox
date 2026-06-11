@@ -86,14 +86,10 @@ def _chdir(path: str) -> Generator[None, None, None]:
         os.chdir(cwd)
 
 
-def _normalize_path(envdir: str, path: str | bytes) -> str:
+def _normalize_path(envdir: str, path: str) -> str:
     """Normalizes a string to be a "safe" filesystem path for a virtualenv."""
-    if isinstance(path, bytes):
-        path = path.decode("utf-8")
-
     orig_path = path
-    path = unicodedata.normalize("NFKD", path).encode("ascii", "ignore")
-    path = path.decode("ascii")
+    path = unicodedata.normalize("NFKD", path).encode("ascii", "ignore").decode("ascii")
     path = re.sub(r"[^\w\s-]", "-", path).strip().lower()
     path = re.sub(r"[-\s]+", "-", path)
     path = path.strip("-")
