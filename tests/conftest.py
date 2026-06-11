@@ -43,17 +43,30 @@ def clear_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("nox.registry._REGISTRY", {})
 
 
-@pytest.fixture(autouse=True)
-def clear_virtualenv_caches() -> Generator[None, None, None]:
-    """Clear cached uv and interpreter discovery around each test.
+@pytest.fixture(autouse=True, scope="session")
+def warm_find_uv_cache() -> None:
+    """Warm uv detection once (per worker) before any test can mock anything.
 
-    Tests monkeypatch ``shutil.which``, ``subprocess.run``, ``_PLATFORM``, and
-    the ``UV`` environment variable, all of which feed these caches.
+    ``find_uv()`` runs lazily on the first ``HAS_UV``/``UV``/``UV_VERSION``
+    access, so a cold cache inside a test that mocks ``shutil.which`` or
+    ``subprocess.run`` would leak a stray ``which("uv")`` call into the mock.
+    Warming it here keeps uv detection out of mocked windows; tests that
+    exercise the detection logic itself call ``find_uv.__wrapped__`` to
+    bypass this cache.
     """
-    nox.virtualenv.find_uv.cache_clear()
+    nox.virtualenv.find_uv()
+
+
+@pytest.fixture(autouse=True)
+def clear_find_python_cache() -> Generator[None, None, None]:
+    """Clear cached interpreter discovery around each test.
+
+    Tests monkeypatch ``shutil.which`` and ``_PLATFORM``, which feed this
+    cache, so it must be cold per test and mock-poisoned entries must not
+    leak into later tests.
+    """
     nox.virtualenv._find_python.cache_clear()
     yield
-    nox.virtualenv.find_uv.cache_clear()
     nox.virtualenv._find_python.cache_clear()
 
 

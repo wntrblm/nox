@@ -1111,7 +1111,9 @@ def test_find_uv(
         sys.modules, "uv", types.SimpleNamespace(find_uv_bin=find_uv_bin)
     )
 
-    assert nox.virtualenv.find_uv() == (
+    # Bypass the functools.cache wrapper: the suite warms find_uv() with the
+    # real environment (see conftest), and this test must not poison it.
+    assert nox.virtualenv.find_uv.__wrapped__() == (
         found,
         path,
         version.Version(vers if vers_rc == 0 else "0"),
