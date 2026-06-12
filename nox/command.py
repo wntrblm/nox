@@ -163,24 +163,24 @@ def run(
     if log:
         logger.info(full_cmd)
 
-        is_external_tool = paths is not None and not any(
-            cmd_path.startswith(str(path)) for path in paths
-        )
-        if is_external_tool:
-            if external == "error":
-                logger.error(
-                    f"Error: {cmd} is not installed into the virtualenv, it is located"
-                    f" at {cmd_path}. Pass external=True into run() to explicitly allow"
-                    " this."
-                )
-                msg = "External program disallowed."
-                raise CommandFailed(msg)
-            if external is False:
-                logger.warning(
-                    f"Warning: {cmd} is not installed into the virtualenv, it is"
-                    f" located at {cmd_path}. This might cause issues! Pass"
-                    " external=True into run() to silence this message."
-                )
+    is_external_tool = paths is not None and not any(
+        cmd_path.startswith(str(path)) for path in paths
+    )
+    if is_external_tool:
+        if external == "error":
+            logger.error(
+                f"Error: {cmd} is not installed into the virtualenv, it is located"
+                f" at {cmd_path}. Pass external=True into run() to explicitly allow"
+                " this."
+            )
+            msg = "External program disallowed."
+            raise CommandFailed(msg)
+        if external is False and log:
+            logger.warning(
+                f"Warning: {cmd} is not installed into the virtualenv, it is"
+                f" located at {cmd_path}. This might cause issues! Pass"
+                " external=True into run() to silence this message."
+            )
 
     env = _clean_env(env)
 

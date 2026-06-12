@@ -232,6 +232,33 @@ def test_run_external_raises(tmp_path: Path, caplog: pytest.LogCaptureFixture) -
     assert "external=True" in caplog.text
 
 
+def test_run_external_raises_without_log(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.ERROR)
+
+    with pytest.raises(nox.command.CommandFailed):
+        nox.command.run(
+            [PYTHON, "--version"],
+            silent=True,
+            paths=[tmp_path],
+            external="error",
+            log=False,
+        )
+
+    assert "external=True" in caplog.text
+
+
+def test_run_external_no_warning_without_log(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.WARNING)
+
+    nox.command.run([PYTHON, "--version"], silent=True, paths=[tmp_path], log=False)
+
+    assert "external=True" not in caplog.text
+
+
 def test_exit_codes() -> None:
     assert nox.command.run([PYTHON, "-c", "import sys; sys.exit(0)"])
 
