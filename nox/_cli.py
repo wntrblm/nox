@@ -39,7 +39,7 @@ from nox.project import load_toml
 
 if TYPE_CHECKING:
     from argparse import Namespace
-    from collections.abc import Generator
+    from collections.abc import Iterator
 
 __all__ = ["execute_workflow", "main", "nox_main"]
 
@@ -72,7 +72,7 @@ def execute_workflow(args: Namespace) -> int:
 
 def get_dependencies(
     req: packaging.requirements.Requirement,
-) -> Generator[packaging.requirements.Requirement, None, None]:
+) -> Iterator[packaging.requirements.Requirement]:
     """
     Gets all dependencies. Raises ModuleNotFoundError if a package is not installed.
     """
