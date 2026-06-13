@@ -14,6 +14,15 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "nox._cli",
+    "nox._options",
+    "nox._parametrize",
+    "nox.registry",
+    "nox.sessions",
+    "types",
+}
+
 from types import ModuleType
 
 from nox import project

@@ -14,6 +14,18 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "contextlib",
+    "json",
+    "nox.command",
+    "nox.logger",
+    "packaging",
+    "re",
+    "shutil",
+    "socket",
+    "subprocess",
+}
+
 import abc
 import contextlib
 import functools

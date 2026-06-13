@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {"copy", "functools", "inspect", "types"}
+
 import copy
 import functools
 import inspect

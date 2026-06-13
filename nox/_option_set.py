@@ -18,6 +18,8 @@ and surfaced in documentation."""
 
 from __future__ import annotations
 
+__lazy_modules__ = {"argcomplete", "argparse", "functools"}
+
 import argparse
 import functools
 import os

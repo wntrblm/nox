@@ -16,6 +16,15 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "argparse",
+    "configparser",
+    "functools",
+    "pathlib",
+    "re",
+    "subprocess",
+}
+
 import argparse
 import functools
 import os
