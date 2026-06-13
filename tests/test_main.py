@@ -634,6 +634,27 @@ def test_main_requries_modern_param(
     assert returncode == 0
 
 
+def test_main_list_with_empty_parametrize(
+    run_nox: Callable[..., tuple[Any, Any, Any]],
+) -> None:
+    noxfile = os.path.join(RESOURCES, "noxfile_empty_parametrize.py")
+    returncode, stdout, _ = run_nox(f"--noxfile={noxfile}", "--list")
+    assert returncode == 0
+    assert "regular" in stdout
+    assert "no_params" in stdout
+
+
+def test_main_run_with_empty_parametrize(
+    run_nox: Callable[..., tuple[Any, Any, Any]],
+) -> None:
+    noxfile = os.path.join(RESOURCES, "noxfile_empty_parametrize.py")
+    returncode, stdout, stderr = run_nox(f"--noxfile={noxfile}")
+    assert returncode == 0
+    assert stdout == "regular\n"
+    assert "Session regular was successful." in stderr
+    assert "This session had no parameters available." in stderr
+
+
 def test_main_duplicate_session(
     run_nox: Callable[..., tuple[Any, Any, Any]],
 ) -> None:

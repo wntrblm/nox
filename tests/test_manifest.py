@@ -388,6 +388,28 @@ def test_add_session_parametrized_noop() -> None:
     assert session.func == _null_session_func
 
 
+def test_add_dependencies_with_empty_parametrize() -> None:
+    manifest = Manifest({}, create_mock_config())
+
+    # Define a session without any parameters available.
+    @nox.parametrize("param", ())
+    def empty(session: nox.Session, param: object) -> None:
+        pass
+
+    # Add the placeholder session and a regular session to the manifest.
+    for session in manifest.make_session("empty", Func(empty, python=None)):
+        manifest.add_session(session)
+    for session in manifest.make_session("regular", Func(lambda _: None)):
+        manifest.add_session(session)
+    assert len(manifest) == 2
+
+    # The placeholder session has no signatures, but dependency resolution
+    # must still account for it.
+    manifest.add_dependencies()
+
+    assert [session.name for session in manifest._queue] == ["empty", "regular"]
+
+
 def test_notify() -> None:
     manifest = Manifest({}, create_mock_config())
 
