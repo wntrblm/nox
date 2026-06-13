@@ -76,16 +76,34 @@ def get_dependencies(
     """
     Gets all dependencies. Raises ModuleNotFoundError if a package is not installed.
     """
-    info = importlib.metadata.metadata(req.name)
-    yield req
+    seen: set[tuple[packaging.utils.NormalizedName, frozenset[str]]] = set()
 
-    dist_list = info.get_all("requires-dist") or []
-    extra_list = [packaging.requirements.Requirement(mk) for mk in dist_list]
-    for extra in req.extras:
-        for ireq in extra_list:
-            if ireq.marker and not ireq.marker.evaluate({"extra": extra}):
-                continue
-            yield from get_dependencies(ireq)
+    def expand(
+        req: packaging.requirements.Requirement,
+    ) -> Generator[packaging.requirements.Requirement, None, None]:
+        # Skip the metadata read and re-expansion for requirements already
+        # visited with the same extras; this avoids rescanning shared
+        # dependencies reachable through multiple extras and guards against
+        # dependency cycles. The requirement itself is still yielded so that
+        # every specifier is checked downstream.
+        key = (packaging.utils.canonicalize_name(req.name), frozenset(req.extras))
+        if key in seen:
+            yield req
+            return
+        seen.add(key)
+
+        info = importlib.metadata.metadata(req.name)
+        yield req
+
+        dist_list = info.get_all("requires-dist") or []
+        extra_list = [packaging.requirements.Requirement(mk) for mk in dist_list]
+        for extra in req.extras:
+            for ireq in extra_list:
+                if ireq.marker and not ireq.marker.evaluate({"extra": extra}):
+                    continue
+                yield from expand(ireq)
+
+    yield from expand(req)
 
 
 def check_dependencies(dependencies: list[str]) -> bool:

@@ -1111,11 +1111,100 @@ def test_find_uv(
         sys.modules, "uv", types.SimpleNamespace(find_uv_bin=find_uv_bin)
     )
 
-    assert nox.virtualenv.find_uv() == (
+    # Bypass the functools.cache wrapper: the suite warms find_uv() with the
+    # real environment (see conftest), and this test must not poison it.
+    assert nox.virtualenv.find_uv.__wrapped__() == (
         found,
         path,
         version.Version(vers if vers_rc == 0 else "0"),
     )
+
+
+def test_uv_detection_is_lazy() -> None:
+    """Importing nox.virtualenv must not invoke uv (or any subprocess)."""
+    code = dedent(
+        """
+        import sys
+
+        events = []
+
+        def audit_hook(event, args):
+            if event == "subprocess.Popen":
+                events.append((event, args))
+
+        sys.addaudithook(audit_hook)
+
+        import nox.virtualenv
+
+        assert not events, f"subprocess spawned during import: {events}"
+        lazy = {"HAS_UV", "UV", "UV_VERSION", "OPTIONAL_VENVS"}
+        computed = lazy & set(vars(nox.virtualenv))
+        assert not computed, f"uv detection ran during import: {computed}"
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        check=False,
+        text=True,
+        capture_output=True,
+        encoding="utf-8",
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_lazy_uv_module_attrs(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Remove any values materialized by earlier monkeypatching so that the
+    # module-level __getattr__ is exercised.
+    for name in ("HAS_UV", "UV", "UV_VERSION", "OPTIONAL_VENVS"):
+        if name in vars(nox.virtualenv):
+            monkeypatch.delattr(nox.virtualenv, name)
+
+    assert isinstance(nox.virtualenv.HAS_UV, bool)
+    assert isinstance(nox.virtualenv.UV, str)
+    assert isinstance(nox.virtualenv.UV_VERSION, version.Version)
+
+    optional_venvs = nox.virtualenv.OPTIONAL_VENVS
+    assert set(optional_venvs) == {"conda", "mamba", "micromamba", "uv"}
+    assert optional_venvs["uv"] == nox.virtualenv.HAS_UV
+
+    # A monkeypatched HAS_UV must flow into OPTIONAL_VENVS.
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", not optional_venvs["uv"])
+    assert nox.virtualenv.OPTIONAL_VENVS["uv"] == (not optional_venvs["uv"])
+
+    with pytest.raises(AttributeError, match="has no attribute 'not_a_real_attr'"):
+        _ = nox.virtualenv.not_a_real_attr
+
+
+def test_allowed_globals(
+    tmp_path: Path,
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert nox.virtualenv.PassthroughEnv().allowed_globals == ()
+    assert nox.virtualenv.CondaEnv(str(tmp_path / "conda")).allowed_globals == (
+        "conda",
+        "mamba",
+        "micromamba",
+    )
+
+    venv, _ = make_one(venv_backend="uv")
+    monkeypatch.setattr(nox.virtualenv, "UV", "/some/uv")
+    assert venv.allowed_globals == ("/some/uv", "/some/uvx")
+
+
+def test_find_python_cached(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Repeated interpreter discovery (one lookup per session) is cached."""
+    calls: list[str] = []
+
+    def fake_which(name: str) -> str | None:
+        calls.append(name)
+        return "/usr/bin/python3.99"
+
+    monkeypatch.setattr(shutil, "which", fake_which)
+
+    assert nox.virtualenv._find_python("python3.99", "3.99") == "python3.99"
+    assert nox.virtualenv._find_python("python3.99", "3.99") == "python3.99"
+    assert calls == ["python3.99"]
 
 
 @pytest.mark.parametrize(
