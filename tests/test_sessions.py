@@ -174,6 +174,16 @@ class TestSession:
                 ".cache"
             )
 
+    def test_cache_dir_missing_envdir(self) -> None:
+        session, runner = self.make_session_and_runner()
+        with tempfile.TemporaryDirectory() as root:
+            runner.global_config.envdir = os.path.join(root, "missing", ".nox")
+
+            cache_dir = session.cache_dir
+
+            assert cache_dir == Path(runner.global_config.envdir).joinpath(".cache")
+            assert cache_dir.is_dir()
+
     def test_no_bin_paths(self) -> None:
         session, runner = self.make_session_and_runner()
 
