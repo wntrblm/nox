@@ -1,5 +1,14 @@
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "dependency_groups",
+    "packaging",
+    "packaging.requirements",
+    "packaging.specifiers",
+    "pathlib",
+    "tomllib",
+}
+
 import re
 import sys
 from pathlib import Path

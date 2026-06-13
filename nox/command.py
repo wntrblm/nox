@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {"nox.logger", "shlex", "shutil"}
+
 import os
 import shlex
 import shutil

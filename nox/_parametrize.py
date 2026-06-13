@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {"functools", "itertools"}
+
 import functools
 import itertools
 from collections.abc import Iterable

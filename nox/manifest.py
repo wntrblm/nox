@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {"ast", "itertools", "nox._resolver", "nox.sessions", "operator"}
+
 import ast
 import functools
 import itertools

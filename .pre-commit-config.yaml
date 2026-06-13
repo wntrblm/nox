@@ -18,6 +18,13 @@ repos:
       - id: requirements-txt-fixer
       - id: trailing-whitespace
 
+  - repo: https://github.com/henryiii/flake8-lazy
+    rev: v0.8.2
+    hooks:
+      - id: flake8-lazy
+        args: ["--apply=set"]
+        files: '^nox/'
+
   - repo: https://github.com/tox-dev/pyproject-fmt
     rev: "v2.24.1"
     hooks:
