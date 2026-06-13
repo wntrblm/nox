@@ -17,6 +17,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from socket import gethostbyname
 from string import Template
 from typing import TYPE_CHECKING, Any
 
@@ -28,6 +29,18 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator
 
 HAS_CONDA = shutil.which("conda") is not None
+
+
+def _has_network() -> bool:
+    try:
+        gethostbyname("pypi.org")
+    except OSError:
+        return False
+    else:
+        return True
+
+
+HAS_NETWORK = _has_network()
 
 
 @pytest.fixture(autouse=True)
@@ -117,6 +130,10 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         if "conda" in item.keywords:
             item.add_marker(
                 pytest.mark.skipif(not HAS_CONDA, reason="Missing conda command.")
+            )
+        if "network" in item.keywords:
+            item.add_marker(
+                pytest.mark.skipif(not HAS_NETWORK, reason="No network access.")
             )
 
 
