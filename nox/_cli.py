@@ -171,11 +171,14 @@ def run_script_mode(
     venv.create()
     env = {k: v for k, v in venv._get_env({}).items() if v is not None}
     env["NOX_SCRIPT_MODE"] = "none"
-    cmd = (
-        [nox.virtualenv.UV, "pip", "install"]
-        if venv.venv_backend == "uv"
-        else ["pip", "install"]
-    )
+    if venv.venv_backend == "uv":
+        cmd = [nox.virtualenv.UV, "pip", "install"]
+    else:
+        # On Windows, subprocess resolves the executable against the parent
+        # process's PATH, not the child env's, so resolve pip explicitly.
+        pip_cmd = shutil.which("pip", path=env["PATH"])
+        assert pip_cmd is not None, "pip must be discoverable in the environment"
+        cmd = [pip_cmd, "install"]
     subprocess.run([*cmd, *dependencies], env=env, check=True)
     nox_cmd = shutil.which("nox", path=env["PATH"])
     assert nox_cmd is not None, "Nox must be discoverable when installed"
@@ -249,9 +252,10 @@ def _main(*, main_ep: bool) -> None:
                     or (
                         toml_config.get("tool", {})
                         .get("nox", {})
-                        .get("script-download-python", "auto")
+                        .get("script-download-python")
                     )
                     or args.download_python
+                    or "auto"
                 )
 
                 if download_python not in ("auto", "never", "always"):
