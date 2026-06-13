@@ -69,9 +69,7 @@ class Param:
     def __str__(self) -> str:
         if self.id:
             return self.id
-        call_spec = self.call_spec
-        args = [f"{k}={call_spec[k]!r}" for k in call_spec]
-        return ", ".join(args)
+        return ", ".join(f"{k}={v!r}" for k, v in self.call_spec.items())
 
     __repr__ = __str__
     __hash__ = None  # type: ignore[assignment]

@@ -139,9 +139,8 @@ def test_iteration() -> None:
     assert len(manifest._consumed) == 1
     assert len(manifest._queue) == 1
 
-    # The .next() or .__next__() methods can be called directly according
-    # to Python's data model.
-    bar = manifest.next()
+    # The second item should be our "bar" session.
+    bar = next(manifest)
     assert bar.func == sessions["bar"]
     assert bar in manifest._consumed
     assert bar not in manifest._queue

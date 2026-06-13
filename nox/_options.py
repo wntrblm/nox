@@ -548,7 +548,6 @@ options.add_options(
     _option_set.Option(
         "download_python",
         "--download-python",
-        "--download-python",
         noxfile=True,
         group=options.groups["python"],
         default=lambda: os.getenv("NOX_DOWNLOAD_PYTHON"),

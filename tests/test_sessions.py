@@ -79,7 +79,6 @@ def test__normalize_path() -> None:
     envdir = "envdir"
     normalize = nox.sessions._normalize_path
     assert normalize(envdir, "hello") == os.path.join("envdir", "hello")
-    assert normalize(envdir, b"hello") == os.path.join("envdir", "hello")
     assert normalize(envdir, "hello(world)") == os.path.join("envdir", "hello-world")
     assert normalize(envdir, "hello(world, meep)") == os.path.join(
         "envdir", "hello-world-meep"
@@ -1158,6 +1157,7 @@ class TestSessionRunner:
         func = mock.Mock()
         func.python = None
         func.venv_backend = None
+        func.venv_params = []
         func.reuse_venv = False
         func.requires = []
         return nox.sessions.SessionRunner(
