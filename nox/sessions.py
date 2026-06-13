@@ -91,11 +91,19 @@ def _normalize_path(envdir: str, path: str | bytes) -> str:
     if isinstance(path, bytes):
         path = path.decode("utf-8")
 
+    orig_path = path
     path = unicodedata.normalize("NFKD", path).encode("ascii", "ignore")
     path = path.decode("ascii")
     path = re.sub(r"[^\w\s-]", "-", path).strip().lower()
     path = re.sub(r"[-\s]+", "-", path)
     path = path.strip("-")
+
+    if not path:
+        path = hashlib.sha1(orig_path.encode("utf-8")).hexdigest()[:8]  # noqa: S324
+        logger.warning(
+            "The virtualenv name was hashed because it contains no usable "
+            "ASCII characters."
+        )
 
     full_path = os.path.join(envdir, path)
     if len(full_path) > 100 - len("bin/pythonX.Y"):
