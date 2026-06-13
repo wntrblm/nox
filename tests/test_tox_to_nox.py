@@ -234,6 +234,39 @@ def test_env(makeconfig: Callable[[str], str]) -> None:
     )
 
 
+def test_env_with_equals_sign_in_value(makeconfig: Callable[[str], str]) -> None:
+    result = makeconfig(
+        textwrap.dedent(
+            f"""
+    [tox]
+    envlist = lint
+
+    [testenv:lint]
+    basepython = python{PYTHON_VERSION}
+    setenv =
+        URL=https://example.com/?a=1&b=2
+        TEST=meep=morp
+    """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent(
+            f"""
+    import nox
+
+
+    @nox.session(python='python{PYTHON_VERSION}')
+    def lint(session):
+        session.env['TEST'] = 'meep=morp'
+        session.env['URL'] = 'https://example.com/?a=1&b=2'
+        session.install('.')
+    """
+        ).lstrip()
+    )
+
+
 def test_chdir(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
@@ -259,6 +292,40 @@ def test_chdir(makeconfig: Callable[[str], str]) -> None:
     def lint(session):
         session.install('.')
         session.chdir('docs')
+    """
+        ).lstrip()
+    )
+
+
+def test_chdir_outside_project(
+    makeconfig: Callable[[str], str], tmp_path: Path
+) -> None:
+    outside = tmp_path.parent / f"{tmp_path.name}-outside"
+    outside.mkdir()
+    result = makeconfig(
+        textwrap.dedent(
+            f"""
+    [tox]
+    envlist = lint
+
+    [testenv:lint]
+    basepython = python{PYTHON_VERSION}
+    changedir = {outside}
+    """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent(
+            f"""
+    import nox
+
+
+    @nox.session(python='python{PYTHON_VERSION}')
+    def lint(session):
+        session.install('.')
+        session.chdir('{outside}')
     """
         ).lstrip()
     )
