@@ -14,6 +14,21 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "datetime",
+    "hashlib",
+    "humanize",
+    "inspect",
+    "nox.logger",
+    "nox.popen",
+    "nox.virtualenv",
+    "pathlib",
+    "re",
+    "shutil",
+    "subprocess",
+    "unicodedata",
+}
+
 import contextlib
 import datetime
 import enum

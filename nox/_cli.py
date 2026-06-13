@@ -16,6 +16,26 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "importlib",
+    "importlib.metadata",
+    "nox._options",
+    "nox._version",
+    "nox.command",
+    "nox.logger",
+    "nox.project",
+    "nox.registry",
+    "nox.virtualenv",
+    "packaging",
+    "packaging.requirements",
+    "packaging.utils",
+    "pathlib",
+    "shutil",
+    "subprocess",
+    "urllib",
+    "urllib.parse",
+}
+
 import importlib.metadata
 import os
 import shutil

@@ -14,6 +14,15 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "ast",
+    "contextlib",
+    "importlib",
+    "packaging",
+    "packaging.specifiers",
+    "packaging.version",
+}
+
 import ast
 import contextlib
 from importlib import metadata
