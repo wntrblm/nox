@@ -119,7 +119,7 @@ def _find_python(interpreter: str, xy_ver: str) -> str | None:
     # Windows only search for the executable
     if _PLATFORM.startswith("win"):
         # Allow versions of the form ``X.Y-32`` for Windows.
-        match = re.match(r"^\d\.\d+-32?$", interpreter)
+        match = re.match(r"^\d\.\d+-32$", interpreter)
         if match:
             # preserve the "-32" suffix, as the Python launcher expects it.
             xy_ver = interpreter
@@ -184,7 +184,10 @@ def _find_pbs_python(implementation: str, version: str) -> str | None:
 
     if NOX_PBS_PYTHONS.exists():
         for path in NOX_PBS_PYTHONS.iterdir():
-            if path.is_dir() and path.name.startswith(f"{implementation}@{version}."):
+            if path.is_dir() and (
+                path.name == f"{implementation}@{version}"
+                or path.name.startswith(f"{implementation}@{version}.")
+            ):
                 python_exe = path / executable
                 if python_exe.exists():
                     return str(python_exe)
@@ -204,14 +207,16 @@ def pbs_install_python(python_version: str) -> str | None:
         re.IGNORECASE,
     )
 
-    if not match:
+    if not match or match["xyz_ver"] is None:
         logger.warning(f"{python_version=} is not a valid version to install with pbs")
         return None
 
+    # A bare version with no implementation prefix means CPython.
+    impl = match["impl"] or "cpython"
     implementation: Literal["cpython", "pypy"] = (
-        "cpython" if match.group("impl").lower() in ("cpython", "python") else "pypy"
+        "pypy" if impl.lower() == "pypy" else "cpython"
     )
-    xyz_ver = match.group("xyz_ver")
+    xyz_ver: str = match["xyz_ver"]
 
     if python_exe := _find_pbs_python(implementation, xyz_ver):
         return python_exe
