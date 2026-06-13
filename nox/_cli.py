@@ -80,7 +80,7 @@ def get_dependencies(
 
     def expand(
         req: packaging.requirements.Requirement,
-    ) -> Generator[packaging.requirements.Requirement, None, None]:
+    ) -> Iterator[packaging.requirements.Requirement]:
         # Skip the metadata read and re-expansion for requirements already
         # visited with the same extras; this avoids rescanning shared
         # dependencies reachable through multiple extras and guards against
