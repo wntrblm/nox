@@ -72,11 +72,6 @@ jobs:
         uses: conda-incubator/setup-miniconda@v4
         if: matrix.python-version == '3.14'
         with:
-          # Miniforge ships a recent conda-forge-native conda + mamba, so the
-          # base doesn't have to self-update from the runner's old preinstalled
-          # Miniconda (a multi-minute solve on Windows). conda >= 26.3 also drops
-          # the built-in signature-verification plugin that conflicted with
-          # conda-content-trust (see #1103), so no explicit conda-version pin.
           miniforge-version: latest
           channels: conda-forge
           conda-remove-defaults: true
