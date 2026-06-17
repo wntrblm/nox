@@ -277,35 +277,58 @@ def test_read_report_missing_falls_back_to_returncode(
 
 
 def test_reporter_render() -> None:
-    reporter = _parallel._Reporter(color=False, tty=False)
+    reporter = _parallel._Reporter(color=False, tty=False, total=2)
     reporter._active = {"a": 100.0, "b": 100.0}
     reporter._preview = {"a": "compiling module x"}
     lines = reporter._render(105.0, width=0)
-    # ``a`` shows its preview after the progress; ``b`` has none yet.
-    assert lines == ["⠋ a (5s)  compiling module x", "⠋ b (5s)"]
+    # A summary header, then a line per running session (``a`` has a preview).
+    assert lines == [
+        "running 2  passed 0  failed 0  queued 0",
+        "⠋ a (5s)  compiling module x",
+        "⠋ b (5s)",
+    ]
+
+
+def test_reporter_render_header_counts() -> None:
+    reporter = _parallel._Reporter(color=False, tty=False, total=6)
+    reporter._active = {"a": 100.0, "b": 100.0}
+    reporter._passed = 2
+    reporter._failed = 1
+    # queued = total - (passed + failed) - running = 6 - 3 - 2 = 1
+    assert reporter._render(105.0, width=0)[0] == (
+        "running 2  passed 2  failed 1  queued 1"
+    )
+    # No running sessions -> nothing is drawn.
+    reporter._active = {}
+    assert reporter._render(105.0, width=0) == []
+    # Narrow width hard-truncates the (plain) header.
+    reporter._active = {"a": 100.0}
+    header = reporter._render(105.0, width=8)[0]
+    assert len(header) == 7
+    assert "\x1b" not in header
 
 
 def test_reporter_render_truncates_to_width() -> None:
-    reporter = _parallel._Reporter(color=False, tty=False)
+    reporter = _parallel._Reporter(color=False, tty=False, total=1)
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "x" * 200}
     # Wide enough for the header plus a trimmed preview: fills width - 1.
-    [line] = reporter._render(105.0, width=20)
-    assert len(line) == 19
-    # No room for a preview after the header: header only, no trailing spaces.
-    [line] = reporter._render(105.0, width=11)
-    assert line == "⠋ a (5s)"
+    assert len(reporter._render(105.0, width=20)[1]) == 19
+    # No room for a preview after the header: session line only, no trailing spaces.
+    assert reporter._render(105.0, width=11)[1] == "⠋ a (5s)"
     # Too narrow even for the header: hard truncation to width - 1.
-    [line] = reporter._render(105.0, width=5)
+    line = reporter._render(105.0, width=5)[1]
     assert len(line) == 4
     assert "\x1b" not in line
 
 
 def test_reporter_render_color() -> None:
-    reporter = _parallel._Reporter(color=True, tty=False)
+    reporter = _parallel._Reporter(color=True, tty=False, total=1)
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "installing"}
-    [line] = reporter._render(105.0, width=0)
+    header, line = reporter._render(105.0, width=0)
+    assert "\x1b[32m" in header  # green "passed"
+    assert "\x1b[31m" in header  # red "failed"
     assert "\x1b[36m" in line  # cyan spinner/name
     assert "\x1b[32m" in line  # green elapsed time
     assert "\x1b[90minstalling\x1b[0m" in line  # grey preview
