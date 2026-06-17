@@ -94,7 +94,6 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           pattern: coverage-*
-          merge-multiple: true
       - name: Display structure of downloaded files
         run: ls -aR
       - name: Run coverage
