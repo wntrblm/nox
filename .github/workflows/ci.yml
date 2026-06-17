@@ -12,6 +12,10 @@ env:
   # from shared CI IPs. Retry with backoff so a throttle doesn't fail the job.
   CONDA_REMOTE_MAX_RETRIES: "8"
   CONDA_REMOTE_BACKOFF_FACTOR: "4"
+  # Cache downloaded packages and repodata here, and reuse cached repodata for a
+  # day so repeat runs don't re-fetch repodata.json (the thing that 429s).
+  CONDA_PKGS_DIRS: ~/conda_pkgs_dir
+  CONDA_LOCAL_REPODATA_TTL: "86400"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -54,6 +58,13 @@ jobs:
           allow-prereleases: true
       - name: Setup uv
         uses: astral-sh/setup-uv@v8.2.0
+      - name: Cache conda packages
+        uses: actions/cache@v5.0.5
+        if: matrix.python-version == '3.14'
+        with:
+          path: ~/conda_pkgs_dir
+          key: conda-${{ runner.os }}-${{ hashFiles('requirements-conda-test.txt') }}
+          restore-keys: conda-${{ runner.os }}-
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v4
         if: matrix.python-version == '3.14'
