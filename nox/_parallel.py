@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -49,6 +51,17 @@ _SYMBOLS = {
     Status.FAILED: "✗",
     Status.ABORTED: "↯",
 }
+_ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
+
+
+def _preview_text(line: str) -> str:
+    """Turn a raw output line into a one-line, plain-text status preview.
+
+    Keeps only what follows the last carriage return (so progress-bar redraws
+    show their latest state) and strips ANSI escapes so truncation can't split
+    an escape sequence and corrupt the terminal.
+    """
+    return _ANSI.sub("", line.rstrip("\n").rsplit("\r", 1)[-1]).strip()
 
 
 class _Reporter:
@@ -65,6 +78,7 @@ class _Reporter:
         self.stream = sys.stdout
         self._lock = threading.RLock()
         self._active: dict[str, float] = {}
+        self._preview: dict[str, str] = {}
         self._board_lines = 0
         self._spin = 0
         self._stop = threading.Event()
@@ -83,13 +97,21 @@ class _Reporter:
         with self._lock:
             self._clear_board()
 
-    def _render(self, now: float) -> list[str]:
-        """Return the status-board lines for the currently-running sessions."""
+    def _render(self, now: float, width: int) -> list[str]:
+        """Return the status-board lines for the currently-running sessions.
+
+        Each line is the spinner, session name, and elapsed time, followed by a
+        preview of the session's latest output line, truncated to ``width``.
+        """
         frame = _SPINNER[self._spin % len(_SPINNER)]
-        return [
-            f"  {frame} {name} ({int(now - start)}s)"
-            for name, start in self._active.items()
-        ]
+        lines = []
+        for name, start in self._active.items():
+            line = f"  {frame} {name} ({int(now - start)}s)"
+            preview = self._preview.get(name)
+            if preview:
+                line = f"{line}  {preview}"
+            lines.append(line[: width - 1] if width else line)
+        return lines
 
     def _run(self) -> None:  # pragma: no cover - timing/terminal loop
         while not self._stop.wait(0.25):
@@ -99,7 +121,8 @@ class _Reporter:
 
     def _draw_board(self) -> None:  # pragma: no cover - requires a live TTY
         self._clear_board()
-        lines = self._render(time.monotonic())
+        width = shutil.get_terminal_size().columns
+        lines = self._render(time.monotonic(), width)
         for line in lines:
             self.stream.write(line + "\n")
         self.stream.flush()
@@ -133,9 +156,17 @@ class _Reporter:
                 self.stream.write(f"Starting session {name}...\n")
                 self.stream.flush()
 
+    def update(self, name: str, line: str) -> None:
+        """Record a session's latest output line for the status-board preview."""
+        preview = _preview_text(line)
+        if preview:
+            with self._lock:
+                self._preview[name] = preview
+
     def finished(self, name: str, result: Result, output: str) -> None:
         with self._lock:
             self._active.pop(name, None)
+            self._preview.pop(name, None)
             self._clear_board()
             self._emit_block(name, result, output)
             if self.tty:  # pragma: no cover - requires a live TTY
@@ -227,11 +258,18 @@ def _run_session(
     global_config: Namespace,
     procs: set[subprocess.Popen[str]],
     procs_lock: threading.Lock,
+    on_line: Callable[[str], None] | None = None,
 ) -> tuple[Result, str]:
-    """Run a single session in a subprocess; return its result and output."""
+    """Run a single session in a subprocess; return its result and output.
+
+    Output is read line by line so ``on_line`` (if given) sees each line as it
+    arrives, letting the caller show a live preview while the session runs.
+    """
+    lines: list[str] = []
     with tempfile.TemporaryDirectory() as tmp:
         report_path = os.path.join(tmp, "report.json")
-        proc = subprocess.Popen(
+        # The context manager waits for the process and closes its pipes.
+        with subprocess.Popen(
             _child_argv(global_config, session, report_path),
             cwd=getattr(global_config, "invoked_from", None),
             stdout=subprocess.PIPE,
@@ -239,15 +277,19 @@ def _run_session(
             text=True,
             encoding="utf-8",
             errors="backslashreplace",
-        )
-        with procs_lock:
-            procs.add(proc)
-        try:
-            output, _ = proc.communicate()
-        finally:
+        ) as proc:
             with procs_lock:
-                procs.discard(proc)
-        return _read_report(report_path, session, proc.returncode), output
+                procs.add(proc)
+            try:
+                assert proc.stdout is not None
+                for line in iter(proc.stdout.readline, ""):
+                    lines.append(line)
+                    if on_line is not None:
+                        on_line(line)
+            finally:
+                with procs_lock:
+                    procs.discard(proc)
+        return _read_report(report_path, session, proc.returncode), "".join(lines)
 
 
 def run_manifest_parallel(
@@ -286,9 +328,16 @@ def run_manifest_parallel(
     )
 
     def worker(session: SessionRunner) -> Result:
-        reporter.started(session.friendly_name)
-        result, output = _run_session(session, global_config, procs, procs_lock)
-        reporter.finished(session.friendly_name, result, output)
+        name = session.friendly_name
+        reporter.started(name)
+        result, output = _run_session(
+            session,
+            global_config,
+            procs,
+            procs_lock,
+            on_line=lambda line: reporter.update(name, line),
+        )
+        reporter.finished(name, result, output)
         return result
 
     with reporter, ThreadPoolExecutor(max_workers=jobs) as executor:
