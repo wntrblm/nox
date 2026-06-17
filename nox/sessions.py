@@ -1171,7 +1171,14 @@ class SessionRunner:
     def execute(self) -> Result:
         logger.session_info(f"Running session {self.friendly_name}")
 
-        for dependency in self.get_direct_dependencies():
+        # With --no-dependencies, prerequisites aren't queued (and may not have
+        # run in this process), so skip the dependency-result check entirely.
+        dependencies = (
+            []
+            if getattr(self.global_config, "no_dependencies", False)
+            else self.get_direct_dependencies()
+        )
+        for dependency in dependencies:
             if not dependency.result:
                 self.result = Result(
                     self,
@@ -1333,6 +1340,7 @@ class Result:
             "name": self.session.name,
             "result": self.status.name.lower(),
             "result_code": self.status.value,
+            "reason": self.reason,
             "signatures": self.session.signatures,
             "duration": self.duration,
         }

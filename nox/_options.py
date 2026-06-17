@@ -208,6 +208,54 @@ def default_env_var_list_factory(env_var: str) -> Callable[[], list[str] | None]
     return _default_list
 
 
+def default_env_var_factory(env_var: str) -> Callable[[], str | None]:
+    """Looks at the env var to set the default value for a scalar option.
+
+    Args:
+        env_var (str): The name of the environment variable to look up.
+
+    Returns:
+        A callback that retrieves the (unparsed) string value, or ``None``.
+    """
+
+    def _default() -> str | None:
+        return os.environ.get(env_var) or None
+
+    return _default
+
+
+def parse_parallel(value: str | int) -> int:
+    """Resolve a ``--parallel`` value to a positive integer.
+
+    Accepts a positive integer (or its string form) or ``"auto"`` (the CPU
+    count). Used for command-line, ``NOX_PARALLEL``, and Noxfile-set values.
+
+    Raises:
+        ValueError: If the value is not ``"auto"`` or a positive integer.
+    """
+    if isinstance(value, str) and value.strip().lower() == "auto":
+        return os.cpu_count() or 1
+    try:
+        jobs = int(value)
+    except (TypeError, ValueError):
+        msg = (
+            f"invalid parallel value {value!r} (expected a positive integer or 'auto')"
+        )
+        raise ValueError(msg) from None
+    if jobs < 1:
+        msg = f"parallel value must be >= 1, got {jobs}"
+        raise ValueError(msg)
+    return jobs
+
+
+def _parallel_arg(value: str) -> int:
+    """``argparse`` type for ``--parallel`` that reports errors nicely."""
+    try:
+        return parse_parallel(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from None
+
+
 def _color_finalizer(_value: bool, args: argparse.Namespace) -> bool:  # noqa: FBT001
     """Figures out the correct value for "color" based on the two color flags.
 
@@ -613,6 +661,34 @@ options.add_options(
         help=(
             "Error if run() is used to execute a program that isn't installed in a"
             " session's virtualenv."
+        ),
+    ),
+    _option_set.Option(
+        "parallel",
+        "-j",
+        "--parallel",
+        group=options.groups["execution"],
+        noxfile=True,
+        type=_parallel_arg,
+        default=default_env_var_factory("NOX_PARALLEL"),
+        metavar="N",
+        help=(
+            "Run independent sessions in parallel, each in its own subprocess."
+            " Pass a positive integer or ``'auto'`` (one per CPU). Sessions are"
+            " ordered by their ``requires=`` dependencies; their output is"
+            " buffered and printed as each session finishes. Default is 1"
+            " (sequential). Environment variable: NOX_PARALLEL"
+        ),
+    ),
+    _option_set.Option(
+        "no_dependencies",
+        "--no-dependencies",
+        group=options.groups["execution"],
+        action="store_true",
+        help=(
+            "Run only the explicitly selected sessions, skipping any sessions"
+            " they ``require``. Assumes prerequisites have already run; mainly"
+            " used internally by ``--parallel``."
         ),
     ),
     _option_set.Option(

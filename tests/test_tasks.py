@@ -775,6 +775,7 @@ def test_create_report() -> None:
                             "signatures": ["foosig"],
                             "result": "success",
                             "result_code": 1,
+                            "reason": None,
                             "args": {},
                             "duration": 0.0,
                         }

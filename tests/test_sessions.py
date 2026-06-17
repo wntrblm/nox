@@ -1503,6 +1503,17 @@ class TestSessionRunner:
 
         assert result.status == nox.sessions.Status.FAILED
 
+    def test_execute_no_dependencies_skips_check(self) -> None:
+        runner = self.make_runner_with_mock_venv()
+        runner.global_config.no_dependencies = True
+        runner.get_direct_dependencies = mock.Mock(  # type: ignore[method-assign]
+            side_effect=AssertionError("dependencies must not be checked")
+        )
+
+        result = runner.execute()
+
+        assert result.status == nox.sessions.Status.SUCCESS
+
     def test_execute_interrupted(self) -> None:
         runner = self.make_runner_with_mock_venv()
 

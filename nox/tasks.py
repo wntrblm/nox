@@ -49,6 +49,8 @@ if TYPE_CHECKING:
     import types
     from argparse import Namespace
 
+    from nox.sessions import SessionRunner
+
 __all__ = [
     "create_report",
     "discover_manifest",
@@ -388,6 +390,16 @@ def honor_usage_request(manifest: Manifest, global_config: Namespace) -> Manifes
     return 0
 
 
+def _warn_pythons_ignored(session: SessionRunner) -> None:
+    """Warn if a session's Python parametrization is ignored (venv_backend='none')."""
+    if WARN_PYTHONS_IGNORED in session.func.should_warn:
+        logger.warning(
+            f"Session {session.name} is set to run with venv_backend='none', "
+            "IGNORING its"
+            f" python={session.func.should_warn[WARN_PYTHONS_IGNORED]} parametrization. "
+        )
+
+
 def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
     """Run the full manifest of sessions.
 
@@ -399,6 +411,17 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
         tuple[~nox.sessions.Session,~.SessionStatus]: A two-tuple of the
             sessions and the result of each session that was run.
     """
+    # When --parallel/-j requests more than one job, hand off to the parallel
+    # scheduler, which runs independent sessions in their own subprocesses.
+    raw_parallel = getattr(global_config, "parallel", None)
+    jobs = _options.parse_parallel(raw_parallel) if raw_parallel else 1
+    if jobs > 1:
+        # Imported lazily to avoid an import cycle (nox._parallel imports from
+        # nox.tasks).
+        from nox._parallel import run_manifest_parallel  # noqa: PLC0415
+
+        return run_manifest_parallel(manifest, global_config, jobs)
+
     results = []
 
     # Iterate over each session in the manifest, and execute it.
@@ -407,12 +430,7 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
     # iteration.
     for session in manifest:
         # possibly raise warnings associated with this session
-        if WARN_PYTHONS_IGNORED in session.func.should_warn:
-            logger.warning(
-                f"Session {session.name} is set to run with venv_backend='none', "
-                "IGNORING its"
-                f" python={session.func.should_warn[WARN_PYTHONS_IGNORED]} parametrization. "
-            )
+        _warn_pythons_ignored(session)
 
         result = session.execute()
         name = session.friendly_name
