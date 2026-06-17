@@ -1305,8 +1305,8 @@ class TestSessionRunner:
 
         create.assert_called_once_with(runner.venv)
         assert isinstance(runner.venv, expected_backend)
-        assert runner.venv.interpreter == "coolpython"  # type: ignore[union-attr]
-        assert runner.venv.reuse_existing is True  # type: ignore[union-attr]
+        assert runner.venv.interpreter == "coolpython"
+        assert runner.venv.reuse_existing is True
 
     def test__create_venv_unexpected_venv_backend(self) -> None:
         runner = self.make_runner()

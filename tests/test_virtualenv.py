@@ -1649,7 +1649,7 @@ def test__resolved_interpreter_cache_result(
     which.assert_called_once_with("python3.6")
     # Check the cache and call again to make sure it is used.
     assert venv._resolved == "python3.6"
-    assert venv._resolved_interpreter == "python3.6"
+    assert venv._resolved_interpreter == "python3.6"  # type: ignore[unreachable]
     assert which.call_count == 1
 
 
