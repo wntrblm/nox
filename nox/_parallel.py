@@ -54,6 +54,7 @@ _SYMBOLS = {
 _COLORS = {
     "cyan": "\x1b[36m",
     "green": "\x1b[32m",
+    "red": "\x1b[31m",
     "grey": "\x1b[90m",
     "bold": "\x1b[1m",
     "reset": "\x1b[0m",
@@ -79,11 +80,14 @@ class _Reporter:
     session's full output is flushed as one block when it finishes.
     """
 
-    def __init__(self, *, color: bool, tty: bool) -> None:
+    def __init__(self, *, color: bool, tty: bool, total: int = 0) -> None:
         self.color = color
         self.tty = tty
         self.stream = sys.stdout
         self._lock = threading.RLock()
+        self._total = total
+        self._passed = 0
+        self._failed = 0
         self._active: dict[str, float] = {}
         self._preview: dict[str, str] = {}
         self._board_lines = 0
@@ -116,8 +120,28 @@ class _Reporter:
         Each line is the spinner, session name, and elapsed time, followed by a
         preview of the session's latest output line, truncated to ``width``.
         """
+        if not self._active:
+            return []
+
+        running = len(self._active)
+        done = self._passed + self._failed
+        queued = max(0, self._total - done - running)
+        plain_header = (
+            f"running {running}  passed {self._passed}  "
+            f"failed {self._failed}  queued {queued}"
+        )
+        if width and len(plain_header) > width - 1:
+            header = plain_header[: width - 1]
+        else:
+            header = (
+                f"{self._c('running', 'bold')} {running}  "
+                f"{self._c('passed', 'green')} {self._passed}  "
+                f"{self._c('failed', 'red')} {self._failed}  "
+                f"{self._c('queued', 'grey')} {queued}"
+            )
+        lines = [header]
+
         frame = _SPINNER[self._spin % len(_SPINNER)]
-        lines = []
         for name, start in self._active.items():
             head = f"{frame} {name} ({int(now - start)}s)"
             if width and len(head) > width - 1:
@@ -192,6 +216,10 @@ class _Reporter:
         with self._lock:
             self._active.pop(name, None)
             self._preview.pop(name, None)
+            if result:
+                self._passed += 1
+            else:
+                self._failed += 1
             self._clear_board()
             self._emit_block(name, result, output)
             if self.tty:  # pragma: no cover - requires a live TTY
@@ -199,6 +227,7 @@ class _Reporter:
 
     def aborted(self, name: str, result: Result) -> None:
         with self._lock:
+            self._failed += 1
             self._clear_board()
             self._emit_block(name, result, "")
             if self.tty:  # pragma: no cover - requires a live TTY
@@ -350,6 +379,7 @@ def run_manifest_parallel(
     reporter = _Reporter(
         color=bool(getattr(global_config, "color", False)),
         tty=sys.stdout.isatty(),
+        total=len(queue),
     )
 
     def worker(session: SessionRunner) -> Result:
