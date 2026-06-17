@@ -283,7 +283,7 @@ def test_reporter_render() -> None:
     lines = reporter._render(105.0, width=0)
     # A summary header, then a line per running session (``a`` has a preview).
     assert lines == [
-        "running 2  passed 0  failed 0  queued 0",
+        "> nox --parallel: running 2 · passed 0 · failed 0 · queued 0",
         "⠋ a (5s)  compiling module x",
         "⠋ b (5s)",
     ]
@@ -296,7 +296,7 @@ def test_reporter_render_header_counts() -> None:
     reporter._failed = 1
     # queued = total - (passed + failed) - running = 6 - 3 - 2 = 1
     assert reporter._render(105.0, width=0)[0] == (
-        "running 2  passed 2  failed 1  queued 1"
+        "> nox --parallel: running 2 · passed 2 · failed 1 · queued 1"
     )
     # No running sessions -> nothing is drawn.
     reporter._active = {}
