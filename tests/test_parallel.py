@@ -282,7 +282,7 @@ def test_reporter_render() -> None:
     reporter._preview = {"a": "compiling module x"}
     lines = reporter._render(105.0, width=0)
     # ``a`` shows its preview after the progress; ``b`` has none yet.
-    assert lines == ["  ⠋ a (5s)  compiling module x", "  ⠋ b (5s)"]
+    assert lines == ["⠋ a (5s)  compiling module x", "⠋ b (5s)"]
 
 
 def test_reporter_render_truncates_to_width() -> None:
@@ -293,8 +293,8 @@ def test_reporter_render_truncates_to_width() -> None:
     [line] = reporter._render(105.0, width=20)
     assert len(line) == 19
     # No room for a preview after the header: header only, no trailing spaces.
-    [line] = reporter._render(105.0, width=13)
-    assert line == "  ⠋ a (5s)"
+    [line] = reporter._render(105.0, width=11)
+    assert line == "⠋ a (5s)"
     # Too narrow even for the header: hard truncation to width - 1.
     [line] = reporter._render(105.0, width=5)
     assert len(line) == 4
