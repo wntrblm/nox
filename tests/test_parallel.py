@@ -283,7 +283,7 @@ def test_reporter_render() -> None:
     lines = reporter._render(105.0, width=0)
     # A summary header, then a line per running session (``a`` has a preview).
     assert lines == [
-        "> nox --parallel: running 2 · passed 0 · failed 0 · queued 0",
+        "nox > --parallel: running 2 · passed 0 · failed 0 · queued 0",
         "⠋ a (5s)  compiling module x",
         "⠋ b (5s)",
     ]
@@ -296,7 +296,7 @@ def test_reporter_render_header_counts() -> None:
     reporter._failed = 1
     # queued = total - (passed + failed) - running = 6 - 3 - 2 = 1
     assert reporter._render(105.0, width=0)[0] == (
-        "> nox --parallel: running 2 · passed 2 · failed 1 · queued 1"
+        "nox > --parallel: running 2 · passed 2 · failed 1 · queued 1"
     )
     # No running sessions -> nothing is drawn.
     reporter._active = {}
@@ -327,7 +327,7 @@ def test_reporter_render_color() -> None:
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "installing"}
     header, line = reporter._render(105.0, width=0)
-    assert "\x1b[1m\x1b[35m> nox --parallel:\x1b[0m" in header  # bold purple prefix
+    assert "\x1b[1m\x1b[35mnox > --parallel:\x1b[0m" in header  # bold purple prefix
     assert "\x1b[34m" in header  # blue "running"
     assert "\x1b[32m" in header  # green "passed"
     assert "\x1b[31m" in header  # red "failed"
