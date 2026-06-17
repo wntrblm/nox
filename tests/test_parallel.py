@@ -289,8 +289,27 @@ def test_reporter_render_truncates_to_width() -> None:
     reporter = _parallel._Reporter(color=False, tty=False)
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "x" * 200}
+    # Wide enough for the header plus a trimmed preview: fills width - 1.
     [line] = reporter._render(105.0, width=20)
     assert len(line) == 19
+    # No room for a preview after the header: header only, no trailing spaces.
+    [line] = reporter._render(105.0, width=13)
+    assert line == "  ⠋ a (5s)"
+    # Too narrow even for the header: hard truncation to width - 1.
+    [line] = reporter._render(105.0, width=5)
+    assert len(line) == 4
+    assert "\x1b" not in line
+
+
+def test_reporter_render_color() -> None:
+    reporter = _parallel._Reporter(color=True, tty=False)
+    reporter._active = {"a": 100.0}
+    reporter._preview = {"a": "installing"}
+    [line] = reporter._render(105.0, width=0)
+    assert "\x1b[36m" in line  # cyan spinner/name
+    assert "\x1b[32m" in line  # green elapsed time
+    assert "\x1b[90minstalling\x1b[0m" in line  # grey preview
+    assert "\x1b[1m" in line  # bold name
 
 
 def test_reporter_update_preview() -> None:
