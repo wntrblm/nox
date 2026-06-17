@@ -8,6 +8,10 @@ on:
 
 env:
   FORCE_COLOR: "1"
+  # conda-forge on anaconda.org intermittently returns HTTP 429 for repodata.json
+  # from shared CI IPs. Retry with backoff so a throttle doesn't fail the job.
+  CONDA_REMOTE_MAX_RETRIES: "8"
+  CONDA_REMOTE_BACKOFF_FACTOR: "4"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
