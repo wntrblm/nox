@@ -114,9 +114,50 @@ def _forcecolor_default() -> bool:
     }
 
 
+def parse_parallel(value: str | int) -> int:
+    """Resolve a ``--parallel`` value to a positive integer.
+
+    Accepts a positive integer (or its string form) or ``"auto"`` (the CPU
+    count). Used for command-line, ``NOX_PARALLEL``, and Noxfile-set values.
+
+    Raises:
+        ValueError: If the value is not ``"auto"`` or a positive integer.
+    """
+    if isinstance(value, str) and value.strip().lower() == "auto":
+        return os.cpu_count() or 1
+    try:
+        jobs = int(value)
+    except (TypeError, ValueError):
+        msg = (
+            f"invalid parallel value {value!r} (expected a positive integer or 'auto')"
+        )
+        raise ValueError(msg) from None
+    if jobs < 1:
+        msg = f"parallel value must be >= 1, got {jobs}"
+        raise ValueError(msg)
+    return jobs
+
+
+def _parallel_converter(value: str | int | None) -> int | None:
+    """Normalize ``parallel`` however it arrives (CLI, env var, or Noxfile)."""
+    return None if value is None else parse_parallel(value)
+
+
+def _parallel_arg(value: str) -> int:
+    """``argparse`` type for ``--parallel`` that reports errors nicely."""
+    try:
+        return parse_parallel(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from None
+
+
 @attrs.define(
     kw_only=True,
-    on_setattr=[attrs.setters.validate, _option_set.record_noxfile_set],
+    on_setattr=[
+        attrs.setters.convert,
+        attrs.setters.validate,
+        _option_set.record_noxfile_set,
+    ],
 )
 class NoxfileOptions(_option_set.OptionsBase):
     """Options that are configurable in the Noxfile.
@@ -214,6 +255,25 @@ class NoxfileOptions(_option_set.OptionsBase):
             group="sessions",
             completer=_completers.empty_completer,
             help="Only run sessions that match the given expression.",
+        ),
+    )
+    parallel: int | None = attrs.field(
+        default=None,
+        converter=_parallel_converter,
+        validator=av.optional(av.instance_of(int)),
+        metadata=opt(
+            "-j",
+            "--parallel",
+            group="execution",
+            env_var="NOX_PARALLEL",
+            argparse_kwargs={"type": _parallel_arg, "metavar": "N"},
+            help=(
+                "Run independent sessions in parallel, each in its own subprocess."
+                " Pass a positive integer or ``'auto'`` (one per CPU). Sessions are"
+                " ordered by their ``requires=`` dependencies; their output is"
+                " buffered and printed as each session finishes. Default is 1"
+                " (sequential). Environment variable: NOX_PARALLEL"
+            ),
         ),
     )
     pythons: list[str] | None = attrs.field(
@@ -317,7 +377,7 @@ class NoxfileOptions(_option_set.OptionsBase):
     )
 
 
-@attrs.define(kw_only=True, on_setattr=attrs.setters.validate)
+@attrs.define(kw_only=True, on_setattr=[attrs.setters.convert, attrs.setters.validate])
 class NoxConfig(NoxfileOptions):
     """The full configuration: every CLI option, including the noxfile-settable
     ones inherited from :class:`NoxfileOptions`.
@@ -446,6 +506,18 @@ class NoxConfig(NoxfileOptions):
             help=(
                 "Reuse existing virtualenvs and skip package re-installation."
                 " This is an alias for '--reuse-existing-virtualenvs --no-install'."
+            ),
+        ),
+    )
+    no_dependencies: bool = attrs.field(
+        default=False,
+        metadata=opt(
+            "--no-dependencies",
+            group="execution",
+            help=(
+                "Run only the explicitly selected sessions, skipping any sessions"
+                " they ``require``. Assumes prerequisites have already run; mainly"
+                " used internally by ``--parallel``."
             ),
         ),
     )

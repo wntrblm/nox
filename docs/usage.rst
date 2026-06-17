@@ -319,6 +319,40 @@ By default Nox will continue to run all sessions even if one fails. You can use 
 If the Noxfile sets ``nox.options.stop_on_first_error``, you can override the Noxfile setting from the command line by using ``--no-stop-on-first-error``.
 
 
+.. _opt-parallel:
+
+Running sessions in parallel
+----------------------------
+
+By default Nox runs sessions one at a time. Use ``-j`` / ``--parallel`` to run
+independent sessions concurrently, each in its own subprocess::
+
+    nox --parallel auto   # one session per CPU
+    nox -j 4              # at most four sessions at once
+
+The value is a positive integer or ``auto`` (the number of CPUs). The default
+is ``1`` (sequential). The environment variable ``NOX_PARALLEL`` and
+``nox.options.parallel`` in the Noxfile are also honored.
+
+Sessions are scheduled according to their dependencies: a session declared with
+``requires=`` does not start until all of its prerequisites have completed
+successfully, and is reported as ``aborted`` (and never started) if any
+prerequisite fails. ``--stop-on-first-error`` stops launching new sessions after
+the first failure; sessions already running are allowed to finish.
+
+Each session's output is buffered and printed as a single block when that
+session finishes, so output from concurrent sessions never interleaves. On an
+interactive terminal a live status board shows which sessions are currently
+running.
+
+.. note::
+
+    Because each session runs in its own subprocess that reads only from a pipe,
+    sessions cannot prompt for input under ``--parallel`` (``session.interactive``
+    is ``False``). Dynamic session scheduling via ``session.notify`` is not
+    supported in parallel mode; use ``requires=`` to order sessions instead.
+
+
 .. _opt-error-on-missing-interpreters:
 
 Failing sessions when the interpreter is missing
