@@ -65,6 +65,17 @@ _COLORS = {
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 
+def _make_color_formatter(*, color: bool) -> Callable[..., str]:
+    """Return a function that wraps text in ANSI codes, or a no-op if disabled."""
+    if not color:
+        return lambda text, *codes: text
+
+    def colorize(text: str, *codes: str) -> str:
+        return "".join(_COLORS[code] for code in codes) + text + _COLORS["reset"]
+
+    return colorize
+
+
 def _preview_text(line: str) -> str:
     """Turn a raw output line into a one-line, plain-text status preview.
 
@@ -111,12 +122,6 @@ class _Reporter:
         with self._lock:
             self._clear_board()
 
-    def _c(self, text: str, *codes: str) -> str:
-        """Wrap ``text`` in ANSI codes when color is enabled, else return it."""
-        if not self.color:
-            return text
-        return "".join(_COLORS[code] for code in codes) + text + _COLORS["reset"]
-
     def _render(self, now: float, width: int) -> list[str]:
         """Return the status-board lines for the currently-running sessions.
 
@@ -126,23 +131,21 @@ class _Reporter:
         if not self._active:
             return []
 
+        _c = _make_color_formatter(color=self.color)
         running = len(self._active)
         done = self._passed + self._failed
         queued = max(0, self._total - done - running)
-        plain_header = (
-            f"nox > --parallel: running {running} · passed {self._passed} · "
-            f"failed {self._failed} · queued {queued}"
+        header = (
+            f"{_c('nox > --parallel:', 'bold', 'purple')} "
+            f"{_c('running', 'blue')} {running} · "
+            f"{_c('passed', 'green')} {self._passed} · "
+            f"{_c('failed', 'red')} {self._failed} · "
+            f"{_c('queued', 'yellow')} {queued}"
         )
+        plain_header = _ANSI.sub("", header)
         if width and len(plain_header) > width - 1:
+            # Too narrow for the styled header; truncate the plain text instead.
             header = plain_header[: width - 1]
-        else:
-            header = (
-                f"{self._c('nox > --parallel:', 'bold', 'purple')} "
-                f"{self._c('running', 'blue')} {running} · "
-                f"{self._c('passed', 'green')} {self._passed} · "
-                f"{self._c('failed', 'red')} {self._failed} · "
-                f"{self._c('queued', 'yellow')} {queued}"
-            )
         lines = [header]
 
         frame = _SPINNER[self._spin % len(_SPINNER)]
@@ -157,12 +160,12 @@ class _Reporter:
                 budget = width - 1 - len(head) - 2  # 2 for the separating spaces
                 preview = preview[:budget] if budget > 0 else ""
             line = (
-                f"{self._c(frame, 'cyan')} "
-                f"{self._c(name, 'bold', 'cyan')} "
-                f"{self._c(f'({int(now - start)}s)', 'green')}"
+                f"{_c(frame, 'cyan')} "
+                f"{_c(name, 'bold', 'cyan')} "
+                f"{_c(f'({int(now - start)}s)', 'green')}"
             )
             if preview:
-                line += f"  {self._c(preview, 'grey')}"
+                line += f"  {_c(preview, 'grey')}"
             lines.append(line)
         return lines
 
