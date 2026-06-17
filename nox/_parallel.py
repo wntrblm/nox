@@ -130,14 +130,14 @@ class _Reporter:
         done = self._passed + self._failed
         queued = max(0, self._total - done - running)
         plain_header = (
-            f"> nox --parallel: running {running} · passed {self._passed} · "
+            f"nox > --parallel: running {running} · passed {self._passed} · "
             f"failed {self._failed} · queued {queued}"
         )
         if width and len(plain_header) > width - 1:
             header = plain_header[: width - 1]
         else:
             header = (
-                f"{self._c('> nox --parallel:', 'bold', 'purple')} "
+                f"{self._c('nox > --parallel:', 'bold', 'purple')} "
                 f"{self._c('running', 'blue')} {running} · "
                 f"{self._c('passed', 'green')} {self._passed} · "
                 f"{self._c('failed', 'red')} {self._failed} · "
