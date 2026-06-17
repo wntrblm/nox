@@ -22,7 +22,9 @@
 from __future__ import annotations
 
 import functools
+import glob
 import os
+import platform
 import shutil
 import sys
 
@@ -41,7 +43,9 @@ ALL_PYTHONS = nox.project.python_versions(PYPROJECT)
 def tests(session: nox.Session) -> None:
     """Run test suite with pytest."""
 
-    coverage_file = f".coverage.pypi.{sys.platform}.{session.python}"
+    coverage_file = (
+        f".coverage.pypi.{sys.platform}.{platform.machine()}.{session.python}"
+    )
     env = {
         "PYTHONWARNDEFAULTENCODING": "1",
         "COVERAGE_FILE": coverage_file,
@@ -80,7 +84,9 @@ def minimums(session: nox.Session) -> None:
 def xonda_tests(session: nox.Session, xonda: str) -> None:
     """Run test suite set up with conda/mamba/etc."""
 
-    coverage_file = f".coverage.{xonda}.{sys.platform}.{session.python}"
+    coverage_file = (
+        f".coverage.{xonda}.{sys.platform}.{platform.machine()}.{session.python}"
+    )
     env = {"COVERAGE_FILE": coverage_file}
 
     session.conda_install(
@@ -131,7 +137,11 @@ def cover(session: nox.Session) -> None:
         return
 
     session.install("coverage[toml]>=7.3")
-    session.run("coverage", "combine")
+    # CI downloads each job's artifact into its own coverage-* subdirectory
+    # (no merge-multiple), so no two jobs can clobber a same-named data file.
+    # Fall back to the current directory for local runs.
+    paths = sorted(glob.glob("coverage-*")) or ["."]
+    session.run("coverage", "combine", *paths)
     session.run("coverage", "report", "--fail-under=100", "--show-missing")
     session.run("coverage", "erase")
 
