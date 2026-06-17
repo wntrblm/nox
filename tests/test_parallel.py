@@ -327,8 +327,11 @@ def test_reporter_render_color() -> None:
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "installing"}
     header, line = reporter._render(105.0, width=0)
+    assert "\x1b[1m\x1b[35m> nox --parallel:\x1b[0m" in header  # bold purple prefix
+    assert "\x1b[34m" in header  # blue "running"
     assert "\x1b[32m" in header  # green "passed"
     assert "\x1b[31m" in header  # red "failed"
+    assert "\x1b[33m" in header  # yellow "queued"
     assert "\x1b[36m" in line  # cyan spinner/name
     assert "\x1b[32m" in line  # green elapsed time
     assert "\x1b[90minstalling\x1b[0m" in line  # grey preview

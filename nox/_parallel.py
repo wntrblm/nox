@@ -52,9 +52,12 @@ _SYMBOLS = {
     Status.ABORTED: "↯",
 }
 _COLORS = {
-    "cyan": "\x1b[36m",
-    "green": "\x1b[32m",
     "red": "\x1b[31m",
+    "green": "\x1b[32m",
+    "yellow": "\x1b[33m",
+    "blue": "\x1b[34m",
+    "purple": "\x1b[35m",
+    "cyan": "\x1b[36m",
     "grey": "\x1b[90m",
     "bold": "\x1b[1m",
     "reset": "\x1b[0m",
@@ -134,11 +137,11 @@ class _Reporter:
             header = plain_header[: width - 1]
         else:
             header = (
-                f"{self._c('> nox --parallel:', 'bold')} "
-                f"{self._c('running', 'bold')} {running} · "
+                f"{self._c('> nox --parallel:', 'bold', 'purple')} "
+                f"{self._c('running', 'blue')} {running} · "
                 f"{self._c('passed', 'green')} {self._passed} · "
                 f"{self._c('failed', 'red')} {self._failed} · "
-                f"{self._c('queued', 'grey')} {queued}"
+                f"{self._c('queued', 'yellow')} {queued}"
             )
         lines = [header]
 
