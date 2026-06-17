@@ -733,11 +733,7 @@ class VirtualEnv(ProcessEnv):
     def _check_reused_environment_links(self) -> bool:
         """Check that interpreter links in the reused environment are not broken."""
         bin_dir = self.bin
-        names = (
-            ["python.exe"]
-            if _PLATFORM.startswith("win") and not _IS_MINGW
-            else ["python", "python3"]
-        )
+        names = ["python.exe"] if self._windows_layout else ["python", "python3"]
 
         for name in names:
             path = os.path.join(bin_dir, name)
@@ -896,9 +892,20 @@ class VirtualEnv(ProcessEnv):
         return pbs_install_python(cleaned_interpreter)
 
     @property
+    def _windows_layout(self) -> bool:
+        """Whether the venv uses a Windows-style layout (``Scripts``/``python.exe``).
+
+        uv always builds a Windows-style venv, even under MSYS2/MinGW, where the
+        native interpreter and virtualenv/venv use a POSIX layout (``bin``/``python``).
+        """
+        if not _PLATFORM.startswith("win"):
+            return False
+        return not _IS_MINGW or self.venv_backend == "uv"
+
+    @property
     def bin_paths(self) -> list[str]:
         """Returns the location of the virtualenv's bin folder."""
-        if _PLATFORM.startswith("win") and not _IS_MINGW:
+        if self._windows_layout:
             return [os.path.join(self.location, "Scripts")]
         return [os.path.join(self.location, "bin")]
 
@@ -930,13 +937,14 @@ class VirtualEnv(ProcessEnv):
                     cmd.extend(["-p", self._resolved_interpreter])
             case "uv":
                 _, uv, uv_ver = _uv_state()
-                cmd = [
-                    uv,
-                    "venv",
-                    "-p",
-                    self._resolved_interpreter if self.interpreter else sys.executable,
-                    self.location,
-                ]
+                cmd = [uv, "venv"]
+                if self.interpreter:
+                    cmd += ["-p", self._resolved_interpreter]
+                elif not _IS_MINGW:
+                    # uv can't inspect the MSYS2/MinGW interpreter, so let it
+                    # pick the default rather than passing sys.executable.
+                    cmd += ["-p", sys.executable]
+                cmd += [self.location]
                 if version.Version("0.8") <= uv_ver:
                     cmd += ["--clear"]
             case _:
