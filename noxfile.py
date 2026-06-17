@@ -137,9 +137,6 @@ def cover(session: nox.Session) -> None:
         return
 
     session.install("coverage[toml]>=7.3")
-    # CI downloads each job's artifact into its own coverage-* subdirectory
-    # (no merge-multiple), so no two jobs can clobber a same-named data file.
-    # Fall back to the current directory for local runs.
     paths = sorted(glob.glob("coverage-*")) or ["."]
     session.run("coverage", "combine", *paths)
     session.run("coverage", "report", "--fail-under=100", "--show-missing")
