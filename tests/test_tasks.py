@@ -743,6 +743,31 @@ def test_print_summary() -> None:
     assert answer is results
 
 
+def test_print_summary_uses_parallel_wall_time() -> None:
+    results = [
+        sessions.Result(
+            session=typing.cast(
+                "sessions.SessionRunner", argparse.Namespace(friendly_name="foo")
+            ),
+            status=sessions.Status.SUCCESS,
+        ),
+        sessions.Result(
+            session=typing.cast(
+                "sessions.SessionRunner", argparse.Namespace(friendly_name="bar")
+            ),
+            status=sessions.Status.SUCCESS,
+        ),
+    ]
+    config = argparse.Namespace(parallel_wall_time=120.0)
+    with (
+        mock.patch.object(sessions.Result, "log"),
+        mock.patch.object(tasks, "logger") as logger,
+    ):
+        tasks.print_summary(results, config)
+    # The summary reports wall-clock time, not the sum of session durations.
+    assert "Ran 2 sessions in 2 minutes" in logger.session_info.call_args[0][0]
+
+
 def test_create_report_noop() -> None:
     config = _options.options.namespace(report=None)
     with mock.patch.object(builtins, "open", autospec=True) as open_:
