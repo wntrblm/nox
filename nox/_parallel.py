@@ -119,7 +119,7 @@ class _Reporter:
         frame = _SPINNER[self._spin % len(_SPINNER)]
         lines = []
         for name, start in self._active.items():
-            head = f"  {frame} {name} ({int(now - start)}s)"
+            head = f"{frame} {name} ({int(now - start)}s)"
             if width and len(head) > width - 1:
                 # Too narrow even for the header; fall back to plain truncation.
                 lines.append(head[: width - 1])
@@ -129,7 +129,7 @@ class _Reporter:
                 budget = width - 1 - len(head) - 2  # 2 for the separating spaces
                 preview = preview[:budget] if budget > 0 else ""
             line = (
-                f"  {self._c(frame, 'cyan')} "
+                f"{self._c(frame, 'cyan')} "
                 f"{self._c(name, 'bold', 'cyan')} "
                 f"{self._c(f'({int(now - start)}s)', 'green')}"
             )
