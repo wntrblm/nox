@@ -62,20 +62,19 @@ def _patch_run_session(
         _global_config: object,
         _procs: object,
         _procs_lock: object,
+        **_kwargs: object,
     ) -> tuple[Result, str]:
         if calls is not None:
             calls.append(session.friendly_name)
-        status = (
-            Status.FAILED if session.friendly_name in failures else Status.SUCCESS
-        )
-        return Result(session, status, duration=0.0), f"output of {session.friendly_name}"
+        status = Status.FAILED if session.friendly_name in failures else Status.SUCCESS
+        return Result(
+            session, status, duration=0.0
+        ), f"output of {session.friendly_name}"
 
     monkeypatch.setattr(_parallel, "_run_session", fake_run_session)
 
 
-def _run(
-    sessions: list[FakeSession], config: object, jobs: int = 4
-) -> list[Result]:
+def _run(sessions: list[FakeSession], config: object, jobs: int = 4) -> list[Result]:
     runners = [_fake_runner(s) for s in sessions]
     return _parallel.run_manifest_parallel(
         typing.cast("Manifest", runners), typing.cast("typing.Any", config), jobs
@@ -250,9 +249,7 @@ def _write_report(
 def test_read_report_success(tmp_path: object) -> None:
     path = str(tmp_path / "r.json")  # type: ignore[operator]
     _write_report(path, result="success", duration=2.0)
-    result = _parallel._read_report(
-        path, _fake_runner(FakeSession("x")), returncode=0
-    )
+    result = _parallel._read_report(path, _fake_runner(FakeSession("x")), returncode=0)
     assert result.status is Status.SUCCESS
     assert result.duration == 2.0
 
@@ -260,9 +257,7 @@ def test_read_report_success(tmp_path: object) -> None:
 def test_read_report_skipped_keeps_reason(tmp_path: object) -> None:
     path = str(tmp_path / "r.json")  # type: ignore[operator]
     _write_report(path, result="skipped", reason="no interpreter")
-    result = _parallel._read_report(
-        path, _fake_runner(FakeSession("x")), returncode=0
-    )
+    result = _parallel._read_report(path, _fake_runner(FakeSession("x")), returncode=0)
     assert result.status is Status.SKIPPED
     assert result.reason == "no interpreter"
 
@@ -284,8 +279,32 @@ def test_read_report_missing_falls_back_to_returncode(
 def test_reporter_render() -> None:
     reporter = _parallel._Reporter(color=False, tty=False)
     reporter._active = {"a": 100.0, "b": 100.0}
-    lines = reporter._render(105.0)
-    assert lines == ["  ⠋ a (5s)", "  ⠋ b (5s)"]
+    reporter._preview = {"a": "compiling module x"}
+    lines = reporter._render(105.0, width=0)
+    # ``a`` shows its preview after the progress; ``b`` has none yet.
+    assert lines == ["  ⠋ a (5s)  compiling module x", "  ⠋ b (5s)"]
+
+
+def test_reporter_render_truncates_to_width() -> None:
+    reporter = _parallel._Reporter(color=False, tty=False)
+    reporter._active = {"a": 100.0}
+    reporter._preview = {"a": "x" * 200}
+    [line] = reporter._render(105.0, width=20)
+    assert len(line) == 19
+
+
+def test_reporter_update_preview() -> None:
+    reporter = _parallel._Reporter(color=False, tty=False)
+    reporter._active = {"a": 0.0}
+    # ANSI escapes are stripped so truncation can't corrupt the terminal.
+    reporter.update("a", "\x1b[32mnox > installing\x1b[0m\n")
+    assert reporter._preview["a"] == "nox > installing"
+    # Blank lines don't clobber the last meaningful preview.
+    reporter.update("a", "   \n")
+    assert reporter._preview["a"] == "nox > installing"
+    # Carriage-return redraws keep only the latest segment.
+    reporter.update("a", "10%\r50%\r100%\n")
+    assert reporter._preview["a"] == "100%"
 
 
 def test_reporter_started_and_finished(capsys: pytest.CaptureFixture[str]) -> None:
@@ -358,12 +377,24 @@ def test_run_session_spawns_subprocess(
         return [sys.executable, "-c", code]
 
     monkeypatch.setattr(_parallel, "_child_argv", fake_child_argv)
+    seen: list[str] = []
     result, output = _parallel._run_session(
-        _fake_runner(FakeSession("x")), _config(), set(), threading.Lock()
+        _fake_runner(FakeSession("x")),
+        _config(),
+        set(),
+        threading.Lock(),
+        on_line=seen.append,
     )
     assert result.status is Status.SUCCESS
     assert result.duration == 0.5
     assert "child output" in output
+    assert any("child output" in line for line in seen)
+
+    # Without a callback (the default), output is still captured.
+    _, output2 = _parallel._run_session(
+        _fake_runner(FakeSession("x")), _config(), set(), threading.Lock()
+    )
+    assert "child output" in output2
 
 
 @pytest.mark.parametrize(
