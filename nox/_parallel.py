@@ -134,7 +134,7 @@ class _Reporter:
             header = plain_header[: width - 1]
         else:
             header = (
-                f"{self._c('> nox --parallel:', 'bold', 'cyan')} "
+                f"{self._c('> nox --parallel:', 'bold')} "
                 f"{self._c('running', 'bold')} {running} · "
                 f"{self._c('passed', 'green')} {self._passed} · "
                 f"{self._c('failed', 'red')} {self._failed} · "
@@ -396,6 +396,7 @@ def run_manifest_parallel(
         reporter.finished(name, result, output)
         return result
 
+    start = time.monotonic()
     with reporter, ThreadPoolExecutor(max_workers=jobs) as executor:
         try:
             while True:
@@ -426,6 +427,8 @@ def run_manifest_parallel(
             executor.shutdown(wait=False, cancel_futures=True)
             raise
 
+    # Report wall-clock time in the summary, not the sum of session durations.
+    global_config.parallel_wall_time = time.monotonic() - start
     return [results[session] for session in queue if session in results]
 
 

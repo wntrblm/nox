@@ -580,6 +580,11 @@ class NoxConfig(NoxfileOptions):
         ),
     )
     color: bool = attrs.field(default=False, metadata=opt(hidden=True))
+    # Wall-clock duration of a parallel run, recorded by the parallel runner
+    # so the summary reports elapsed time, not the sum of session durations.
+    parallel_wall_time: float | None = attrs.field(
+        default=None, metadata=opt(hidden=True)
+    )
     # The original working directory that Nox was invoked from, since it could
     # be different from the Noxfile's directory.
     invoked_from: str = attrs.field(
