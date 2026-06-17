@@ -51,6 +51,13 @@ _SYMBOLS = {
     Status.FAILED: "✗",
     Status.ABORTED: "↯",
 }
+_COLORS = {
+    "cyan": "\x1b[36m",
+    "green": "\x1b[32m",
+    "grey": "\x1b[90m",
+    "bold": "\x1b[1m",
+    "reset": "\x1b[0m",
+}
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 
@@ -97,6 +104,12 @@ class _Reporter:
         with self._lock:
             self._clear_board()
 
+    def _c(self, text: str, *codes: str) -> str:
+        """Wrap ``text`` in ANSI codes when color is enabled, else return it."""
+        if not self.color:
+            return text
+        return "".join(_COLORS[code] for code in codes) + text + _COLORS["reset"]
+
     def _render(self, now: float, width: int) -> list[str]:
         """Return the status-board lines for the currently-running sessions.
 
@@ -106,11 +119,23 @@ class _Reporter:
         frame = _SPINNER[self._spin % len(_SPINNER)]
         lines = []
         for name, start in self._active.items():
-            line = f"  {frame} {name} ({int(now - start)}s)"
-            preview = self._preview.get(name)
+            head = f"  {frame} {name} ({int(now - start)}s)"
+            if width and len(head) > width - 1:
+                # Too narrow even for the header; fall back to plain truncation.
+                lines.append(head[: width - 1])
+                continue
+            preview = self._preview.get(name, "")
+            if preview and width:
+                budget = width - 1 - len(head) - 2  # 2 for the separating spaces
+                preview = preview[:budget] if budget > 0 else ""
+            line = (
+                f"  {self._c(frame, 'cyan')} "
+                f"{self._c(name, 'bold', 'cyan')} "
+                f"{self._c(f'({int(now - start)}s)', 'green')}"
+            )
             if preview:
-                line = f"{line}  {preview}"
-            lines.append(line[: width - 1] if width else line)
+                line += f"  {self._c(preview, 'grey')}"
+            lines.append(line)
         return lines
 
     def _run(self) -> None:  # pragma: no cover - timing/terminal loop
