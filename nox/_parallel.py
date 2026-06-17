@@ -176,9 +176,13 @@ def _child_argv(
         argv.append("--no-install")
     if g.install_only:
         argv.append("--install-only")
-    if g.default_venv_backend:
+    # The "uv|virtualenv" fallback syntax is only valid in the Noxfile, not on
+    # the command line (which validates against single backends). The child
+    # re-reads the Noxfile, so only forward a backend that names a single one;
+    # a fallback expression is re-derived from the Noxfile by the child.
+    if g.default_venv_backend and "|" not in g.default_venv_backend:
         argv += ["--default-venv-backend", str(g.default_venv_backend)]
-    if g.force_venv_backend:
+    if g.force_venv_backend and "|" not in g.force_venv_backend:
         argv += ["--force-venv-backend", str(g.force_venv_backend)]
     if g.download_python:
         argv += ["--download-python", str(g.download_python)]

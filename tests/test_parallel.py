@@ -206,6 +206,27 @@ def test_child_argv_minimal() -> None:
     assert "--" not in argv
 
 
+def test_child_argv_skips_fallback_backend() -> None:
+    # The "uv|virtualenv" fallback syntax is Noxfile-only and rejected on the
+    # command line, so it must not be forwarded to the child.
+    config = _options.options.namespace(
+        noxfile="noxfile.py",
+        default_venv_backend="uv|virtualenv",
+        force_venv_backend="uv|venv",
+        error_on_missing_interpreters=False,
+        error_on_external_run=False,
+        color=False,
+        posargs=[],
+    )
+    argv = _parallel._child_argv(
+        typing.cast("typing.Any", config),
+        _fake_runner(FakeSession("tests")),
+        "r.json",
+    )
+    assert "--default-venv-backend" not in argv
+    assert "--force-venv-backend" not in argv
+
+
 def _write_report(
     path: str, *, result: str = "success", reason: object = None, duration: float = 1.5
 ) -> None:
