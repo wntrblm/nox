@@ -89,9 +89,7 @@ def xonda_tests(session: nox.Session, xonda: str) -> None:
     )
     env = {"COVERAGE_FILE": coverage_file}
 
-    # Fold requests<99 into the requirements install so it's a single conda
-    # solve (one fewer repodata fetch). Currently the spec doesn't work on
-    # Windows either with or without quoting, so it's omitted there.
+    # Windows breaks currently either with or without quoting, so it's omitted there.
     extra_specs = [] if sys.platform.startswith("win32") else ["requests<99"]
     session.conda_install(
         "--file", "requirements-conda-test.txt", *extra_specs, channel="conda-forge"
