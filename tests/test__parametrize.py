@@ -320,8 +320,8 @@ def test_generate_calls_session_python() -> None:
     assert len(called_with) == 3
 
     assert called_with[0] == (session_, "0.9")  # type: ignore[comparison-overlap]
-    assert called_with[1] == (session_, "0.9")  # type: ignore[comparison-overlap]
-    assert called_with[2] == (session_, "1.0")  # type: ignore[comparison-overlap]
+    assert called_with[1] == (session_, "0.9")  # type: ignore[unreachable]
+    assert called_with[2] == (session_, "1.0")
 
 
 def test_generate_calls_python_compatibility() -> None:
@@ -353,5 +353,5 @@ def test_generate_calls_python_compatibility() -> None:
     assert len(called_with) == 3
 
     assert called_with[0] == (session_, "3.8", "0.9")  # type: ignore[comparison-overlap]
-    assert called_with[1] == (session_, "3.9", "0.9")  # type: ignore[comparison-overlap]
-    assert called_with[2] == (session_, "3.9", "1.0")  # type: ignore[comparison-overlap]
+    assert called_with[1] == (session_, "3.9", "0.9")  # type: ignore[unreachable]
+    assert called_with[2] == (session_, "3.9", "1.0")

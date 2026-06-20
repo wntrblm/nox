@@ -117,27 +117,35 @@ lint.flake8-unused-arguments.ignore-variadic-names = true
 [tool.pyproject-fmt]
 max_supported_python = "3.14"
 
-[tool.pytest.ini_options]
-minversion = "7.0"
-addopts = [ "-ra", "--strict-markers", "--strict-config" ]
-xfail_strict = true
-filterwarnings = [ "error" ]
-log_level = "INFO"
-testpaths = [ "tests" ]
-pythonpath = [ ".github/" ]
-markers = [
+[tool.mypy]
+mypy_path = [ ".github" ]
+python_version = "3.10"
+warn_unreachable = true
+enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
+strict = true
+overrides = [ { module = [ "tox.*" ], ignore_missing_imports = true } ]
+
+[tool.pytest]
+ini_options.minversion = "7.0"
+ini_options.testpaths = [ "tests" ]
+ini_options.pythonpath = [ ".github/" ]
+ini_options.addopts = [ "-ra", "--strict-markers", "--strict-config" ]
+ini_options.markers = [
   "conda: test requires conda",
 ]
+ini_options.xfail_strict = true
+ini_options.filterwarnings = [ "error" ]
+ini_options.log_level = "INFO"
 
 [tool.coverage]
-run.core = "sysmon"
 run.branch = true
-run.patch = [ "subprocess" ]
-run.relative_files = true
-run.source_pkgs = [ "nox" ]
+run.core = "sysmon"
 run.disable_warnings = [
   "no-sysmon",
 ]
+run.patch = [ "subprocess" ]
+run.relative_files = true
+run.source_pkgs = [ "nox" ]
 report.exclude_also = [
   "@overload",
   "def __dir__()",
@@ -145,14 +153,3 @@ report.exclude_also = [
   "if TYPE_CHECKING:",
 ]
 report.omit = [ "nox/_typing.py" ]
-
-[tool.mypy]
-python_version = "3.10"
-strict = true
-warn_unreachable = true
-enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
-mypy_path = [ ".github" ]
-
-[[tool.mypy.overrides]]
-module = [ "tox.*" ]
-ignore_missing_imports = true
