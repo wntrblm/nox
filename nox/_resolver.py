@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = {"itertools"}
+
 import itertools
 from collections.abc import Hashable, Iterable, Iterator, Mapping
 from typing import TypeVar
