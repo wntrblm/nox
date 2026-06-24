@@ -278,6 +278,15 @@ def _child_argv(
         argv += ["--force-venv-backend", str(g.force_venv_backend)]
     if g.download_python:
         argv += ["--download-python", str(g.download_python)]
+    # Reproduce the parent's interpreter selection so the child rebuilds the
+    # same manifest; otherwise forced/extra-python signatures (e.g. tests-3.12)
+    # don't exist in the child and it fails with "Sessions not found".
+    if g.force_pythons:
+        argv += ["--force-python", *g.force_pythons]
+    if g.extra_pythons:
+        argv += ["--extra-python", *g.extra_pythons]
+    if g.pythons:
+        argv += ["--python", *g.pythons]
     argv.append(
         "--error-on-missing-interpreters"
         if g.error_on_missing_interpreters
@@ -304,14 +313,19 @@ def _read_report(path: str, session: SessionRunner, returncode: int) -> Result:
     try:
         with open(path, encoding="utf-8") as report_file:
             entry = json.load(report_file)["sessions"][0]
+        duration = entry.get("duration", 0.0)
         status = Status[entry["result"].upper()]
-        return Result(
-            session, status, entry.get("reason"), duration=entry.get("duration", 0.0)
-        )
+        result = Result(session, status, entry.get("reason"), duration=duration)
     except (OSError, ValueError, KeyError, IndexError):
         # The child died before writing a usable report; trust its exit code.
         status = Status.SUCCESS if returncode == 0 else Status.FAILED
         return Result(session, status)
+    # A child may run more than the scheduled session (e.g. via notify()); its
+    # exit code reflects every one of them. Don't report success over a non-zero
+    # child whose first session happened to pass.
+    if returncode != 0 and result:
+        return Result(session, Status.FAILED, duration=duration)
+    return result
 
 
 def _run_session(
@@ -333,6 +347,9 @@ def _run_session(
         with subprocess.Popen(
             _child_argv(global_config, session, report_path),
             cwd=getattr(global_config, "invoked_from", None),
+            # Detach stdin so the child never sees a TTY: parallel sessions must
+            # not prompt or read from the shared terminal (they would race/hang).
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
