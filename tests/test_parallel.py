@@ -27,6 +27,7 @@ from nox.manifest import Manifest
 from nox.sessions import Result, SessionRunner, Status
 
 if typing.TYPE_CHECKING:
+    import argparse
     from collections.abc import Sequence
 
 
@@ -46,7 +47,7 @@ def _fake_runner(session: FakeSession) -> SessionRunner:
     return typing.cast("SessionRunner", session)
 
 
-def _config(**kwargs: object) -> object:
+def _config(**kwargs: object) -> argparse.Namespace:
     kwargs.setdefault("stop_on_first_error", False)
     return _options.options.namespace(**kwargs)
 
@@ -185,6 +186,29 @@ def test_child_argv_full() -> None:
     assert argv[-3:] == ["--", "-k", "foo"]
 
 
+def test_child_argv_forwards_python_selection() -> None:
+    # Forced/extra/filtered interpreters must reach the child so it rebuilds the
+    # same manifest (e.g. the scheduled "tests-3.12" signature exists there too).
+    config = _options.options.namespace(
+        noxfile="noxfile.py",
+        force_pythons=["3.12"],
+        extra_pythons=["3.13"],
+        pythons=["3.12"],
+        error_on_missing_interpreters=False,
+        error_on_external_run=False,
+        color=False,
+        posargs=[],
+    )
+    argv = _parallel._child_argv(
+        typing.cast("typing.Any", config),
+        _fake_runner(FakeSession("tests-3.12")),
+        "r.json",
+    )
+    assert argv[argv.index("--force-python") + 1] == "3.12"
+    assert argv[argv.index("--extra-python") + 1] == "3.13"
+    assert argv[argv.index("--python") + 1] == "3.12"
+
+
 def test_child_argv_minimal() -> None:
     config = _options.options.namespace(
         noxfile="noxfile.py",
@@ -260,6 +284,18 @@ def test_read_report_skipped_keeps_reason(tmp_path: object) -> None:
     result = _parallel._read_report(path, _fake_runner(FakeSession("x")), returncode=0)
     assert result.status is Status.SKIPPED
     assert result.reason == "no interpreter"
+
+
+def test_read_report_nonzero_returncode_overrides_passing_report(
+    tmp_path: object,
+) -> None:
+    # A child that ran an extra notified session may exit non-zero while its
+    # first (scheduled) session passed; the failure must not be swallowed.
+    path = str(tmp_path / "r.json")  # type: ignore[operator]
+    _write_report(path, result="success", duration=3.0)
+    result = _parallel._read_report(path, _fake_runner(FakeSession("x")), returncode=1)
+    assert result.status is Status.FAILED
+    assert result.duration == 3.0
 
 
 @pytest.mark.parametrize(
