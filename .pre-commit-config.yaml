@@ -53,6 +53,8 @@ repos:
           - jinja2
           - packaging
           - pbs_installer
+          - platformdirs
+          - python-discovery
           - pytest
           - tomli
           - uv

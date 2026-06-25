@@ -43,6 +43,8 @@ dependencies = [
   "dependency-groups>=1.1",
   "humanize>=4",
   "packaging>=22",
+  "platformdirs>=2",
+  "python-discovery>=1",
   "tomli>=1.1; python_version<'3.11'",
   "virtualenv>=20.15",
 ]
