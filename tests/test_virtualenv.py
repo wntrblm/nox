@@ -27,7 +27,9 @@ from textwrap import dedent
 from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn
 from unittest import mock
 
+import platformdirs
 import pytest
+import python_discovery
 from packaging import version
 
 import nox.command
@@ -43,7 +45,6 @@ IS_WINDOWS = sys.platform.startswith("win")
 # ("bin"/"python"), so Windows-layout assertions must exclude this case.
 IS_MINGW = nox.virtualenv._IS_MINGW
 HAS_UV = shutil.which("uv") is not None
-RAISE_ERROR = "RAISE_ERROR"
 VIRTUALENV_VERSION = metadata.version("virtualenv")
 
 has_uv = pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
@@ -57,9 +58,10 @@ xfail_mingw_uv = pytest.mark.xfail(
 )
 
 
-class TextProcessResult(NamedTuple):
-    stdout: str
-    returncode: int = 0
+class FakeInterpreter(NamedTuple):
+    """Stand-in for python-discovery's ``PythonInfo`` in tests."""
+
+    executable: str
 
 
 @pytest.fixture
@@ -93,44 +95,27 @@ def make_conda(tmp_path: Path) -> Callable[..., tuple[CondaEnv, Path]]:
 
 
 @pytest.fixture
-def patch_sysfind(
+def patch_discover(
     monkeypatch: pytest.MonkeyPatch,
-) -> Callable[[tuple[str, ...], str | None, str], None]:
-    """Provides a function to patch ``sysfind`` with parameters for tests related
-    to locating a Python interpreter in the system ``PATH``.
+) -> Callable[[str | None], list[str]]:
+    """Patch python-discovery's interpreter lookup used by ``_find_python``.
+
+    The returned setter takes the executable path discovery should report (or
+    ``None`` for "not found") and returns the list of specs that get queried, so
+    tests can assert nox forwarded the right spec without probing the system.
     """
 
-    def patcher(
-        only_find: tuple[str, ...], sysfind_result: str | None, sysexec_result: str
-    ) -> None:
-        """Monkeypatches python discovery, causing specific results to be found.
+    def setup(executable: str | None) -> list[str]:
+        specs: list[str] = []
 
-        Args:
-            only_find (Tuple[str]): The strings for which ``shutil.which`` should be successful,
-                e.g. ``("python", "python.exe")``
-            sysfind_result (Optional[str]): The ``path`` string to create the returned
-                mocked ``path`` object with which will represent the found Python interpreter,
-                or ``None``.
-            sysexec_result (str): A string that should be returned when executing the
-                mocked ``path`` object. Usually a Python version string.
-                Use the global ``RAISE_ERROR`` to have ``sysexec`` fail.
-        """
+        def discover(spec: str) -> FakeInterpreter | None:
+            specs.append(spec)
+            return FakeInterpreter(executable) if executable is not None else None
 
-        def special_which(name: str, path: Any = None) -> str | None:  # noqa: ARG001
-            if sysfind_result is None:
-                return None
-            if name.lower() in only_find:
-                return sysfind_result or name
-            return None
+        monkeypatch.setattr(nox.virtualenv, "_discover_interpreter", discover)
+        return specs
 
-        monkeypatch.setattr(shutil, "which", special_which)
-
-        def special_run(cmd: Any, *args: Any, **kwargs: Any) -> TextProcessResult:  # noqa: ARG001
-            return TextProcessResult(sysexec_result)
-
-        monkeypatch.setattr(subprocess, "run", special_run)
-
-    return patcher
+    return setup
 
 
 def test_process_env_constructor() -> None:
@@ -1213,19 +1198,73 @@ def test_allowed_globals(
     assert venv.allowed_globals == ("/some/uv", "/some/uvx")
 
 
-def test_find_python_cached(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_discover_interpreter(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``_discover_interpreter`` forwards the spec to python-discovery."""
+    sentinel = object()
+
+    def fake_get(spec: str, cache: object = None) -> object:  # noqa: ARG001
+        assert spec == "3.12"
+        return sentinel
+
+    monkeypatch.setattr(python_discovery, "get_interpreter", fake_get)
+    monkeypatch.setattr(nox.virtualenv, "_get_python_discovery_cache", lambda: None)
+
+    assert nox.virtualenv._discover_interpreter("3.12") is sentinel
+
+
+def test_find_python_cached(
+    patch_discover: Callable[[str | None], list[str]],
+) -> None:
     """Repeated interpreter discovery (one lookup per session) is cached."""
-    calls: list[str] = []
+    specs = patch_discover("/usr/bin/python3.99")
 
-    def fake_which(name: str) -> str | None:
-        calls.append(name)
-        return "/usr/bin/python3.99"
+    assert nox.virtualenv._find_python("python3.99") == "/usr/bin/python3.99"
+    assert nox.virtualenv._find_python("python3.99") == "/usr/bin/python3.99"
+    assert specs == ["python3.99"]
 
-    monkeypatch.setattr(shutil, "which", fake_which)
 
-    assert nox.virtualenv._find_python("python3.99", "3.99") == "python3.99"
-    assert nox.virtualenv._find_python("python3.99", "3.99") == "python3.99"
-    assert calls == ["python3.99"]
+def test_get_python_discovery_cache(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(platformdirs, "user_cache_dir", lambda *a, **k: str(tmp_path))
+    nox.virtualenv._get_python_discovery_cache.cache_clear()
+    try:
+        assert isinstance(
+            nox.virtualenv._get_python_discovery_cache(), python_discovery.DiskCache
+        )
+    finally:
+        nox.virtualenv._get_python_discovery_cache.cache_clear()
+
+
+def test_get_python_discovery_cache_oserror(monkeypatch: pytest.MonkeyPatch) -> None:
+    def boom(*args: object, **kwargs: object) -> NoReturn:
+        raise OSError
+
+    monkeypatch.setattr(python_discovery, "DiskCache", boom)
+    nox.virtualenv._get_python_discovery_cache.cache_clear()
+    try:
+        assert nox.virtualenv._get_python_discovery_cache() is None
+    finally:
+        nox.virtualenv._get_python_discovery_cache.cache_clear()
+
+
+@pytest.mark.parametrize(
+    ("spec", "expected"),
+    [
+        ("3.12", "3.12"),
+        ("python3.12", "python3.12"),
+        ("pypy3.11", "pypy3.11"),
+        (">=3.14", "3.14"),
+        (">3.10", "3.10"),
+        ("~=3.11", "3.11"),
+        ("==3.12.*", "3.12"),
+        (">=3.11,<3.13", "3.11"),
+        ("<3.14", None),
+        ("!=3.12", None),
+    ],
+)
+def test_concrete_install_target(spec: str, expected: str | None) -> None:
+    assert nox.virtualenv._concrete_install_target(spec) == expected
 
 
 @pytest.mark.parametrize(
@@ -1403,317 +1442,104 @@ def test__resolved_interpreter_none(
 
 
 @pytest.mark.parametrize(
-    ("input_", "expected"),
-    [
-        ("3", "python3"),
-        ("3.6", "python3.6"),
-        ("3.6.2", "python3.6"),
-        ("3.10", "python3.10"),
-        ("2.7.15", "python2.7"),
-        ("3.13t", "python3.13t"),
-        ("3.14.1t", "python3.14t"),
-    ],
+    "input_",
+    ["3", "3.6", "3.6.2", "3.10", "2.7.15", "3.13t", "3.14.1t", "3.6-32", ">=3.14"],
 )
-@mock.patch("nox.virtualenv._PLATFORM", new="linux")
-@mock.patch.object(shutil, "which", return_value=True)
-def test__resolved_interpreter_numerical_non_windows(
-    which: mock.Mock,
+def test__resolved_interpreter_found(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
     input_: str,
-    expected: str,
 ) -> None:
+    # Every spec form (versions, free-threaded, arch suffix, ranges) is handed
+    # verbatim to python-discovery, and its executable path is returned.
+    specs = patch_discover("/fake/bin/python")
     venv, _ = make_one(interpreter=input_)
 
-    assert venv._resolved_interpreter == expected
-    which.assert_called_once_with(expected)
+    assert venv._resolved_interpreter == "/fake/bin/python"
+    assert specs == [input_]
 
 
-@pytest.mark.parametrize("input_", ["2.", "2.7."])
-@mock.patch("nox.virtualenv._PLATFORM", new="linux")
-@mock.patch.object(shutil, "which", return_value=False)
-def test__resolved_interpreter_invalid_numerical_id(
-    which: mock.Mock,
+@pytest.mark.parametrize("input_", ["2.", "2.7.", "3.6-32", "goofy", ">=3.99"])
+def test__resolved_interpreter_not_found(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
     input_: str,
 ) -> None:
-    venv, _ = make_one(interpreter=input_)
-
-    with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        print(venv._resolved_interpreter)
-
-    which.assert_called_once_with(input_)
-
-
-@mock.patch("nox.virtualenv._PLATFORM", new="linux")
-@mock.patch.object(shutil, "which", return_value=False)
-def test__resolved_interpreter_32_bit_non_windows(
-    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
-) -> None:
-    venv, _ = make_one(interpreter="3.6-32")
-
-    with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        print(venv._resolved_interpreter)
-    which.assert_called_once_with("3.6-32")
-
-
-@mock.patch("nox.virtualenv._PLATFORM", new="linux")
-@mock.patch.object(shutil, "which", return_value=True)
-def test__resolved_interpreter_non_windows(
-    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
-) -> None:
-    # Establish that the interpreter is simply passed through resolution
-    # on non-Windows.
-    venv, _ = make_one(interpreter="python3.6")
-
-    assert venv._resolved_interpreter == "python3.6"
-    which.assert_called_once_with("python3.6")
-
-
-@mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch.object(shutil, "which")
-def test__resolved_interpreter_windows_full_path(
-    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
-) -> None:
-    # Establish that if we get a fully-qualified system path (on Windows
-    # or otherwise) and the path exists, that we accept it.
-    venv, _ = make_one(interpreter=r"c:\Python36\python.exe")
-
-    which.return_value = venv.interpreter
-    assert venv._resolved_interpreter == r"c:\Python36\python.exe"
-    which.assert_called_once_with(r"c:\Python36\python.exe")
-
-
-@pytest.mark.parametrize(
-    ("input_", "expected"),
-    [
-        ("3.7", r"c:\python37-x64\python.exe"),
-        ("python3.6", r"c:\python36-x64\python.exe"),
-        ("2.7-32", r"c:\python27\python.exe"),
-    ],
-)
-@mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch.object(subprocess, "run")
-@mock.patch.object(shutil, "which")
-def test__resolved_interpreter_windows_pyexe(
-    which: mock.Mock,
-    run: mock.Mock,
-    make_one: Callable[..., tuple[VirtualEnv, Path]],
-    input_: str,
-    expected: str,
-) -> None:
-    # Establish that if we get a standard pythonX.Y path, we look it
-    # up via the py launcher on Windows.
-    venv, _ = make_one(interpreter=input_)
-
-    if input_ == "3.7":
-        input_ = "python3.7"
-
-    # Trick the system into thinking that it cannot find python3.6
-    # (it likely will on Unix). Also, when the system looks for the
-    # py launcher, give it a dummy that returns our test value when
-    # run.
-    def special_run(cmd: str, *args: str, **kwargs: object) -> TextProcessResult:
-        if cmd[0] == "py":
-            return TextProcessResult(expected)
-        return TextProcessResult("", 1)
-
-    run.side_effect = special_run
-    which.side_effect = lambda x: "py" if x == "py" else None
-
-    # Okay now run the test.
-    assert venv._resolved_interpreter == expected
-    assert which.call_count == 2
-    which.assert_has_calls([mock.call(input_), mock.call("py")])
-
-
-@pytest.mark.parametrize(
-    ("interpreter", "expected_py_arg"),
-    [
-        ("3.10-32", "3.10-32"),
-        # Only a literal "-32" suffix is meaningful to the py launcher.
-        ("3.10-3", ""),
-    ],
-)
-@mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch("nox.virtualenv.locate_using_path_and_version", return_value=None)
-@mock.patch("nox.virtualenv.locate_via_py", return_value=None)
-@mock.patch.object(shutil, "which", return_value=None)
-def test_find_python_windows_32_bit_suffix(
-    which: mock.Mock,  # noqa: ARG001
-    locate_via_py_mock: mock.Mock,
-    locate_using_path_and_version_mock: mock.Mock,  # noqa: ARG001
-    interpreter: str,
-    expected_py_arg: str,
-) -> None:
-    # Only an exact "-32" suffix is preserved for the Windows py launcher.
-    assert nox.virtualenv._find_python(interpreter, "") is None
-    locate_via_py_mock.assert_called_once_with(expected_py_arg)
-
-
-@mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch.object(subprocess, "run")
-@mock.patch.object(shutil, "which")
-def test__resolved_interpreter_windows_pyexe_fails(
-    which: mock.Mock, run: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
-) -> None:
-    # Establish that if the py launcher fails, we give the right error.
-    venv, _ = make_one(interpreter="python3.6")
-
-    # Trick the nox.virtualenv into thinking that it cannot find python3.6
-    # (it likely will on Unix). Also, when the nox.virtualenv looks for the
-    # py launcher, give it a dummy that fails.
-    def special_run(cmd: str, *args: str, **kwargs: object) -> TextProcessResult:  # noqa: ARG001
-        return TextProcessResult("", 1)
-
-    run.side_effect = special_run
-    which.side_effect = lambda x: "py" if x == "py" else None
-
-    # Okay now run the test.
-    with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        print(venv._resolved_interpreter)
-
-    which.assert_has_calls([mock.call("python3.6"), mock.call("py")])
-
-
-@mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.3"))
-def test__resolved_interpreter_windows_path_and_version(
-    make_one: Callable[..., tuple[VirtualEnv, Path]],
-    patch_sysfind: Callable[..., None],
-) -> None:
-    # Establish that if we get a standard pythonX.Y path, we look it
-    # up via the path on Windows.
-    venv, _ = make_one(interpreter="3.7")
-
-    # Trick the system into thinking that it cannot find
-    # pythonX.Y up until the python-in-path check at the end.
-    # Also, we don't give it a mock py launcher.
-    # But we give it a mock python interpreter to find
-    # in the system path.
-    correct_path = r"c:\python37-x64\python.exe"
-    patch_sysfind(
-        only_find=("python", "python.exe"),
-        sysfind_result=correct_path,
-        sysexec_result="3.7.3\\n",
-    )
-
-    # Okay, now run the test.
-    assert venv._resolved_interpreter == correct_path
-
-
-@pytest.mark.parametrize("input_", ["2.7", "python3.7", "goofy"])
-@pytest.mark.parametrize("sysfind_result", [r"c:\python37-x64\python.exe", None])
-@pytest.mark.parametrize("sysexec_result", ["3.7.3\\n", RAISE_ERROR])
-@mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.3"))
-def test__resolved_interpreter_windows_path_and_version_fails(
-    input_: str,
-    sysfind_result: None | str,
-    sysexec_result: str,
-    make_one: Callable[..., tuple[VirtualEnv, Path]],
-    patch_sysfind: Callable[..., None],
-) -> None:
-    # Establish that if we get a standard pythonX.Y path, we look it
-    # up via the path on Windows.
+    specs = patch_discover(None)
     venv, _ = make_one(interpreter=input_, download_python="never")
 
-    # Trick the system into thinking that it cannot find
-    # pythonX.Y up until the python-in-path check at the end.
-    # Also, we don't give it a mock py launcher.
-    # But we give it a mock python interpreter to find
-    # in the system path.
-    patch_sysfind(("python", "python.exe"), sysfind_result, sysexec_result)
-
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
         print(venv._resolved_interpreter)
+    assert specs == [input_]
 
 
-@mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch.object(shutil, "which")
-def test__resolved_interpreter_not_found(
-    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
-) -> None:
-    # Establish that if an interpreter cannot be found at a standard
-    # location on Windows, we raise a useful error.
-    venv, _ = make_one(interpreter="python3.6", download_python="never")
-
-    # We are on Windows, and nothing can be found.
-    which.return_value = None
-
-    # Run the test.
-    with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        print(venv._resolved_interpreter)
-
-
-@mock.patch("nox.virtualenv._PLATFORM", new="win32")
-@mock.patch("nox.virtualenv.locate_via_py", new=lambda _: None)  # type: ignore[untyped-decorator]  # noqa: PT008
-def test__resolved_interpreter_nonstandard(
+def test__resolved_interpreter_full_path(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
-    # Establish that we do not try to resolve non-standard locations
-    # on Windows.
-    venv, _ = make_one(interpreter="goofy")
+    # A fully-qualified path is passed through to discovery, which accepts it.
+    specs = patch_discover(r"c:\Python36\python.exe")
+    venv, _ = make_one(interpreter=r"c:\Python36\python.exe")
 
-    with pytest.raises(nox.virtualenv.InterpreterNotFound):
-        print(venv._resolved_interpreter)
+    assert venv._resolved_interpreter == r"c:\Python36\python.exe"
+    assert specs == [r"c:\Python36\python.exe"]
 
 
-@mock.patch("nox.virtualenv._PLATFORM", new="linux")
-@mock.patch.object(shutil, "which", return_value=True)
 def test__resolved_interpreter_cache_result(
-    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
+    specs = patch_discover("/fake/bin/python3.6")
     venv, _ = make_one(interpreter="3.6")
 
     assert venv._resolved is None
-    assert venv._resolved_interpreter == "python3.6"
-    which.assert_called_once_with("python3.6")
+    assert venv._resolved_interpreter == "/fake/bin/python3.6"
+    assert specs == ["3.6"]
     # Check the cache and call again to make sure it is used.
-    assert venv._resolved == "python3.6"
-    assert venv._resolved_interpreter == "python3.6"  # type: ignore[unreachable]
-    assert which.call_count == 1
+    assert venv._resolved == "/fake/bin/python3.6"
+    assert venv._resolved_interpreter == "/fake/bin/python3.6"  # type: ignore[unreachable]
+    assert specs == ["3.6"]
 
 
-@mock.patch("nox.virtualenv._PLATFORM", new="linux")
-@mock.patch.object(shutil, "which", return_value=None)
 def test__resolved_interpreter_cache_failure(
-    which: mock.Mock, make_one: Callable[..., tuple[VirtualEnv, Path]]
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
-    venv, _ = make_one(interpreter="3.7-32")
+    specs = patch_discover(None)
+    venv, _ = make_one(interpreter="3.7-32", download_python="never")
 
     assert venv._resolved is None
     with pytest.raises(nox.virtualenv.InterpreterNotFound) as exc_info:
         print(venv._resolved_interpreter)
     caught = exc_info.value
 
-    which.assert_called_once_with("3.7-32")
+    assert specs == ["3.7-32"]
     # Check the cache and call again to make sure it is used.
     assert venv._resolved is caught
     with pytest.raises(nox.virtualenv.InterpreterNotFound):  # type: ignore[unreachable]
         print(venv._resolved_interpreter)
-    assert which.call_count == 1
+    assert specs == ["3.7-32"]
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
 @mock.patch("nox.virtualenv.pbs_install_python")
 @mock.patch("nox.virtualenv.uv_install_python")
-@mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
 def test_download_python_never_preexisting_interpreter(
-    which: mock.Mock,
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
+    specs = patch_discover("/usr/bin/python3.11")
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
         download_python="never",
     )
 
-    resolved_interpreter = venv._resolved_interpreter
-    assert resolved_interpreter == "python3.11"
-    which.assert_called_once_with("python3.11")
+    assert venv._resolved_interpreter == "/usr/bin/python3.11"
+    assert specs == ["python3.11"]
 
     # should never try to install
     uv_install_mock.assert_not_called()
@@ -1723,14 +1549,14 @@ def test_download_python_never_preexisting_interpreter(
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
 @mock.patch("nox.virtualenv.pbs_install_python")
 @mock.patch("nox.virtualenv.uv_install_python")
-@mock.patch.object(shutil, "which", return_value=None)
 def test_download_python_never_missing_interpreter(
-    which: mock.Mock,
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
+    specs = patch_discover(None)
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
@@ -1739,10 +1565,7 @@ def test_download_python_never_missing_interpreter(
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
         _ = venv._resolved_interpreter
 
-    if IS_WINDOWS:
-        which.assert_called_with("py")
-    else:
-        which.assert_called_with("python3.11")
+    assert specs == ["python3.11"]
 
     # should never try to install
     uv_install_mock.assert_not_called()
@@ -1752,14 +1575,14 @@ def test_download_python_never_missing_interpreter(
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
 @mock.patch("nox.virtualenv.pbs_install_python")
 @mock.patch("nox.virtualenv.uv_install_python")
-@mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
 def test_download_python_auto_preexisting_interpreter(
-    which: mock.Mock,
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
+    specs = patch_discover("/usr/bin/python3.11")
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
@@ -1770,8 +1593,8 @@ def test_download_python_auto_preexisting_interpreter(
     uv_install_mock.assert_not_called()
     pbs_install_mock.assert_not_called()
 
-    assert venv._resolved_interpreter == "python3.11"
-    which.assert_called_with("python3.11")
+    assert venv._resolved_interpreter == "/usr/bin/python3.11"
+    assert specs == ["python3.11"]
 
 
 @pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
@@ -1783,14 +1606,14 @@ def test_download_python_auto_preexisting_interpreter(
     "nox.virtualenv.uv_install_python",
     return_value=True,
 )
-@mock.patch.object(shutil, "which", return_value=None)
 def test_download_python_auto_missing_interpreter(
-    which: mock.Mock,
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
+    specs = patch_discover(None)
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
@@ -1800,7 +1623,7 @@ def test_download_python_auto_missing_interpreter(
     resolved_interpreter = venv._resolved_interpreter
 
     # make sure we tried to find an interpreter first
-    which.assert_any_call("python3.11")
+    assert specs == ["python3.11"]
 
     # the resolved interpreter should be the one we install
     if venv_backend == "uv":
@@ -1822,14 +1645,14 @@ def test_download_python_auto_missing_interpreter(
     "nox.virtualenv.uv_install_python",
     return_value=True,
 )
-@mock.patch.object(shutil, "which", return_value="/usr/bin/python3.11")
 def test_download_python_always_preexisting_interpreter(
-    which: mock.Mock,
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
+    specs = patch_discover("/usr/bin/python3.11")
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
@@ -1839,7 +1662,7 @@ def test_download_python_always_preexisting_interpreter(
     resolved_interpreter = venv._resolved_interpreter
 
     # We should NOT try to find an existing interpreter
-    which.assert_not_called()
+    assert specs == []
 
     # the resolved interpreter should be the one we install
     if venv_backend == "uv":
@@ -1863,22 +1686,20 @@ def test_download_python_failed_install(
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
     monkeypatch: pytest.MonkeyPatch,
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
     # Pretend uv is available so the uv install path is exercised even on
     # hosts without uv installed (gh-1046).
     monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
     monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version("0.10.0"))
-
+    patch_discover(None)
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
         download_python=download_python,
     )
 
-    with (
-        mock.patch.object(shutil, "which", return_value=None) as _,
-        pytest.raises(nox.virtualenv.InterpreterNotFound),
-    ):
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
         _ = venv._resolved_interpreter
 
     if venv_backend == "uv":
@@ -1887,6 +1708,60 @@ def test_download_python_failed_install(
     else:
         pbs_install_mock.assert_called_once_with("python3.11")
         uv_install_mock.assert_not_called()
+
+
+@pytest.mark.parametrize("venv_backend", ["uv", "venv", "virtualenv"])
+@pytest.mark.parametrize("download_python", ["always", "auto"])
+@mock.patch(
+    "nox.virtualenv.pbs_install_python",
+    return_value="/.local/share/nox/cpython@3.14.0/bin/python3.14",
+)
+@mock.patch("nox.virtualenv.uv_install_python", return_value=True)
+def test_download_python_range_installs_floor(
+    uv_install_mock: mock.Mock,
+    pbs_install_mock: mock.Mock,
+    download_python: str,
+    venv_backend: str,
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
+) -> None:
+    # A range that isn't found installs its floor (">=3.14" -> "python3.14").
+    patch_discover(None)
+    venv, _ = make_one(
+        interpreter=">=3.14",
+        venv_backend=venv_backend,
+        download_python=download_python,
+    )
+
+    resolved_interpreter = venv._resolved_interpreter
+
+    if venv_backend == "uv":
+        uv_install_mock.assert_called_once_with("python3.14")
+        assert resolved_interpreter == "python3.14"
+    else:
+        pbs_install_mock.assert_called_once_with("python3.14")
+        assert resolved_interpreter == "/.local/share/nox/cpython@3.14.0/bin/python3.14"
+
+
+@pytest.mark.parametrize("download_python", ["always", "auto"])
+@mock.patch("nox.virtualenv.pbs_install_python")
+@mock.patch("nox.virtualenv.uv_install_python")
+def test_download_python_range_without_floor(
+    uv_install_mock: mock.Mock,
+    pbs_install_mock: mock.Mock,
+    download_python: str,
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
+) -> None:
+    # An upper-bound-only range has no installable floor: never install, error.
+    patch_discover(None)
+    venv, _ = make_one(interpreter="<3.14", download_python=download_python)
+
+    with pytest.raises(nox.virtualenv.InterpreterNotFound):
+        _ = venv._resolved_interpreter
+
+    uv_install_mock.assert_not_called()
+    pbs_install_mock.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -1945,6 +1820,31 @@ def test_find_pbs_python_missing_interpreter(
         bin_dir.mkdir(parents=True)
 
     assert nox.virtualenv._find_pbs_python("cpython", "3.11") is None
+
+
+def test_find_pbs_python_no_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # No previously-installed pbs pythons: the directory does not exist.
+    monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", tmp_path / "missing")
+    assert nox.virtualenv._find_pbs_python("cpython", "3.11") is None
+
+
+def test_pbs_install_python_install_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A failing pbs install is caught and reported, returning None."""
+    monkeypatch.setattr("nox.virtualenv.NOX_PBS_PYTHONS", tmp_path / "missing")
+    pytest.importorskip("pbs_installer")
+
+    def mock_install(*args: Any, **kwargs: Any) -> NoReturn:
+        msg = "boom"
+        raise RuntimeError(msg)
+
+    monkeypatch.setattr("pbs_installer.install", mock_install)
+
+    assert nox.virtualenv.pbs_install_python("python3.11") is None
+    assert "Failed to install a pbs version" in caplog.text
 
 
 @mock.patch("nox.virtualenv._find_pbs_python", return_value="/existing/python/path")
@@ -2006,14 +1906,14 @@ def test_pbs_install_python_success(
 @mock.patch("nox.virtualenv.HAS_UV", new=True)
 @mock.patch("nox.virtualenv.UV_VERSION", new=version.Version("0.4.0"))
 @mock.patch("nox.virtualenv.uv_install_python", return_value=True)
-@mock.patch.object(shutil, "which", return_value=None)
 def test_download_python_uv_unsupported_version(
-    which: mock.Mock,
     uv_install_mock: mock.Mock,
     download_python: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
 ) -> None:
     """Test we dont install for unsupported uv versions"""
+    specs = patch_discover(None)
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend="uv",
@@ -2025,6 +1925,6 @@ def test_download_python_uv_unsupported_version(
 
     uv_install_mock.assert_not_called()
     if download_python == "always":
-        which.assert_not_called()
+        assert specs == []
     else:  # auto
-        which.assert_any_call("python3.11")
+        assert specs == ["python3.11"]

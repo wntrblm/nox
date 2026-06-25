@@ -49,6 +49,8 @@ from nox.logger import logger
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
+    from python_discovery import DiskCache, PythonInfo
+
     from nox._typing import Python
 
     # These are implemented via the module-level __getattr__ below, so that
@@ -132,33 +134,69 @@ def find_uv() -> tuple[bool, str, version.Version]:
 
 
 @functools.cache
-def _find_python(interpreter: str, xy_ver: str) -> str | None:
-    """Find a python executable matching the requested interpreter.
+def _get_python_discovery_cache() -> DiskCache | None:
+    """Return a python-discovery disk cache, or ``None`` if it can't be created.
 
-    Cached: discovery is pure PATH/launcher lookup, and on Windows a miss
-    spawns ``py -X.Y`` subprocesses, which would otherwise repeat for every
-    session using the same interpreter.
+    Stored under the user cache directory (``~/Library/Caches/nox`` on macOS,
+    ``%LOCALAPPDATA%\\nox`` on Windows, ``$XDG_CACHE_HOME``/``~/.cache/nox`` on
+    Linux). python-discovery validates interpreter mtime + hash before reusing
+    an entry, so stale data is not a concern. Degrades to no cache on a
+    read-only home.
     """
-    if shutil.which(interpreter):
+    import platformdirs  # noqa: PLC0415
+    from python_discovery import DiskCache  # noqa: PLC0415
+
+    try:
+        root = Path(platformdirs.user_cache_dir("nox")) / "python-discovery"
+        return DiskCache(root=root)
+    except OSError:
+        return None
+
+
+def _discover_interpreter(spec: str) -> PythonInfo | None:
+    """Locate an interpreter matching *spec* using python-discovery.
+
+    Accepts any python-discovery spec: a concrete version (``3.12``), a name
+    (``python3.12``, ``pypy3.11``), a free-threaded build (``3.13t``), a PEP 440
+    version range (``>=3.14``), or an absolute path. python-discovery searches
+    ``PATH``, version managers (pyenv/mise/asdf/uv), and the Windows registry
+    (PEP 514). Returns ``None`` when nothing matches.
+
+    This is the single seam tests mock to avoid probing the real system.
+    """
+    from python_discovery import get_interpreter  # noqa: PLC0415
+
+    return get_interpreter(spec, cache=_get_python_discovery_cache())
+
+
+@functools.cache
+def _find_python(interpreter: str) -> str | None:
+    """Return the path to an interpreter matching *interpreter*, or ``None``.
+
+    Cached because discovery is pure (read-only) and would otherwise repeat for
+    every session using the same spec.
+    """
+    info = _discover_interpreter(interpreter)
+    return info.executable if info is not None else None
+
+
+def _concrete_install_target(interpreter: str) -> str | None:
+    """Return a concrete version to hand to an installer, or ``None``.
+
+    Non-range specs (names, concrete versions, paths) are returned unchanged.
+    For a PEP 440 range (``>=3.14``) the floor of the first lower-bound clause
+    is returned (``3.14``) so a concrete interpreter can be downloaded.
+    Upper-bound-only (``<3.14``) or ``!=`` ranges have no installable floor and
+    return ``None``.
+    """
+    from python_discovery import PythonSpec  # noqa: PLC0415
+
+    spec = PythonSpec.from_string_spec(interpreter)
+    if spec.version_specifier is None:
         return interpreter
-
-    # Windows only search for the executable
-    if _PLATFORM.startswith("win"):
-        # Allow versions of the form ``X.Y-32`` for Windows.
-        match = re.match(r"^\d\.\d+-32$", interpreter)
-        if match:
-            # preserve the "-32" suffix, as the Python launcher expects it.
-            xy_ver = interpreter
-
-        path_from_launcher = locate_via_py(xy_ver)
-        if path_from_launcher:
-            return path_from_launcher
-
-        path_from_version_param = locate_using_path_and_version(xy_ver)
-        if path_from_version_param:
-            return path_from_version_param
-
-    # not found case
+    for specifier in spec.version_specifier.specifiers:
+        if specifier.operator in {">=", "==", "~=", ">"}:
+            return specifier.version_str
     return None
 
 
@@ -415,77 +453,6 @@ class ProcessEnv(abc.ABC):
                 path_parts.append(prior_path)
             computed_env["PATH"] = os.pathsep.join(path_parts)
         return computed_env
-
-
-def locate_via_py(version: str) -> str | None:
-    """Find the Python executable using the Windows Launcher.
-
-    This is based on :pep:397 which details that executing
-    ``py.exe -{version}`` should execute Python with the requested
-    version. We then make the Python process print out its full
-    executable path which we use as the location for the version-
-    specific Python interpreter.
-
-    Args:
-        version (str): The desired Python version to pass to ``py.exe``. Of the form
-            ``X.Y`` or ``X.Y-32``. For example, a usage of the Windows Launcher might
-            be ``py -3.6-32``.
-
-    Returns:
-        Optional[str]: The full executable path for the Python ``version``,
-        if it is found.
-    """
-    script = "import sys; print(sys.executable)"
-    py_exe = shutil.which("py")
-    if py_exe is not None:
-        ret = subprocess.run(
-            [py_exe, f"-{version}", "-c", script],
-            check=False,
-            text=True,
-            capture_output=True,
-            encoding="utf-8",
-        )
-        if ret.returncode == 0 and ret.stdout:
-            return ret.stdout.strip()
-    return None
-
-
-def locate_using_path_and_version(version: str) -> str | None:
-    """Check the PATH's python interpreter and return it if the version
-    matches.
-
-    On systems without version-named interpreters and with missing
-    launcher (which is on all Windows Anaconda installations),
-    we search the PATH for a plain "python" interpreter and accept it
-    if its --version matches the specified interpreter version.
-
-    Args:
-        version (str): The desired Python version. Of the form ``X.Y``.
-
-    Returns:
-        Optional[str]: The full executable path for the Python ``version``,
-        if it is found.
-    """
-    if not version:
-        return None
-
-    script = "import platform; print(platform.python_version())"
-    path_python = shutil.which("python")
-    if path_python:
-        ret = subprocess.run(
-            [path_python, "-c", script],
-            check=False,
-            text=True,
-            capture_output=True,
-        )
-        if (
-            ret.returncode == 0
-            and ret.stdout
-            and ret.stdout.strip().startswith(version)
-        ):
-            return path_python
-
-    return None
 
 
 class PassthroughEnv(ProcessEnv):
@@ -841,49 +808,51 @@ class VirtualEnv(ProcessEnv):
             self._resolved = sys.executable
             return self._resolved
 
-        # Otherwise we need to divine the path to the interpreter. This is
-        # designed to accept strings in the form of "2", "2.7", "2.7.13",
-        # "2.7.13-32", "python2", "python2.4", etc.
-        xy_version = ""
-        cleaned_interpreter = self.interpreter
-
-        # If this is just a X, X.Y, or X.Y.Z string, extract just the X / X.Y
-        # part and add Python to the front of it.
-        match = re.match(r"^(?P<xy_ver>\d(\.\d+)?)(\.\d+)?(?P<t>t?)$", self.interpreter)
-        if match:
-            xy_version = match.group("xy_ver")
-            t = match.group("t")
-            cleaned_interpreter = f"python{xy_version}{t}"
-
+        # python-discovery accepts every spec form directly: "3", "3.12",
+        # "3.12.1", "3.13t", "python3.12", "pypy3.11", "3.6-32", PEP 440 ranges
+        # like ">=3.14", and absolute paths.
         match self.download_python:
             # never -> check for interpreters
             case "never":
-                if resolved := _find_python(cleaned_interpreter, xy_version):
+                if resolved := _find_python(self.interpreter):
                     self._resolved = resolved
                     return self._resolved
 
             # always -> skip check, always install
             case "always":
-                if resolved := self._install_python(cleaned_interpreter):
+                if resolved := self._install_python(self.interpreter):
                     self._resolved = resolved
                     return self._resolved
 
             case _:
                 # auto -> check interpreters -> fallback to installing
-                if resolved := _find_python(
-                    cleaned_interpreter, xy_version
-                ) or self._install_python(cleaned_interpreter):
+                if resolved := _find_python(self.interpreter) or self._install_python(
+                    self.interpreter
+                ):
                     self._resolved = resolved
                     return self._resolved
 
         self._resolved = InterpreterNotFound(self.interpreter)
         raise self._resolved
 
-    def _install_python(self, cleaned_interpreter: str) -> str | None:
+    def _install_python(self, interpreter: str) -> str | None:
         """Install the requested interpreter for this backend, if possible.
 
-        Returns the resolved interpreter on success, or ``None`` on failure.
+        For a version range the floor is installed (e.g. ``>=3.14`` -> ``3.14``);
+        ranges with no installable floor return ``None``. Returns the resolved
+        interpreter on success, or ``None`` on failure.
         """
+        target = _concrete_install_target(interpreter)
+        if target is None:
+            return None
+
+        # Installers want the "pythonX.Y[t]" form for bare versions; names,
+        # pypy, and paths are passed through unchanged.
+        match = re.match(r"^(?P<xy_ver>\d(\.\d+)?)(\.\d+)?(?P<t>t?)$", target)
+        cleaned_interpreter = (
+            f"python{match.group('xy_ver')}{match.group('t')}" if match else target
+        )
+
         if self.venv_backend == "uv":
             has_uv, _, uv_ver = _uv_state()
             if (

@@ -42,6 +42,8 @@ def test_get_dependencies() -> None:
             "jinja2",
             "nox",
             "packaging",
+            "platformdirs",
+            "python-discovery",
             "tox",
             "virtualenv",
         }
