@@ -166,7 +166,17 @@ def _discover_interpreter(spec: str) -> PythonInfo | None:
     """
     from python_discovery import get_interpreter  # noqa: PLC0415
 
-    return get_interpreter(spec, cache=_get_python_discovery_cache())
+    cache = _get_python_discovery_cache()
+    if cache is None:
+        return get_interpreter(spec)
+    try:
+        return get_interpreter(spec, cache=cache)
+    except OSError:
+        # The cache dir exists but isn't writable (e.g. a read-only home):
+        # DiskCache touches the filesystem only lazily, so the failure surfaces
+        # here. Degrade to uncached discovery instead of aborting resolution.
+        logger.debug("python-discovery cache is not writable; discovering without it.")
+        return get_interpreter(spec)
 
 
 @functools.cache
@@ -185,9 +195,11 @@ def _concrete_install_target(interpreter: str) -> str | None:
 
     Non-range specs (names, concrete versions, paths) are returned unchanged.
     For a PEP 440 range (``>=3.14``) the floor of the first lower-bound clause
-    is returned (``3.14``) so a concrete interpreter can be downloaded.
-    Upper-bound-only (``<3.14``) or ``!=`` ranges have no installable floor and
-    return ``None``.
+    is returned (``3.14``) so a concrete interpreter can be downloaded. A
+    non-CPython implementation prefix is preserved (``pypy>=3.10`` -> ``pypy3.10``)
+    so the right flavor is installed; the floor already carries any free-threaded
+    ``t`` suffix. Upper-bound-only (``<3.14``) or ``!=`` ranges have no
+    installable floor and return ``None``.
     """
     from python_discovery import PythonSpec  # noqa: PLC0415
 
@@ -196,7 +208,9 @@ def _concrete_install_target(interpreter: str) -> str | None:
         return interpreter
     for specifier in spec.version_specifier.specifiers:
         if specifier.operator in {">=", "==", "~=", ">"}:
-            return specifier.version_str
+            impl = spec.implementation
+            prefix = impl if impl and impl != "cpython" else ""
+            return f"{prefix}{specifier.version_str}"
     return None
 
 

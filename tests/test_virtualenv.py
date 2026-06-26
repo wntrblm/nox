@@ -1212,6 +1212,28 @@ def test_discover_interpreter(monkeypatch: pytest.MonkeyPatch) -> None:
     assert nox.virtualenv._discover_interpreter("3.12") is sentinel
 
 
+def test_discover_interpreter_cache_unwritable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unwritable cache degrades to uncached discovery, not a hard failure."""
+    sentinel = object()
+    cache = object()
+    calls: list[object] = []
+
+    def fake_get(spec: str, cache: object = None) -> object:
+        assert spec == "3.12"
+        calls.append(cache)
+        if cache is not None:
+            raise PermissionError
+        return sentinel
+
+    monkeypatch.setattr(python_discovery, "get_interpreter", fake_get)
+    monkeypatch.setattr(nox.virtualenv, "_get_python_discovery_cache", lambda: cache)
+
+    assert nox.virtualenv._discover_interpreter("3.12") is sentinel
+    assert calls == [cache, None]
+
+
 def test_find_python_cached(
     patch_discover: Callable[[str | None], list[str]],
 ) -> None:
@@ -1259,6 +1281,9 @@ def test_get_python_discovery_cache_oserror(monkeypatch: pytest.MonkeyPatch) -> 
         ("~=3.11", "3.11"),
         ("==3.12.*", "3.12"),
         (">=3.11,<3.13", "3.11"),
+        ("pypy>=3.10", "pypy3.10"),
+        ("cpython>=3.12", "3.12"),
+        (">=3.13t", "3.13t"),
         ("<3.14", None),
         ("!=3.12", None),
     ],
