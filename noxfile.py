@@ -27,10 +27,13 @@ import os
 import platform
 import shutil
 import sys
+import sysconfig
 
 import nox
 
 ON_WINDOWS_CI = "CI" in os.environ and sys.platform.startswith("win32")
+# uv has no MinGW wheel and won't build there; its tests skip without it.
+IS_MINGW = sysconfig.get_platform().startswith("mingw")
 
 nox.needs_version = ">=2025.02.09"
 nox.options.default_venv_backend = "uv|virtualenv"
@@ -53,7 +56,8 @@ def tests(session: nox.Session) -> None:
     parallel = [] if sys.platform.startswith("win32") else ["--numprocesses=auto"]
 
     session.create_tmp()  # Fixes permission errors on Windows
-    session.install(*PYPROJECT["dependency-groups"]["test"], "uv")
+    uv = [] if IS_MINGW else ["uv"]
+    session.install(*PYPROJECT["dependency-groups"]["test"], *uv)
     session.install("-e.[tox-to-nox,pbs]")
     session.run("coverage", "erase", env=env)
     session.run(
