@@ -20,6 +20,7 @@ import re
 import shutil
 import subprocess
 import sys
+import sysconfig
 from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -38,6 +39,15 @@ if TYPE_CHECKING:
 
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 VERSION = metadata.version("nox")
+
+# Script mode installs deps with uv, which can't inspect the MinGW interpreter.
+# Fixed by #1117; xfail (non-strict) keeps the experimental MSYS2 job green.
+IS_MINGW = sysconfig.get_platform().startswith("mingw")
+xfail_mingw_uv = pytest.mark.xfail(
+    IS_MINGW,
+    reason="script mode needs uv, which can't inspect the MinGW interpreter (#1088, fixed by #1117)",
+    strict=False,
+)
 
 
 # This is needed because CI systems will mess up these tests due to the
@@ -1128,6 +1138,7 @@ def test_symlink_sym_not(monkeypatch: pytest.MonkeyPatch) -> None:
     assert res.returncode == 1
 
 
+@xfail_mingw_uv
 def test_noxfile_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
     job = subprocess.run(
@@ -1172,6 +1183,7 @@ def test_noxfile_no_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "No module named 'cowsay'" in job.stderr
 
 
+@xfail_mingw_uv
 def test_noxfile_script_mode_exec(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
     job = subprocess.run(
@@ -1192,6 +1204,7 @@ def test_noxfile_script_mode_exec(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "another_world" in job.stdout
 
 
+@xfail_mingw_uv
 def test_noxfile_script_mode_url_req() -> None:
     job = subprocess.run(
         [

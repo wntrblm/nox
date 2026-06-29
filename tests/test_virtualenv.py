@@ -39,11 +39,22 @@ if TYPE_CHECKING:
     from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
 IS_WINDOWS = sys.platform.startswith("win")
+# Under MSYS2/MinGW, sys.platform is "win32" but the native venv layout is POSIX
+# ("bin"/"python"), so Windows-layout assertions must exclude this case.
+IS_MINGW = nox.virtualenv._IS_MINGW
 HAS_UV = shutil.which("uv") is not None
 RAISE_ERROR = "RAISE_ERROR"
 VIRTUALENV_VERSION = metadata.version("virtualenv")
 
 has_uv = pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
+# Under MinGW, uv cannot inspect the native interpreter, so creating a uv venv
+# from it fails. Fixed by #1117; xfail (non-strict) keeps the experimental MSYS2
+# job green until then, and lets these xpass once the fix lands.
+xfail_mingw_uv = pytest.mark.xfail(
+    IS_MINGW,
+    reason="uv can't inspect the MinGW interpreter (#1088, fixed by #1117)",
+    strict=False,
+)
 
 
 class TextProcessResult(NamedTuple):
@@ -465,6 +476,7 @@ def test_create_args_old_uv(
     assert run_mock.call_args.args[0][-1] != "--clear"
 
 
+@xfail_mingw_uv
 @has_uv
 def test_uv_creation(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
@@ -591,10 +603,12 @@ def test_bin_paths(
     assert len(venv.bin_paths) == 1
     assert venv.bin_paths[0] == venv.bin
 
-    assert str(dir_.joinpath("Scripts" if IS_WINDOWS else "bin")) == venv.bin
+    win_layout = IS_WINDOWS and not IS_MINGW
+    assert str(dir_.joinpath("Scripts" if win_layout else "bin")) == venv.bin
 
 
 @mock.patch("nox.virtualenv._PLATFORM", new="win32")
+@mock.patch("nox.virtualenv._IS_MINGW", new=False)
 def test_bin_windows(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
 ) -> None:
@@ -630,11 +644,17 @@ def test_create(
     assert venv.env["CONDA_PREFIX"] is None
     assert "NOT_CONDA_PREFIX" not in venv.env
 
-    if IS_WINDOWS:
+    if IS_WINDOWS and not IS_MINGW:
         assert dir_.joinpath("Scripts", "python.exe").exists()
         assert dir_.joinpath("Scripts", "pip.exe").exists()
         assert dir_.joinpath("Lib").exists()
         assert str(dir_.joinpath("Scripts")) in venv.bin_paths
+    elif IS_MINGW:
+        # MinGW uses a POSIX bin/ dir but Windows-style ``.exe`` executables.
+        assert dir_.joinpath("bin", "python.exe").exists()
+        assert dir_.joinpath("bin", "pip.exe").exists()
+        assert dir_.joinpath("lib").exists()
+        assert str(dir_.joinpath("bin")) in venv.bin_paths
     else:
         assert dir_.joinpath("bin", "python").exists()
         assert dir_.joinpath("bin", "pip").exists()
@@ -845,7 +865,7 @@ def test_micromamba_channel_environment(
         ("virtualenv", "venv", True),
         ("venv", "virtualenv", True),
         ("virtualenv", "uv", True),
-        pytest.param("uv", "virtualenv", False, marks=has_uv),
+        pytest.param("uv", "virtualenv", False, marks=[has_uv, xfail_mingw_uv]),
         pytest.param("conda", "virtualenv", False, marks=pytest.mark.conda),
     ],
 )
@@ -905,6 +925,7 @@ def test_create_reuse_stale_virtualenv_environment(
     assert not reused
 
 
+@xfail_mingw_uv
 @has_uv
 def test_create_reuse_uv_environment(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
