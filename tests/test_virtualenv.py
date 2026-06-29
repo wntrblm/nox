@@ -47,6 +47,14 @@ RAISE_ERROR = "RAISE_ERROR"
 VIRTUALENV_VERSION = metadata.version("virtualenv")
 
 has_uv = pytest.mark.skipif(not HAS_UV, reason="Missing uv command.")
+# Under MinGW, uv cannot inspect the native interpreter, so creating a uv venv
+# from it fails. Fixed by #1117; xfail (non-strict) keeps the experimental MSYS2
+# job green until then, and lets these xpass once the fix lands.
+xfail_mingw_uv = pytest.mark.xfail(
+    IS_MINGW,
+    reason="uv can't inspect the MinGW interpreter (#1088, fixed by #1117)",
+    strict=False,
+)
 
 
 class TextProcessResult(NamedTuple):
@@ -468,6 +476,7 @@ def test_create_args_old_uv(
     assert run_mock.call_args.args[0][-1] != "--clear"
 
 
+@xfail_mingw_uv
 @has_uv
 def test_uv_creation(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
@@ -856,7 +865,7 @@ def test_micromamba_channel_environment(
         ("virtualenv", "venv", True),
         ("venv", "virtualenv", True),
         ("virtualenv", "uv", True),
-        pytest.param("uv", "virtualenv", False, marks=has_uv),
+        pytest.param("uv", "virtualenv", False, marks=[has_uv, xfail_mingw_uv]),
         pytest.param("conda", "virtualenv", False, marks=pytest.mark.conda),
     ],
 )
@@ -916,6 +925,7 @@ def test_create_reuse_stale_virtualenv_environment(
     assert not reused
 
 
+@xfail_mingw_uv
 @has_uv
 def test_create_reuse_uv_environment(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
