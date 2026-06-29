@@ -465,6 +465,41 @@ def test_create_args_old_uv(
     assert run_mock.call_args.args[0][-1] != "--clear"
 
 
+def test_create_uv_with_interpreter(
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_mock = mock.Mock()
+    monkeypatch.setattr(nox.command, "run", run_mock)
+    monkeypatch.setattr(nox.virtualenv, "UV", "uv")
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version("0.10.0"))
+    venv, _ = make_one(interpreter="3.12", venv_backend="uv")
+    venv._resolved = "/path/to/python3.12"
+    venv.create()
+    run_mock.assert_called_once()
+    cmd = run_mock.call_args.args[0]
+    assert cmd[cmd.index("-p") + 1] == "/path/to/python3.12"
+
+
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
+@mock.patch("nox.virtualenv._IS_MINGW", new=True)
+def test_create_uv_mingw_no_interpreter(
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # uv can't inspect the MSYS2/MinGW interpreter, so nox must not pass ``-p``.
+    run_mock = mock.Mock()
+    monkeypatch.setattr(nox.command, "run", run_mock)
+    monkeypatch.setattr(nox.virtualenv, "UV", "uv")
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version("0.10.0"))
+    venv, _ = make_one(venv_backend="uv")
+    venv.create()
+    run_mock.assert_called_once()
+    assert "-p" not in run_mock.call_args.args[0]
+
+
 @has_uv
 def test_uv_creation(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
@@ -615,6 +650,19 @@ def test_bin_windows_mingw(
     assert len(venv.bin_paths) == 1
     assert venv.bin_paths[0] == venv.bin
     assert str(dir_.joinpath("bin")) == venv.bin
+
+
+@mock.patch("nox.virtualenv._PLATFORM", new="win32")
+@mock.patch("nox.virtualenv._IS_MINGW", new=True)
+def test_bin_windows_mingw_uv(
+    make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
+) -> None:
+    # uv builds a Windows-style venv even under MinGW, unlike the native tools.
+    venv, dir_ = make_one(venv_backend="uv")
+    assert venv.bin_paths
+    assert len(venv.bin_paths) == 1
+    assert venv.bin_paths[0] == venv.bin
+    assert str(dir_.joinpath("Scripts")) == venv.bin
 
 
 def test_create(
