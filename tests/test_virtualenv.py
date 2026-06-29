@@ -39,6 +39,9 @@ if TYPE_CHECKING:
     from nox.virtualenv import CondaEnv, ProcessEnv, VirtualEnv
 
 IS_WINDOWS = sys.platform.startswith("win")
+# Under MSYS2/MinGW, sys.platform is "win32" but the native venv layout is POSIX
+# ("bin"/"python"), so Windows-layout assertions must exclude this case.
+IS_MINGW = nox.virtualenv._IS_MINGW
 HAS_UV = shutil.which("uv") is not None
 RAISE_ERROR = "RAISE_ERROR"
 VIRTUALENV_VERSION = metadata.version("virtualenv")
@@ -591,10 +594,12 @@ def test_bin_paths(
     assert len(venv.bin_paths) == 1
     assert venv.bin_paths[0] == venv.bin
 
-    assert str(dir_.joinpath("Scripts" if IS_WINDOWS else "bin")) == venv.bin
+    win_layout = IS_WINDOWS and not IS_MINGW
+    assert str(dir_.joinpath("Scripts" if win_layout else "bin")) == venv.bin
 
 
 @mock.patch("nox.virtualenv._PLATFORM", new="win32")
+@mock.patch("nox.virtualenv._IS_MINGW", new=False)
 def test_bin_windows(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
 ) -> None:
@@ -630,11 +635,17 @@ def test_create(
     assert venv.env["CONDA_PREFIX"] is None
     assert "NOT_CONDA_PREFIX" not in venv.env
 
-    if IS_WINDOWS:
+    if IS_WINDOWS and not IS_MINGW:
         assert dir_.joinpath("Scripts", "python.exe").exists()
         assert dir_.joinpath("Scripts", "pip.exe").exists()
         assert dir_.joinpath("Lib").exists()
         assert str(dir_.joinpath("Scripts")) in venv.bin_paths
+    elif IS_MINGW:
+        # MinGW uses a POSIX bin/ dir but Windows-style ``.exe`` executables.
+        assert dir_.joinpath("bin", "python.exe").exists()
+        assert dir_.joinpath("bin", "pip.exe").exists()
+        assert dir_.joinpath("lib").exists()
+        assert str(dir_.joinpath("bin")) in venv.bin_paths
     else:
         assert dir_.joinpath("bin", "python").exists()
         assert dir_.joinpath("bin", "pip").exists()
