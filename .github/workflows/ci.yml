@@ -75,11 +75,9 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
-  # Experimental: exercise the MinGW-specific code paths (nox.virtualenv._IS_MINGW)
-  # on a real MSYS2 runner. Non-blocking until proven stable.
   # No uv CLI exists in any MSYS2 repo (the msys `uv` package only ships the
   # uv_build backend), so the uv backend is exercised via the standalone uv
-  # binary from setup-uv, which lands on the Windows PATH the MINGW64 shell sees.
+  # binary from setup-uv
   msys2:
     runs-on: windows-latest
     continue-on-error: true
@@ -94,7 +92,7 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          # inherit the runner PATH so the standalone uv (added to GITHUB_PATH
+          # Inherit the runner PATH so the standalone uv (added to GITHUB_PATH
           # by setup-uv, which runs after this step) is visible to MinGW Python
           path-type: inherit
           install: >-
@@ -106,14 +104,14 @@ jobs:
         uses: astral-sh/setup-uv@v8.2.0
       - name: Install Nox-under-test
         run: python -m pip install .
+      # Force virtualenv so the session venv stays a MinGW interpreter
+      # (_IS_MINGW=True). uv stays on PATH, so the uv-backend tests still
+      # build real uv venvs from within MinGW
       - name: Run tests under MinGW
         run: |
           pyver=$(python -c "import sys; print('{}.{}'.format(*sys.version_info))")
           echo "MSYS2 MinGW Python: $pyver"
           python -c "import shutil; print('uv discovered at:', shutil.which('uv'))"
-          # Force virtualenv so the session venv stays a MinGW interpreter
-          # (_IS_MINGW=True). uv stays on PATH, so the uv-backend tests still
-          # build real uv venvs from within MinGW, exercising #1117.
           nox --session "tests-$pyver" --force-venv-backend virtualenv -- --durations=10
       - name: Save coverage report
         uses: actions/upload-artifact@v7
