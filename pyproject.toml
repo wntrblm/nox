@@ -132,6 +132,7 @@ ini_options.pythonpath = [ ".github/" ]
 ini_options.addopts = [ "-ra", "--strict-markers", "--strict-config" ]
 ini_options.markers = [
   "conda: test requires conda",
+  "network: test requires network access",
 ]
 ini_options.xfail_strict = true
 ini_options.filterwarnings = [ "error" ]

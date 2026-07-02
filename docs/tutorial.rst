@@ -217,9 +217,35 @@ is provided:
    def peps(session):
        session.install_and_run_script("peps.py")
 
+If you have ``nox[uv]`` installed, you can alternatively delegate the entire
+run to ``uv``, which handles dependency resolution and caching itself and also
+respects uv-specific configuration in the script block such as
+``tool.uv.sources`` (package source overrides), ``tool.uv.index`` (custom
+indexes), and ``tool.uv.exclude-newer`` (reproducibility pins). See the
+`uv scripts documentation`_ for the full list of supported settings.
+
+.. code-block:: python
+
+   @nox.session
+   def peps(session):
+       session.uv_run_script("peps.py")
+
+Extra flags can be forwarded to ``uv run`` via ``uv_args``. For example, to
+inject a package not declared in the script or to pin a Python version:
+
+.. code-block:: python
+
+   @nox.session
+   def peps(session):
+       session.uv_run_script(
+           "peps.py",
+           uv_args=["--with", "extra-pkg", "--python", "3.13"],
+       )
 
 Other helpers for ``pyproject.toml`` based projects are also available in
 ``nox.project``.
+
+.. _uv scripts documentation: https://docs.astral.sh/uv/guides/scripts/
 
 Running commands
 ----------------
