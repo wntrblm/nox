@@ -19,19 +19,19 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/henryiii/flake8-lazy
-    rev: v0.8.2
+    rev: v0.8.3
     hooks:
       - id: flake8-lazy
         args: ["--apply=set"]
         files: '^nox/'
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "v2.24.1"
+    rev: "v2.25.0"
     hooks:
       - id: pyproject-fmt
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.17
+    rev: v0.15.19
     hooks:
       - id: ruff-check
         args: ["--fix", "--show-fixes"]
@@ -72,6 +72,6 @@ repos:
       - id: rst-inline-touching-normal
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.25.2
+    rev: v1.26.1
     hooks:
       - id: zizmor
