@@ -69,6 +69,25 @@ def test_python_range_no_min() -> None:
         python_versions(pyproject, max_version="3.5")
 
 
+def test_python_range_major_only() -> None:
+    # ">=3" is equivalent to ">=3.0" (PEP 440); a major-only version has an
+    # implicit minor version of 0 and must not crash.
+    pyproject = {"project": {"requires-python": ">=3"}}
+
+    assert python_versions(pyproject, max_version="3.2") == ["3.0", "3.1", "3.2"]
+
+
+def test_python_range_multiple_lower_bounds() -> None:
+    # With several lower-bound specifiers the effective minimum is the largest
+    # one, regardless of the order they appear in.
+    assert python_versions(
+        {"project": {"requires-python": ">=3.8,>=3.10"}}, max_version="3.12"
+    ) == ["3.10", "3.11", "3.12"]
+    assert python_versions(
+        {"project": {"requires-python": ">=3.10,>=3.8"}}, max_version="3.12"
+    ) == ["3.10", "3.11", "3.12"]
+
+
 def test_dependency_groups() -> None:
     example = {
         "dependency-groups": {

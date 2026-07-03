@@ -146,13 +146,19 @@ def python_versions(
         msg = 'No "project.requires-python" value set'
         raise ValueError(msg)
 
-    for spec in packaging.specifiers.SpecifierSet(requires_python_str):
-        if spec.operator in {">", ">=", "~="}:
-            min_minor_version = int(spec.version.split(".")[1])
-            break
-    else:
+    # A requirement can have several lower-bound specifiers (e.g.
+    # ">=3.8,>=3.10"); the effective minimum is the largest of them. A
+    # major-only version (e.g. ">=3", equivalent to ">=3.0" per PEP 440) has an
+    # implicit minor version of 0.
+    lower_bounds = [
+        int(spec.version.split(".")[1]) if "." in spec.version else 0
+        for spec in packaging.specifiers.SpecifierSet(requires_python_str)
+        if spec.operator in {">", ">=", "~="}
+    ]
+    if not lower_bounds:
         msg = 'No minimum version found in "project.requires-python"'
         raise ValueError(msg)
+    min_minor_version = max(lower_bounds)
 
     max_minor_version = int(max_version.split(".")[1])
 
