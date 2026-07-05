@@ -45,9 +45,12 @@ ExternalType = Literal["error", True, False]
 class CommandFailed(Exception):
     """Raised when an executed command returns a non-success status code."""
 
-    def __init__(self, reason: str | None = None) -> None:
+    def __init__(
+        self, reason: str | None = None, *, return_code: int | None = None
+    ) -> None:
         super().__init__(reason)
         self.reason = reason
+        self.return_code = return_code
 
 
 def which(
@@ -206,7 +209,7 @@ def run(
                 logger.error(output)
 
             msg = f"Returned code {return_code}"
-            raise CommandFailed(msg)
+            raise CommandFailed(msg, return_code=return_code)
 
         if output:
             logger.output(output)

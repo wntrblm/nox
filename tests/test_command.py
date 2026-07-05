@@ -99,20 +99,22 @@ def test_run_verbosity(
 def test_run_verbosity_failed_command(caplog: pytest.LogCaptureFixture) -> None:
     caplog.clear()
     with caplog.at_level(logging.DEBUG):
-        with pytest.raises(nox.command.CommandFailed):
+        with pytest.raises(nox.command.CommandFailed) as exc:
             nox.command.run([PYTHON, "-c", "print(123); exit(1)"], silent=True)
 
         assert "123" in caplog.text
+        assert exc.value.return_code == 1
 
     logs = [rec for rec in caplog.records if rec.levelname == "OUTPUT"]
     assert not logs
 
     caplog.clear()
     with caplog.at_level(logging.DEBUG - 1):
-        with pytest.raises(nox.command.CommandFailed):
-            nox.command.run([PYTHON, "-c", "print(123); exit(1)"], silent=True)
+        with pytest.raises(nox.command.CommandFailed) as exc:
+            nox.command.run([PYTHON, "-c", "print(123); exit(42)"], silent=True)
 
         assert "123" in caplog.text
+        assert exc.value.return_code == 42
 
     # Nothing is logged but the error is still written to stderr
     assert not logs
@@ -224,12 +226,13 @@ def test_run_external_silences(
 def test_run_external_raises(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.ERROR)
 
-    with pytest.raises(nox.command.CommandFailed):
+    with pytest.raises(nox.command.CommandFailed) as exc:
         nox.command.run(
             [PYTHON, "--version"], silent=True, paths=[tmp_path], external="error"
         )
 
     assert "external=True" in caplog.text
+    assert exc.value.return_code is None
 
 
 def test_run_external_raises_without_log(
