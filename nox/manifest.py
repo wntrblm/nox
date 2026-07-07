@@ -242,11 +242,6 @@ class Manifest:
             KeyError: If any depended-on sessions are not found.
             ~nox._resolver.CycleError: If a dependency cycle is encountered.
         """
-        # When --no-dependencies is set, run only the explicitly selected
-        # sessions without pulling in (or reordering by) their requirements.
-        if getattr(self._config, "no_dependencies", False):
-            return
-
         sessions_by_id = self.all_sessions_by_signature
 
         # For each session that was parametrized from a list of Pythons, create a fake

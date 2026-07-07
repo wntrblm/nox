@@ -1174,9 +1174,7 @@ class SessionRunner:
         # With --no-dependencies, prerequisites aren't queued (and may not have
         # run in this process), so skip the dependency-result check entirely.
         dependencies = (
-            []
-            if getattr(self.global_config, "no_dependencies", False)
-            else self.get_direct_dependencies()
+            [] if self.global_config.no_dependencies else self.get_direct_dependencies()
         )
         for dependency in dependencies:
             if not dependency.result:

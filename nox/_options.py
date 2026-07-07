@@ -208,22 +208,6 @@ def default_env_var_list_factory(env_var: str) -> Callable[[], list[str] | None]
     return _default_list
 
 
-def default_env_var_factory(env_var: str) -> Callable[[], str | None]:
-    """Looks at the env var to set the default value for a scalar option.
-
-    Args:
-        env_var (str): The name of the environment variable to look up.
-
-    Returns:
-        A callback that retrieves the (unparsed) string value, or ``None``.
-    """
-
-    def _default() -> str | None:
-        return os.environ.get(env_var) or None
-
-    return _default
-
-
 def parse_parallel(value: str | int) -> int:
     """Resolve a ``--parallel`` value to a positive integer.
 
@@ -670,7 +654,7 @@ options.add_options(
         group=options.groups["execution"],
         noxfile=True,
         type=_parallel_arg,
-        default=default_env_var_factory("NOX_PARALLEL"),
+        default=lambda: os.environ.get("NOX_PARALLEL") or None,
         metavar="N",
         help=(
             "Run independent sessions in parallel, each in its own subprocess."

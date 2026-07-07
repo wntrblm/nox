@@ -212,6 +212,18 @@ def test_filter_manifest() -> None:
     assert len(manifest) == 2
 
 
+def test_filter_manifest_no_dependencies_skips_resolution() -> None:
+    config = _options.options.namespace(
+        sessions=None, pythons=(), keywords=(), posargs=[], no_dependencies=True
+    )
+    manifest = Manifest({"foo": session_func}, config)
+    with mock.patch.object(Manifest, "add_dependencies") as add_dependencies:
+        return_value = tasks.filter_manifest(manifest, config)
+    assert return_value is manifest
+    # --no-dependencies runs only the selected sessions; nothing is pulled in.
+    assert not add_dependencies.called
+
+
 def test_filter_manifest_not_found() -> None:
     config = _options.options.namespace(
         sessions=("baz",), pythons=(), keywords=(), posargs=[]

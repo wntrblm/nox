@@ -23,12 +23,13 @@ import typing
 import pytest
 
 from nox import _options, _parallel, tasks
-from nox.manifest import Manifest
 from nox.sessions import Result, SessionRunner, Status
 
 if typing.TYPE_CHECKING:
     import argparse
     from collections.abc import Sequence
+
+    from nox.manifest import Manifest
 
 
 class FakeSession:
@@ -36,7 +37,6 @@ class FakeSession:
 
     def __init__(self, name: str, deps: Sequence[FakeSession] = ()) -> None:
         self.friendly_name = name
-        self.func = types.SimpleNamespace(should_warn={})
         self._deps = list(deps)
 
     def get_direct_dependencies(self) -> list[FakeSession]:
@@ -506,16 +506,6 @@ def test_parallel_cli_option() -> None:
 
 def test_parallel_noxfile_settable() -> None:
     assert hasattr(_options.options.noxfile_namespace(), "parallel")
-
-
-def test_no_dependencies_skips_add_dependencies() -> None:
-    config = _options.options.namespace(no_dependencies=True)
-    manifest = Manifest({}, config)
-    sentinel: list[object] = [object()]
-    manifest._queue = typing.cast("typing.Any", sentinel)
-    manifest.add_dependencies()
-    # The queue is left untouched: no dependencies pulled in, no reordering.
-    assert manifest._queue is sentinel
 
 
 def test_result_serialize_includes_reason() -> None:

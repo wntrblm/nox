@@ -22,6 +22,8 @@ their ``requires=`` dependency graph and never executes a session itself.
 
 from __future__ import annotations
 
+__lazy_modules__ = {"json", "shutil", "subprocess", "tempfile", "threading"}
+
 import json
 import os
 import re
@@ -35,7 +37,6 @@ from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import TYPE_CHECKING
 
 from nox.sessions import Result, Status, _duration_str
-from nox.tasks import _warn_pythons_ignored
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -95,7 +96,7 @@ class _Reporter:
     """
 
     def __init__(self, *, color: bool, tty: bool, total: int = 0) -> None:
-        self.color = color
+        self._c = _make_color_formatter(color=color)
         self.tty = tty
         self.stream = sys.stdout
         self._lock = threading.RLock()
@@ -131,7 +132,7 @@ class _Reporter:
         if not self._active:
             return []
 
-        _c = _make_color_formatter(color=self.color)
+        _c = self._c
         running = len(self._active)
         done = self._passed + self._failed
         queued = max(0, self._total - done - running)
@@ -346,7 +347,7 @@ def _run_session(
         # The context manager waits for the process and closes its pipes.
         with subprocess.Popen(
             _child_argv(global_config, session, report_path),
-            cwd=getattr(global_config, "invoked_from", None),
+            cwd=global_config.invoked_from,
             # Detach stdin so the child never sees a TTY: parallel sessions must
             # not prompt or read from the shared terminal (they would race/hang).
             stdin=subprocess.DEVNULL,
@@ -384,9 +385,6 @@ def run_manifest_parallel(
         The results, in manifest order, for every session that ran.
     """
     queue = list(manifest)
-    for session in queue:
-        _warn_pythons_ignored(session)
-
     in_queue = set(queue)
     deps: dict[SessionRunner, list[SessionRunner]] = {
         session: [d for d in session.get_direct_dependencies() if d in in_queue]
@@ -401,7 +399,7 @@ def run_manifest_parallel(
     stop = False
 
     reporter = _Reporter(
-        color=bool(getattr(global_config, "color", False)),
+        color=bool(global_config.color),
         tty=sys.stdout.isatty(),
         total=len(queue),
     )
@@ -419,21 +417,47 @@ def run_manifest_parallel(
         reporter.finished(name, result, output)
         return result
 
+    def schedule_ready(executor: ThreadPoolExecutor) -> None:
+        """Submit ready sessions, up to ``jobs`` running at once.
+
+        A session is ready once all its dependencies have completed. Sessions
+        with a failed/aborted/skipped prerequisite are aborted in place
+        (without spawning a subprocess and regardless of capacity), which
+        cascades down the graph.
+        """
+        progressed = True
+        while progressed:
+            progressed = False
+            for session in list(not_started):
+                session_deps = deps[session]
+                if not all(dep in results for dep in session_deps):
+                    continue
+                failed = [dep for dep in session_deps if not results[dep]]
+                if failed:
+                    not_started.remove(session)
+                    progressed = True
+                    result = Result(
+                        session,
+                        Status.ABORTED,
+                        reason=(
+                            f"Prerequisite session {failed[0].friendly_name} was not"
+                            " successful"
+                        ),
+                        duration=0,
+                    )
+                    results[session] = result
+                    reporter.aborted(session.friendly_name, result)
+                elif len(futures) < jobs:
+                    not_started.remove(session)
+                    progressed = True
+                    futures[executor.submit(worker, session)] = session
+
     start = time.monotonic()
     with reporter, ThreadPoolExecutor(max_workers=jobs) as executor:
         try:
             while True:
                 if not stop:
-                    _schedule_ready(
-                        not_started,
-                        deps,
-                        results,
-                        reporter,
-                        executor,
-                        worker,
-                        futures,
-                        jobs,
-                    )
+                    schedule_ready(executor)
                 if not futures:
                     break
                 done, _ = wait(futures, return_when=FIRST_COMPLETED)
@@ -453,47 +477,3 @@ def run_manifest_parallel(
     # Report wall-clock time in the summary, not the sum of session durations.
     global_config.parallel_wall_time = time.monotonic() - start
     return [results[session] for session in queue if session in results]
-
-
-def _schedule_ready(
-    not_started: list[SessionRunner],
-    deps: dict[SessionRunner, list[SessionRunner]],
-    results: dict[SessionRunner, Result],
-    reporter: _Reporter,
-    executor: ThreadPoolExecutor,
-    worker: Callable[[SessionRunner], Result],
-    futures: dict[Future[Result], SessionRunner],
-    jobs: int,
-) -> None:
-    """Submit ready sessions, up to ``jobs`` running at once.
-
-    A session is ready once all its dependencies have completed. Sessions with
-    a failed/aborted/skipped prerequisite are aborted in place (without spawning
-    a subprocess and regardless of capacity), which cascades down the graph.
-    """
-    progressed = True
-    while progressed:
-        progressed = False
-        for session in list(not_started):
-            session_deps = deps[session]
-            if not all(dep in results for dep in session_deps):
-                continue
-            failed = [dep for dep in session_deps if not results[dep]]
-            if failed:
-                not_started.remove(session)
-                progressed = True
-                result = Result(
-                    session,
-                    Status.ABORTED,
-                    reason=(
-                        f"Prerequisite session {failed[0].friendly_name} was not"
-                        " successful"
-                    ),
-                    duration=0,
-                )
-                results[session] = result
-                reporter.aborted(session.friendly_name, result)
-            elif len(futures) < jobs:
-                not_started.remove(session)
-                progressed = True
-                futures[executor.submit(worker, session)] = session

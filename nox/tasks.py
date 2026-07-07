@@ -49,8 +49,6 @@ if TYPE_CHECKING:
     import types
     from argparse import Namespace
 
-    from nox.sessions import SessionRunner
-
 __all__ = [
     "create_report",
     "discover_manifest",
@@ -262,13 +260,15 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
         logger.error("No sessions selected after filtering by keyword.")
         return 3
 
-    # Add dependencies.
-    try:
-        manifest.add_dependencies()
-    except (KeyError, CycleError) as exc:
-        logger.error("Error while resolving session dependencies.")
-        logger.error(exc.args[0])
-        return 3
+    # Add dependencies, unless --no-dependencies limits the run to only the
+    # explicitly selected sessions (as the parallel runner's children do).
+    if not global_config.no_dependencies:
+        try:
+            manifest.add_dependencies()
+        except (KeyError, CycleError) as exc:
+            logger.error("Error while resolving session dependencies.")
+            logger.error(exc.args[0])
+            return 3
 
     # Return the modified manifest.
     return manifest
@@ -390,16 +390,6 @@ def honor_usage_request(manifest: Manifest, global_config: Namespace) -> Manifes
     return 0
 
 
-def _warn_pythons_ignored(session: SessionRunner) -> None:
-    """Warn if a session's Python parametrization is ignored (venv_backend='none')."""
-    if WARN_PYTHONS_IGNORED in session.func.should_warn:
-        logger.warning(
-            f"Session {session.name} is set to run with venv_backend='none', "
-            "IGNORING its"
-            f" python={session.func.should_warn[WARN_PYTHONS_IGNORED]} parametrization. "
-        )
-
-
 def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
     """Run the full manifest of sessions.
 
@@ -413,11 +403,12 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
     """
     # When --parallel/-j requests more than one job, hand off to the parallel
     # scheduler, which runs independent sessions in their own subprocesses.
-    raw_parallel = getattr(global_config, "parallel", None)
+    # The value may still be an unparsed string when set via the Noxfile or
+    # NOX_PARALLEL (only command-line values are parsed by argparse).
+    raw_parallel = global_config.parallel
     jobs = _options.parse_parallel(raw_parallel) if raw_parallel else 1
     if jobs > 1:
-        # Imported lazily to avoid an import cycle (nox._parallel imports from
-        # nox.tasks).
+        # Imported lazily so sequential runs don't pay for the parallel machinery.
         from nox._parallel import run_manifest_parallel  # noqa: PLC0415
 
         return run_manifest_parallel(manifest, global_config, jobs)
@@ -430,7 +421,12 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
     # iteration.
     for session in manifest:
         # possibly raise warnings associated with this session
-        _warn_pythons_ignored(session)
+        if WARN_PYTHONS_IGNORED in session.func.should_warn:
+            logger.warning(
+                f"Session {session.name} is set to run with venv_backend='none', "
+                "IGNORING its"
+                f" python={session.func.should_warn[WARN_PYTHONS_IGNORED]} parametrization. "
+            )
 
         result = session.execute()
         name = session.friendly_name
