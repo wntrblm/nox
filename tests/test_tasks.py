@@ -52,6 +52,7 @@ session_func.should_warn = {}
 session_func.tags = []
 session_func.default = True
 session_func.requires = []
+session_func.allow_parallel = False
 
 
 def session_func_with_python_raw() -> None:
@@ -665,6 +666,33 @@ def test_run_manifest(with_warnings: builtins.bool) -> None:
     for result in results:
         assert isinstance(result, sessions.Result)
         assert result.status == sessions.Status.SUCCESS
+
+
+def test_run_manifest_sequential_without_allow_parallel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # --parallel falls back to the ordinary sequential path (with a warning)
+    # when no selected session opts in with allow_parallel=True.
+    fail_parallel = mock.Mock(side_effect=AssertionError("parallel runner used"))
+    monkeypatch.setattr("nox._parallel.run_manifest_parallel", fail_parallel)
+    config = _options.options.namespace(stop_on_first_error=False, parallel=4)
+    sessions_ = [
+        typing.cast("sessions.SessionRunner", mock.Mock(spec=sessions.SessionRunner)),
+        typing.cast("sessions.SessionRunner", mock.Mock(spec=sessions.SessionRunner)),
+    ]
+    manifest = Manifest({}, config)
+    manifest._queue = copy.copy(sessions_)
+    manifest._all_sessions = copy.copy(sessions_)
+    for mock_session in sessions_:
+        mock_session.execute.return_value = sessions.Result(  # type: ignore[attr-defined]
+            session=mock_session, status=sessions.Status.SUCCESS
+        )
+        mock_session.func = session_func  # allow_parallel is False
+
+    results = tasks.run_manifest(manifest, global_config=config)
+
+    assert len(results) == 2
+    assert all(result.status == sessions.Status.SUCCESS for result in results)
 
 
 def test_run_manifest_abort_on_first_failure() -> None:

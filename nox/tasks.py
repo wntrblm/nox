@@ -404,6 +404,16 @@ def run_manifest(manifest: Manifest, global_config: NoxConfig) -> list[Result]:
     # When --parallel/-j requests more than one job, hand off to the parallel
     # scheduler, which runs independent sessions in their own subprocesses.
     jobs = global_config.parallel or 1
+    if jobs > 1 and not any(
+        session.func.allow_parallel
+        for session, selected in manifest.list_all_sessions()
+        if selected
+    ):
+        logger.warning(
+            "No selected session sets allow_parallel=True; ignoring --parallel"
+            " and running sequentially."
+        )
+        jobs = 1
     if jobs > 1:
         # Imported lazily so sequential runs don't pay for the parallel machinery.
         from nox._parallel import run_manifest_parallel  # noqa: PLC0415
