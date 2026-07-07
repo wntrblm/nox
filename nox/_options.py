@@ -658,10 +658,12 @@ options.add_options(
         metavar="N",
         help=(
             "Run independent sessions in parallel, each in its own subprocess."
-            " Pass a positive integer or ``'auto'`` (one per CPU). Sessions are"
-            " ordered by their ``requires=`` dependencies; their output is"
-            " buffered and printed as each session finishes. Default is 1"
-            " (sequential). Environment variable: NOX_PARALLEL"
+            " Pass a positive integer or ``'auto'`` (one per CPU). Only"
+            " sessions declared with ``allow_parallel=True`` run concurrently;"
+            " other sessions run one at a time. Sessions are ordered by their"
+            " ``requires=`` dependencies; their output is buffered and printed"
+            " as each session finishes. Default is 1 (sequential). Environment"
+            " variable: NOX_PARALLEL"
         ),
     ),
     _option_set.Option(

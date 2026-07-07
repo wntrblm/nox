@@ -334,6 +334,18 @@ The value is a positive integer or ``auto`` (the number of CPUs). The default
 is ``1`` (sequential). The environment variable ``NOX_PARALLEL`` and
 ``nox.options.parallel`` in the Noxfile are also honored.
 
+Parallel execution is opt-in per session: only sessions declared with
+``allow_parallel=True`` may run at the same time::
+
+    @nox.session(allow_parallel=True)
+    def tests(session):
+        ...
+
+Sessions that don't opt in still run under ``--parallel``, but exclusively —
+they start only once nothing else is running, and nothing starts alongside
+them. If no selected session opts in, Nox warns and runs sequentially as
+usual.
+
 Sessions are scheduled according to their dependencies: a session declared with
 ``requires=`` does not start until all of its prerequisites have completed
 successfully, and is reported as ``aborted`` (and never started) if any

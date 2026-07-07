@@ -74,6 +74,21 @@ def test_session_decorator_tags() -> None:
     assert unit_tests.tags == ["tag-1", "tag-2"]
 
 
+def test_session_decorator_allow_parallel() -> None:
+    @registry.session_decorator
+    def serial(session: nox.Session) -> None:
+        pass
+
+    @registry.session_decorator(allow_parallel=True)
+    def concurrent(session: nox.Session) -> None:
+        pass
+
+    assert serial.allow_parallel is False
+    assert concurrent.allow_parallel is True
+    # Copies (e.g. per-interpreter expansion) keep the flag.
+    assert concurrent.copy("copied").allow_parallel is True
+
+
 def test_session_decorator_py_alias() -> None:
     @registry.session_decorator(py=["3.5", "3.6"])
     def unit_tests(session: nox.Session) -> None:

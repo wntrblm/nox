@@ -36,10 +36,17 @@ if typing.TYPE_CHECKING:
 class FakeSession:
     """A minimal stand-in for ``SessionRunner`` for scheduler tests."""
 
-    def __init__(self, name: str, deps: Sequence[FakeSession] = ()) -> None:
+    def __init__(
+        self,
+        name: str,
+        deps: Sequence[FakeSession] = (),
+        *,
+        allow_parallel: bool = True,
+    ) -> None:
         self.friendly_name = name
         self.signatures = [name]
         self.envdir = f".nox/{name}"
+        self.func = types.SimpleNamespace(allow_parallel=allow_parallel)
         self._deps = list(deps)
 
     def get_direct_dependencies(self) -> list[FakeSession]:
@@ -145,10 +152,15 @@ def test_parallel_stop_on_first_error(monkeypatch: pytest.MonkeyPatch) -> None:
     assert [r.session.friendly_name for r in results] == ["x"]
 
 
-def test_parallel_serializes_shared_envdir(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Runners that share an envdir (duplicated friendly names under
-    # --force-python) must never run at the same time: the children would
-    # create/delete the same virtualenv concurrently and corrupt it.
+def _patch_run_session_tracking_concurrency(
+    monkeypatch: pytest.MonkeyPatch,
+) -> dict[str, int]:
+    """Patch ``_run_session`` with a fake that records peak concurrency.
+
+    The returned dict maps each session's envdir (and the ``"total"`` key) to
+    the largest number of simultaneously-running sessions observed. The fake
+    sleeps briefly so that sessions submitted together reliably overlap.
+    """
     lock = threading.Lock()
     concurrent: dict[str, int] = {}
     peak: dict[str, int] = {}
@@ -160,22 +172,98 @@ def test_parallel_serializes_shared_envdir(monkeypatch: pytest.MonkeyPatch) -> N
         _procs_lock: object,
         **_kwargs: object,
     ) -> tuple[Result, str]:
-        key = session.envdir
         with lock:
-            concurrent[key] = concurrent.get(key, 0) + 1
-            peak[key] = max(peak.get(key, 0), concurrent[key])
-        time.sleep(0.05)  # hold the envdir long enough for overlap to show
+            for key in (session.envdir, "total"):
+                concurrent[key] = concurrent.get(key, 0) + 1
+                peak[key] = max(peak.get(key, 0), concurrent[key])
+        time.sleep(0.05)
         with lock:
-            concurrent[key] -= 1
+            for key in (session.envdir, "total"):
+                concurrent[key] -= 1
         return Result(session, Status.SUCCESS, duration=0.0), ""
 
     monkeypatch.setattr(_parallel, "_run_session", fake_run_session)
+    return peak
+
+
+def test_parallel_serializes_shared_envdir(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Runners that share an envdir (duplicated friendly names under
+    # --force-python) must never run at the same time: the children would
+    # create/delete the same virtualenv concurrently and corrupt it.
+    peak = _patch_run_session_tracking_concurrency(monkeypatch)
     first, second = FakeSession("test(x=1)"), FakeSession("test(x=1)")
 
     results = _run([first, second], _config(), jobs=2)
 
     assert [r.status for r in results] == [Status.SUCCESS] * 2
     assert peak[".nox/test(x=1)"] == 1
+
+
+def test_parallel_opted_in_sessions_overlap(monkeypatch: pytest.MonkeyPatch) -> None:
+    peak = _patch_run_session_tracking_concurrency(monkeypatch)
+    sessions = [FakeSession("a"), FakeSession("b")]
+
+    results = _run(sessions, _config(), jobs=2)
+
+    assert [r.status for r in results] == [Status.SUCCESS] * 2
+    assert peak["total"] == 2
+
+
+def test_parallel_exclusive_without_allow_parallel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Sessions that don't opt in with allow_parallel=True never run
+    # concurrently, even when there is spare capacity.
+    peak = _patch_run_session_tracking_concurrency(monkeypatch)
+    sessions = [
+        FakeSession("a", allow_parallel=False),
+        FakeSession("b", allow_parallel=False),
+    ]
+
+    results = _run(sessions, _config(), jobs=2)
+
+    assert [r.status for r in results] == [Status.SUCCESS] * 2
+    assert peak["total"] == 1
+
+
+def test_parallel_exclusive_session_runs_alone(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # An exclusive session must not overlap with opted-in sessions either:
+    # nothing may be running when it starts, and nothing may start beside it.
+    lock = threading.Lock()
+    running: set[str] = set()
+    overlaps: list[set[str]] = []
+
+    def fake_run_session(
+        session: SessionRunner,
+        _global_config: object,
+        _procs: object,
+        _procs_lock: object,
+        **_kwargs: object,
+    ) -> tuple[Result, str]:
+        name = session.friendly_name
+        with lock:
+            running.add(name)
+            if "c" in running and len(running) > 1:
+                overlaps.append(set(running))
+        time.sleep(0.05)
+        with lock:
+            running.discard(name)
+        return Result(session, Status.SUCCESS, duration=0.0), ""
+
+    monkeypatch.setattr(_parallel, "_run_session", fake_run_session)
+    sessions = [
+        FakeSession("a"),
+        FakeSession("b"),
+        FakeSession("c", allow_parallel=False),
+        FakeSession("d"),
+    ]
+
+    results = _run(sessions, _config(), jobs=4)
+
+    assert [r.status for r in results] == [Status.SUCCESS] * 4
+    assert not overlaps
 
 
 def test_child_argv_full() -> None:
@@ -585,5 +673,8 @@ def test_run_manifest_dispatches_to_parallel(
 
     monkeypatch.setattr(_parallel, "run_manifest_parallel", fake_parallel)
     config = _options.options.namespace(parallel=3, stop_on_first_error=False)
-    tasks.run_manifest(typing.cast("typing.Any", []), config)
+    manifest = types.SimpleNamespace(
+        list_all_sessions=lambda: [(FakeSession("a"), True)]
+    )
+    tasks.run_manifest(typing.cast("typing.Any", manifest), config)
     assert captured["jobs"] == 3

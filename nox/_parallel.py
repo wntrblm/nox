@@ -438,8 +438,14 @@ def run_manifest_parallel(
         cascades down the graph. Sessions sharing an envdir (runners with
         duplicated friendly names under ``--force-python``) are never run at
         the same time, as they would build the same virtualenv concurrently.
+        Sessions that haven't opted in with ``allow_parallel=True`` run
+        exclusively: they start only when nothing else is running, and nothing
+        starts alongside them.
         """
         busy_envdirs = {running.envdir for running in futures.values()}
+        exclusive_running = any(
+            not running.func.allow_parallel for running in futures.values()
+        )
         progressed = True
         while progressed:
             progressed = False
@@ -462,10 +468,16 @@ def run_manifest_parallel(
                     )
                     results[session] = result
                     reporter.aborted(session.friendly_name, result)
-                elif len(futures) < jobs and session.envdir not in busy_envdirs:
+                elif (
+                    len(futures) < jobs
+                    and not exclusive_running
+                    and session.envdir not in busy_envdirs
+                    and (session.func.allow_parallel or not futures)
+                ):
                     not_started.remove(session)
                     progressed = True
                     busy_envdirs.add(session.envdir)
+                    exclusive_running = not session.func.allow_parallel
                     futures[executor.submit(worker, session)] = session
 
     start = time.monotonic()

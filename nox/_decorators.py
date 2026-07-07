@@ -78,6 +78,7 @@ class Func:
         default: bool = True,
         requires: Sequence[str] | None = None,
         download_python: Literal["auto", "never", "always"] | None = None,
+        allow_parallel: bool = False,
     ) -> None:
         self.func = func
         self.python = python
@@ -90,6 +91,7 @@ class Func:
         self.default = default
         self.requires = list(requires or [])
         self.download_python = download_python
+        self.allow_parallel = allow_parallel
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r})"
@@ -112,6 +114,7 @@ class Func:
             default=self.default,
             requires=self._requires,
             download_python=self.download_python,
+            allow_parallel=self.allow_parallel,
         )
 
     @property
@@ -168,6 +171,7 @@ class Call(Func):
             default=func.default,
             requires=func.requires,
             download_python=func.download_python,
+            allow_parallel=func.allow_parallel,
         )
         self.call_spec = call_spec
         self.session_signature = session_signature

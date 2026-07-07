@@ -407,6 +407,16 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
     # NOX_PARALLEL (only command-line values are parsed by argparse).
     raw_parallel = global_config.parallel
     jobs = _options.parse_parallel(raw_parallel) if raw_parallel else 1
+    if jobs > 1 and not any(
+        session.func.allow_parallel
+        for session, selected in manifest.list_all_sessions()
+        if selected
+    ):
+        logger.warning(
+            "No selected session sets allow_parallel=True; ignoring --parallel"
+            " and running sequentially."
+        )
+        jobs = 1
     if jobs > 1:
         # Imported lazily so sequential runs don't pay for the parallel machinery.
         from nox._parallel import run_manifest_parallel  # noqa: PLC0415
