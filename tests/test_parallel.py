@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import sys
 import threading
+import time
 import types
 import typing
 
@@ -37,6 +38,8 @@ class FakeSession:
 
     def __init__(self, name: str, deps: Sequence[FakeSession] = ()) -> None:
         self.friendly_name = name
+        self.signatures = [name]
+        self.envdir = f".nox/{name}"
         self._deps = list(deps)
 
     def get_direct_dependencies(self) -> list[FakeSession]:
@@ -142,6 +145,39 @@ def test_parallel_stop_on_first_error(monkeypatch: pytest.MonkeyPatch) -> None:
     assert [r.session.friendly_name for r in results] == ["x"]
 
 
+def test_parallel_serializes_shared_envdir(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Runners that share an envdir (duplicated friendly names under
+    # --force-python) must never run at the same time: the children would
+    # create/delete the same virtualenv concurrently and corrupt it.
+    lock = threading.Lock()
+    concurrent: dict[str, int] = {}
+    peak: dict[str, int] = {}
+
+    def fake_run_session(
+        session: SessionRunner,
+        _global_config: object,
+        _procs: object,
+        _procs_lock: object,
+        **_kwargs: object,
+    ) -> tuple[Result, str]:
+        key = session.envdir
+        with lock:
+            concurrent[key] = concurrent.get(key, 0) + 1
+            peak[key] = max(peak.get(key, 0), concurrent[key])
+        time.sleep(0.05)  # hold the envdir long enough for overlap to show
+        with lock:
+            concurrent[key] -= 1
+        return Result(session, Status.SUCCESS, duration=0.0), ""
+
+    monkeypatch.setattr(_parallel, "_run_session", fake_run_session)
+    first, second = FakeSession("test(x=1)"), FakeSession("test(x=1)")
+
+    results = _run([first, second], _config(), jobs=2)
+
+    assert [r.status for r in results] == [Status.SUCCESS] * 2
+    assert peak[".nox/test(x=1)"] == 1
+
+
 def test_child_argv_full() -> None:
     config = _options.options.namespace(
         noxfile="nf.py",
@@ -184,6 +220,25 @@ def test_child_argv_full() -> None:
     assert "-v" in argv
     assert "--forcecolor" in argv
     assert argv[-3:] == ["--", "-k", "foo"]
+
+
+def test_child_argv_uses_unique_signature() -> None:
+    # With --force-python, parametrized runners for different interpreters
+    # share the friendly name (e.g. "test(x=1)" for both 3.10 and 3.11), so
+    # -s must use the fully-qualified signature or the child runs them all.
+    session = FakeSession("test(x=1)")
+    session.signatures = ["test(x=1)", "test-3.10(x=1)", "test-3.10"]
+    config = _options.options.namespace(
+        noxfile="noxfile.py",
+        error_on_missing_interpreters=False,
+        error_on_external_run=False,
+        color=False,
+        posargs=[],
+    )
+    argv = _parallel._child_argv(
+        typing.cast("typing.Any", config), _fake_runner(session), "r.json"
+    )
+    assert argv[argv.index("-s") + 1] == "test-3.10(x=1)"
 
 
 def test_child_argv_forwards_python_selection() -> None:

@@ -242,6 +242,18 @@ class _Reporter:
                 self._draw_board()
 
 
+def _session_selector(session: SessionRunner) -> str:
+    """Return an unambiguous ``-s`` value selecting exactly this session.
+
+    ``friendly_name`` can be shared by several runners: with ``--force-python``,
+    parametrized sessions for different interpreters all get e.g. ``test(x=1)``
+    as their first signature. The fully-qualified signature (name, interpreter,
+    and parameters, e.g. ``test-3.10(x=1)``) is unique, and is always the
+    longest one a runner has.
+    """
+    return max(session.signatures, key=len) if session.signatures else session.name
+
+
 def _child_argv(
     global_config: Namespace, session: SessionRunner, report_path: str
 ) -> list[str]:
@@ -254,7 +266,7 @@ def _child_argv(
         "--noxfile",
         str(g.noxfile),
         "-s",
-        session.friendly_name,
+        _session_selector(session),
         "--no-dependencies",
         "--parallel",
         "1",
@@ -423,8 +435,11 @@ def run_manifest_parallel(
         A session is ready once all its dependencies have completed. Sessions
         with a failed/aborted/skipped prerequisite are aborted in place
         (without spawning a subprocess and regardless of capacity), which
-        cascades down the graph.
+        cascades down the graph. Sessions sharing an envdir (runners with
+        duplicated friendly names under ``--force-python``) are never run at
+        the same time, as they would build the same virtualenv concurrently.
         """
+        busy_envdirs = {running.envdir for running in futures.values()}
         progressed = True
         while progressed:
             progressed = False
@@ -447,9 +462,10 @@ def run_manifest_parallel(
                     )
                     results[session] = result
                     reporter.aborted(session.friendly_name, result)
-                elif len(futures) < jobs:
+                elif len(futures) < jobs and session.envdir not in busy_envdirs:
                     not_started.remove(session)
                     progressed = True
+                    busy_envdirs.add(session.envdir)
                     futures[executor.submit(worker, session)] = session
 
     start = time.monotonic()
