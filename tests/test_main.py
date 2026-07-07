@@ -493,9 +493,16 @@ def test_main_session_with_names(
 
 @pytest.fixture
 def run_nox(
-    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> Callable[..., tuple[int, str, str]]:
     def _run_nox(*args: str) -> tuple[int, str, str]:
+        # Give each invocation its own envdir so sessions that build real
+        # virtualenvs don't collide with other xdist workers sharing the
+        # noxfile's default ``.nox`` directory.
+        if not any(arg.startswith("--envdir") for arg in args):
+            args = (*args, "--envdir", str(tmp_path / ".nox"))
         monkeypatch.setattr(sys, "argv", ["nox", *args])
 
         with mock.patch("sys.exit") as sys_exit:
