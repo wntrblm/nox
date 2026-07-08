@@ -209,6 +209,7 @@ def _check_python_version(session: nox.Session) -> None:
         "pypy-3.11",
         "3.13t",
         "3.14t",
+        "3.15t",
     ],
     default=False,
     tags=["gha"],
