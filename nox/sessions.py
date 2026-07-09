@@ -969,7 +969,20 @@ class Session:
                 arguments *only* for the queued session. Otherwise, the
                 standard globally available positional arguments will be
                 used instead.
+
+        Raises:
+            ValueError: If called under ``--no-dependencies`` (which includes
+                every session run by ``--parallel``): the notified session
+                would run here *in addition to* anywhere else it is scheduled,
+                racing on its virtualenv. Use ``requires=`` instead.
         """
+        if self._runner.global_config.no_dependencies:
+            msg = (
+                "session.notify() is not supported with --no-dependencies (which"
+                " --parallel uses to run each session); declare the ordering with"
+                " requires= instead."
+            )
+            raise ValueError(msg)
         if posargs is not None:
             posargs = list(posargs)
         self._runner.manifest.notify(target, posargs)

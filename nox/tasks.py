@@ -262,13 +262,19 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
 
     # Add dependencies, unless --no-dependencies limits the run to only the
     # explicitly selected sessions (as the parallel runner's children do).
-    if not global_config.no_dependencies:
-        try:
+    # Even then, a ``requires=`` entry naming a session that doesn't exist is
+    # still an error — the prerequisites just aren't queued.
+    try:
+        if global_config.no_dependencies:
+            for session, selected in manifest.list_all_sessions():
+                if selected:
+                    list(session.get_direct_dependencies())
+        else:
             manifest.add_dependencies()
-        except (KeyError, CycleError) as exc:
-            logger.error("Error while resolving session dependencies.")
-            logger.error(exc.args[0])
-            return 3
+    except (KeyError, CycleError) as exc:
+        logger.error("Error while resolving session dependencies.")
+        logger.error(exc.args[0])
+        return 3
 
     # Return the modified manifest.
     return manifest

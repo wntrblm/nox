@@ -350,7 +350,8 @@ Sessions are scheduled according to their dependencies: a session declared with
 ``requires=`` does not start until all of its prerequisites have completed
 successfully, and is reported as ``aborted`` (and never started) if any
 prerequisite fails. ``--stop-on-first-error`` stops launching new sessions after
-the first failure; sessions already running are allowed to finish.
+the first failure; sessions already running are allowed to finish, and their
+results still appear in the summary and in any ``--report`` file.
 
 Each session's output is buffered and printed as a single block when that
 session finishes, so output from concurrent sessions never interleaves. On an
@@ -362,7 +363,8 @@ running.
     Because each session runs in its own subprocess that reads only from a pipe,
     sessions cannot prompt for input under ``--parallel`` (``session.interactive``
     is ``False``). Dynamic session scheduling via ``session.notify`` is not
-    supported in parallel mode; use ``requires=`` to order sessions instead.
+    supported in parallel mode and raises an error; use ``requires=`` to order
+    sessions instead.
 
 
 .. _opt-error-on-missing-interpreters:
