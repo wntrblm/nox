@@ -953,12 +953,8 @@ class TestSession:
 
         runner.manifest.notify.assert_called_with("other", ["--an-arg"])  # type: ignore[attr-defined]
 
-    def test_posargs_are_not_shared_between_sessions(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        registry: dict[str, nox._decorators.Func] = {}
-        monkeypatch.setattr("nox.registry._REGISTRY", registry)
-
+    def test_posargs_are_not_shared_between_sessions(self) -> None:
+        # The registry is cleared per test by the clear_cache fixture.
         @nox.session(venv_backend="none")
         def test(session: nox.Session) -> None:
             session.posargs.extend(["-x"])
@@ -970,7 +966,7 @@ class TestSession:
                 raise RuntimeError(msg)
 
         config = _options.options.namespace(posargs=[], envdir=".nox")
-        manifest = nox.manifest.Manifest(registry, config)
+        manifest = nox.manifest.Manifest(nox.registry.get(), config)
 
         assert manifest["test"].execute()
         assert manifest["lint"].execute()
