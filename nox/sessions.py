@@ -80,7 +80,7 @@ if typing.TYPE_CHECKING:
     from nox.command import ExternalType
     from nox.manifest import Manifest
 
-__all__ = ["Result", "Session", "SessionRunner", "Status", "nox"]
+__all__ = ["EnvRunner", "Result", "Session", "SessionRunner", "Status", "nox"]
 
 
 def __dir__() -> list[str]:
@@ -995,102 +995,41 @@ class Session:
         raise _SessionSkip(*args)
 
 
-class SessionRunner:
-    def __init__(
-        self,
-        name: str,
-        signatures: Sequence[str],
-        func: Func,
-        global_config: argparse.Namespace,
-        manifest: Manifest,
-        *,
-        multi: bool = False,
-    ) -> None:
-        self.name = name
-        self.signatures = signatures
-        self.func = func
-        self.global_config = global_config
-        self.manifest = manifest
+class EnvRunner:
+    """Owns the virtualenv shared by the task(s) that run in it.
+
+    Currently paired 1:1 with a :class:`SessionRunner` and reads its
+    identity and configuration through it; this inverts once environments
+    become first-class objects that multiple tasks share.
+    """
+
+    def __init__(self, owner: SessionRunner) -> None:
+        self._owner = owner
         self.venv: ProcessEnv | None = None
-        self.posargs: list[str] = global_config.posargs[:]
-        self.result: Result | None = None
-        self.multi = multi
-
-        if getattr(func, "parametrize", None):
-            self.multi = True
-
-    def __repr__(self) -> str:
-        return (
-            f"<{self.__class__.__name__} {self.name}: {self.signatures!r} {self.multi}>"
-        )
+        self._ensured = False
 
     @property
-    def description(self) -> str | None:
-        doc = self.func.__doc__
-        if doc:
-            return doc.strip().split("\n")[0]
-        return None
+    def func(self) -> Func:
+        return self._owner.func
 
     @property
-    def full_description(self) -> str | None:
-        doc = self.func.__doc__
-        if doc:
-            return inspect.cleandoc(doc)
-        return None
-
-    def __str__(self) -> str:
-        sigs = ", ".join(self.signatures)
-        return f"Session(name={self.name}, signatures={sigs})"
+    def global_config(self) -> argparse.Namespace:
+        return self._owner.global_config
 
     @property
     def friendly_name(self) -> str:
-        return self.signatures[0] if self.signatures else self.name
-
-    @property
-    def tags(self) -> list[str]:
-        return self.func.tags
+        return self._owner.friendly_name
 
     @property
     def envdir(self) -> str:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
-    def get_direct_dependencies(
-        self, sessions_by_id: Mapping[str, SessionRunner] | None = None
-    ) -> Iterator[SessionRunner]:
-        """Yields the sessions of the session's direct dependencies.
-
-        Args:
-            sessions_by_id (Mapping[str, ~nox.sessions.SessionRunner] | None): An
-                optional mapping from both dependency signatures and names to
-                corresponding ``SessionRunner``s. If this is not provided,
-                ``self.manifest.all_sessions_by_signature`` will be used to find the
-                sessions corresponding to signatures in ``self.func.requires``, and
-                non-signature names (i.e. names of sessions that were parameterized with
-                multiple Pythons) in ``self.func.requires`` will be resolved via
-                ``self.manifest.parametrized_sessions_by_name``.
-
-        Returns:
-            Iterator[~nox.session.SessionRunner]
-
-        Raises:
-            KeyError: If a dependency's session could not be found.
-        """
-        try:
-            if sessions_by_id is None:
-                sessions_by_signature = self.manifest.all_sessions_by_signature
-                parametrized_sessions_by_name = (
-                    self.manifest.parametrized_sessions_by_name
-                )
-                for requirement in self.func.requires:
-                    if requirement in sessions_by_signature:
-                        yield sessions_by_signature[requirement]
-                    else:
-                        yield from parametrized_sessions_by_name[requirement]
-            else:
-                yield from map(sessions_by_id.__getitem__, self.func.requires)
-        except KeyError as exc:
-            msg = f"Session not found: {exc.args[0]}"
-            raise KeyError(msg) from exc
+    def ensure(self) -> None:
+        """Create the virtualenv if this runner hasn't already done so."""
+        if self._ensured:
+            return
+        self._create_venv()
+        self._ensured = True
 
     def _create_venv(self) -> None:
         reuse_existing = self.reuse_existing_venv()
@@ -1167,6 +1106,119 @@ class SessionRunner:
                 and self.global_config.reuse_venv == "yes",
             )
         )
+
+
+class SessionRunner:
+    def __init__(
+        self,
+        name: str,
+        signatures: Sequence[str],
+        func: Func,
+        global_config: argparse.Namespace,
+        manifest: Manifest,
+        *,
+        multi: bool = False,
+    ) -> None:
+        self.name = name
+        self.signatures = signatures
+        self.func = func
+        self.global_config = global_config
+        self.manifest = manifest
+        self.env_runner = EnvRunner(self)
+        self.posargs: list[str] = global_config.posargs[:]
+        self.result: Result | None = None
+        self.multi = multi
+
+        if getattr(func, "parametrize", None):
+            self.multi = True
+
+    def __repr__(self) -> str:
+        return (
+            f"<{self.__class__.__name__} {self.name}: {self.signatures!r} {self.multi}>"
+        )
+
+    @property
+    def description(self) -> str | None:
+        doc = self.func.__doc__
+        if doc:
+            return doc.strip().split("\n")[0]
+        return None
+
+    @property
+    def full_description(self) -> str | None:
+        doc = self.func.__doc__
+        if doc:
+            return inspect.cleandoc(doc)
+        return None
+
+    def __str__(self) -> str:
+        sigs = ", ".join(self.signatures)
+        return f"Session(name={self.name}, signatures={sigs})"
+
+    @property
+    def friendly_name(self) -> str:
+        return self.signatures[0] if self.signatures else self.name
+
+    @property
+    def tags(self) -> list[str]:
+        return self.func.tags
+
+    @property
+    def venv(self) -> ProcessEnv | None:
+        return self.env_runner.venv
+
+    @venv.setter
+    def venv(self, value: ProcessEnv | None) -> None:
+        self.env_runner.venv = value
+
+    @property
+    def envdir(self) -> str:
+        return self.env_runner.envdir
+
+    def get_direct_dependencies(
+        self, sessions_by_id: Mapping[str, SessionRunner] | None = None
+    ) -> Iterator[SessionRunner]:
+        """Yields the sessions of the session's direct dependencies.
+
+        Args:
+            sessions_by_id (Mapping[str, ~nox.sessions.SessionRunner] | None): An
+                optional mapping from both dependency signatures and names to
+                corresponding ``SessionRunner``s. If this is not provided,
+                ``self.manifest.all_sessions_by_signature`` will be used to find the
+                sessions corresponding to signatures in ``self.func.requires``, and
+                non-signature names (i.e. names of sessions that were parameterized with
+                multiple Pythons) in ``self.func.requires`` will be resolved via
+                ``self.manifest.parametrized_sessions_by_name``.
+
+        Returns:
+            Iterator[~nox.session.SessionRunner]
+
+        Raises:
+            KeyError: If a dependency's session could not be found.
+        """
+        try:
+            if sessions_by_id is None:
+                sessions_by_signature = self.manifest.all_sessions_by_signature
+                parametrized_sessions_by_name = (
+                    self.manifest.parametrized_sessions_by_name
+                )
+                for requirement in self.func.requires:
+                    if requirement in sessions_by_signature:
+                        yield sessions_by_signature[requirement]
+                    else:
+                        yield from parametrized_sessions_by_name[requirement]
+            else:
+                yield from map(sessions_by_id.__getitem__, self.func.requires)
+        except KeyError as exc:
+            msg = f"Session not found: {exc.args[0]}"
+            raise KeyError(msg) from exc
+
+    def _create_venv(self) -> None:
+        self.env_runner.ensure()
+
+    def reuse_existing_venv(self) -> bool:
+        """See :meth:`EnvRunner.reuse_existing_venv`."""
+        return self.env_runner.reuse_existing_venv()
 
     def execute(self) -> Result:
         logger.session_info(f"Running session {self.friendly_name}")
