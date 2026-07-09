@@ -19,6 +19,8 @@ __lazy_modules__ = {
     "hashlib",
     "humanize",
     "inspect",
+    "json",
+    "nox.environments",
     "nox.logger",
     "nox.popen",
     "nox.virtualenv",
@@ -34,6 +36,7 @@ import datetime
 import enum
 import hashlib
 import inspect
+import json
 import os
 import pathlib
 import re
@@ -48,6 +51,7 @@ import humanize
 
 import nox.command
 import nox.virtualenv
+from nox.environments import Environment
 from nox.logger import logger
 from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT
 from nox.virtualenv import (
@@ -915,6 +919,19 @@ class Session:
         if self._runner.global_config.no_install and venv._reused:
             return
 
+        env_runner = self._runner.env_runner
+        if (
+            env_runner.shared
+            and not env_runner._syncing
+            and not env_runner._install_warned
+        ):
+            env_runner._install_warned = True
+            logger.warning(
+                f"'{self._runner.friendly_name}' installs packages at run time"
+                f" into the shared environment '{env_runner.friendly_name}';"
+                " prefer declaring dependencies on the environment."
+            )
+
         if silent is None:
             silent = not self._runner.global_config.verbose
 
@@ -998,10 +1015,15 @@ class Session:
 class EnvRunner:
     """Owns the virtualenv shared by the task(s) that run in it.
 
-    Currently paired 1:1 with a :class:`SessionRunner` and reads its
-    identity and configuration through it; this inverts once environments
-    become first-class objects that multiple tasks share.
+    For classic sessions this is paired 1:1 with a :class:`SessionRunner`
+    and reads its identity and configuration through it; the tasks of an
+    explicit :class:`~nox.environments.Environment` share one instance.
     """
+
+    # Set for explicit environments; None for classic sessions.
+    environment: Environment | None = None
+    # True when more than one task is attached to this environment.
+    shared: bool = False
 
     def __init__(self, owner: SessionRunner, name: str | None = None) -> None:
         self._owner = owner
@@ -1009,6 +1031,9 @@ class EnvRunner:
         self._func: Func | None = None
         self.venv: ProcessEnv | None = None
         self._ensured = False
+        self._provisioned = False
+        self._syncing = False
+        self._install_warned = False
         self._error: BaseException | None = None
 
     @property
@@ -1029,7 +1054,17 @@ class EnvRunner:
 
     @property
     def envdir(self) -> str:
+        if self.environment is not None and self.environment.location is not None:
+            location = self.environment.location.format(
+                name=self.friendly_name, python=self.func.python or ""
+            )
+            root = os.path.realpath(os.path.dirname(self.global_config.noxfile))
+            return os.path.normpath(os.path.join(root, location))
         return _normalize_path(self.global_config.envdir, self.friendly_name)
+
+    @property
+    def _stamp_path(self) -> str:
+        return os.path.join(self.envdir, ".nox-env.json")
 
     def ensure(self) -> None:
         """Create the virtualenv if this runner hasn't already done so.
@@ -1049,8 +1084,14 @@ class EnvRunner:
             raise
         self._ensured = True
 
-    def _create_venv(self) -> None:
-        reuse_existing = self.reuse_existing_venv()
+    def _create_venv(self, *, reuse_existing: bool | None = None) -> None:
+        if reuse_existing is None:
+            reuse_existing = self.reuse_existing_venv()
+        custom_location = (
+            self.environment is not None and self.environment.location is not None
+        )
+        if custom_location:
+            self._check_location_ownership()
 
         backends = (
             self.global_config.force_venv_backend
@@ -1070,9 +1111,125 @@ class EnvRunner:
             reuse_existing=reuse_existing,
             interpreter=self.func.python,
             venv_params=self.func.venv_params,
+            manage_parent_dir=not custom_location,
         )
 
         self.venv.create()
+
+    def _check_location_ownership(self) -> None:
+        """Never delete or reuse a user path that isn't a virtual environment."""
+        location = self.envdir
+        if not os.path.isdir(location) or not os.listdir(location):
+            return
+        if os.path.isfile(os.path.join(location, "pyvenv.cfg")):
+            return
+        if os.path.isdir(os.path.join(location, "conda-meta")):
+            return
+        msg = (
+            f"Refusing to use {location!r} for environment "
+            f"{self.friendly_name!r}: the directory exists, is not empty, and "
+            "does not look like a virtual environment."
+        )
+        raise OSError(msg)
+
+    def provision(self, session: Session) -> None:
+        """Sync the environment's declared dependencies, once, if stale.
+
+        No-op for classic sessions. A failure is remembered so later tasks
+        sharing this environment fail fast.
+        """
+        if self._error is not None:
+            raise self._error
+        if self._provisioned or self.environment is None:
+            self._provisioned = True
+            return
+        try:
+            self._provision(session)
+        except BaseException as exc:
+            if not isinstance(exc, KeyboardInterrupt):
+                self._error = exc
+            raise
+        self._provisioned = True
+
+    def _provision(self, session: Session) -> None:
+        environment = self.environment
+        assert environment is not None
+        if isinstance(self.venv, PassthroughEnv) and (
+            environment.dependencies
+            or environment.setup_func is not None
+            or type(environment) is not Environment
+        ):
+            msg = (
+                f"Environment {environment.name!r} declares dependencies but "
+                "does not have a virtualenv (venv_backend 'none')."
+            )
+            raise ValueError(msg)
+        reused = self.venv is not None and self.venv._reused
+        if self.global_config.no_install and reused:
+            return
+
+        stamp = self._stamp_content()
+        if stamp is not None and reused:
+            if self._read_stamp() == stamp:
+                logger.debug(f"Environment {self.friendly_name} is already up to date.")
+                return
+            if not environment.sync_is_exact:
+                # An additive sync would leave removed dependencies behind;
+                # start over so the environment matches its declaration.
+                logger.info(
+                    f"Recreating environment {self.friendly_name}: its "
+                    "provisioning inputs changed."
+                )
+                self._create_venv(reuse_existing=False)
+
+        # Remove the stamp first so an interrupted sync reads as stale.
+        with contextlib.suppress(OSError):
+            os.remove(self._stamp_path)
+
+        self._syncing = True
+        try:
+            environment.sync(session)
+            if environment.setup_func is not None:
+                environment.setup_func(session)
+        finally:
+            self._syncing = False
+
+        # Under --install-only a setup hook's session.run() calls are
+        # skipped, so only then could the sync be incomplete.
+        if stamp is not None and not (
+            self.global_config.install_only and environment.setup_func is not None
+        ):
+            self._write_stamp(stamp)
+
+    def _stamp_content(self) -> dict[str, Any] | None:
+        assert self.environment is not None
+        data = self.environment.stamp_data()
+        if data is None:
+            return None
+        return {
+            "version": 1,
+            "backend": self.venv.venv_backend if self.venv is not None else None,
+            "python": self.func.python,
+            "venv_params": list(self.func.venv_params),
+            "env": data,
+        }
+
+    def _read_stamp(self) -> dict[str, Any] | None:
+        try:
+            with open(self._stamp_path, encoding="utf-8") as stamp_file:
+                content = json.load(stamp_file)
+        except (OSError, ValueError):
+            return None
+        return content if isinstance(content, dict) else None
+
+    def _write_stamp(self, stamp: dict[str, Any]) -> None:
+        temp_path = self._stamp_path + ".tmp"
+        try:
+            with open(temp_path, "w", encoding="utf-8") as stamp_file:
+                json.dump(stamp, stamp_file)
+            os.replace(temp_path, self._stamp_path)
+        except OSError:  # pragma: no cover
+            logger.debug(f"Failed to write {self._stamp_path}")
 
     def reuse_existing_venv(self) -> bool:
         """
@@ -1262,6 +1419,7 @@ class SessionRunner:
                 self._create_venv()
                 session = Session(self)
                 session.env["NOX_CURRENT_SESSION"] = session.name
+                self.env_runner.provision(session)
                 self.func(session)
 
             # Nothing went wrong; return a success.

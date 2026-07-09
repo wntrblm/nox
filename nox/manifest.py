@@ -28,6 +28,7 @@ import ast
 import functools
 import itertools
 import operator
+import os
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, cast
 
@@ -109,6 +110,45 @@ class Manifest:
             for name, func in session_functions.items():
                 for session in self.make_session(name, func):
                     self.add_session(session)
+
+    def check_location_collisions(self) -> None:
+        """Error if two selected environment instances share one location.
+
+        Checked over the selected sessions (not all sessions), so an
+        unselected environment cannot break an unrelated invocation — e.g.
+        --force-python temporarily multiplying a located environment.
+        """
+        locations: dict[str, str] = {}
+        location_bases: dict[str, str | None] = {}
+        seen_runners: set[int] = set()
+        for session in self._queue:
+            env_runner = session.env_runner
+            environment = env_runner.environment
+            if (
+                environment is None
+                or environment.location is None
+                or id(env_runner) in seen_runners
+            ):
+                continue
+            seen_runners.add(id(env_runner))
+            resolved = os.path.normpath(env_runner.envdir)
+            other = locations.setdefault(resolved, env_runner.friendly_name)
+            other_base = location_bases.setdefault(resolved, session.env_base_name)
+            if other == env_runner.friendly_name:
+                continue
+            if other_base == session.env_base_name:
+                msg = (
+                    f"Multiple instances of environment "
+                    f"{session.env_base_name!r} resolve to the location "
+                    f"{resolved!r}; add a {{name}} or {{python}} placeholder "
+                    "to its location."
+                )
+            else:
+                msg = (
+                    f"Environments {other!r} and {env_runner.friendly_name!r} "
+                    f"both resolve to the location {resolved!r}."
+                )
+            raise ValueError(msg)
 
     def __contains__(self, needle: str | SessionRunner) -> bool:
         return (
@@ -536,6 +576,8 @@ class Manifest:
                         env_runner = runner.env_runner
                         env_runner._name = dir_name
                         env_runner._func = func
+                        env_runner.environment = env
+                        env_runner.shared = len(tasks) > 1
                     else:
                         runner.env_runner = env_runner
                     runners.append(runner)
@@ -552,7 +594,9 @@ class Manifest:
         """Copy a task function and fill in the environment-level settings."""
         func = task_func.copy(task_func.name)
         func.python = python
-        func.reuse_venv = env.reuse_venv
+        # Declarative environments are reused (and re-synced when their
+        # inputs change) by default; --reuse-venv=never still recreates.
+        func.reuse_venv = True if env.reuse_venv is None else env.reuse_venv
         func.venv_backend = env.venv_backend
         func.venv_params = env.venv_params
         func.download_python = env.download_python

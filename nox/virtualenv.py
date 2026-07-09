@@ -693,10 +693,14 @@ class VirtualEnv(ProcessEnv):
         reuse_existing: bool = False,
         venv_backend: str = "virtualenv",
         venv_params: Sequence[str] = (),
+        manage_parent_dir: bool = True,
     ) -> None:
         # "pypy-" -> "pypy"
         if interpreter and interpreter.startswith("pypy-"):
             interpreter = interpreter[:4] + interpreter[5:]
+        # False for user-specified locations (e.g. .venv), where nox must not
+        # drop .gitignore/CACHEDIR.TAG into the parent directory.
+        self.manage_parent_dir = manage_parent_dir
 
         self.location_name = location
         self.location = os.path.abspath(location)
@@ -904,9 +908,10 @@ class VirtualEnv(ProcessEnv):
 
     def create(self) -> bool:
         """Create the virtualenv or venv."""
-        nox_dir = Path(self.location).parent
-        _ensure_gitignore(nox_dir)
-        _ensure_cachedir_tag(nox_dir)
+        if self.manage_parent_dir:
+            nox_dir = Path(self.location).parent
+            _ensure_gitignore(nox_dir)
+            _ensure_cachedir_tag(nox_dir)
 
         if not self._clean_location():
             logger.debug(
@@ -976,6 +981,7 @@ def get_virtualenv(
     reuse_existing: bool,
     interpreter: Python = None,
     venv_params: Sequence[str] = (),
+    manage_parent_dir: bool = True,
 ) -> ProcessEnv:
     # Support fallback backends
     for bk in backends:
@@ -1007,4 +1013,5 @@ def get_virtualenv(
         interpreter=interpreter,
         reuse_existing=reuse_existing,
         venv_params=venv_params,
+        manage_parent_dir=manage_parent_dir,
     )
