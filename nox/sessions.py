@@ -1003,13 +1003,20 @@ class EnvRunner:
     become first-class objects that multiple tasks share.
     """
 
-    def __init__(self, owner: SessionRunner) -> None:
+    def __init__(self, owner: SessionRunner, name: str | None = None) -> None:
         self._owner = owner
+        self._name = name
+        self._func: Func | None = None
         self.venv: ProcessEnv | None = None
         self._ensured = False
+        self._error: BaseException | None = None
 
     @property
     def func(self) -> Func:
+        # An explicit override so that a shared environment's configuration
+        # does not depend on which task happens to run first.
+        if self._func is not None:
+            return self._func
         return self._owner.func
 
     @property
@@ -1018,17 +1025,28 @@ class EnvRunner:
 
     @property
     def friendly_name(self) -> str:
-        return self._owner.friendly_name
+        return self._name or self._owner.friendly_name
 
     @property
     def envdir(self) -> str:
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def ensure(self) -> None:
-        """Create the virtualenv if this runner hasn't already done so."""
+        """Create the virtualenv if this runner hasn't already done so.
+
+        A failure is remembered so that later tasks sharing this environment
+        fail fast instead of retrying the creation.
+        """
+        if self._error is not None:
+            raise self._error
         if self._ensured:
             return
-        self._create_venv()
+        try:
+            self._create_venv()
+        except BaseException as exc:
+            if not isinstance(exc, KeyboardInterrupt):
+                self._error = exc
+            raise
         self._ensured = True
 
     def _create_venv(self) -> None:
@@ -1109,6 +1127,12 @@ class EnvRunner:
 
 
 class SessionRunner:
+    # Set for tasks attached to an explicit environment; None for classic
+    # sessions (same-name environment/task pairs).
+    task_name: str | None = None
+    env_base_name: str | None = None
+    env_instance_name: str | None = None
+
     def __init__(
         self,
         name: str,
@@ -1118,13 +1142,14 @@ class SessionRunner:
         manifest: Manifest,
         *,
         multi: bool = False,
+        env_runner: EnvRunner | None = None,
     ) -> None:
         self.name = name
         self.signatures = signatures
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
-        self.env_runner = EnvRunner(self)
+        self.env_runner = env_runner if env_runner is not None else EnvRunner(self)
         self.posargs: list[str] = global_config.posargs[:]
         self.result: Result | None = None
         self.multi = multi
@@ -1198,15 +1223,8 @@ class SessionRunner:
         """
         try:
             if sessions_by_id is None:
-                sessions_by_signature = self.manifest.all_sessions_by_signature
-                parametrized_sessions_by_name = (
-                    self.manifest.parametrized_sessions_by_name
-                )
                 for requirement in self.func.requires:
-                    if requirement in sessions_by_signature:
-                        yield sessions_by_signature[requirement]
-                    else:
-                        yield from parametrized_sessions_by_name[requirement]
+                    yield from self.manifest.resolve_requirement(requirement)
             else:
                 yield from map(sessions_by_id.__getitem__, self.func.requires)
         except KeyError as exc:

@@ -31,10 +31,10 @@ def cleanup_registry() -> Generator[None, None, None]:
     after each test.
     """
     try:
-        registry._REGISTRY.clear()
+        registry.reset()
         yield
     finally:
-        registry._REGISTRY.clear()
+        registry.reset()
 
 
 def test_session_decorator() -> None:
@@ -116,8 +116,6 @@ def test_session_decorator_name(
 def test_get() -> None:
     # Establish that the get method returns a copy of the registry.
     empty = registry.get()
-    assert empty == registry._REGISTRY
-    assert empty is not registry._REGISTRY
     assert len(empty) == 0
 
     @registry.session_decorator
@@ -132,7 +130,9 @@ def test_get() -> None:
     assert empty != full
     assert len(empty) == 0
     assert len(full) == 2
-    assert full == registry._REGISTRY
-    assert full is not registry._REGISTRY
     assert full["unit_tests"] is unit_tests
     assert full["system_tests"] is system_tests
+
+    # Mutating the returned mapping must not affect the registry.
+    del full["unit_tests"]
+    assert "unit_tests" in registry.get()
