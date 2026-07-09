@@ -225,6 +225,28 @@ def test_filter_manifest_no_dependencies_skips_resolution() -> None:
     assert not add_dependencies.called
 
 
+def test_filter_manifest_no_dependencies_still_validates_requires() -> None:
+    # --no-dependencies skips queueing prerequisites, but a requires= entry
+    # naming a session that doesn't exist is still an error, not a silent run.
+    def broken_requires_raw() -> None:
+        pass
+
+    broken_requires = typing.cast("nox._decorators.Func", broken_requires_raw)
+    broken_requires.python = None
+    broken_requires.venv_backend = None
+    broken_requires.should_warn = {}
+    broken_requires.tags = []
+    broken_requires.default = True
+    broken_requires.requires = ["no_such_session"]
+    broken_requires.allow_parallel = False
+
+    config = _options.options.namespace(
+        sessions=None, pythons=(), keywords=(), posargs=[], no_dependencies=True
+    )
+    manifest = Manifest({"foo": broken_requires}, config)
+    assert tasks.filter_manifest(manifest, config) == 3
+
+
 def test_filter_manifest_not_found() -> None:
     config = _options.options.namespace(
         sessions=("baz",), pythons=(), keywords=(), posargs=[]
@@ -660,6 +682,7 @@ def test_run_manifest(with_warnings: builtins.bool) -> None:
     results = tasks.run_manifest(manifest, global_config=config)
 
     # Verify the results look correct.
+    assert not isinstance(results, int)
     assert len(results) == 2
     assert results[0].session == sessions_[0]
     assert results[1].session == sessions_[1]
@@ -691,6 +714,7 @@ def test_run_manifest_sequential_without_allow_parallel(
 
     results = tasks.run_manifest(manifest, global_config=config)
 
+    assert not isinstance(results, int)
     assert len(results) == 2
     assert all(result.status == sessions.Status.SUCCESS for result in results)
 
@@ -717,6 +741,7 @@ def test_run_manifest_abort_on_first_failure() -> None:
     results = tasks.run_manifest(manifest, global_config=config)
 
     # Verify the results look correct.
+    assert not isinstance(results, int)
     assert len(results) == 1
     assert isinstance(results[0], sessions.Result)
     assert results[0].session == sessions_[0]

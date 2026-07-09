@@ -22,12 +22,26 @@ their ``requires=`` dependency graph and never executes a session itself.
 
 from __future__ import annotations
 
-__lazy_modules__ = {"json", "shutil", "subprocess", "tempfile", "threading"}
+__lazy_modules__ = {
+    "colorlog",
+    "colorlog.escape_codes",
+    "contextlib",
+    "io",
+    "json",
+    "shutil",
+    "signal",
+    "subprocess",
+    "tempfile",
+    "threading",
+}
 
+import contextlib
+import io
 import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -36,11 +50,13 @@ import time
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import TYPE_CHECKING
 
+from colorlog.escape_codes import parse_colors
+
 from nox.sessions import Result, Status, _duration_str
 
 if TYPE_CHECKING:
     from argparse import Namespace
-    from collections.abc import Callable
+    from collections.abc import Callable, Collection
 
     from nox.manifest import Manifest
     from nox.sessions import SessionRunner
@@ -52,18 +68,10 @@ _SYMBOLS = {
     Status.FAILED: "✗",
     Status.ABORTED: "↯",
 }
-_COLORS = {
-    "red": "\x1b[31m",
-    "green": "\x1b[32m",
-    "yellow": "\x1b[33m",
-    "blue": "\x1b[34m",
-    "purple": "\x1b[35m",
-    "cyan": "\x1b[36m",
-    "grey": "\x1b[90m",
-    "bold": "\x1b[1m",
-    "reset": "\x1b[0m",
-}
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
+
+# How long a child gets to exit after SIGTERM before it is SIGKILLed.
+_TERMINATE_TIMEOUT = 2.0
 
 
 def _make_color_formatter(*, color: bool) -> Callable[..., str]:
@@ -72,7 +80,9 @@ def _make_color_formatter(*, color: bool) -> Callable[..., str]:
         return lambda text, *codes: text
 
     def colorize(text: str, *codes: str) -> str:
-        return "".join(_COLORS[code] for code in codes) + text + _COLORS["reset"]
+        return (
+            "".join(parse_colors(code) for code in codes) + text + parse_colors("reset")
+        )
 
     return colorize
 
@@ -84,7 +94,7 @@ def _preview_text(line: str) -> str:
     show their latest state) and strips ANSI escapes so truncation can't split
     an escape sequence and corrupt the terminal.
     """
-    return _ANSI.sub("", line.rstrip("\n").rsplit("\r", 1)[-1]).strip()
+    return _ANSI.sub("", line.rstrip("\r\n").rsplit("\r", 1)[-1]).strip()
 
 
 class _Reporter:
@@ -103,6 +113,7 @@ class _Reporter:
         self._total = total
         self._passed = 0
         self._failed = 0
+        self._skipped = 0
         self._active: dict[str, float] = {}
         self._preview: dict[str, str] = {}
         self._board_lines = 0
@@ -134,7 +145,7 @@ class _Reporter:
 
         _c = self._c
         running = len(self._active)
-        done = self._passed + self._failed
+        done = self._passed + self._failed + self._skipped
         queued = max(0, self._total - done - running)
         header = (
             f"{_c('nox > --parallel:', 'bold', 'purple')} "
@@ -143,6 +154,8 @@ class _Reporter:
             f"{_c('failed', 'red')} {self._failed} · "
             f"{_c('queued', 'yellow')} {queued}"
         )
+        if self._skipped:
+            header += f" · {_c('skipped', 'light_black')} {self._skipped}"
         plain_header = _ANSI.sub("", header)
         if width and len(plain_header) > width - 1:
             # Too narrow for the styled header; truncate the plain text instead.
@@ -151,22 +164,25 @@ class _Reporter:
 
         frame = _SPINNER[self._spin % len(_SPINNER)]
         for name, start in self._active.items():
-            head = f"{frame} {name} ({int(now - start)}s)"
+            # Plain and colored renderings are built from the same segments so
+            # the width math can't drift from what is actually displayed.
+            segments = [
+                (frame, ("cyan",)),
+                (name, ("bold", "cyan")),
+                (f"({int(now - start)}s)", ("green",)),
+            ]
+            head = " ".join(text for text, _ in segments)
             if width and len(head) > width - 1:
-                # Too narrow even for the header; fall back to plain truncation.
+                # Too narrow even for the session line; plain truncation.
                 lines.append(head[: width - 1])
                 continue
             preview = self._preview.get(name, "")
             if preview and width:
                 budget = width - 1 - len(head) - 2  # 2 for the separating spaces
                 preview = preview[:budget] if budget > 0 else ""
-            line = (
-                f"{_c(frame, 'cyan')} "
-                f"{_c(name, 'bold', 'cyan')} "
-                f"{_c(f'({int(now - start)}s)', 'green')}"
-            )
+            line = " ".join(_c(text, *codes) for text, codes in segments)
             if preview:
-                line += f"  {_c(preview, 'grey')}"
+                line += f"  {_c(preview, 'light_black')}"
             lines.append(line)
         return lines
 
@@ -224,20 +240,14 @@ class _Reporter:
         with self._lock:
             self._active.pop(name, None)
             self._preview.pop(name, None)
-            if result:
+            if result.status is Status.SKIPPED:
+                self._skipped += 1
+            elif result:
                 self._passed += 1
             else:
                 self._failed += 1
             self._clear_board()
             self._emit_block(name, result, output)
-            if self.tty:  # pragma: no cover - requires a live TTY
-                self._draw_board()
-
-    def aborted(self, name: str, result: Result) -> None:
-        with self._lock:
-            self._failed += 1
-            self._clear_board()
-            self._emit_block(name, result, "")
             if self.tty:  # pragma: no cover - requires a live TTY
                 self._draw_board()
 
@@ -257,7 +267,12 @@ def _session_selector(session: SessionRunner) -> str:
 def _child_argv(
     global_config: Namespace, session: SessionRunner, report_path: str
 ) -> list[str]:
-    """Build the ``nox`` command line that runs a single session in a child."""
+    """Build the ``nox`` command line that runs a single session in a child.
+
+    Every global option that affects how a session executes must be forwarded
+    here, or parallel runs will silently diverge from sequential ones — keep
+    this in sync when adding options.
+    """
     g = global_config
     argv = [
         sys.executable,
@@ -312,6 +327,8 @@ def _child_argv(
     )
     if g.non_interactive:
         argv.append("--non-interactive")
+    if g.add_timestamp:
+        argv.append("--add-timestamp")
     if g.verbose:
         argv.append("-v")
     argv.append("--forcecolor" if g.color else "--nocolor")
@@ -344,43 +361,85 @@ def _read_report(path: str, session: SessionRunner, returncode: int) -> Result:
 def _run_session(
     session: SessionRunner,
     global_config: Namespace,
-    procs: set[subprocess.Popen[str]],
+    procs: set[subprocess.Popen[bytes]],
     procs_lock: threading.Lock,
     on_line: Callable[[str], None] | None = None,
 ) -> tuple[Result, str]:
     """Run a single session in a subprocess; return its result and output.
 
     Output is read line by line so ``on_line`` (if given) sees each line as it
-    arrives, letting the caller show a live preview while the session runs.
+    arrives, letting the caller show a live preview while the session runs. It
+    is spooled to a temporary file rather than held in memory, so a
+    long-running verbose session only occupies RAM briefly when it finishes.
     """
-    lines: list[str] = []
     with tempfile.TemporaryDirectory() as tmp:
         report_path = os.path.join(tmp, "report.json")
+        output_path = os.path.join(tmp, "output.txt")
         # The context manager waits for the process and closes its pipes.
-        with subprocess.Popen(
-            _child_argv(global_config, session, report_path),
-            cwd=global_config.invoked_from,
-            # Detach stdin so the child never sees a TTY: parallel sessions must
-            # not prompt or read from the shared terminal (they would race/hang).
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="backslashreplace",
-        ) as proc:
+        with (
+            subprocess.Popen(
+                _child_argv(global_config, session, report_path),
+                cwd=global_config.invoked_from,
+                # Detach stdin so the child never sees a TTY: parallel sessions
+                # must not prompt or read from the shared terminal (they would
+                # race/hang).
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                # Own process group (POSIX) so an interrupt can stop the whole
+                # tree, including the session's own subprocesses.
+                start_new_session=(os.name == "posix"),
+            ) as proc,
+            open(output_path, "w", encoding="utf-8", newline="") as spool,
+        ):
             with procs_lock:
                 procs.add(proc)
             try:
                 assert proc.stdout is not None
-                for line in iter(proc.stdout.readline, ""):
-                    lines.append(line)
+                # newline="" splits at \r too but doesn't translate it, so
+                # progress-bar redraws stay overwrites instead of becoming
+                # separate lines in the buffered block.
+                reader = io.TextIOWrapper(
+                    proc.stdout,
+                    encoding="utf-8",
+                    errors="backslashreplace",
+                    newline="",
+                )
+                for raw_line in iter(reader.readline, ""):
+                    line = (
+                        f"{raw_line[:-2]}\n" if raw_line.endswith("\r\n") else raw_line
+                    )
+                    spool.write(line)
                     if on_line is not None:
                         on_line(line)
             finally:
                 with procs_lock:
                     procs.discard(proc)
-        return _read_report(report_path, session, proc.returncode), "".join(lines)
+        with open(output_path, encoding="utf-8", newline="") as spool:
+            output = spool.read()
+        return _read_report(report_path, session, proc.returncode), output
+
+
+def _signal_group(proc: subprocess.Popen[bytes], *, kill: bool) -> None:
+    """Signal a child's whole process group (POSIX), or just the child."""
+    if os.name == "posix":
+        with contextlib.suppress(ProcessLookupError, PermissionError):
+            os.killpg(proc.pid, signal.SIGKILL if kill else signal.SIGTERM)
+        return
+    (proc.kill if kill else proc.terminate)()  # pragma: no cover - Windows
+
+
+def _stop_procs(procs: Collection[subprocess.Popen[bytes]]) -> None:
+    """Terminate the children (and their process groups, so the sessions' own
+    subprocesses stop too), escalating to SIGKILL for any that don't exit."""
+    for proc in procs:
+        _signal_group(proc, kill=False)
+    deadline = time.monotonic() + _TERMINATE_TIMEOUT
+    for proc in procs:
+        try:
+            proc.wait(timeout=max(0.0, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired:  # noqa: PERF203 - cold shutdown path
+            _signal_group(proc, kill=True)
 
 
 def run_manifest_parallel(
@@ -406,7 +465,7 @@ def run_manifest_parallel(
     results: dict[SessionRunner, Result] = {}
     not_started = list(queue)
     futures: dict[Future[Result], SessionRunner] = {}
-    procs: set[subprocess.Popen[str]] = set()
+    procs: set[subprocess.Popen[bytes]] = set()
     procs_lock = threading.Lock()
     stop = False
 
@@ -424,7 +483,11 @@ def run_manifest_parallel(
             global_config,
             procs,
             procs_lock,
-            on_line=lambda line: reporter.update(name, line),
+            # The preview only feeds the TTY status board; skip the per-line
+            # work entirely when there isn't one.
+            on_line=(lambda line: reporter.update(name, line))
+            if reporter.tty
+            else None,
         )
         reporter.finished(name, result, output)
         return result
@@ -446,6 +509,9 @@ def run_manifest_parallel(
         exclusive_running = any(
             not running.func.allow_parallel for running in futures.values()
         )
+        # The fixpoint loop is load-bearing: when a failure cascades while
+        # nothing is running, every transitive dependent must be aborted in
+        # this call, because the main loop exits once no futures remain.
         progressed = True
         while progressed:
             progressed = False
@@ -467,7 +533,7 @@ def run_manifest_parallel(
                         duration=0,
                     )
                     results[session] = result
-                    reporter.aborted(session.friendly_name, result)
+                    reporter.finished(session.friendly_name, result, "")
                 elif (
                     len(futures) < jobs
                     and not exclusive_running
@@ -497,8 +563,8 @@ def run_manifest_parallel(
                         stop = True
         except KeyboardInterrupt:  # pragma: no cover - hard to trigger in tests
             with procs_lock:
-                for proc in procs:
-                    proc.terminate()
+                running = list(procs)
+            _stop_procs(running)
             executor.shutdown(wait=False, cancel_futures=True)
             raise
 

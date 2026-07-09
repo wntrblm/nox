@@ -142,7 +142,12 @@ class Option:
         merge_func: Callable[[Namespace, NoxOptions], Any] | None = None,
         finalizer_func: Callable[[Any, Namespace], Any] | None = None,
         default: (
-            bool | str | None | list[str] | Callable[[], bool | str | None | list[str]]
+            bool
+            | str
+            | int
+            | None
+            | list[str]
+            | Callable[[], bool | str | int | None | list[str]]
         ) = None,
         hidden: bool = False,
         completer: Callable[..., Iterable[str]] | None = None,
@@ -161,7 +166,7 @@ class Option:
         self._default = default
 
     @property
-    def default(self) -> bool | str | None | list[str]:
+    def default(self) -> bool | str | int | None | list[str]:
         if callable(self._default):
             return self._default()
         return self._default

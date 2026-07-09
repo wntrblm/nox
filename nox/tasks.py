@@ -262,13 +262,19 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
 
     # Add dependencies, unless --no-dependencies limits the run to only the
     # explicitly selected sessions (as the parallel runner's children do).
-    if not global_config.no_dependencies:
-        try:
+    # Even then, a ``requires=`` entry naming a session that doesn't exist is
+    # still an error — the prerequisites just aren't queued.
+    try:
+        if global_config.no_dependencies:
+            for session, selected in manifest.list_all_sessions():
+                if selected:
+                    list(session.get_direct_dependencies())
+        else:
             manifest.add_dependencies()
-        except (KeyError, CycleError) as exc:
-            logger.error("Error while resolving session dependencies.")
-            logger.error(exc.args[0])
-            return 3
+    except (KeyError, CycleError) as exc:
+        logger.error("Error while resolving session dependencies.")
+        logger.error(exc.args[0])
+        return 3
 
     # Return the modified manifest.
     return manifest
@@ -390,7 +396,7 @@ def honor_usage_request(manifest: Manifest, global_config: Namespace) -> Manifes
     return 0
 
 
-def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
+def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result] | int:
     """Run the full manifest of sessions.
 
     Args:
@@ -399,14 +405,19 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
 
     Returns:
         tuple[~nox.sessions.Session,~.SessionStatus]: A two-tuple of the
-            sessions and the result of each session that was run.
+            sessions and the result of each session that was run, or an exit
+            code on an invalid ``--parallel`` configuration.
     """
     # When --parallel/-j requests more than one job, hand off to the parallel
     # scheduler, which runs independent sessions in their own subprocesses.
-    # The value may still be an unparsed string when set via the Noxfile or
-    # NOX_PARALLEL (only command-line values are parsed by argparse).
+    # The value may still be an unparsed string when set via the Noxfile
+    # (only command-line and NOX_PARALLEL values are parsed by argparse).
     raw_parallel = global_config.parallel
-    jobs = _options.parse_parallel(raw_parallel) if raw_parallel else 1
+    try:
+        jobs = _options.parse_parallel(raw_parallel) if raw_parallel is not None else 1
+    except ValueError as exc:
+        logger.error(f"Invalid nox.options.parallel value: {exc}")
+        return 3
     if jobs > 1 and not any(
         session.func.allow_parallel
         for session, selected in manifest.list_all_sessions()

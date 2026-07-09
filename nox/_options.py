@@ -240,6 +240,25 @@ def _parallel_arg(value: str) -> int:
         raise argparse.ArgumentTypeError(str(exc)) from None
 
 
+def _parallel_env_default() -> int | None:
+    """Read ``NOX_PARALLEL``, warning about (not failing on) a bad value.
+
+    argparse applies the option's ``type`` to string defaults on every parse,
+    so an invalid value returned here would break unrelated invocations
+    (``nox -l``, ``nox --version``, ...) — warn and ignore it instead.
+    """
+    value = os.environ.get("NOX_PARALLEL")
+    if not value:
+        return None
+    try:
+        return parse_parallel(value)
+    except ValueError as exc:
+        from nox.logger import logger  # noqa: PLC0415  # only needed on a bad value
+
+        logger.warning(f"Ignoring NOX_PARALLEL: {exc}")
+        return None
+
+
 def _color_finalizer(_value: bool, args: argparse.Namespace) -> bool:  # noqa: FBT001
     """Figures out the correct value for "color" based on the two color flags.
 
@@ -654,7 +673,7 @@ options.add_options(
         group=options.groups["execution"],
         noxfile=True,
         type=_parallel_arg,
-        default=lambda: os.environ.get("NOX_PARALLEL") or None,
+        default=_parallel_env_default,
         metavar="N",
         help=(
             "Run independent sessions in parallel, each in its own subprocess."

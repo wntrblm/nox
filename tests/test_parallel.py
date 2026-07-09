@@ -15,16 +15,20 @@
 from __future__ import annotations
 
 import json
+import os
+import signal
+import subprocess
 import sys
 import threading
 import time
 import types
 import typing
+from unittest import mock
 
 import pytest
 
 from nox import _options, _parallel, tasks
-from nox.sessions import Result, SessionRunner, Status
+from nox.sessions import Result, Session, SessionRunner, Status
 
 if typing.TYPE_CHECKING:
     import argparse
@@ -281,6 +285,7 @@ def test_child_argv_full() -> None:
         non_interactive=True,
         verbose=True,
         color=True,
+        add_timestamp=True,
         posargs=["-k", "foo"],
     )
     argv = _parallel._child_argv(
@@ -307,6 +312,7 @@ def test_child_argv_full() -> None:
     assert "--non-interactive" in argv
     assert "-v" in argv
     assert "--forcecolor" in argv
+    assert "--add-timestamp" in argv
     assert argv[-3:] == ["--", "-k", "foo"]
 
 
@@ -547,7 +553,7 @@ def test_reporter_started_and_finished(capsys: pytest.CaptureFixture[str]) -> No
 
 def test_reporter_aborted_shows_reason(capsys: pytest.CaptureFixture[str]) -> None:
     reporter = _parallel._Reporter(color=False, tty=False)
-    reporter.aborted(
+    reporter.finished(
         "e",
         Result(
             _fake_runner(FakeSession("e")),
@@ -555,10 +561,28 @@ def test_reporter_aborted_shows_reason(capsys: pytest.CaptureFixture[str]) -> No
             reason="Prerequisite session d was not successful",
             duration=0,
         ),
+        "",
     )
     out = capsys.readouterr().out
     assert "↯ e: aborted" in out
     assert "Prerequisite session d was not successful" in out
+    assert reporter._failed == 1
+
+
+def test_reporter_counts_skipped_separately() -> None:
+    reporter = _parallel._Reporter(color=False, tty=False, total=3)
+    reporter.finished(
+        "s",
+        Result(_fake_runner(FakeSession("s")), Status.SKIPPED, duration=0.0),
+        "",
+    )
+    assert reporter._passed == 0
+    assert reporter._skipped == 1
+    reporter._active = {"a": 100.0}
+    header = reporter._render(105.0, width=0)[0]
+    assert "skipped 1" in header
+    # queued = total - done - running = 3 - 1 - 1 = 1
+    assert "queued 1" in header
 
 
 def test_reporter_block_without_output_or_reason(
@@ -621,6 +645,59 @@ def test_run_session_spawns_subprocess(
     assert "child output" in output2
 
 
+def test_run_session_preserves_carriage_returns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Progress-bar style \r redraws must reach the buffered block untranslated
+    # so the terminal renders them as overwrites, not as separate lines.
+    def fake_child_argv(
+        _global_config: object, _session: object, _report_path: str
+    ) -> list[str]:
+        code = (
+            "import sys;"
+            " sys.stdout.write('10%\\r50%\\r100%\\n');"
+            " sys.stdout.flush();"
+            " sys.stdout.buffer.write(b'crlf\\r\\n')"
+        )
+        return [sys.executable, "-c", code]
+
+    monkeypatch.setattr(_parallel, "_child_argv", fake_child_argv)
+    seen: list[str] = []
+    _, output = _parallel._run_session(
+        _fake_runner(FakeSession("x")),
+        _config(),
+        set(),
+        threading.Lock(),
+        on_line=seen.append,
+    )
+    assert "10%\r50%\r100%\n" in output
+    # Windows-style line endings are normalized so re-emitting the block
+    # doesn't double the carriage returns.
+    assert output.endswith("crlf\n")
+    # The reader hands each \r-terminated segment to the preview callback.
+    assert any(line.endswith("100%\n") for line in seen)
+
+
+def test_stop_procs_escalates_to_kill(monkeypatch: pytest.MonkeyPatch) -> None:
+    if os.name != "posix":  # pragma: no cover
+        pytest.skip("process groups are POSIX-only")
+    signals: list[tuple[int, int]] = []
+    monkeypatch.setattr(os, "killpg", lambda pgid, sig: signals.append((pgid, sig)))
+
+    polite = mock.Mock(pid=101)
+    polite.wait.return_value = 0
+    stubborn = mock.Mock(pid=102)
+    stubborn.wait.side_effect = [subprocess.TimeoutExpired("nox", 1), 0]
+
+    _parallel._stop_procs([polite, stubborn])
+
+    assert (101, signal.SIGTERM) in signals
+    assert (102, signal.SIGTERM) in signals
+    # Only the process that ignored SIGTERM gets SIGKILL.
+    assert (102, signal.SIGKILL) in signals
+    assert (101, signal.SIGKILL) not in signals
+
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     [("4", 4), (3, 3), (" auto ", None)],
@@ -645,6 +722,73 @@ def test_parallel_cli_option() -> None:
     assert parser.parse_args(["--parallel", "5"]).parallel == 5
     with pytest.raises(SystemExit):
         parser.parse_args(["-j", "nope"])
+
+
+def test_parallel_env_invalid_does_not_break_unrelated_commands(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    # A stale/bad NOX_PARALLEL must not make every invocation (nox -l,
+    # nox --version, ...) fail at argument parsing; warn and ignore it.
+    monkeypatch.setenv("NOX_PARALLEL", "bogus")
+    args = _options.options.parser().parse_args([])
+    assert args.parallel is None
+    assert any("NOX_PARALLEL" in record.message for record in caplog.records)
+
+
+def test_parallel_env_valid_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NOX_PARALLEL", "3")
+    assert _options.options.parser().parse_args([]).parallel == 3
+
+
+def test_run_manifest_invalid_noxfile_parallel_errors() -> None:
+    # nox.options.parallel bypasses argparse; a bad value must produce a clean
+    # error (exit code 3), not an uncaught ValueError traceback.
+    config = _options.options.namespace(parallel="bogus", stop_on_first_error=False)
+    manifest = types.SimpleNamespace(list_all_sessions=list)
+    assert tasks.run_manifest(typing.cast("typing.Any", manifest), config) == 3
+
+
+def test_run_manifest_zero_noxfile_parallel_errors() -> None:
+    # 0 is invalid like on the command line, not a silent "sequential".
+    config = _options.options.namespace(parallel=0, stop_on_first_error=False)
+    manifest = types.SimpleNamespace(list_all_sessions=list)
+    assert tasks.run_manifest(typing.cast("typing.Any", manifest), config) == 3
+
+
+def test_notify_refused_in_no_dependencies_mode() -> None:
+    # Under --parallel each child runs with --no-dependencies; notify() there
+    # would run the target session concurrently with (and in addition to) its
+    # own scheduled run, racing on the same envdir.
+    runner = types.SimpleNamespace(
+        global_config=types.SimpleNamespace(no_dependencies=True),
+        manifest=mock.Mock(),
+    )
+    session = Session(typing.cast("SessionRunner", runner))
+    with pytest.raises(ValueError, match="notify"):
+        session.notify("other")
+    runner.manifest.notify.assert_not_called()
+
+
+def test_worker_skips_preview_callback_without_tty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Without a TTY no status board is drawn, so the per-line preview callback
+    # is pure overhead and must not be wired up.
+    captured: dict[str, object] = {"on_line": "unset"}
+
+    def fake_run_session(
+        session: SessionRunner,
+        _global_config: object,
+        _procs: object,
+        _procs_lock: object,
+        on_line: object = None,
+    ) -> tuple[Result, str]:
+        captured["on_line"] = on_line
+        return Result(session, Status.SUCCESS, duration=0.0), ""
+
+    monkeypatch.setattr(_parallel, "_run_session", fake_run_session)
+    _run([FakeSession("a")], _config())
+    assert captured["on_line"] is None
 
 
 def test_parallel_noxfile_settable() -> None:
