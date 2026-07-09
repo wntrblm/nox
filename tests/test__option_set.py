@@ -112,6 +112,15 @@ class TestOptions:
         )
         assert len(list(all_nox_sessions)) == 0
 
+    def test_session_completer_error_noxfile(self) -> None:
+        parsed_args = _options.options.namespace(
+            posargs=[],
+            noxfile=str(RESOURCES.joinpath("noxfile_env_error.py")),
+        )
+        assert not list(
+            _completers.session_completer(prefix="", parsed_args=parsed_args)
+        )
+
     def test_python_completer(self) -> None:
         parsed_args = _options.options.namespace(
             posargs=[],
@@ -124,6 +133,15 @@ class TestOptions:
         expected_pythons = {"3.6", "3.12"}
         assert expected_pythons == set(actual_pythons_from_file)
 
+    def test_python_completer_error_noxfile(self) -> None:
+        parsed_args = _options.options.namespace(
+            posargs=[],
+            noxfile=str(RESOURCES.joinpath("noxfile_env_error.py")),
+        )
+        assert not list(
+            _completers.python_completer(prefix="", parsed_args=parsed_args)
+        )
+
     def test_tag_completer(self) -> None:
         parsed_args = _options.options.namespace(
             posargs=[],
@@ -135,6 +153,13 @@ class TestOptions:
 
         expected_tags = {f"tag{n}" for n in range(1, 8)}
         assert expected_tags == set(actual_tags_from_file)
+
+    def test_tag_completer_error_noxfile(self) -> None:
+        parsed_args = _options.options.namespace(
+            posargs=[],
+            noxfile=str(RESOURCES.joinpath("noxfile_env_error.py")),
+        )
+        assert not list(_completers.tag_completer(prefix="", parsed_args=parsed_args))
 
     def test_validation_options(self) -> None:
         options = _options.NoxfileOptions(
