@@ -26,6 +26,7 @@ import typing
 from unittest import mock
 
 import pytest
+from colorlog.escape_codes import parse_colors
 
 from nox import _options, _parallel, tasks
 from nox.sessions import Result, Session, SessionRunner, Status
@@ -511,16 +512,21 @@ def test_reporter_render_color() -> None:
     reporter = _parallel._Reporter(color=True, tty=False, total=1)
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "installing"}
+    reporter._skipped = 1
     header, line = reporter._render(105.0, width=0)
-    assert "\x1b[1m\x1b[35mnox > --parallel:\x1b[0m" in header  # bold purple prefix
+    # Bold escape codes vary between colorlog versions, so build the expected
+    # sequences with parse_colors instead of hard-coding them.
+    bold, grey, reset = (parse_colors(c) for c in ("bold", "bold_black", "reset"))
+    assert f"{bold}\x1b[35mnox > --parallel:{reset}" in header  # bold purple prefix
     assert "\x1b[34m" in header  # blue "running"
     assert "\x1b[32m" in header  # green "passed"
     assert "\x1b[31m" in header  # red "failed"
     assert "\x1b[33m" in header  # yellow "queued"
+    assert f"{grey}skipped{reset}" in header  # grey "skipped"
     assert "\x1b[36m" in line  # cyan spinner/name
     assert "\x1b[32m" in line  # green elapsed time
-    assert "\x1b[90minstalling\x1b[0m" in line  # grey preview
-    assert "\x1b[1m" in line  # bold name
+    assert f"{grey}installing{reset}" in line  # grey preview
+    assert bold in line  # bold name
 
 
 def test_reporter_update_preview() -> None:
