@@ -247,6 +247,28 @@ def test_filter_manifest_no_dependencies_still_validates_requires() -> None:
     assert tasks.filter_manifest(manifest, config) == 3
 
 
+def test_filter_manifest_no_dependencies_ignores_unselected_requires() -> None:
+    # Only selected sessions are validated: an unselected session with a bad
+    # requires= must not fail a --no-dependencies run.
+    def broken_requires_raw() -> None:
+        pass
+
+    broken_requires = typing.cast("nox._decorators.Func", broken_requires_raw)
+    broken_requires.python = None
+    broken_requires.venv_backend = None
+    broken_requires.should_warn = {}
+    broken_requires.tags = []
+    broken_requires.default = True
+    broken_requires.requires = ["no_such_session"]
+    broken_requires.allow_parallel = False
+
+    config = _options.options.namespace(
+        sessions=("foo",), pythons=(), keywords=(), posargs=[], no_dependencies=True
+    )
+    manifest = Manifest({"foo": session_func, "broken": broken_requires}, config)
+    assert tasks.filter_manifest(manifest, config) is manifest
+
+
 def test_filter_manifest_not_found() -> None:
     config = _options.options.namespace(
         sessions=("baz",), pythons=(), keywords=(), posargs=[]
