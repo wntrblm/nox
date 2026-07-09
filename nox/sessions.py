@@ -80,7 +80,7 @@ if typing.TYPE_CHECKING:
     from nox.command import ExternalType
     from nox.manifest import Manifest
 
-__all__ = ["Result", "Session", "SessionRunner", "Status", "nox"]
+__all__ = ["EnvRunner", "Result", "Session", "SessionRunner", "Status", "nox"]
 
 
 def __dir__() -> list[str]:
@@ -1075,6 +1075,66 @@ def resolve_reuse_existing_venv(global_config: NoxConfig, func: Func) -> bool:
     )
 
 
+class EnvRunner:
+    """Owns the virtualenv shared by the task(s) that run in it.
+
+    Currently paired 1:1 with a :class:`SessionRunner` and reads its
+    identity and configuration through it; this inverts once environments
+    become first-class objects that multiple tasks share.
+    """
+
+    def __init__(self, owner: SessionRunner) -> None:
+        self._owner = owner
+        self.venv: ProcessEnv | None = None
+        self._ensured = False
+
+    @property
+    def func(self) -> Func:
+        return self._owner.func
+
+    @property
+    def global_config(self) -> NoxConfig:
+        return self._owner.global_config
+
+    @property
+    def friendly_name(self) -> str:
+        return self._owner.friendly_name
+
+    @property
+    def envdir(self) -> str:
+        return _normalize_path(os.fspath(self.global_config.envdir), self.friendly_name)
+
+    def ensure(self) -> None:
+        """Create the virtualenv if this runner hasn't already done so."""
+        if self._ensured:
+            return
+        self._create_venv()
+        self._ensured = True
+
+    def _create_venv(self) -> None:
+        self.venv = get_virtualenv(
+            *resolve_venv_backends(self.global_config, self.func),
+            download_python=resolve_download_python(self.global_config, self.func),
+            envdir=self.envdir,
+            reuse_existing=self.reuse_existing_venv(),
+            interpreter=self.func.python,
+            venv_params=self.func.venv_params,
+        )
+
+        self.venv.create()
+
+    def reuse_existing_venv(self) -> bool:
+        """
+        Determines whether to reuse an existing virtual environment.
+
+        See :func:`resolve_reuse_existing_venv` for the decision matrix.
+
+        Returns:
+            bool: True if the existing virtual environment should be reused, False otherwise.
+        """
+        return resolve_reuse_existing_venv(self.global_config, self.func)
+
+
 class SessionRunner:
     def __init__(
         self,
@@ -1091,7 +1151,7 @@ class SessionRunner:
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
-        self.venv: ProcessEnv | None = None
+        self.env_runner = EnvRunner(self)
         self.posargs: list[str] = global_config.posargs[:]
         self.result: Result | None = None
         self.multi = multi
@@ -1131,8 +1191,16 @@ class SessionRunner:
         return self.func.tags
 
     @property
+    def venv(self) -> ProcessEnv | None:
+        return self.env_runner.venv
+
+    @venv.setter
+    def venv(self, value: ProcessEnv | None) -> None:
+        self.env_runner.venv = value
+
+    @property
     def envdir(self) -> str:
-        return _normalize_path(os.fspath(self.global_config.envdir), self.friendly_name)
+        return self.env_runner.envdir
 
     def get_direct_dependencies(
         self, sessions_by_id: Mapping[str, SessionRunner] | None = None
@@ -1173,27 +1241,11 @@ class SessionRunner:
             raise KeyError(msg) from exc
 
     def _create_venv(self) -> None:
-        self.venv = get_virtualenv(
-            *resolve_venv_backends(self.global_config, self.func),
-            download_python=resolve_download_python(self.global_config, self.func),
-            envdir=self.envdir,
-            reuse_existing=self.reuse_existing_venv(),
-            interpreter=self.func.python,
-            venv_params=self.func.venv_params,
-        )
-
-        self.venv.create()
+        self.env_runner.ensure()
 
     def reuse_existing_venv(self) -> bool:
-        """
-        Determines whether to reuse an existing virtual environment.
-
-        See :func:`resolve_reuse_existing_venv` for the decision matrix.
-
-        Returns:
-            bool: True if the existing virtual environment should be reused, False otherwise.
-        """
-        return resolve_reuse_existing_venv(self.global_config, self.func)
+        """See :meth:`EnvRunner.reuse_existing_venv`."""
+        return self.env_runner.reuse_existing_venv()
 
     def execute(self) -> Result:
         logger.session_info(f"Running session {self.friendly_name}")
