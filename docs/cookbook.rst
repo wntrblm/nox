@@ -64,7 +64,7 @@ With this, a user can simply run ``nox -s dev`` and have their entire environmen
 The Auto-Release
 ^^^^^^^^^^^^^^^^
 
-Releasing a new version of an open source project can be a real pain, with lots of intricate steps. Tools like `Bump2Version <https://github.com/c4urself/bump2version>`_ really help here.
+Releasing a new version of an open source project can be a real pain, with lots of intricate steps. Tools like `Bump My Version <https://github.com/callowayproject/bump-my-version>`_ really help here.
 
 Even more so with a sprinkling of Nox:
 
@@ -78,7 +78,7 @@ Even more so with a sprinkling of Nox:
         """
         Kicks off an automated release process by creating and pushing a new tag.
 
-        Invokes bump2version with the posarg setting the version.
+        Invokes bump-my-version with the posarg selecting the version part.
 
         Usage:
         $ nox -s release -- [major|minor|patch]
@@ -105,16 +105,16 @@ Even more so with a sprinkling of Nox:
             session.error(f"You said no when prompted to bump the {version!r} version.")
 
 
-        session.install("bump2version")
+        session.install("bump-my-version")
 
         session.log(f"Bumping the {version!r} version")
-        session.run("bump2version", version)
+        session.run("bump-my-version", "bump", version)
 
         session.log("Pushing the new tag")
         session.run("git", "push", external=True)
         session.run("git", "push", "--tags", external=True)
 
-Now a simple ``nox -s release -- patch`` will automate your release (provided you have Bump2Version set up to change your files). This is especially powerful if you have a CI/CD pipeline set up!
+Now a simple ``nox -s release -- patch`` will automate your release (provided you have Bump My Version set up to change your files). This is especially powerful if you have a CI/CD pipeline set up!
 
 
 Using a lockfile
