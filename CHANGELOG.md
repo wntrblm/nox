@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026.07.08
+## 2026.07.11
 
 This release drops Python 3.9 and brings a batch of performance improvements,
 like caching uv detection and interpreter discovery, plus lazy module imports
