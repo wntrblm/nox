@@ -1,5 +1,66 @@
 # Changelog
 
+## 2026.07.11
+
+This release drops Python 3.9 and brings a batch of performance improvements,
+like caching uv detection and interpreter discovery, plus lazy module imports
+on Python 3.15. Various bugs were fixed as well.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @henryiii
+* @davidhewitt
+* @SAY-5 (first contribution)
+* @Himanshuagrawal4 (first contribution)
+* @TejasAmle (first contribution)
+* @felixfontein (first contribution)
+
+
+Features:
+
+* Drop Python 3.9 by @henryiii in https://github.com/wntrblm/nox/pull/1049
+* Add `return_code` property to `CommandFailed` exception by @felixfontein in https://github.com/wntrblm/nox/pull/1129
+
+Performance:
+
+* Cache session-name normalization, uv detection, interpreter discovery, and metadata reads by @henryiii in https://github.com/wntrblm/nox/pull/1113
+* Lazy modules on Python 3.15 by @henryiii in https://github.com/wntrblm/nox/pull/1115
+
+Fixes:
+
+* Script-mode pip resolution on Windows and `--download-python` fallback by @henryiii in https://github.com/wntrblm/nox/pull/1110
+* Don't crash when a parametrized session has an empty parameter list by @henryiii in https://github.com/wntrblm/nox/pull/1109
+* Hash fully non-ASCII session names instead of returning the envdir by @henryiii in https://github.com/wntrblm/nox/pull/1108
+* Interpreter-resolution edge cases in `virtualenv.py` by @henryiii in https://github.com/wntrblm/nox/pull/1111
+* Create missing parent directories for the session cache dir by @henryiii in https://github.com/wntrblm/nox/pull/1104
+* Enforce `--error-on-external-run` even when `log=False` by @henryiii in https://github.com/wntrblm/nox/pull/1107
+* Handle `=` in `set_env` values and out-of-tree `change_dir` in `tox-to-nox` by @henryiii in https://github.com/wntrblm/nox/pull/1105
+* Return empty dict from `load_toml` when script file is missing by @SAY-5 in https://github.com/wntrblm/nox/pull/1096
+* Show envvars in CLI help by @henryiii in https://github.com/wntrblm/nox/pull/1085
+
+Documentation:
+
+* Add PyO3 as a user by @davidhewitt in https://github.com/wntrblm/nox/pull/1123
+* List micromamba in `--default-venv-backend` supported names by @SAY-5 in https://github.com/wntrblm/nox/pull/1092
+* Clarify `session.notify` target docs by @Himanshuagrawal4 in https://github.com/wntrblm/nox/pull/1099
+* Document venv backend for EOL Python by @Himanshuagrawal4 in https://github.com/wntrblm/nox/pull/1101
+* Fix typo in README installation section by @TejasAmle in https://github.com/wntrblm/nox/pull/1097
+
+Internal changes:
+
+* Add Python 3.15 to the test matrix and classifiers by @henryiii in https://github.com/wntrblm/nox/pull/1133
+* Isolate `run_nox` envdir to fix flaky `test_main_requires` by @henryiii in https://github.com/wntrblm/nox/pull/1134
+* Assorted simplifications and dead-code removal by @henryiii in https://github.com/wntrblm/nox/pull/1112
+* Remove Python 3.9-era pins/backports and tighten generator annotations by @henryiii in https://github.com/wntrblm/nox/pull/1106
+* Run tests in parallel by @henryiii in https://github.com/wntrblm/nox/pull/965
+* Prevent coverage data corruption from artifact name collisions by @henryiii in https://github.com/wntrblm/nox/pull/1116
+* Reduce the number of times we contact conda-forge servers on non-Windows by @henryiii in https://github.com/wntrblm/nox/pull/1120
+* Experimental MSYS2/MinGW test run by @henryiii in https://github.com/wntrblm/nox/pull/1122
+* Update pre-commit (and dependabot) by @henryiii in https://github.com/wntrblm/nox/pull/1119
+* Bump conda pin to fix signature-verification plugin conflict by @henryiii in https://github.com/wntrblm/nox/pull/1103
+* Bump setup-uv to maintained tag scheme by @henryiii in https://github.com/wntrblm/nox/pull/1084
+
+
 ## 2026.04.10
 
 This release drops Python 3.8 and adds a `--usage` command for full docstrings.
