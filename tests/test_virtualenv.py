@@ -1862,7 +1862,13 @@ def test_download_python_failed_install(
     download_python: str,
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Pretend uv is available so the uv install path is exercised even on
+    # hosts without uv installed (gh-1046).
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version("0.10.0"))
+
     venv, _ = make_one(
         interpreter="python3.11",
         venv_backend=venv_backend,
