@@ -146,13 +146,15 @@ def python_versions(
         msg = 'No "project.requires-python" value set'
         raise ValueError(msg)
 
-    for spec in packaging.specifiers.SpecifierSet(requires_python_str):
-        if spec.operator in {">", ">=", "~="}:
-            min_minor_version = int(spec.version.split(".")[1])
-            break
-    else:
+    lower_bounds = [
+        int(spec.version.split(".")[1]) if "." in spec.version else 0
+        for spec in packaging.specifiers.SpecifierSet(requires_python_str)
+        if spec.operator in {">", ">=", "~="}
+    ]
+    if not lower_bounds:
         msg = 'No minimum version found in "project.requires-python"'
         raise ValueError(msg)
+    min_minor_version = max(lower_bounds)
 
     max_minor_version = int(max_version.split(".")[1])
 
