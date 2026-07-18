@@ -77,6 +77,14 @@ def test_python_range_major_only() -> None:
     assert python_versions(pyproject, max_version="3.2") == ["3.0", "3.1", "3.2"]
 
 
+def test_python_range_major_only_max_version() -> None:
+    # A major-only max_version ("3" == "3.0" per PEP 440) has an implicit minor
+    # version of 0 and must not crash, mirroring the requires-python handling.
+    pyproject = {"project": {"requires-python": ">=3"}}
+
+    assert python_versions(pyproject, max_version="3") == ["3.0"]
+
+
 def test_python_range_multiple_lower_bounds() -> None:
     # With several lower-bound specifiers the effective minimum is the largest
     # one, regardless of the order they appear in.

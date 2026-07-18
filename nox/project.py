@@ -156,7 +156,7 @@ def python_versions(
         raise ValueError(msg)
     min_minor_version = max(lower_bounds)
 
-    max_minor_version = int(max_version.split(".")[1])
+    max_minor_version = int(max_version.split(".")[1]) if "." in max_version else 0
 
     return [f"3.{v}" for v in range(min_minor_version, max_minor_version + 1)]
 
