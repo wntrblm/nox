@@ -163,6 +163,9 @@ def popen(
     return return_code, ret_out, decode_output(err) if err else ""
 
 
+_ASYNCIO_LINE_LENGTH_LIMIT = 2**23  # Increase line length limit to 8 MiB
+
+
 class _TeeSubprocess:
     def __init__(
         self,
@@ -227,10 +230,46 @@ class _TeeSubprocess:
         """
         Read a stream chunk by chunk, append it to ``out_buffer``, and write it to ``out_stream``.
         """
-        while True:
-            chunk = await stream.readline()
-            if len(chunk) == 0:
+        chunk_parts: list[bytes] = []
+        line_sep = b"\n"
+        is_eof = False
+        while not is_eof:
+            # Note that stream.readline() has a size limit of _ASYNCIO_LINE_LENGTH_LIMIT,
+            # but doesn't allow to handle cases where this limit is exceeded
+            # (https://docs.python.org/3/library/asyncio-stream.html#asyncio.StreamReader.readline).
+            # Instead, we use stream.readuntil(line_sep) to read until a line break
+            # (https://docs.python.org/3/library/asyncio-stream.html#asyncio.StreamReader.readuntil),
+            # which provides error handling through the IncompleteReadError and LimitOverrunError
+            # exceptions.
+            try:
+                chunk_parts.append(await stream.readuntil(line_sep))
+                # If we reach this point, the last string in chunk_parts ends with line_sep.
+            except asyncio.exceptions.IncompleteReadError as exc:
+                # EOF was reached before finding line_sep. exc.partial is what was read so far,
+                # and since our separator is one byte long, it won't include the separator,
+                # and there will be no more data in the stream afterwards.
+                chunk_parts.append(exc.partial)
+                is_eof = True
+            except asyncio.exceptions.LimitOverrunError as exc:
+                # There's more data than _ASYNCIO_LINE_LENGTH_LIMIT, and it's still available
+                # for reads. The exception tells us how much data is available though.
+                chunk_part = await stream.read(exc.consumed)
+                chunk_parts.append(chunk_part)
+                # There should be always exc.consumed bytes directly available (without waiting),
+                # and exc.consumed should always be > 0. So stream.read() should never return an
+                # empty buffer in this case; if it still does, we ignore our knowledge that there
+                # should be data and assume that the chunk is complete and EOF has been reached.
+                if chunk_part:
+                    continue
+                is_eof = True
+
+            # Re-combine the line (including separator, if EOF wasn't found).
+            chunk = b"".join(chunk_parts)
+            chunk_parts.clear()
+            if not chunk:
+                # This should only happen if is_eof is True.
                 break
+
             out_buffer.append(chunk)
             out_stream.write(chunk)
             out_stream.flush()
@@ -250,6 +289,7 @@ class _TeeSubprocess:
             env=env,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            limit=_ASYNCIO_LINE_LENGTH_LIMIT,  # increase line length limit from the default 64 KiB
         )
 
         # These assumptions are true since we pass PIPE to stdout/stderr,
