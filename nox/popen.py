@@ -180,6 +180,8 @@ class _TeeSubprocess:
         self.terminate_timeout = terminate_timeout
         self.collectors: list[asyncio.Task[None] | asyncio.Task[int]] = []
         self.main_task: asyncio.Task[bool] | None = None
+        self.is_terminating = False
+        self.do_terminate = False
 
     async def _shutdown_process(self, proc: Process) -> None:
         """Gracefully shutdown a child process."""
@@ -203,6 +205,8 @@ class _TeeSubprocess:
         Return ``True`` if the process had a non-zero exit code during shutdown.
         """
         try:
+            if self.do_terminate:
+                self._handle_sigint()
             await proc.wait()
         except asyncio.CancelledError:
             # SIGINT causes the task to be cancelled. We first need to uncancel it
@@ -260,7 +264,8 @@ class _TeeSubprocess:
                 # should be data and assume that the chunk is complete and EOF has been reached.
                 if chunk_part:
                     continue
-                is_eof = True
+                # We mark the following line as 'no cover' since it should never happen.
+                is_eof = True  # pragma: no cover
 
             # Re-combine the line (including separator, if EOF wasn't found).
             chunk = b"".join(chunk_parts)
@@ -278,6 +283,7 @@ class _TeeSubprocess:
         args: Sequence[str],
         *,
         env: Mapping[str, str] | None,
+        extra_tasks: Sequence[asyncio.Task[None]],
     ) -> tuple[bool, int]:
         """
         Start the process, all tasks, and wait for them to finish.
@@ -317,14 +323,33 @@ class _TeeSubprocess:
         self.main_task = self.loop.create_task(self._main_task(proc, wait_task))
 
         # We wait for all tasks to finish and extract the return code.
-        await asyncio.wait([*self.collectors, self.main_task])
+        await asyncio.wait([*self.collectors, self.main_task, *extra_tasks])
         return self.main_task.result(), wait_task.result()
+
+    def _handle_sigint(self) -> None:
+        """
+        SIGINT handler for event loop.
+        """
+        # In case this is called before the main task is created,
+        # set a flag and that's it.
+        if not self.main_task:
+            self.do_terminate = True
+            return
+
+        # Don't handle it twice.
+        if self.is_terminating:
+            return
+        self.is_terminating = True
+
+        # Cancel the main task. This triggers graceful shutdown.
+        self.main_task.cancel()
 
     def run(
         self,
         args: Sequence[str],
         *,
         env: Mapping[str, str] | None = None,
+        extra_tasks: Sequence[asyncio.Task[None]] | None = None,
     ) -> tuple[int, bytes, bytes]:
         """
         Run the command with the given environment.
@@ -333,22 +358,10 @@ class _TeeSubprocess:
         Note that this function is **NOT** thread-safe, since we have to
         add a SIGINT handler to the event loop and later remove it.
         """
-        is_terminating = [False]
-
-        def handle_sigint() -> None:
-            # Don't handle it twice.
-            if is_terminating[0]:
-                return
-            is_terminating[0] = True
-
-            # Cancel the main task. This triggers graceful shutdown.
-            if self.main_task:
-                self.main_task.cancel()
-
-        self.loop.add_signal_handler(signal.SIGINT, handle_sigint)
+        self.loop.add_signal_handler(signal.SIGINT, self._handle_sigint)
         try:
             is_canceled, return_code = self.loop.run_until_complete(
-                self._stream_subprocess(args, env=env)
+                self._stream_subprocess(args, env=env, extra_tasks=extra_tasks or [])
             )
         finally:
             self.loop.remove_signal_handler(signal.SIGINT)
