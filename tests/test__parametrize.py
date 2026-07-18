@@ -170,6 +170,31 @@ def test_parametrize_decorator_multiple_and_stack() -> None:
     ]
 
 
+def test_parametrize_decorator_stack_with_empty_inner() -> None:
+    # An empty @parametrize stacked *under* a non-empty one must make the
+    # Cartesian product empty (a do-nothing placeholder session), not silently
+    # drop its own dimension and yield sessions missing that argument.
+    def f() -> None:
+        pass
+
+    _parametrize.parametrize_decorator("abc", [])(f)
+    _parametrize.parametrize_decorator("def", ["a", "b"])(f)
+
+    assert f.parametrize == []  # type: ignore[attr-defined]
+
+
+def test_parametrize_decorator_stack_with_empty_outer() -> None:
+    # The same, with the empty @parametrize on top (already worked, pinned here
+    # to keep the two orderings symmetric).
+    def f() -> None:
+        pass
+
+    _parametrize.parametrize_decorator("abc", [1, 2, 3])(f)
+    _parametrize.parametrize_decorator("def", [])(f)
+
+    assert f.parametrize == []  # type: ignore[attr-defined]
+
+
 def test_generate_calls_simple() -> None:
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"

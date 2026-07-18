@@ -191,7 +191,7 @@ def update_param_specs(
     param_specs: Iterable[Param] | None, new_specs: Iterable[Param]
 ) -> list[Param]:
     """Produces all combinations of the given sets of specs."""
-    if not param_specs:
+    if param_specs is None:
         return list(new_specs)
 
     # New specs must be combined with old specs by *multiplying* them.
