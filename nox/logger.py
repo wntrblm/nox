@@ -157,3 +157,5 @@ def setup_logging(
     logging.getLogger("sh").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("filelock").setLevel(logging.WARNING)
+    logging.getLogger("python_discovery").setLevel(logging.WARNING)

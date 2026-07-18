@@ -113,12 +113,15 @@ You can tell Nox to use a different Python interpreter/version by specifying the
 
 .. note::
 
-    The Python binaries on Windows are found via the Python `Launcher`_ for
-    Windows (``py``). For example, Python 3.10 can be found by determining which
-    executable is invoked by ``py -3.10``. If a given test needs to use the 32-bit
-    version of a given Python, then ``X.Y-32`` should be used as the version.
+    Interpreters are located with the `python-discovery`_ library, which searches
+    ``PATH``, version managers (pyenv, mise, asdf, uv), and, on Windows, the
+    registry (`PEP 514`_) and the Python `Launcher`_. If a given test needs to use
+    the 32-bit version of a given Python on Windows, then ``X.Y-32`` should be used
+    as the version.
 
     .. _Launcher: https://docs.python.org/3/using/windows.html#python-launcher-for-windows
+    .. _python-discovery: https://pypi.org/project/python-discovery/
+    .. _PEP 514: https://peps.python.org/pep-0514/
 
 You can also tell Nox to run your session against multiple Python interpreters. Nox will create a separate virtualenv and run the session for each interpreter you specify. For example, this session will run twice - once for Python 2.7 and once for Python 3.6:
 
@@ -136,7 +139,27 @@ When you provide a version number, Nox automatically prepends python to determin
     def tests(session):
         pass
 
-If the specified python interpreter is not found, Nox can automatically download it when ``--download-python`` is set to ``auto`` (the default) or ``always``. ``never`` avoids the download. This requires the ``[pbs]`` extra when not using uv as a backend.
+A free-threaded build can be requested with the ``t`` suffix, e.g. ``python='3.13t'``.
+
+You can also give a `PEP 440`_ version specifier instead of an exact version, and
+Nox will use the first installed interpreter that satisfies it:
+
+.. code-block:: python
+
+    @nox.session(python='>=3.14')
+    def tests(session):
+        pass
+
+    @nox.session(python='>=3.11,<3.13')
+    def lint(session):
+        pass
+
+.. note::
+
+    Range specifiers are only supported on the ``venv``, ``virtualenv``, and ``uv``
+    backends, not on conda backends.
+
+If the specified python interpreter is not found, Nox can automatically download it when ``--download-python`` is set to ``auto`` (the default) or ``always``. ``never`` avoids the download. This requires the ``[pbs]`` extra when not using uv as a backend. When a range is given, the floor of its lowest bound is downloaded (``>=3.14`` downloads ``3.14``); a range with no lower bound (such as ``<3.14``) cannot be downloaded.
 
 When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sessions when running ``nox --list``. For example this Noxfile:
 
