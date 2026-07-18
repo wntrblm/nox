@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 __lazy_modules__ = {
-    "asyncio",
     "importlib",
     "importlib.metadata",
     "nox._options",
@@ -37,7 +36,6 @@ __lazy_modules__ = {
     "urllib.parse",
 }
 
-import asyncio
 import importlib.metadata
 import os
 import shutil
@@ -318,7 +316,6 @@ def _main(*, main_ep: bool) -> None:
                 )
 
     nox.registry.reset()
-    asyncio.set_event_loop(asyncio.new_event_loop())
     exit_code = execute_workflow(args)
 
     # Done; exit.

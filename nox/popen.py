@@ -170,11 +170,10 @@ class _TeeSubprocess:
     def __init__(
         self,
         *,
-        loop: asyncio.AbstractEventLoop,
         interrupt_timeout: float | None,
         terminate_timeout: float | None,
     ) -> None:
-        self.loop = loop
+        self.loop = asyncio.new_event_loop()
         self.stdout: list[bytes] = []
         self.stderr: list[bytes] = []
         self.interrupt_timeout = interrupt_timeout
@@ -353,6 +352,7 @@ class _TeeSubprocess:
             )
         finally:
             self.loop.remove_signal_handler(signal.SIGINT)
+            self.loop.close()
         sys.stdout.flush()
         if is_canceled:
             raise KeyboardInterrupt
@@ -371,9 +371,7 @@ def tee_popen(
     Return a tuple ``(return_code, stdout, stderr)``.
     Standard output and standard error are also printed to ``sys.stdout``.
     """
-    loop = asyncio.get_event_loop()
     teesub = _TeeSubprocess(
-        loop=loop,
         interrupt_timeout=interrupt_timeout,
         terminate_timeout=terminate_timeout,
     )
