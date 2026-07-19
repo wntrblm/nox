@@ -107,6 +107,55 @@ def test_unmatched_specifier() -> None:
     assert not nox._cli.check_dependencies(["packaging<1", "nox"])
 
 
+def test_check_requires_python() -> None:
+    assert nox._cli.check_requires_python(None, "3.12.1")
+    assert nox._cli.check_requires_python("", "3.12.1")
+    assert nox._cli.check_requires_python(">=3.9", "3.12.1")
+    assert nox._cli.check_requires_python(">=3.9,<4", "3.12.1")
+    assert not nox._cli.check_requires_python(">=3.13", "3.12.1")
+    assert not nox._cli.check_requires_python("<3.10", "3.12.1")
+    # A prerelease interpreter satisfies plain specs, but PEP 440 ordering
+    # applies: a beta predates its final release.
+    assert nox._cli.check_requires_python(">=3.9", "3.15.0b3")
+    assert not nox._cli.check_requires_python(">=3.15", "3.15.0b3")
+    assert nox._cli.check_requires_python(">=3.15.0b1", "3.15.0b3")
+
+
+def test_check_requires_python_invalid() -> None:
+    with pytest.raises(SystemExit, match="requires-python"):
+        nox._cli.check_requires_python("3.12", "3.12.1")
+
+
+@pytest.mark.parametrize(
+    ("version_info", "expected"),
+    [
+        ((3, 14, 0, "final", 0), "3.14.0"),
+        ((3, 14, 0, "beta", 1), "3.14.0b1"),
+        ((3, 14, 0, "candidate", 2), "3.14.0rc2"),
+        ((3, 14, 0, "alpha", 3), "3.14.0a3"),
+    ],
+)
+def test_current_python_version(
+    monkeypatch: pytest.MonkeyPatch,
+    version_info: tuple[int, int, int, str, int],
+    expected: str,
+) -> None:
+    monkeypatch.setattr(sys, "version_info", version_info)
+
+    assert nox._cli._current_python_version() == expected
+
+
+def test_venv_python_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_venv = SimpleNamespace(_get_env=lambda _env: {"PATH": "/fake/venv/bin"})
+
+    monkeypatch.setattr(shutil, "which", lambda _cmd, **_kwargs: sys.executable)
+    version = nox._cli._venv_python_version(fake_venv)  # type: ignore[arg-type]
+    assert version == nox._cli._current_python_version()
+
+    monkeypatch.setattr(shutil, "which", lambda _cmd, **_kwargs: None)
+    assert nox._cli._venv_python_version(fake_venv) is None  # type: ignore[arg-type]
+
+
 def test_invalid_mode(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NOX_SCRIPT_MODE", "invalid")
     monkeypatch.setattr(sys, "argv", ["nox"])
@@ -232,6 +281,7 @@ def test_run_script_mode_pip_resolution(
             dependencies=["nox", "cowsay"],
             venv_backend=backend,
             download_python="never",
+            requires_python=None,
         )
 
     expected = (
@@ -296,6 +346,234 @@ def test_script_mode_download_python_precedence(
         nox._cli.main()
 
     assert captured["download_python"] == expected
+
+
+@pytest.mark.parametrize(
+    ("toml", "expected"),
+    [
+        pytest.param(
+            '# requires-python = ">=4.0"\n# dependencies=["nox"]\n',
+            {"requires_python": ">=4.0", "dependencies": ["nox"]},
+            id="mismatch",
+        ),
+        pytest.param(
+            '# requires-python = ">=3.9"\n# dependencies=["nox"]\n',
+            None,
+            id="satisfied",
+        ),
+        pytest.param(
+            '# requires-python = ">=4.0"\n',
+            {"requires_python": ">=4.0", "dependencies": ["nox"]},
+            id="implied-nox-dependency",
+        ),
+    ],
+)
+def test_script_mode_requires_python(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    toml: str,
+    expected: dict[str, object] | None,
+) -> None:
+    """A failing requires-python triggers script mode; a satisfied one doesn't."""
+    monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
+    monkeypatch.setattr(sys, "argv", ["nox"])
+    # This will return pytest's filename instead, so patching it to None
+    monkeypatch.setattr(nox._cli, "get_main_filename", lambda: None)
+    monkeypatch.setattr(nox._cli, "check_dependencies", lambda _deps: True)
+    monkeypatch.setattr(nox._cli, "execute_workflow", lambda _args: 0)
+
+    captured: dict[str, object] = {}
+
+    def fake_run_script_mode(*_args: object, **kwargs: object) -> typing.NoReturn:
+        captured.update(kwargs)
+        raise SystemExit(0)
+
+    monkeypatch.setattr(nox._cli, "run_script_mode", fake_run_script_mode)
+    monkeypatch.chdir(tmp_path)
+    tmp_path.joinpath("noxfile.py").write_text(
+        f"# /// script\n{toml}# ///", encoding="utf-8"
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        nox._cli.main()
+
+    assert excinfo.value.code == 0
+    if expected is None:
+        assert not captured
+    else:
+        assert captured["requires_python"] == expected["requires_python"]
+        assert captured["dependencies"] == expected["dependencies"]
+
+
+def test_script_mode_invalid_requires_python(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An invalid spec must error even when the dependency check already failed."""
+    monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
+    monkeypatch.setattr(sys, "argv", ["nox"])
+    # This will return pytest's filename instead, so patching it to None
+    monkeypatch.setattr(nox._cli, "get_main_filename", lambda: None)
+    monkeypatch.setattr(nox._cli, "check_dependencies", lambda _deps: False)
+
+    def fake_run_script_mode(*_args: object, **_kwargs: object) -> typing.NoReturn:
+        msg = "Must not reach script mode with an invalid spec"
+        raise AssertionError(msg)
+
+    monkeypatch.setattr(nox._cli, "run_script_mode", fake_run_script_mode)
+    monkeypatch.chdir(tmp_path)
+    tmp_path.joinpath("noxfile.py").write_text(
+        "# /// script\n# requires-python = \"3.12\"\n# dependencies=['nox']\n# ///",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SystemExit, match='Invalid "requires-python"'):
+        nox._cli.main()
+
+
+def test_run_script_mode_requires_python(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """requires-python is handed to get_virtualenv as the interpreter spec."""
+    captured: dict[str, object] = {}
+
+    fake_venv = SimpleNamespace(
+        venv_backend="uv",
+        is_sandboxed=True,
+        _reused=False,
+        create=lambda: None,
+        _get_env=lambda _env: {"PATH": "/fake/venv/bin"},
+    )
+
+    def fake_get_virtualenv(*_args: object, **kwargs: object) -> SimpleNamespace:
+        captured.update(kwargs)
+        return fake_venv
+
+    monkeypatch.setattr(nox.virtualenv, "get_virtualenv", fake_get_virtualenv)
+    monkeypatch.setattr(
+        subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=0)
+    )
+    monkeypatch.setattr(shutil, "which", lambda cmd, path=None: f"{path}/{cmd}")
+
+    def fake_execle(_path: str, *_args: object) -> typing.NoReturn:
+        raise SystemExit(0)
+
+    monkeypatch.setattr(os, "execle", fake_execle)
+    monkeypatch.setattr(sys, "argv", ["nox"])
+
+    with pytest.raises(SystemExit):
+        nox._cli.run_script_mode(
+            "noxfile.py",
+            tmp_path,
+            reuse=False,
+            dependencies=["nox"],
+            venv_backend="uv",
+            download_python="auto",
+            requires_python=">=3.11",
+        )
+
+    assert captured["interpreter"] == ">=3.11"
+
+
+@pytest.mark.parametrize(
+    ("env_version", "rebuilds"),
+    [("3.9.0", True), (None, True), ("3.12.0", False)],
+)
+def test_run_script_mode_stale_reuse(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    env_version: str | None,
+    rebuilds: bool,
+) -> None:
+    """A reused env whose Python fails requires-python must be rebuilt."""
+    calls: list[dict[str, object]] = []
+
+    def fake_get_virtualenv(*_args: object, **kwargs: object) -> SimpleNamespace:
+        calls.append(kwargs)
+        return SimpleNamespace(
+            venv_backend="uv",
+            is_sandboxed=True,
+            _reused=kwargs["reuse_existing"],
+            create=lambda: None,
+            _get_env=lambda _env: {"PATH": "/fake/venv/bin"},
+        )
+
+    monkeypatch.setattr(nox.virtualenv, "get_virtualenv", fake_get_virtualenv)
+    monkeypatch.setattr(nox._cli, "_venv_python_version", lambda _venv: env_version)
+    monkeypatch.setattr(
+        subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=0)
+    )
+    monkeypatch.setattr(shutil, "which", lambda cmd, path=None: f"{path}/{cmd}")
+
+    def fake_execle(_path: str, *_args: object) -> typing.NoReturn:
+        raise SystemExit(0)
+
+    monkeypatch.setattr(os, "execle", fake_execle)
+    monkeypatch.setattr(sys, "argv", ["nox"])
+
+    with pytest.raises(SystemExit):
+        nox._cli.run_script_mode(
+            "noxfile.py",
+            tmp_path,
+            reuse=True,
+            dependencies=["nox"],
+            venv_backend="uv",
+            download_python="auto",
+            requires_python=">=3.10",
+        )
+
+    expected = [True, False] if rebuilds else [True]
+    assert [c["reuse_existing"] for c in calls] == expected
+
+
+def test_run_script_mode_interpreter_not_found(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def fake_create() -> typing.NoReturn:
+        spec = ">=4.0"
+        raise nox.virtualenv.InterpreterNotFound(spec)
+
+    fake_venv = SimpleNamespace(venv_backend="uv", create=fake_create)
+    monkeypatch.setattr(
+        nox.virtualenv, "get_virtualenv", lambda *_args, **_kwargs: fake_venv
+    )
+
+    with pytest.raises(SystemExit, match="requires-python"):
+        nox._cli.run_script_mode(
+            "noxfile.py",
+            tmp_path,
+            reuse=False,
+            dependencies=["nox"],
+            venv_backend="uv",
+            download_python="never",
+            requires_python=">=4.0",
+        )
+
+
+def test_run_script_mode_none_backend_mismatch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The "none" backend can't switch interpreters, so a mismatch is an error."""
+    fake_venv = SimpleNamespace(
+        venv_backend="none",
+        is_sandboxed=False,
+        _reused=False,
+        create=lambda: None,
+        _get_env=lambda _env: {"PATH": "/fake/bin"},
+    )
+    monkeypatch.setattr(
+        nox.virtualenv, "get_virtualenv", lambda *_args, **_kwargs: fake_venv
+    )
+
+    with pytest.raises(SystemExit, match="requires-python"):
+        nox._cli.run_script_mode(
+            "noxfile.py",
+            tmp_path,
+            reuse=True,
+            dependencies=["nox"],
+            venv_backend="none",
+            download_python="auto",
+            requires_python=">=4.0",
+        )
 
 
 def test_dependencies_with_version(monkeypatch: pytest.MonkeyPatch) -> None:
