@@ -182,6 +182,59 @@ By default, ``nox-uv`` also validates that the lockfile is up-to-date.
         nox.main()
 
 
+Combining coverage across Python versions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Code paths can vary between Python versions, so measuring each test run separately
+and then combining the data gives a more accurate coverage report. The important
+parts are to remove stale data before the matrix starts, give every run a unique
+data file, and combine the files only after every test session finishes:
+
+.. code-block:: python
+
+    import nox
+
+    PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13"]
+
+    # Run cleanup first, then every parametrized test session, and finally report.
+    nox.options.sessions = ["coverage_erase", "tests", "coverage_report"]
+
+
+    @nox.session
+    def coverage_erase(session: nox.Session) -> None:
+        """Remove data left by an earlier coverage run."""
+        session.install("coverage[toml]")
+        session.run("coverage", "erase")
+
+
+    @nox.session(python=PYTHON_VERSIONS)
+    def tests(session: nox.Session) -> None:
+        """Measure tests independently for each supported Python version."""
+        session.install("coverage[toml]", "pytest", ".")
+        session.run(
+            "coverage",
+            "run",
+            "-m",
+            "pytest",
+            *session.posargs,
+            env={"COVERAGE_FILE": f".coverage.{session.python}"},
+        )
+
+
+    @nox.session
+    def coverage_report(session: nox.Session) -> None:
+        """Combine the per-version data and display one report."""
+        session.install("coverage[toml]")
+        session.run("coverage", "combine")
+        session.run("coverage", "report", "--show-missing")
+
+Running ``nox`` executes these phases in order. ``coverage combine`` writes the
+combined ``.coverage`` data file and removes the per-version files it consumed.
+Keep the phases sequential so cleanup and reporting cannot race with the test
+sessions. Projects that use subprocesses or pytest-xdist should also enable
+Coverage.py's `parallel mode <https://coverage.readthedocs.io/en/latest/config.html#run-parallel>`_.
+
+
 Generating a matrix with GitHub Actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
