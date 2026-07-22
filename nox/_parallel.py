@@ -344,9 +344,7 @@ def _read_report(path: str, session: SessionRunner, returncode: int) -> Result:
     try:
         with open(path, encoding="utf-8") as report_file:
             entry = json.load(report_file)["sessions"][0]
-        duration = entry.get("duration", 0.0)
-        status = Status[entry["result"].upper()]
-        result = Result(session, status, entry.get("reason"), duration=duration)
+        result = Result.from_dict(session, entry)
     except (OSError, ValueError, KeyError, IndexError):
         # The child died before writing a usable report; trust its exit code.
         status = Status.SUCCESS if returncode == 0 else Status.FAILED
@@ -355,7 +353,7 @@ def _read_report(path: str, session: SessionRunner, returncode: int) -> Result:
     # exit code reflects every one of them. Don't report success over a non-zero
     # child whose first session happened to pass.
     if returncode != 0 and result:
-        return Result(session, Status.FAILED, duration=duration)
+        return Result(session, Status.FAILED, duration=result.duration)
     return result
 
 
@@ -369,30 +367,25 @@ def _run_session(
     """Run a single session in a subprocess; return its result and output.
 
     Output is read line by line so ``on_line`` (if given) sees each line as it
-    arrives, letting the caller show a live preview while the session runs. It
-    is spooled to a temporary file rather than held in memory, so a
-    long-running verbose session only occupies RAM briefly when it finishes.
+    arrives, letting the caller show a live preview while the session runs.
     """
     with tempfile.TemporaryDirectory() as tmp:
         report_path = os.path.join(tmp, "report.json")
-        output_path = os.path.join(tmp, "output.txt")
+        lines: list[str] = []
         # The context manager waits for the process and closes its pipes.
-        with (
-            subprocess.Popen(
-                _child_argv(global_config, session, report_path),
-                cwd=global_config.invoked_from,
-                # Detach stdin so the child never sees a TTY: parallel sessions
-                # must not prompt or read from the shared terminal (they would
-                # race/hang).
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                # Own process group (POSIX) so an interrupt can stop the whole
-                # tree, including the session's own subprocesses.
-                start_new_session=(os.name == "posix"),
-            ) as proc,
-            open(output_path, "w", encoding="utf-8", newline="") as spool,
-        ):
+        with subprocess.Popen(
+            _child_argv(global_config, session, report_path),
+            cwd=global_config.invoked_from,
+            # Detach stdin so the child never sees a TTY: parallel sessions
+            # must not prompt or read from the shared terminal (they would
+            # race/hang).
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            # Own process group (POSIX) so an interrupt can stop the whole
+            # tree, including the session's own subprocesses.
+            start_new_session=(os.name == "posix"),
+        ) as proc:
             with procs_lock:
                 procs.add(proc)
             try:
@@ -410,15 +403,13 @@ def _run_session(
                     line = (
                         f"{raw_line[:-2]}\n" if raw_line.endswith("\r\n") else raw_line
                     )
-                    spool.write(line)
+                    lines.append(line)
                     if on_line is not None:
                         on_line(line)
             finally:
                 with procs_lock:
                     procs.discard(proc)
-        with open(output_path, encoding="utf-8", newline="") as spool:
-            output = spool.read()
-        return _read_report(report_path, session, proc.returncode), output
+        return _read_report(report_path, session, proc.returncode), "".join(lines)
 
 
 def _signal_group(proc: subprocess.Popen[bytes], *, kill: bool) -> None:
@@ -462,6 +453,9 @@ def run_manifest_parallel(
         session: [d for d in session.get_direct_dependencies() if d in in_queue]
         for session in queue
     }
+    # envdir is a nontrivial property (path normalization, possibly a hashing
+    # warning); compute it once per session instead of on every scheduling pass.
+    envdirs = {session: session.envdir for session in queue}
 
     results: dict[SessionRunner, Result] = {}
     not_started = list(queue)
@@ -506,7 +500,7 @@ def run_manifest_parallel(
         exclusively: they start only when nothing else is running, and nothing
         starts alongside them.
         """
-        busy_envdirs = {running.envdir for running in futures.values()}
+        busy_envdirs = {envdirs[running] for running in futures.values()}
         exclusive_running = any(
             not running.func.allow_parallel for running in futures.values()
         )
@@ -524,26 +518,18 @@ def run_manifest_parallel(
                 if failed:
                     not_started.remove(session)
                     progressed = True
-                    result = Result(
-                        session,
-                        Status.ABORTED,
-                        reason=(
-                            f"Prerequisite session {failed[0].friendly_name} was not"
-                            " successful"
-                        ),
-                        duration=0,
-                    )
+                    result = Result.aborted_prerequisite(session, failed[0])
                     results[session] = result
                     reporter.finished(session.friendly_name, result, "")
                 elif (
                     len(futures) < jobs
                     and not exclusive_running
-                    and session.envdir not in busy_envdirs
+                    and envdirs[session] not in busy_envdirs
                     and (session.func.allow_parallel or not futures)
                 ):
                     not_started.remove(session)
                     progressed = True
-                    busy_envdirs.add(session.envdir)
+                    busy_envdirs.add(envdirs[session])
                     exclusive_running = not session.func.allow_parallel
                     futures[executor.submit(worker, session)] = session
 
