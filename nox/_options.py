@@ -292,6 +292,8 @@ def _python_completer(
 ) -> Iterable[str]:
     module = load_nox_module(parsed_args)
     manifest = discover_manifest(module, parsed_args)
+    if isinstance(manifest, int):
+        return ()
     return filter(
         None,
         (
@@ -309,6 +311,8 @@ def _session_completer(
     parsed_args.list_sessions = True
     module = load_nox_module(parsed_args)
     manifest = discover_manifest(module, parsed_args)
+    if isinstance(manifest, int):
+        return []
     filtered_manifest = filter_manifest(manifest, parsed_args)
     if isinstance(filtered_manifest, int):
         return []
@@ -324,6 +328,8 @@ def _tag_completer(
 ) -> Iterable[str]:
     module = load_nox_module(parsed_args)
     manifest = discover_manifest(module, parsed_args)
+    if isinstance(manifest, int):
+        return ()
     return itertools.chain.from_iterable(
         filter(None, (session.tags for session, _ in manifest.list_all_sessions()))
     )

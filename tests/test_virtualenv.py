@@ -174,6 +174,20 @@ def test_ensure_cachedir_tag_creates_file(tmp_path: Path) -> None:
     )
 
 
+def test_create_manage_parent_dir_false(tmp_path: Path) -> None:
+    location = tmp_path / ".venv"
+    venv = nox.virtualenv.VirtualEnv(str(location), manage_parent_dir=False)
+
+    with mock.patch.object(
+        nox.virtualenv.VirtualEnv, "_clean_location", return_value=False
+    ):
+        assert venv.create() is False
+
+    assert venv._reused
+    assert not (tmp_path / ".gitignore").exists()
+    assert not (tmp_path / "CACHEDIR.TAG").exists()
+
+
 def test_ensure_parent_gitignore_keeps_existing_file(tmp_path: Path) -> None:
     envdir = tmp_path.joinpath(".nox")
     envdir.mkdir()

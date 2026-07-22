@@ -168,7 +168,7 @@ def merge_noxfile_options(
 
 def discover_manifest(
     module: types.ModuleType | int, global_config: Namespace
-) -> Manifest:
+) -> Manifest | int:
     """Discover all session functions in the Noxfile module.
 
     Args:
@@ -178,16 +178,21 @@ def discover_manifest(
     Returns:
         ~.Manifest: A manifest of session functions.
     """
-    # Find any function added to the session registry (meaning it was
-    # decorated with @nox.session); do not sort these, as they are being
-    # sorted by decorator call time.
-    functions = registry.get()
+    # Find everything added to the registry (@nox.session, nox.env and task
+    # decorators, aliases); do not sort these, as they are being sorted by
+    # registration time.
+    registry_data = registry.get_registry()
 
     # Get the docstring from the Noxfile
     module_docstring = module.__doc__
 
     # Return the final dictionary of session functions.
-    return Manifest(functions, global_config, module_docstring)
+    try:
+        return Manifest(registry_data, global_config, module_docstring)
+    except ValueError as exc:
+        logger.error("Error while constructing sessions.")
+        logger.error(exc.args[0])
+        return 3
 
 
 def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | int:
@@ -208,16 +213,17 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
         return 3
 
     # Filter by the name of any explicit sessions.
-    # This can raise KeyError if a specified session does not exist;
-    # log this if it happens. The sessions does not come from the Noxfile
-    # if keywords is not empty or tags are supplied.
+    # This can raise KeyError if a specified session does not exist, or
+    # ValueError for an ambiguous bare task name; log this if it happens.
+    # The sessions does not come from the Noxfile if keywords is not empty
+    # or tags are supplied.
     if global_config.tags is None and not global_config.keywords:
         if global_config.sessions is None:
             manifest.filter_by_default()
         else:
             try:
                 manifest.filter_by_name(global_config.sessions)
-            except KeyError as exc:
+            except (KeyError, ValueError) as exc:
                 logger.error("Error while collecting sessions.")
                 logger.error(exc.args[0])
                 return 3
@@ -265,6 +271,12 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
         manifest.add_dependencies()
     except (KeyError, CycleError) as exc:
         logger.error("Error while resolving session dependencies.")
+        logger.error(exc.args[0])
+        return 3
+
+    try:
+        manifest.check_location_collisions()
+    except ValueError as exc:
         logger.error(exc.args[0])
         return 3
 
@@ -318,6 +330,8 @@ def _produce_json_listing(manifest: Manifest, global_config: Namespace) -> None:
                     "python": session.func.python,
                     "tags": session.tags,
                     "call_spec": getattr(session.func, "call_spec", {}),
+                    "env": session.env_base_name or session.name,
+                    "task": session.task_name or session.name,
                 }
             )
     print(json.dumps(report, default=str))

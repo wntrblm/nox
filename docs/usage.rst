@@ -78,6 +78,24 @@ By default Nox will run all sessions defined in the Noxfile. However, you can ch
 
 Nox will run these sessions in the same order they are specified.
 
+For tasks defined in an explicit :ref:`environment <environments>`, a session
+is identified as ``environment:task``. You can select one with its full id, or
+use several shorthands:
+
+.. code-block:: console
+
+    nox -s tooling:lint       # one specific task
+    nox -s tooling            # all default tasks of the environment
+    nox -s tests-3.12         # all default tasks of one Python instance
+    nox -s lint               # a bare task name, if unambiguous
+    nox -s check              # an alias
+
+A bare task name that exists in more than one environment is an error listing
+the qualified candidates, and selecting an environment with no default tasks
+is an error rather than a silent no-op. The same identifiers (including
+aliases) work in a session's ``requires`` list and in
+:func:`session.notify() <nox.sessions.Session.notify>`.
+
 If you have a :ref:`configured session's virtualenv <virtualenv config>`, you can choose to run only sessions with given Python versions:
 
 .. tabs::

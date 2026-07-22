@@ -14,22 +14,35 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"copy", f"{__spec__.parent}._decorators", "functools", "warnings"}
+__lazy_modules__ = {
+    f"{__spec__.parent}._decorators",
+    f"{__spec__.parent}.environments",
+    "functools",
+    "warnings",
+}
 
-import copy
 import functools
 import warnings
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Literal, overload
 
+from . import environments
 from ._decorators import Func
+from .environments import Environment, RegistryData, alias
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from ._typing import Python
 
-__all__ = ["get", "reset", "session_decorator"]
+__all__ = [
+    "RegistryData",
+    "alias",
+    "get",
+    "get_registry",
+    "reset",
+    "session_decorator",
+]
 
 
 def __dir__() -> list[str]:
@@ -38,11 +51,28 @@ def __dir__() -> list[str]:
 
 RawFunc = Callable[..., Any]
 
-_REGISTRY: dict[str, Func] = {}
-
 
 def reset() -> None:
-    _REGISTRY.clear()
+    environments.reset_registry()
+
+
+def get_registry() -> RegistryData:
+    """Return a shallow copy of the full registry."""
+    return environments.get_registry_data()
+
+
+def get() -> dict[str, Func]:
+    """Return the registered sessions as a name-to-function mapping.
+
+    Only includes classic sessions (same-name environment/task pairs), for
+    backward compatibility. Use :func:`get_registry` for the full registry.
+    """
+    data = environments.get_registry_data()
+    return {
+        name: data.tasks[name][name]
+        for name, env in data.envs.items()
+        if env._session_compat and name in data.tasks.get(name, {})
+    }
 
 
 @overload
@@ -82,7 +112,10 @@ def session_decorator(
     requires: Sequence[str] | None = None,
     download_python: Literal["auto", "never", "always"] | None = None,
 ) -> Func | Callable[[RawFunc | Func], Func]:
-    """Designate the decorated function as a session."""
+    """Designate the decorated function as a session.
+
+    A session is an environment and a task sharing one name.
+    """
     # If `func` is provided, then this is the decorator call with the function
     # being sent as part of the Python syntax (`@nox.session`).
     # If `func` is None, however, then this is a plain function call, and it
@@ -120,6 +153,14 @@ def session_decorator(
 
     reg_name = name or func.__name__
 
+    if any(char in reg_name for char in ":()"):
+        msg = (
+            f"The session name {reg_name!r} contains characters used by "
+            "environment:task identifiers (':', '(', ')'); this will become "
+            "an error in a future version of nox."
+        )
+        warnings.warn(msg, FutureWarning, stacklevel=2)
+
     fn = Func(
         func,
         python,
@@ -132,21 +173,28 @@ def session_decorator(
         requires=requires,
         download_python=download_python,
     )
-    if reg_name in _REGISTRY:
+
+    if reg_name in environments._ENVS:
+        if not environments._ENVS[reg_name]._session_compat:
+            msg = (
+                f"An environment named {reg_name!r} is already registered; "
+                "sessions and environments share one namespace."
+            )
+            raise ValueError(msg)
         msg = (
             f"The session {reg_name!r} has already been registered; "
             "this will be an error in a future version of nox. "
             "Overriding the old session for now."
         )
+        # Overwriting below keeps the original registration order.
         warnings.warn(msg, FutureWarning, stacklevel=2)
-    _REGISTRY[reg_name] = fn
+    elif reg_name in environments._ALIASES:
+        msg = (
+            f"An alias named {reg_name!r} is already registered; "
+            "sessions and aliases share one namespace."
+        )
+        raise ValueError(msg)
+
+    env = Environment(reg_name, python=python, register=False)
+    environments.register_session_pair(env, fn)
     return fn
-
-
-def get() -> dict[str, Func]:
-    """Return a shallow copy of the registry.
-
-    This ensures that the registry is not accidentally modified by
-    calling code that retrieves a registry and mutates it.
-    """
-    return copy.copy(_REGISTRY)

@@ -197,6 +197,7 @@ def test_discover_session_functions_decorator() -> None:
 
     # Get the manifest and establish that it looks like what we expect.
     manifest = tasks.discover_manifest(mock_module, config)
+    assert isinstance(manifest, Manifest)
     sessions = list(manifest)
     assert [s.func for s in sessions] == [foo, bar, not_a_bar]
     assert [i.friendly_name for i in sessions] == ["foo", "bar", "not-a-bar"]
@@ -536,6 +537,8 @@ def test_honor_list_json_request(capsys: pytest.CaptureFixture[builtins.str]) ->
                 description="simple",
                 func=argparse.Namespace(python=Path("123")),
                 tags=[],
+                env_base_name=None,
+                task_name=None,
             ),
             True,
         ),
@@ -554,6 +557,8 @@ def test_honor_list_json_request(capsys: pytest.CaptureFixture[builtins.str]) ->
             "python": "123",
             "tags": [],
             "call_spec": {},
+            "env": "bar",
+            "task": "bar",
         }
     ]
 

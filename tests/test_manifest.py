@@ -70,8 +70,11 @@ def test__normalize_arg() -> None:
 
 def test__normalized_session_match() -> None:
     session_mock = mock.MagicMock()
+    session_mock.name = "test"
     session_mock.signatures = ['test(foo="bar")']
     assert _normalized_session_match("test(foo='bar')", session_mock)
+    # Formatting variants of the name itself match too.
+    assert _normalized_session_match("test ", session_mock)
 
 
 def test_init() -> None:
