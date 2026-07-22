@@ -136,14 +136,11 @@ def test_check_requires_python_invalid() -> None:
         ((3, 14, 0, "alpha", 3), "3.14.0a3"),
     ],
 )
-def test_current_python_version(
-    monkeypatch: pytest.MonkeyPatch,
+def test_format_python_version(
     version_info: tuple[int, int, int, str, int],
     expected: str,
 ) -> None:
-    monkeypatch.setattr(sys, "version_info", version_info)
-
-    assert nox._cli._current_python_version() == expected
+    assert nox._cli._format_python_version(version_info) == expected
 
 
 def test_venv_python_version(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -151,7 +148,7 @@ def test_venv_python_version(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(shutil, "which", lambda _cmd, **_kwargs: sys.executable)
     version = nox._cli._venv_python_version(fake_venv)  # type: ignore[arg-type]
-    assert version == nox._cli._current_python_version()
+    assert version == nox._cli._format_python_version(sys.version_info[:5])
 
     monkeypatch.setattr(shutil, "which", lambda _cmd, **_kwargs: None)
     assert nox._cli._venv_python_version(fake_venv) is None  # type: ignore[arg-type]

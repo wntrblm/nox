@@ -177,16 +177,13 @@ def check_requires_python(requires_python: str | None, version: str) -> bool:
 
 
 def _format_python_version(version_info: tuple[int, int, int, str, int]) -> str:
+    # For the running interpreter, pass sys.version_info[:5] rather than
+    # platform.python_version(), which can produce unparsable values like
+    # "3.13.0+" on dev builds.
     major, minor, micro, releaselevel, serial = version_info
     pre = {"alpha": "a", "beta": "b", "candidate": "rc"}.get(releaselevel, "")
     suffix = f"{pre}{serial}" if pre else ""
     return f"{major}.{minor}.{micro}{suffix}"
-
-
-def _current_python_version() -> str:
-    # Built from sys.version_info rather than platform.python_version(), which
-    # can produce unparsable values like "3.13.0+" on dev builds.
-    return _format_python_version(sys.version_info[:5])
 
 
 def _venv_python_version(venv: nox.virtualenv.ProcessEnv) -> str | None:
@@ -281,7 +278,7 @@ def run_script_mode(
     )
     if requires_python:
         if not venv.is_sandboxed:
-            version = _current_python_version()
+            version = _format_python_version(sys.version_info[:5])
             if not check_requires_python(requires_python, version):
                 msg = (
                     f'Python {version} does not satisfy "requires-python":'
@@ -380,7 +377,7 @@ def _main(*, main_ep: bool) -> None:
             # requires-python first: it raises on an invalid specifier, so it
             # must not be short-circuited away by a failing dependency check.
             valid_env = check_requires_python(
-                requires_python, _current_python_version()
+                requires_python, _format_python_version(sys.version_info[:5])
             ) and check_dependencies(dependencies)
             # Coverage misses this, but it's covered via subprocess call
             if not valid_env:  # pragma: nocover
