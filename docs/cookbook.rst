@@ -194,23 +194,25 @@ data file, and combine the files only after every test session finishes:
 
     import nox
 
-    PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13"]
-
-    # Run cleanup first, then every parametrized test session, and finally report.
-    nox.options.sessions = ["coverage_erase", "tests", "coverage_report"]
+    PYPROJECT = nox.project.load_toml("pyproject.toml")
+    PYTHON_VERSIONS = nox.project.python_versions(PYPROJECT)
 
 
-    @nox.session
+    @nox.session(default=False)
     def coverage_erase(session: nox.Session) -> None:
         """Remove data left by an earlier coverage run."""
         session.install("coverage[toml]")
         session.run("coverage", "erase")
 
 
-    @nox.session(python=PYTHON_VERSIONS)
+    @nox.session(
+        python=PYTHON_VERSIONS,
+        default=False,
+        requires=["coverage_erase"],
+    )
     def tests(session: nox.Session) -> None:
         """Measure tests independently for each supported Python version."""
-        session.install("coverage[toml]", "pytest", ".")
+        session.install("coverage[toml]", "--group=test", ".")
         session.run(
             "coverage",
             "run",
@@ -221,15 +223,17 @@ data file, and combine the files only after every test session finishes:
         )
 
 
-    @nox.session
+    @nox.session(requires=["tests"])
     def coverage_report(session: nox.Session) -> None:
         """Combine the per-version data and display one report."""
         session.install("coverage[toml]")
         session.run("coverage", "combine")
         session.run("coverage", "report", "--show-missing")
 
-Running ``nox`` executes these phases in order. ``coverage combine`` writes the
-combined ``.coverage`` data file and removes the per-version files it consumed.
+Running ``nox`` selects ``coverage_report`` by default; its requirements run
+cleanup first and then every parametrized test session. ``coverage combine``
+writes the combined ``.coverage`` data file and removes the per-version files it
+consumed.
 Keep the phases sequential so cleanup and reporting cannot race with the test
 sessions. Projects that use subprocesses or pytest-xdist should also enable
 Coverage.py's `parallel mode <https://coverage.readthedocs.io/en/latest/config.html#run-parallel>`_.
