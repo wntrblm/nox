@@ -12,34 +12,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""High-level options interface. This allows defining options just once that
-can be specified from the command line and the Noxfile, easily used in tests,
-and surfaced in documentation."""
+"""Machinery for statically-defined option models.
+
+Options are declared once as fields on attrs classes (see ``nox._options``),
+carrying CLI metadata in an :class:`Opt` record. Everything else is derived
+from the model: the argparse parser, environment-variable handling, the
+noxfile/CLI merge, and serialization back to an argument list (:func:`to_argv`)
+for spawning child ``nox`` processes.
+"""
 
 from __future__ import annotations
 
-__lazy_modules__ = {"argcomplete", "argparse", "functools"}
+__lazy_modules__ = {"argcomplete", "argparse", "types"}
 
 import argparse
-import functools
+import enum
 import os
+import types
+import typing
 from argparse import ArgumentError, ArgumentParser, Namespace
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar
 
 import argcomplete
 import attrs
-import attrs.validators as av
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable, Iterable
 
 __all__ = [
     "ArgumentError",
-    "NoxOptions",
-    "Option",
-    "OptionGroup",
-    "OptionSet",
-    "make_flag_pair",
+    "Forward",
+    "NoxOptions",  # noqa: F822 (provided lazily by __getattr__)
+    "Opt",
+    "Options",
+    "OptionsBase",
+    "Source",
+    "opt",
+    "to_argv",
 ]
 
 
@@ -47,341 +56,349 @@ def __dir__() -> list[str]:
     return __all__
 
 
-av_opt_str = av.optional(av.instance_of(str))
-av_opt_path = av.optional(av.or_(av.instance_of(str), av.instance_of(os.PathLike)))  # type: ignore[type-abstract]
-av_opt_list_str = av.optional(
-    av.deep_iterable(
-        member_validator=av.instance_of(str),
-        iterable_validator=av.not_(av.instance_of(str)),
-    )
-)
-av_bool = av.instance_of(bool)
+def __getattr__(name: str) -> Any:
+    # Compatibility alias; NoxOptions was defined here before the model moved.
+    if name == "NoxOptions":
+        from nox._options import NoxfileOptions  # noqa: PLC0415
+
+        return NoxfileOptions
+    msg = f"module {__name__!r} has no attribute {name!r}"
+    raise AttributeError(msg)
 
 
-@attrs.define(slots=True, kw_only=True)
-class NoxOptions:
-    default_venv_backend: None | str = attrs.field(validator=av_opt_str)
-    download_python: None | Literal["auto", "never", "always"] = attrs.field(
-        default=None, validator=av.optional(av.in_(["auto", "never", "always"]))
-    )
-    envdir: None | str | os.PathLike[str] = attrs.field(validator=av_opt_path)
-    error_on_external_run: bool = attrs.field(validator=av_bool)
-    error_on_missing_interpreters: bool = attrs.field(validator=av_bool)
-    force_venv_backend: None | str = attrs.field(validator=av_opt_str)
-    keywords: None | str = attrs.field(validator=av_opt_str)
-    pythons: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
-    report: None | str = attrs.field(validator=av_opt_str)
-    reuse_existing_virtualenvs: bool = attrs.field(validator=av_bool)
-    reuse_venv: None | Literal["no", "yes", "never", "always"] = attrs.field(
-        validator=av.optional(av.in_(["no", "yes", "never", "always"]))
-    )
-    sessions: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
-    stop_on_first_error: bool = attrs.field(validator=av_bool)
-    tags: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
-    verbose: bool = attrs.field(validator=av_bool)
+METADATA_KEY = "nox_opt"
+
+ConfigT = TypeVar("ConfigT", bound="OptionsBase")
 
 
-class OptionGroup:
-    """A single group for command-line options.
+class Source(enum.IntEnum):
+    """Where a value came from; higher-ranked sources win during merging."""
 
-    Args:
-        name (str): The name used to refer to the group.
-        args: Passed through to``ArgumentParser.add_argument_group``.
-        kwargs: Passed through to``ArgumentParser.add_argument_group``.
+    DEFAULT = 0
+    NOXFILE = 1
+    ENVIRONMENT = 2
+    COMMAND_LINE = 3
+
+
+class Forward(enum.Enum):
+    """How :func:`to_argv` treats an option when rebuilding an argument list.
+
+    NEVER: not forwarded (presentation-only options, or aliases whose state
+    lives in another field). IF_CHANGED: emitted when the value differs from
+    the field default. ALWAYS: emitted unconditionally (flag pairs and options
+    whose defaults are environment-dependent, so children stay deterministic).
     """
 
-    __slots__ = ("args", "kwargs", "name")
-
-    def __init__(self, name: str, *args: Any, **kwargs: Any) -> None:
-        self.name = name
-        self.args = args
-        self.kwargs = kwargs
+    NEVER = enum.auto()
+    IF_CHANGED = enum.auto()
+    ALWAYS = enum.auto()
 
 
-class Option:
-    """A single option that can be specified via command-line or configuration
-    file.
+@attrs.frozen(kw_only=True)
+class Opt:
+    """CLI metadata attached to a model field via ``attrs.field(metadata=...)``.
 
     Args:
-        name (str): The name used to refer to the option in the final namespace
-            object.
-        flags (Sequence[str]): The list of flags used by argparse. Effectively
-            the ``*args`` for ``ArgumentParser.add_argument``.
-        group (OptionGroup): The argument group this option belongs to.
-        help (str): The help string pass to argparse.
-        noxfile (bool): Whether or not this option can be set in the
-            configuration file.
-        merge_func (Callable[[Namespace, NoxOptions], Any]): A function that
-            can define custom behavior when merging the command-line options
-            with the configuration file options. The first argument is the
-            command-line options, the second is the configuration file options.
-            It should return the new value for the option.
-        finalizer_func (Callable[Any, Namespace], Any): A function that can
-            define custom finalization behavior. This is called after all
-            arguments are parsed. It's called with the options parsed value
-            and the set of command-line options and should return the new
-            value.
-        default (Union[Any, Callable[[], Any]]): The default value. It may
-            also be a function in which case it will be invoked after argument
-            parsing if nothing was specified.
-        hidden (bool): Means this option will be present in the namespace, but
-            will not show up on the argument list.
-        kwargs: Passed through to``ArgumentParser.add_argument``.
+        flags: The argparse flags (e.g. ``-s``, ``--sessions``). The last flag
+            is the canonical one used when serializing back to argv.
+        group: Key into the option set's group table. Required unless hidden.
+        help: The argparse help string.
+        negative_flags: If non-empty, this is a flag pair; these flags
+            ``store_false`` into the same field.
+        env_var: Environment variable providing the value when the flag is not
+            passed (comma-split for list-typed fields).
+        hidden: Present on the config object but not exposed on the CLI.
+        positional: A positional argument (only ``posargs``).
+        completer: argcomplete completer.
+        forward: See :class:`Forward`.
+        serialize: Custom argv emitter; receives the value, returns the argv
+            chunk or None to skip. Overrides the generic emission.
+        argparse_kwargs: Extra/overriding kwargs for ``add_argument``.
+    """
+
+    flags: tuple[str, ...] = ()
+    group: str | None = None
+    help: str | None = None
+    negative_flags: tuple[str, ...] = ()
+    env_var: str | None = None
+    hidden: bool = False
+    positional: bool = False
+    completer: Callable[..., Iterable[str]] | None = None
+    forward: Forward = Forward.IF_CHANGED
+    serialize: Callable[[Any], list[str] | None] | None = None
+    argparse_kwargs: dict[str, Any] = attrs.field(factory=dict)
+
+
+def opt(*flags: str, **kwargs: Any) -> dict[str, Opt]:
+    """Build the metadata dict for an option field."""
+    return {METADATA_KEY: Opt(flags=flags, **kwargs)}
+
+
+def _get_opt(field: attrs.Attribute[Any]) -> Opt | None:
+    return field.metadata.get(METADATA_KEY)
+
+
+@attrs.define(kw_only=True)
+class OptionsBase:
+    """Base for option models; tracks the provenance of each field's value."""
+
+    _provenance: dict[str, Source] = attrs.field(
+        init=False, factory=dict, repr=False, eq=False
+    )
+
+    def provenance(self, name: str) -> Source:
+        return self._provenance.get(name, Source.DEFAULT)
+
+    def set_value(self, name: str, value: Any, source: Source) -> None:
+        """Set a field and record where the value came from."""
+        setattr(self, name, value)
+        self._provenance[name] = source
+
+
+def record_noxfile_set(
+    instance: OptionsBase, field: attrs.Attribute[Any], value: Any
+) -> Any:
+    """on_setattr hook: record plain assignments (``nox.options.x = ...``)."""
+    if not field.name.startswith("_"):
+        instance._provenance[field.name] = Source.NOXFILE
+    return value
+
+
+def _field_default(field: attrs.Attribute[Any]) -> Any:
+    default = field.default
+    if isinstance(default, attrs.Factory):  # type: ignore[arg-type]
+        return default.factory()  # type: ignore[union-attr]
+    return default
+
+
+def _analyze_type(tp: Any) -> tuple[str, tuple[Any, ...] | None]:
+    """Classify a field type for argparse.
+
+    Returns a kind (``"flag"``, ``"list"``, or ``"value"``) and Literal
+    choices, if any.
+    """
+    origin = typing.get_origin(tp)
+    if origin in {typing.Union, types.UnionType}:
+        non_none = [a for a in typing.get_args(tp) if a is not type(None)]
+        if len(non_none) == 1:
+            return _analyze_type(non_none[0])
+        return ("value", None)
+    if origin is Literal:
+        return ("value", typing.get_args(tp))
+    if tp is bool:
+        return ("flag", None)
+    if origin in {list, tuple} or tp in {list, tuple}:
+        return ("list", None)
+    return ("value", None)
+
+
+def to_argv(config: OptionsBase) -> list[str]:
+    """Serialize a config back into the CLI arguments that reproduce it.
+
+    The output, parsed and finalized again, restores every forwardable value.
+    Options marked ``Forward.NEVER`` are skipped; new options are forwarded by
+    default. Positional arguments (posargs) are emitted last, after ``--``.
+    """
+    argv: list[str] = []
+    tail: list[str] = []
+    for field in attrs.fields(type(config)):
+        option = _get_opt(field)
+        if option is None or option.forward is Forward.NEVER:
+            continue
+        value = getattr(config, field.name)
+        if option.positional:
+            if value:
+                tail = ["--", *(str(v) for v in value)]
+            continue
+        if option.serialize is not None:
+            argv += option.serialize(value) or []
+            continue
+        if option.negative_flags:
+            argv.append(option.flags[-1] if value else option.negative_flags[-1])
+            continue
+        if option.forward is Forward.IF_CHANGED and value == _field_default(field):
+            continue
+        flag = option.flags[-1]
+        if isinstance(value, bool):
+            if value:
+                argv.append(flag)
+        elif isinstance(value, (list, tuple)):
+            if value:
+                argv += [flag, *(str(v) for v in value)]
+        elif value is not None:
+            argv += [flag, str(value)]
+    return argv + tail
+
+
+def apply_noxfile_values(
+    config: OptionsBase, noxfile_config: OptionsBase, *, skip: Iterable[str] = ()
+) -> None:
+    """Copy fields set in the noxfile into the config where nothing outranks them."""
+    skip = set(skip)
+    for field in attrs.fields(type(noxfile_config)):
+        name = field.name
+        if _get_opt(field) is None or name in skip:
+            continue
+        if noxfile_config.provenance(name) is Source.DEFAULT:
+            continue
+        if config.provenance(name) is Source.DEFAULT:
+            config.set_value(name, getattr(noxfile_config, name), Source.NOXFILE)
+
+
+class Options(Generic[ConfigT]):
+    """The full option set: builds the parser and config objects from the model.
+
+    Args:
+        config_class: The attrs class holding every option (the CLI surface).
+        noxfile_class: Its base class holding the noxfile-settable subset.
+        groups: Mapping of group key to (title, description) for ``--help``.
+        description: The parser description.
+        finalize: Called with the fresh config after parsing, before returning;
+            resolves aliases and cross-field options. ``ArgumentError`` raised
+            here is reported via ``parser.error``.
+        merge: Called by :meth:`merge_namespaces` with (config, noxfile
+            options) to apply noxfile settings and post-merge defaults.
     """
 
     def __init__(
         self,
-        name: str,
-        *flags: str,
-        group: OptionGroup | None,
-        help: str | None = None,
-        noxfile: bool = False,
-        merge_func: Callable[[Namespace, NoxOptions], Any] | None = None,
-        finalizer_func: Callable[[Any, Namespace], Any] | None = None,
-        default: (
-            bool | str | None | list[str] | Callable[[], bool | str | None | list[str]]
-        ) = None,
-        hidden: bool = False,
-        completer: Callable[..., Iterable[str]] | None = None,
-        **kwargs: Any,
+        config_class: type[ConfigT],
+        noxfile_class: type[OptionsBase],
+        *,
+        groups: dict[str, tuple[str, str]],
+        description: str,
+        finalize: Callable[[Any], None] | None = None,
+        merge: Callable[[Any, Any], None] | None = None,
     ) -> None:
-        self.name = name
-        self.flags = flags
-        self.group = group
-        self.help = help
-        self.noxfile = noxfile
-        self.merge_func = merge_func
-        self.finalizer_func = finalizer_func
-        self.hidden = hidden
-        self.completer = completer
-        self.kwargs = kwargs
-        self._default = default
+        self.config_class = config_class
+        self.noxfile_class = noxfile_class
+        self.groups = groups
+        self.description = description
+        self.finalize = finalize
+        self.merge = merge
+        attrs.resolve_types(config_class)
 
-    @property
-    def default(self) -> bool | str | None | list[str]:
-        if callable(self._default):
-            return self._default()
-        return self._default
-
-
-def flag_pair_merge_func(
-    enable_name: str,
-    enable_default: bool | Callable[[], bool],  # noqa: FBT001
-    disable_name: str,
-    command_args: Namespace,
-    noxfile_args: NoxOptions,
-) -> bool:
-    """Merge function for flag pairs. If the flag is set in the Noxfile or
-    the command line params, return ``True`` *unless* the disable flag has been
-    specified on the command-line.
-
-    For example, assuming you have a flag pair created using::
-
-        make_flag_pair(
-            "thing_a",
-            "--thing-a",
-            "--no-thing-a"
-        )
-
-    Then if the Noxfile says::
-
-        nox.options.thing_a = True
-
-    But the command line says::
-
-        nox --no-thing-a
-
-    Then the result will be ``False``.
-
-    However, without the "--no-thing-a" flag set then this returns ``True`` if
-    *either*::
-
-        nox.options.thing_a = True
-
-    or::
-
-        nox --thing-a
-
-    are specified.
-    """
-    noxfile_value = getattr(noxfile_args, enable_name)
-    command_value = getattr(command_args, enable_name)
-    disable_value = getattr(command_args, disable_name)
-    default_value = enable_default() if callable(enable_default) else enable_default
-    if default_value and disable_value is None and noxfile_value != default_value:
-        # Makes sure make_flag_pair with default=true can be overridden via noxfile
-        disable_value = True
-
-    return (command_value or noxfile_value) and not disable_value
-
-
-def make_flag_pair(
-    name: str,
-    enable_flags: tuple[str, str] | tuple[str],
-    disable_flags: tuple[str, str] | tuple[str],
-    *,
-    default: bool | Callable[[], bool] = False,
-    **kwargs: Any,
-) -> tuple[Option, Option]:
-    """Returns two options - one to enable a behavior and another to disable it.
-
-    The positive option is considered to be available to the Noxfile, as
-    there isn't much point in doing flag pairs without it.
-    """
-    disable_name = f"no_{name}"
-
-    kwargs["action"] = "store_true"
-    enable_option = Option(
-        name,
-        *enable_flags,
-        noxfile=True,
-        merge_func=functools.partial(flag_pair_merge_func, name, default, disable_name),
-        default=default,
-        **kwargs,
-    )
-
-    kwargs["help"] = f"Disables {enable_flags[-1]} if it is enabled in the Noxfile."
-    disable_option = Option(disable_name, *disable_flags, **kwargs)
-
-    return enable_option, disable_option
-
-
-class OptionSet:
-    """A set of options.
-
-    A high-level wrapper over ``argparse.ArgumentParser``. It allows for
-    introspection of options as well as quality-of-life features such as
-    finalization, callable defaults, and strongly typed namespaces for tests.
-    """
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.parser_args = args
-        self.parser_kwargs = kwargs
-        self.options: dict[str, Option] = {}
-        self.groups: dict[str, OptionGroup] = {}
-
-    def add_options(self, *args: Option) -> None:
-        """Adds a sequence of Options to the OptionSet.
-
-        Args:
-            args (Sequence[Options])
-        """
-        for option in args:
-            self.options[option.name] = option
-
-    def add_groups(self, *args: OptionGroup) -> None:
-        """Adds a sequence of OptionGroups to the OptionSet.
-
-        Args:
-            args (Sequence[OptionGroup])
-        """
-        for option_group in args:
-            self.groups[option_group.name] = option_group
+    def _argparse_kwargs(
+        self, field: attrs.Attribute[Any], option: Opt
+    ) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {}
+        kind, choices = _analyze_type(field.type)
+        if kind == "flag":
+            kwargs["action"] = "store_true"
+        elif kind == "list":
+            kwargs["nargs"] = "*"
+        if choices:
+            kwargs["choices"] = list(choices)
+        kwargs.update(option.argparse_kwargs)
+        return kwargs
 
     def parser(self) -> ArgumentParser:
-        """Returns an ``ArgumentParser`` for this option set.
+        """Build the ``ArgumentParser`` for the model.
 
-        Generally, you won't use this directly. Instead, use
-        :func:`parse_args`.
+        Parsing is sparse: only flags actually passed appear in the resulting
+        namespace (via ``argparse.SUPPRESS``), so provenance is exact.
         """
-        parser_kwargs = {"allow_abbrev": False, **self.parser_kwargs}
-        parser = argparse.ArgumentParser(*self.parser_args, **parser_kwargs)
-
+        parser = argparse.ArgumentParser(
+            description=self.description, add_help=False, allow_abbrev=False
+        )
         groups = {
-            name: parser.add_argument_group(*option_group.args, **option_group.kwargs)
-            for name, option_group in self.groups.items()
+            name: parser.add_argument_group(title, description)
+            for name, (title, description) in self.groups.items()
         }
-
-        for option in self.options.values():
-            if option.hidden:
+        for field in attrs.fields(self.config_class):
+            option = _get_opt(field)
+            if option is None or option.hidden:
                 continue
-
-            # Every option must have a group (except for hidden options)
             if option.group is None:
-                msg = f"Option {option.name} must either have a group or be hidden."
+                msg = f"Option {field.name} must either have a group or be hidden."
                 raise ValueError(msg)
-
-            argument = groups[option.group.name].add_argument(
-                *option.flags, help=option.help, default=option.default, **option.kwargs
+            group = groups[option.group]
+            if option.positional:
+                group.add_argument(
+                    field.name,
+                    help=option.help,
+                    default=[],
+                    **option.argparse_kwargs,
+                )
+                continue
+            argument = group.add_argument(
+                *option.flags,
+                dest=field.name,
+                help=option.help,
+                default=argparse.SUPPRESS,
+                **self._argparse_kwargs(field, option),
             )
             if option.completer:
                 argument.completer = option.completer  # type: ignore[attr-defined]
-
+            if option.negative_flags:
+                group.add_argument(
+                    *option.negative_flags,
+                    dest=field.name,
+                    action="store_false",
+                    default=argparse.SUPPRESS,
+                    help=f"Disables {option.flags[-1]} if it is enabled in the Noxfile.",
+                )
         return parser
 
     def print_help(self) -> None:
-        return self.parser().print_help()
+        self.parser().print_help()
 
-    def _finalize_args(self, args: Namespace) -> None:
-        """Does any necessary post-processing on arguments."""
-        for option in self.options.values():
-            # Handle hidden items.
-            if option.hidden and not hasattr(args, option.name):
-                setattr(args, option.name, option.default)
+    def expand(self, namespace: Namespace | ConfigT) -> ConfigT:
+        """Build a full config from a sparse argparse namespace.
 
-            value = getattr(args, option.name)
+        Values present in the namespace were passed on the command line;
+        everything else falls back to the environment variable (if declared)
+        and then the field default. A config passed in (e.g. from
+        :meth:`namespace` in tests) is returned unchanged.
+        """
+        if isinstance(namespace, self.config_class):
+            return namespace
+        sparse = vars(namespace)
+        config = self.config_class()
+        for field in attrs.fields(self.config_class):
+            option = _get_opt(field)
+            if option is None:
+                continue
+            if field.name in sparse:
+                config.set_value(field.name, sparse[field.name], Source.COMMAND_LINE)
+            elif option.env_var and (env_value := os.environ.get(option.env_var)):
+                kind, _ = _analyze_type(field.type)
+                value = env_value.split(",") if kind == "list" else env_value
+                config.set_value(field.name, value, Source.ENVIRONMENT)
+        return config
 
-            # Handle options that have finalizer functions.
-            if option.finalizer_func:
-                setattr(args, option.name, option.finalizer_func(value, args))
-
-    def parse_args(self) -> Namespace:
+    def parse_args(self, args: list[str] | None = None) -> ConfigT:
         parser = self.parser()
         argcomplete.autocomplete(parser)
-        args = parser.parse_args()
-
+        namespace = parser.parse_args(args)
+        config = self.expand(namespace)
         try:
-            self._finalize_args(args)
+            if self.finalize is not None:
+                self.finalize(config)
         except ArgumentError as err:
             parser.error(str(err))
-        return args
+        return config
 
-    def namespace(self, **kwargs: Any) -> argparse.Namespace:
-        """Return a namespace that contains all of the options in this set.
+    def namespace(self, **kwargs: Any) -> ConfigT:
+        """Return a config with every option at its default.
 
-        kwargs can be used to set values and does so in a checked way - you
-        can not set an option that does not exist in the set. This is useful
-        for testing.
+        kwargs set values in a checked way - you can not set an option that
+        does not exist. This is useful for testing.
         """
-        args = {option.name: option.default for option in self.options.values()}
-
-        # Don't use update - validate that the keys actually exist so that
-        # we don't accidentally set non-existent options.
-        # don't bother with coverage here, this is effectively only ever
-        # used in tests.
+        fields = attrs.fields_dict(self.config_class)
+        config = self.config_class()
         for key, value in kwargs.items():
-            if key not in args:
+            if key not in fields or _get_opt(fields[key]) is None:
                 msg = f"{key} is not an option."
                 raise KeyError(msg)
-            args[key] = value
+            config.set_value(key, value, Source.COMMAND_LINE)
+        return config
 
-        return argparse.Namespace(**args)
+    def noxfile_namespace(self) -> Any:
+        """Return a fresh instance of the noxfile-settable options."""
+        return self.noxfile_class()
 
-    def noxfile_namespace(self) -> NoxOptions:
-        """Returns a namespace of options that can be set in the configuration
-        file."""
-        return NoxOptions(
-            **{
-                option.name: option.default
-                for option in self.options.values()
-                if option.noxfile
-            }  # type: ignore[arg-type]
-        )
-
-    def merge_namespaces(
-        self, command_args: Namespace, noxfile_args: NoxOptions
-    ) -> None:
-        """Merges the command-line options with the Noxfile options."""
-        command_args_copy = Namespace(**vars(command_args))
-        for name, option in self.options.items():
-            if option.merge_func:
-                setattr(
-                    command_args,
-                    name,
-                    option.merge_func(command_args_copy, noxfile_args),
-                )
-            elif option.noxfile:
-                value = getattr(command_args_copy, name, None) or getattr(
-                    noxfile_args, name, None
-                )
-                setattr(command_args, name, value)
+    def merge_namespaces(self, config: ConfigT, noxfile_config: Any) -> None:
+        """Merge the noxfile options into the parsed config."""
+        if self.merge is not None:
+            self.merge(config, noxfile_config)
