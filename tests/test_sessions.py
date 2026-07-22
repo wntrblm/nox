@@ -1379,7 +1379,10 @@ class TestSessionRunner:
         ],
     )
     def test__reuse_venv_outcome(
-        self, reuse_venv: str, reuse_venv_func: bool | None, should_reuse: bool
+        self,
+        reuse_venv: Literal["no", "yes", "never", "always"],
+        reuse_venv_func: bool | None,
+        should_reuse: bool,
     ) -> None:
         runner = self.make_runner()
         runner.func.reuse_venv = reuse_venv_func
@@ -1388,10 +1391,8 @@ class TestSessionRunner:
 
     def test__reuse_venv_invalid(self) -> None:
         runner = self.make_runner()
-        runner.global_config.reuse_venv = True
-        msg = "nox.options.reuse_venv must be set to 'always', 'never', 'no', or 'yes', got True!"
-        with pytest.raises(AttributeError, match=re.escape(msg)):
-            runner.reuse_existing_venv()
+        with pytest.raises(ValueError, match="'reuse_venv' must be in"):
+            runner.global_config.reuse_venv = True  # type: ignore[assignment]
 
     def make_runner_with_mock_venv(self) -> nox.sessions.SessionRunner:
         runner = self.make_runner()

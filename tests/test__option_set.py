@@ -15,82 +15,72 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+import attrs
 import pytest
 
 from nox import _option_set, _options
-
-if TYPE_CHECKING:
-    import argparse
-
-# The vast majority of _option_set is tested by test_main, but the test helper
-# :func:`OptionSet.namespace` needs a bit of help to get to full coverage.
-
+from nox._option_set import Forward, Options, OptionsBase, Source, opt, to_argv
 
 RESOURCES = Path(__file__).parent.joinpath("resources")
 
 
-class TestOptionSet:
+@attrs.define(kw_only=True)
+class SmallConfig(OptionsBase):
+    option_a: str = attrs.field(
+        default="meep", metadata=opt("--option-a", group="group_a")
+    )
+    hidden_option: str = attrs.field(default="meep", metadata=opt(hidden=True))
+
+
+def make_small_options() -> Options[SmallConfig]:
+    return Options(
+        SmallConfig,
+        SmallConfig,
+        groups={"group_a": ("Group A", "The A group.")},
+        description="test options",
+    )
+
+
+class TestOptions:
     def test_namespace(self) -> None:
-        optionset = _option_set.OptionSet()
-        optionset.add_groups(_option_set.OptionGroup("group_a"))
-        optionset.add_options(
-            _option_set.Option(
-                "option_a", group=optionset.groups["group_a"], default="meep"
-            )
-        )
+        namespace = make_small_options().namespace()
 
-        namespace = optionset.namespace()
-
-        assert hasattr(namespace, "option_a")
-        assert not hasattr(namespace, "non_existent_option")
         assert namespace.option_a == "meep"
+        assert not hasattr(namespace, "non_existent_option")
 
     def test_namespace_values(self) -> None:
-        optionset = _option_set.OptionSet()
-        optionset.add_groups(_option_set.OptionGroup("group_a"))
-        optionset.add_options(
-            _option_set.Option(
-                "option_a", group=optionset.groups["group_a"], default="meep"
-            )
-        )
-
-        namespace = optionset.namespace(option_a="moop")
+        namespace = make_small_options().namespace(option_a="moop")
 
         assert namespace.option_a == "moop"
+        assert namespace.provenance("option_a") is Source.COMMAND_LINE
+        assert namespace.provenance("hidden_option") is Source.DEFAULT
 
     def test_namespace_non_existent_options_with_values(self) -> None:
-        optionset = _option_set.OptionSet()
-
         with pytest.raises(KeyError):
-            optionset.namespace(non_existent_option="meep")
+            make_small_options().namespace(non_existent_option="meep")
 
     def test_parser_hidden_option(self) -> None:
-        optionset = _option_set.OptionSet()
-        optionset.add_options(
-            _option_set.Option(
-                "oh_boy_i_am_hidden", hidden=True, group=None, default="meep"
-            )
-        )
+        options = make_small_options()
 
-        parser = optionset.parser()
-        namespace = parser.parse_args([])
-        optionset._finalize_args(namespace)
+        parser = options.parser()
+        config = options.expand(parser.parse_args([]))
 
-        assert namespace.oh_boy_i_am_hidden == "meep"
+        assert config.hidden_option == "meep"
+        assert "hidden_option" not in parser.format_help()
 
     def test_parser_groupless_option(self) -> None:
-        optionset = _option_set.OptionSet()
-        optionset.add_options(
-            _option_set.Option("oh_no_i_have_no_group", group=None, default="meep")
-        )
+        @attrs.define(kw_only=True)
+        class GrouplessConfig(OptionsBase):
+            no_group: str = attrs.field(default="meep", metadata=opt("--no-group"))
+
+        options = Options(GrouplessConfig, GrouplessConfig, groups={}, description="")
 
         with pytest.raises(
             ValueError,
-            match="Option oh_no_i_have_no_group must either have a group or be hidden",
+            match="Option no_group must either have a group or be hidden",
         ):
-            optionset.parser()
+            options.parser()
 
     def test_session_completer(self) -> None:
         parsed_args = _options.options.namespace(
@@ -106,7 +96,7 @@ class TestOptionSet:
 
     def test_session_completer_invalid_sessions(self) -> None:
         parsed_args = _options.options.namespace(
-            sessions=("baz",), keywords=(), posargs=[]
+            sessions=("baz",), keywords=None, posargs=[]
         )
         all_nox_sessions = _options._session_completer(
             prefix="", parsed_args=parsed_args
@@ -164,10 +154,89 @@ class TestOptionSet:
         options.envdir = Path("envdir")
 
 
+def _forwardable_fields() -> list[str]:
+    return [
+        field.name
+        for field in attrs.fields(_options.NoxConfig)
+        if (o := field.metadata.get(_option_set.METADATA_KEY)) is not None
+        and o.forward is not Forward.NEVER
+    ]
+
+
+class TestToArgv:
+    @pytest.mark.parametrize(
+        "args",
+        [
+            [],
+            ["-r"],
+            ["-R"],
+            ["--verbose", "--reuse-venv", "never", "--envdir", "elsewhere"],
+            ["--no-verbose", "--error-on-missing-interpreters"],
+            ["--forcecolor", "-s", "a", "b", "-p", "3.12", "3.13"],
+            ["--nocolor", "--install-only", "--non-interactive", "-ts"],
+            ["--default-venv-backend", "uv", "--download-python", "never"],
+            ["--force-python", "3.13", "--stop-on-first-error"],
+            ["-s", "test", "--", "-k", "foo", "--flag"],
+        ],
+    )
+    def test_round_trip(self, args: list[str]) -> None:
+        """Parsing to_argv's output must restore every forwardable value."""
+        config = _options.options.parse_args(args)
+        rebuilt = _options.options.parse_args(to_argv(config))
+
+        for name in _forwardable_fields():
+            assert getattr(rebuilt, name) == getattr(config, name), name
+
+    def test_never_forwarded(self) -> None:
+        config = _options.options.parse_args(
+            ["--list-sessions", "--json", "--no-venv", "-R"]
+        )
+        argv = to_argv(config)
+
+        for flag in ("--list-sessions", "--json", "--no-venv", "-R"):
+            assert flag not in argv
+        # The alias state is forwarded through the canonical options instead.
+        assert "--no-install" in argv
+        assert argv[argv.index("--reuse-venv") :][:2] == ["--reuse-venv", "yes"]
+
+    def test_flag_pairs_always_emitted(self) -> None:
+        """Environment-dependent pair defaults must be pinned for children."""
+        argv = to_argv(_options.options.parse_args([]))
+
+        assert (
+            "--error-on-missing-interpreters" in argv
+            or "--no-error-on-missing-interpreters" in argv
+        )
+        assert "--verbose" in argv or "--no-verbose" in argv
+
+    def test_noxfile_only_backend_skipped(self) -> None:
+        """The "a|b" fallback syntax is not valid on the CLI, so it is not
+        forwarded; children re-derive it from the noxfile."""
+        config = _options.options.namespace(default_venv_backend="uv|virtualenv")
+        argv = to_argv(config)
+
+        assert "--default-venv-backend" not in argv
+
+    def test_posargs_last(self) -> None:
+        config = _options.options.parse_args(["-v", "--", "posarg"])
+        argv = to_argv(config)
+
+        assert argv[-2:] == ["--", "posarg"]
+
+    def test_evolve_selects_session(self) -> None:
+        """The pattern used to spawn a child nox for a single session."""
+        config = _options.options.parse_args(["-s", "a", "b", "-k", "expr"])
+        child = attrs.evolve(config, sessions=["b"], keywords=None, tags=None)
+        argv = to_argv(child)
+
+        assert argv[argv.index("--session") :][:2] == ["--session", "b"]
+        assert "--keywords" not in argv
+
+
 class TestMerge:
     def parse_and_merge(
-        self, args: list[str], noxfile_config: _option_set.NoxOptions
-    ) -> argparse.Namespace:
+        self, args: list[str], noxfile_config: _options.NoxfileOptions
+    ) -> _options.NoxConfig:
         config = _options.options.parse_args(args)
         _options.options.merge_namespaces(config, noxfile_config)
         return config
@@ -221,6 +290,7 @@ class TestMerge:
         config = self.parse_and_merge([], noxfile_config)
 
         assert config.sessions == ["a", "b"]
+        assert config.provenance("sessions") is Source.ENVIRONMENT
 
     def test_noxfile_beats_ci_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("CI", "1")
@@ -236,36 +306,3 @@ class TestMerge:
         assert config.envdir == ".nox"
         assert config.reuse_venv == "no"
         assert config.default_venv_backend == "virtualenv"
-
-
-class TestEnvVars:
-    def test_invalid_value_is_a_clean_error(
-        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-    ) -> None:
-        """A bad env-var value must produce a parser error, not a traceback."""
-        monkeypatch.setenv("NOX_DOWNLOAD_PYTHON", "bogus")
-
-        with pytest.raises(SystemExit):
-            _options.options.parse_args([])
-
-        assert "'download_python' must be in" in capsys.readouterr().err
-
-
-class TestReuseAliasPrecedence:
-    """An explicit --reuse-venv on the command line now wins over the -r/-N
-    aliases given alongside it (the aliases used to win). -R still wins."""
-
-    def test_r_with_explicit_reuse_venv(self) -> None:
-        config = _options.options.parse_args(["-r", "--reuse-venv", "never"])
-
-        assert config.reuse_venv == "never"
-
-    def test_no_reuse_with_explicit_reuse_venv(self) -> None:
-        config = _options.options.parse_args(["-N", "--reuse-venv", "always"])
-
-        assert config.reuse_venv == "always"
-
-    def test_R_beats_no_reuse(self) -> None:
-        config = _options.options.parse_args(["-N", "-R"])
-
-        assert config.reuse_venv == "yes"

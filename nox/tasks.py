@@ -47,7 +47,8 @@ from nox.sessions import Result, Status, _duration_str
 
 if TYPE_CHECKING:
     import types
-    from argparse import Namespace
+
+    from nox._options import NoxConfig
 
 __all__ = [
     "create_report",
@@ -66,7 +67,7 @@ def __dir__() -> list[str]:
     return __all__
 
 
-def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
+def _load_and_exec_nox_module(global_config: NoxConfig) -> types.ModuleType:
     """
     Loads, executes, then returns the global_config Nox module.
 
@@ -98,7 +99,7 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
     return module
 
 
-def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
+def load_nox_module(global_config: NoxConfig) -> types.ModuleType | int:
     """Load the user's Noxfile and return the module object for it.
 
     .. note::
@@ -121,9 +122,8 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     # Save the absolute path to the Noxfile.
     # This will inoculate it if Nox changes paths because of an implicit
     # or explicit chdir (like the one below).
-    # Keeps the class of the original string
-    global_config.noxfile = global_config.noxfile.__class__(
-        os.path.join(noxfile_parent_dir, os.path.basename(global_config_noxfile))
+    global_config.noxfile = os.path.join(
+        noxfile_parent_dir, os.path.basename(global_config_noxfile)
     )
 
     try:
@@ -153,7 +153,7 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
 
 
 def merge_noxfile_options(
-    module: types.ModuleType, global_config: Namespace
+    module: types.ModuleType, global_config: NoxConfig
 ) -> types.ModuleType:
     """Merges any modifications made to ``nox.options`` by the Noxfile module
     into global_config.
@@ -167,7 +167,7 @@ def merge_noxfile_options(
 
 
 def discover_manifest(
-    module: types.ModuleType | int, global_config: Namespace
+    module: types.ModuleType | int, global_config: NoxConfig
 ) -> Manifest:
     """Discover all session functions in the Noxfile module.
 
@@ -190,7 +190,7 @@ def discover_manifest(
     return Manifest(functions, global_config, module_docstring)
 
 
-def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | int:
+def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | int:
     """Filter the manifest according to the provided configuration.
 
     Args:
@@ -272,7 +272,7 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
     return manifest
 
 
-def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
+def _produce_listing(manifest: Manifest, global_config: NoxConfig) -> None:
     # If the user just asked for a list of sessions, print that
     # and any docstring specified in noxfile.py and be done. This
     # can also be called if Noxfile sessions is an empty list.
@@ -306,7 +306,7 @@ def _produce_listing(manifest: Manifest, global_config: Namespace) -> None:
     )
 
 
-def _produce_json_listing(manifest: Manifest, global_config: Namespace) -> None:  # noqa: ARG001
+def _produce_json_listing(manifest: Manifest, global_config: NoxConfig) -> None:  # noqa: ARG001
     report = []
     for session, selected in manifest.list_all_sessions():
         if selected:
@@ -323,7 +323,7 @@ def _produce_json_listing(manifest: Manifest, global_config: Namespace) -> None:
     print(json.dumps(report, default=str))
 
 
-def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest | int:
+def honor_list_request(manifest: Manifest, global_config: NoxConfig) -> Manifest | int:
     """If --list was passed, simply list the manifest and exit cleanly.
 
     Args:
@@ -350,7 +350,7 @@ def honor_list_request(manifest: Manifest, global_config: Namespace) -> Manifest
     return 0
 
 
-def honor_usage_request(manifest: Manifest, global_config: Namespace) -> Manifest | int:
+def honor_usage_request(manifest: Manifest, global_config: NoxConfig) -> Manifest | int:
     """If --usage was passed, print the full docstring of the session and exit.
     Raise an error if the session does not exist or has no docstring to print.
 
@@ -388,7 +388,7 @@ def honor_usage_request(manifest: Manifest, global_config: Namespace) -> Manifes
     return 0
 
 
-def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
+def run_manifest(manifest: Manifest, global_config: NoxConfig) -> list[Result]:
     """Run the full manifest of sessions.
 
     Args:
@@ -434,7 +434,7 @@ Sequence_Results_T = TypeVar("Sequence_Results_T", bound=Sequence[Result])
 
 def print_summary(
     results: Sequence_Results_T,
-    global_config: Namespace,  # noqa: ARG001
+    global_config: NoxConfig,  # noqa: ARG001
 ) -> Sequence_Results_T:
     """Print a summary of the results.
 
@@ -469,7 +469,7 @@ def print_summary(
 
 
 def create_report(
-    results: Sequence_Results_T, global_config: Namespace
+    results: Sequence_Results_T, global_config: NoxConfig
 ) -> Sequence_Results_T:
     """Write a report to the location designated in the config, if any.
 
@@ -500,7 +500,7 @@ def create_report(
     return results
 
 
-def final_reduce(results: list[Result], global_config: Namespace) -> int:  # noqa: ARG001
+def final_reduce(results: list[Result], global_config: NoxConfig) -> int:  # noqa: ARG001
     """Reduce the results to a final exit code.
 
     Args:

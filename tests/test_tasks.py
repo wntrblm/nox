@@ -193,7 +193,7 @@ def test_discover_session_functions_decorator() -> None:
             __name__=foo.__module__, foo=foo, bar=bar, notasession=notasession
         ),
     )
-    config = _options.options.namespace(sessions=(), keywords=(), posargs=[])
+    config = _options.options.namespace(sessions=(), keywords=None, posargs=[])
 
     # Get the manifest and establish that it looks like what we expect.
     manifest = tasks.discover_manifest(mock_module, config)
@@ -204,7 +204,7 @@ def test_discover_session_functions_decorator() -> None:
 
 def test_filter_manifest() -> None:
     config = _options.options.namespace(
-        sessions=None, pythons=(), keywords=(), posargs=[]
+        sessions=None, pythons=(), keywords=None, posargs=[]
     )
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
@@ -214,7 +214,7 @@ def test_filter_manifest() -> None:
 
 def test_filter_manifest_not_found() -> None:
     config = _options.options.namespace(
-        sessions=("baz",), pythons=(), keywords=(), posargs=[]
+        sessions=("baz",), pythons=(), keywords=None, posargs=[]
     )
     manifest = Manifest({"foo": session_func, "bar": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
@@ -223,7 +223,7 @@ def test_filter_manifest_not_found() -> None:
 
 def test_filter_manifest_pythons() -> None:
     config = _options.options.namespace(
-        sessions=None, pythons=("3.8",), keywords=(), posargs=[]
+        sessions=None, pythons=("3.8",), keywords=None, posargs=[]
     )
     manifest = Manifest(
         {"foo": session_func_with_python, "bar": session_func, "baz": session_func},
@@ -236,7 +236,7 @@ def test_filter_manifest_pythons() -> None:
 
 def test_filter_manifest_pythons_not_found(caplog: pytest.LogCaptureFixture) -> None:
     config = _options.options.namespace(
-        sessions=None, pythons=("1.2",), keywords=(), posargs=[]
+        sessions=None, pythons=("1.2",), keywords=None, posargs=[]
     )
     manifest = Manifest(
         {"foo": session_func_with_python, "bar": session_func, "baz": session_func},
@@ -599,21 +599,21 @@ def test_empty_session_None_in_noxfile() -> None:
 
 
 def test_verify_manifest_empty() -> None:
-    config = _options.options.namespace(sessions=(), keywords=())
+    config = _options.options.namespace(sessions=(), keywords=None)
     manifest = Manifest({}, config)
     return_value = tasks.filter_manifest(manifest, global_config=config)
     assert return_value == 3
 
 
 def test_verify_manifest_nonempty() -> None:
-    config = _options.options.namespace(sessions=None, keywords=(), posargs=[])
+    config = _options.options.namespace(sessions=None, keywords=None, posargs=[])
     manifest = Manifest({"session": session_func}, config)
     return_value = tasks.filter_manifest(manifest, global_config=config)
     assert return_value == manifest
 
 
 def test_verify_manifest_list(capsys: pytest.CaptureFixture[builtins.str]) -> None:
-    config = _options.options.namespace(sessions=(), keywords=(), posargs=[])
+    config = _options.options.namespace(sessions=(), keywords=None, posargs=[])
     manifest = Manifest({"session": session_func}, config)
     return_value = tasks.filter_manifest(manifest, global_config=config)
     assert return_value == 0
@@ -690,7 +690,7 @@ def test_run_manifest_abort_on_first_failure() -> None:
 def test_print_summary_one_result() -> None:
     results = [mock.sentinel.RESULT]
     with mock.patch("nox.tasks.logger", autospec=True) as logger:
-        answer = tasks.print_summary(results, argparse.Namespace())
+        answer = tasks.print_summary(results, _options.options.namespace())
         assert not logger.warning.called
         assert not logger.success.called
         assert not logger.error.called
@@ -731,7 +731,7 @@ def test_print_summary() -> None:
             ),
         ]
 
-        answer = tasks.print_summary(results, argparse.Namespace())
+        answer = tasks.print_summary(results, _options.options.namespace())
 
         assert mock_log.call_count == 4
         calls = mock_log.call_args_list
@@ -854,7 +854,7 @@ def test_honor_usage_request_session_not_found() -> None:
 
 
 def test_final_reduce() -> None:
-    config = argparse.Namespace()
+    config = _options.options.namespace()
     true = typing.cast("sessions.Result", True)  # noqa: FBT003
     false = typing.cast("sessions.Result", False)  # noqa: FBT003
     assert tasks.final_reduce([true, true], config) == 0
