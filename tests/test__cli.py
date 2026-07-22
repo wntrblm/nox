@@ -155,6 +155,12 @@ def test_venv_python_version(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(shutil, "which", lambda _cmd, **_kwargs: None)
     assert nox._cli._venv_python_version(fake_venv) is None  # type: ignore[arg-type]
 
+    monkeypatch.setattr(shutil, "which", lambda _cmd, **_kwargs: sys.executable)
+    monkeypatch.setattr(
+        subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=1)
+    )
+    assert nox._cli._venv_python_version(fake_venv) is None  # type: ignore[arg-type]
+
 
 def test_invalid_mode(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NOX_SCRIPT_MODE", "invalid")
@@ -549,10 +555,19 @@ def test_run_script_mode_interpreter_not_found(
         )
 
 
-def test_run_script_mode_none_backend_mismatch(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+@pytest.mark.parametrize(
+    ("requires_python", "satisfied"),
+    [(">=4.0", False), (">=3.9", True)],
+    ids=["mismatch", "satisfied"],
+)
+def test_run_script_mode_none_backend(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    requires_python: str,
+    satisfied: bool,
 ) -> None:
-    """The "none" backend can't switch interpreters, so a mismatch is an error."""
+    """The "none" backend can't switch interpreters: a mismatch is an error,
+    a satisfied spec runs in the current environment."""
     fake_venv = SimpleNamespace(
         venv_backend="none",
         is_sandboxed=False,
@@ -563,8 +578,18 @@ def test_run_script_mode_none_backend_mismatch(
     monkeypatch.setattr(
         nox.virtualenv, "get_virtualenv", lambda *_args, **_kwargs: fake_venv
     )
+    monkeypatch.setattr(
+        subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(returncode=0)
+    )
+    monkeypatch.setattr(shutil, "which", lambda cmd, path=None: f"{path}/{cmd}")
 
-    with pytest.raises(SystemExit, match="requires-python"):
+    def fake_execle(_path: str, *_args: object) -> typing.NoReturn:
+        raise SystemExit(0)
+
+    monkeypatch.setattr(os, "execle", fake_execle)
+    monkeypatch.setattr(sys, "argv", ["nox"])
+
+    with pytest.raises(SystemExit) as excinfo:
         nox._cli.run_script_mode(
             "noxfile.py",
             tmp_path,
@@ -572,8 +597,13 @@ def test_run_script_mode_none_backend_mismatch(
             dependencies=["nox"],
             venv_backend="none",
             download_python="auto",
-            requires_python=">=4.0",
+            requires_python=requires_python,
         )
+
+    if satisfied:
+        assert excinfo.value.code == 0
+    else:
+        assert "requires-python" in str(excinfo.value)
 
 
 def test_dependencies_with_version(monkeypatch: pytest.MonkeyPatch) -> None:
