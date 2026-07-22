@@ -319,6 +319,65 @@ By default Nox will continue to run all sessions even if one fails. You can use 
 If the Noxfile sets ``nox.options.stop_on_first_error``, you can override the Noxfile setting from the command line by using ``--no-stop-on-first-error``.
 
 
+.. _opt-parallel:
+
+Running sessions in parallel
+----------------------------
+
+By default Nox runs sessions one at a time. Use ``-j`` / ``--parallel`` to run
+independent sessions concurrently, each in its own subprocess::
+
+    nox --parallel auto   # one session per CPU
+    nox -j 4              # at most four sessions at once
+
+The value is a positive integer or ``auto`` (the number of CPUs). The default
+is ``1`` (sequential). The environment variable ``NOX_PARALLEL`` and
+``nox.options.parallel`` in the Noxfile are also honored.
+
+Parallel execution is opt-in per session: only sessions declared with
+``allow_parallel=True`` may run at the same time::
+
+    @nox.session(allow_parallel=True)
+    def tests(session):
+        ...
+
+Sessions that don't opt in still run under ``--parallel``, but not in parallel.
+They start only once nothing else is running, and nothing starts alongside
+them. If no selected session opts in, Nox warns and runs sequentially as usual.
+
+.. _opt-allow-parallel:
+
+You can also flip the default with ``--allow-parallel`` (or
+``nox.options.allow_parallel = True`` in the Noxfile): every session then runs
+concurrently unless it opts out with ``allow_parallel=False``. A session's own
+``allow_parallel=`` value always wins over the global default, and
+``--no-allow-parallel`` on the command line overrides the Noxfile setting.
+This makes it easy to try ``--parallel`` on a Noxfile that hasn't declared
+anything yet::
+
+    nox --parallel auto --allow-parallel
+
+Sessions are scheduled according to their dependencies: a session declared with
+``requires=`` does not start until all of its prerequisites have completed
+successfully, and is reported as ``aborted`` (and never started) if any
+prerequisite fails. ``--stop-on-first-error`` stops launching new sessions after
+the first failure; sessions already running are allowed to finish, and their
+results still appear in the summary and in any ``--report`` file.
+
+Each session's output is buffered and printed as a single block when that
+session finishes, so output from concurrent sessions never interleaves. On an
+interactive terminal a live status board shows which sessions are currently
+running.
+
+.. note::
+
+    Because each session runs in its own subprocess that reads only from a pipe,
+    sessions cannot prompt for input under ``--parallel`` (``session.interactive``
+    is ``False``). Dynamic session scheduling via ``session.notify`` is not
+    supported in parallel mode and raises an error; use ``requires=`` to order
+    sessions instead.
+
+
 .. _opt-error-on-missing-interpreters:
 
 Failing sessions when the interpreter is missing

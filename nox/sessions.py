@@ -969,7 +969,20 @@ class Session:
                 arguments *only* for the queued session. Otherwise, the
                 standard globally available positional arguments will be
                 used instead.
+
+        Raises:
+            ValueError: If called under ``--no-dependencies`` (which includes
+                every session run by ``--parallel``): the notified session
+                would run here *in addition to* anywhere else it is scheduled,
+                racing on its virtualenv. Use ``requires=`` instead.
         """
+        if self._runner.global_config.no_dependencies:
+            msg = (
+                "session.notify() is not supported with --no-dependencies (which"
+                " --parallel uses to run each session); declare the ordering with"
+                " requires= instead."
+            )
+            raise ValueError(msg)
         if posargs is not None:
             posargs = list(posargs)
         self._runner.manifest.notify(target, posargs)
@@ -1171,17 +1184,14 @@ class SessionRunner:
     def execute(self) -> Result:
         logger.session_info(f"Running session {self.friendly_name}")
 
-        for dependency in self.get_direct_dependencies():
+        # With --no-dependencies, prerequisites aren't queued (and may not have
+        # run in this process), so skip the dependency-result check entirely.
+        dependencies = (
+            [] if self.global_config.no_dependencies else self.get_direct_dependencies()
+        )
+        for dependency in dependencies:
             if not dependency.result:
-                self.result = Result(
-                    self,
-                    Status.ABORTED,
-                    reason=(
-                        f"Prerequisite session {dependency.friendly_name} was not"
-                        " successful"
-                    ),
-                    duration=0,
-                )
+                self.result = Result.aborted_prerequisite(self, dependency)
                 return self.result
 
         start = time.perf_counter()
@@ -1290,6 +1300,20 @@ class Result:
     def __bool__(self) -> bool:
         return self.status.value > 0
 
+    @classmethod
+    def aborted_prerequisite(
+        cls, session: SessionRunner, dependency: SessionRunner
+    ) -> Result:
+        """Return the result for a session whose prerequisite did not succeed."""
+        return cls(
+            session,
+            Status.ABORTED,
+            reason=(
+                f"Prerequisite session {dependency.friendly_name} was not successful"
+            ),
+            duration=0,
+        )
+
     @property
     def imperfect(self) -> str:
         """Return the English imperfect tense for the status.
@@ -1333,6 +1357,17 @@ class Result:
             "name": self.session.name,
             "result": self.status.name.lower(),
             "result_code": self.status.value,
+            "reason": self.reason,
             "signatures": self.session.signatures,
             "duration": self.duration,
         }
+
+    @classmethod
+    def from_dict(cls, session: SessionRunner, entry: dict[str, Any]) -> Result:
+        """Rebuild a result from a :meth:`serialize` entry."""
+        return cls(
+            session,
+            Status[entry["result"].upper()],
+            entry.get("reason"),
+            duration=entry.get("duration", 0.0),
+        )

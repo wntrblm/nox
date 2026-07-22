@@ -60,6 +60,7 @@ av_bool = av.instance_of(bool)
 
 @attrs.define(slots=True, kw_only=True)
 class NoxOptions:
+    allow_parallel: bool = attrs.field(validator=av_bool)
     default_venv_backend: None | str = attrs.field(validator=av_opt_str)
     download_python: None | Literal["auto", "never", "always"] = attrs.field(
         default=None, validator=av.optional(av.in_(["auto", "never", "always"]))
@@ -69,6 +70,9 @@ class NoxOptions:
     error_on_missing_interpreters: bool = attrs.field(validator=av_bool)
     force_venv_backend: None | str = attrs.field(validator=av_opt_str)
     keywords: None | str = attrs.field(validator=av_opt_str)
+    parallel: None | int | str = attrs.field(
+        default=None, validator=av.optional(av.instance_of((int, str)))
+    )
     pythons: None | Sequence[str] = attrs.field(validator=av_opt_list_str)
     report: None | str = attrs.field(validator=av_opt_str)
     reuse_existing_virtualenvs: bool = attrs.field(validator=av_bool)
@@ -139,7 +143,12 @@ class Option:
         merge_func: Callable[[Namespace, NoxOptions], Any] | None = None,
         finalizer_func: Callable[[Any, Namespace], Any] | None = None,
         default: (
-            bool | str | None | list[str] | Callable[[], bool | str | None | list[str]]
+            bool
+            | str
+            | int
+            | None
+            | list[str]
+            | Callable[[], bool | str | int | None | list[str]]
         ) = None,
         hidden: bool = False,
         completer: Callable[..., Iterable[str]] | None = None,
@@ -158,7 +167,7 @@ class Option:
         self._default = default
 
     @property
-    def default(self) -> bool | str | None | list[str]:
+    def default(self) -> bool | str | int | None | list[str]:
         if callable(self._default):
             return self._default()
         return self._default

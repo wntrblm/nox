@@ -208,6 +208,57 @@ def default_env_var_list_factory(env_var: str) -> Callable[[], list[str] | None]
     return _default_list
 
 
+def parse_parallel(value: str | int) -> int:
+    """Resolve a ``--parallel`` value to a positive integer.
+
+    Accepts a positive integer (or its string form) or ``"auto"`` (the CPU
+    count). Used for command-line, ``NOX_PARALLEL``, and Noxfile-set values.
+
+    Raises:
+        ValueError: If the value is not ``"auto"`` or a positive integer.
+    """
+    if isinstance(value, str) and value.strip().lower() == "auto":
+        return os.cpu_count() or 1
+    try:
+        jobs = int(value)
+    except (TypeError, ValueError):
+        msg = (
+            f"invalid parallel value {value!r} (expected a positive integer or 'auto')"
+        )
+        raise ValueError(msg) from None
+    if jobs < 1:
+        msg = f"parallel value must be >= 1, got {jobs}"
+        raise ValueError(msg)
+    return jobs
+
+
+def _parallel_arg(value: str) -> int:
+    """``argparse`` type for ``--parallel`` that reports errors nicely."""
+    try:
+        return parse_parallel(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from None
+
+
+def _parallel_env_default() -> int | None:
+    """Read ``NOX_PARALLEL``, warning about (not failing on) a bad value.
+
+    argparse applies the option's ``type`` to string defaults on every parse,
+    so an invalid value returned here would break unrelated invocations
+    (``nox -l``, ``nox --version``, ...); warn and ignore it instead.
+    """
+    value = os.environ.get("NOX_PARALLEL")
+    if not value:
+        return None
+    try:
+        return parse_parallel(value)
+    except ValueError as exc:
+        from nox.logger import logger  # noqa: PLC0415  # only needed on a bad value
+
+        logger.warning(f"Ignoring NOX_PARALLEL: {exc}")
+        return None
+
+
 def _color_finalizer(_value: bool, args: argparse.Namespace) -> bool:  # noqa: FBT001
     """Figures out the correct value for "color" based on the two color flags.
 
@@ -616,6 +667,48 @@ options.add_options(
         ),
     ),
     _option_set.Option(
+        "parallel",
+        "-j",
+        "--parallel",
+        group=options.groups["execution"],
+        noxfile=True,
+        type=_parallel_arg,
+        default=_parallel_env_default,
+        metavar="N",
+        help=(
+            "Run independent sessions in parallel, each in its own subprocess."
+            " Pass a positive integer or ``'auto'`` (one per CPU). Only"
+            " sessions that allow parallel execution (``allow_parallel=True``"
+            " or ``--allow-parallel``) run concurrently; other sessions run"
+            " one at a time. Sessions are ordered by their ``requires=``"
+            " dependencies; their output is buffered and printed as each"
+            " session finishes. Default is 1 (sequential). Environment"
+            " variable: NOX_PARALLEL"
+        ),
+    ),
+    *_option_set.make_flag_pair(
+        "allow_parallel",
+        ("--allow-parallel",),
+        ("--no-allow-parallel",),
+        group=options.groups["execution"],
+        help=(
+            "Allow every session to run concurrently under ``--parallel``"
+            " unless it sets ``allow_parallel`` itself; a session's own"
+            " ``allow_parallel=`` value always wins."
+        ),
+    ),
+    _option_set.Option(
+        "no_dependencies",
+        "--no-dependencies",
+        group=options.groups["execution"],
+        action="store_true",
+        help=(
+            "Run only the explicitly selected sessions, skipping any sessions"
+            " they ``require``. Assumes prerequisites have already run; mainly"
+            " used internally by ``--parallel``."
+        ),
+    ),
+    _option_set.Option(
         "install_only",
         "--install-only",
         group=options.groups["execution"],
@@ -687,6 +780,13 @@ options.add_options(
         group=None,
         hidden=True,
         default=os.getcwd,
+    ),
+    # Wall-clock duration of a parallel run, recorded by the parallel runner
+    # so the summary reports elapsed time, not the sum of session durations.
+    _option_set.Option(
+        "parallel_wall_time",
+        group=None,
+        hidden=True,
     ),
 )
 

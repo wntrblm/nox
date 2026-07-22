@@ -564,6 +564,8 @@ The following options can be specified in the Noxfile:
 * ``nox.options.error_on_missing_interpreters`` is equivalent to specifying :ref:`--error-on-missing-interpreters <opt-error-on-missing-interpreters>`. You can force this off by specifying ``--no-error-on-missing-interpreters`` during invocation.
 * ``nox.options.error_on_external_run`` is equivalent to specifying :ref:`--error-on-external-run <opt-error-on-external-run>`. You can force this off by specifying ``--no-error-on-external-run`` during invocation.
 * ``nox.options.download_python`` is equivalent to specifying ``--download-python``.
+* ``nox.options.parallel`` is equivalent to specifying :ref:`-j or --parallel <opt-parallel>`.
+* ``nox.options.allow_parallel`` is equivalent to specifying :ref:`--allow-parallel <opt-allow-parallel>`. You can force this off by specifying ``--no-allow-parallel`` during invocation.
 * ``nox.options.report`` is equivalent to specifying :ref:`--report <opt-report>`.
 * ``nox.options.verbose`` is equivalent to specifying :ref:`-v or --verbose <opt-verbose>`. You can force this off by specifying ``--no-verbose`` during invocation.
 

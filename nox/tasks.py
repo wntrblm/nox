@@ -260,9 +260,17 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
         logger.error("No sessions selected after filtering by keyword.")
         return 3
 
-    # Add dependencies.
+    # Add dependencies, unless --no-dependencies limits the run to only the
+    # explicitly selected sessions (as the parallel runner's children do).
+    # Even then, a ``requires=`` entry naming a session that doesn't exist is
+    # still an error, the prerequisites just aren't queued.
     try:
-        manifest.add_dependencies()
+        if global_config.no_dependencies:
+            for session, selected in manifest.list_all_sessions():
+                if selected:
+                    list(session.get_direct_dependencies())
+        else:
+            manifest.add_dependencies()
     except (KeyError, CycleError) as exc:
         logger.error("Error while resolving session dependencies.")
         logger.error(exc.args[0])
@@ -388,7 +396,7 @@ def honor_usage_request(manifest: Manifest, global_config: Namespace) -> Manifes
     return 0
 
 
-def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
+def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result] | int:
     """Run the full manifest of sessions.
 
     Args:
@@ -397,8 +405,41 @@ def run_manifest(manifest: Manifest, global_config: Namespace) -> list[Result]:
 
     Returns:
         tuple[~nox.sessions.Session,~.SessionStatus]: A two-tuple of the
-            sessions and the result of each session that was run.
+            sessions and the result of each session that was run, or an exit
+            code on an invalid ``--parallel`` configuration.
     """
+    # When --parallel/-j requests more than one job, hand off to the parallel
+    # scheduler, which runs independent sessions in their own subprocesses.
+    # The value may still be an unparsed string when set via the Noxfile
+    # (only command-line and NOX_PARALLEL values are parsed by argparse).
+    raw_parallel = global_config.parallel
+    try:
+        jobs = _options.parse_parallel(raw_parallel) if raw_parallel is not None else 1
+    except ValueError as exc:
+        logger.error(f"Invalid nox.options.parallel value: {exc}")
+        return 3
+    # A session's own allow_parallel= wins; unset sessions fall back to the
+    # global --allow-parallel / nox.options.allow_parallel default.
+    default_parallel = bool(global_config.allow_parallel)
+    if jobs > 1 and not any(
+        default_parallel
+        if session.func.allow_parallel is None
+        else session.func.allow_parallel
+        for session, selected in manifest.list_all_sessions()
+        if selected
+    ):
+        logger.warning(
+            "No selected session allows parallel execution; ignoring --parallel"
+            " and running sequentially. Opt in with allow_parallel=True or"
+            " --allow-parallel."
+        )
+        jobs = 1
+    if jobs > 1:
+        # Imported lazily so sequential runs don't pay for the parallel machinery.
+        from nox._parallel import run_manifest_parallel  # noqa: PLC0415
+
+        return run_manifest_parallel(manifest, global_config, jobs)
+
     results = []
 
     # Iterate over each session in the manifest, and execute it.
@@ -434,7 +475,7 @@ Sequence_Results_T = TypeVar("Sequence_Results_T", bound=Sequence[Result])
 
 def print_summary(
     results: Sequence_Results_T,
-    global_config: Namespace,  # noqa: ARG001
+    global_config: Namespace,
 ) -> Sequence_Results_T:
     """Print a summary of the results.
 
@@ -451,8 +492,11 @@ def print_summary(
         return results
 
     # Iterate over the results and print the result for each in a
-    # human-readable way.
-    total_duration = sum(result.duration for result in results)
+    # human-readable way. In parallel mode the runner records the wall-clock
+    # time; otherwise sum the per-session durations (which run back-to-back).
+    total_duration = global_config.parallel_wall_time
+    if total_duration is None:
+        total_duration = sum(result.duration for result in results)
     duration_str = _duration_str(total_duration, " in {time}")
     logger.session_info(f"Ran {len(results)} sessions{duration_str}:")
     for result in results:
