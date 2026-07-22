@@ -28,6 +28,7 @@ __lazy_modules__ = {
     "nox.virtualenv",
     "packaging",
     "packaging.requirements",
+    "packaging.specifiers",
     "packaging.utils",
     "pathlib",
     "shutil",
@@ -46,6 +47,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, NoReturn, cast
 
 import packaging.requirements
+import packaging.specifiers
 import packaging.utils
 
 import nox.command
@@ -157,6 +159,46 @@ def check_dependencies(dependencies: list[str]) -> bool:
     return True
 
 
+def check_requires_python(requires_python: str | None, version: str) -> bool:
+    """
+    Checks a Python version like ``"3.12.1"`` against a ``requires-python``
+    specifier set. True if no specifier is given.
+    """
+    if not requires_python:
+        return True
+    try:
+        specifiers = packaging.specifiers.SpecifierSet(requires_python)
+    except packaging.specifiers.InvalidSpecifier as err:
+        msg = f'Invalid "requires-python": {requires_python!r} ({err})'
+        raise SystemExit(msg) from err
+    # prereleases=True so a prerelease interpreter still matches plain specs
+    # like ">=3.9"; PEP 440 ordering (beta < final) still applies.
+    return specifiers.contains(version, prereleases=True)
+
+
+def _format_python_version(version_info: tuple[int, int, int, str, int]) -> str:
+    # For the running interpreter, pass sys.version_info[:5] rather than
+    # platform.python_version(), which can produce unparsable values like
+    # "3.13.0+" on dev builds.
+    major, minor, micro, releaselevel, serial = version_info
+    pre = {"alpha": "a", "beta": "b", "candidate": "rc"}.get(releaselevel, "")
+    suffix = f"{pre}{serial}" if pre else ""
+    return f"{major}.{minor}.{micro}{suffix}"
+
+
+def _venv_python_version(venv: nox.virtualenv.ProcessEnv) -> str | None:
+    """The environment's Python version as PEP 440, or None if it can't run."""
+    python_cmd = shutil.which("python", path=venv._get_env({}).get("PATH"))
+    if python_cmd is None:
+        return None
+    from python_discovery import PythonInfo  # noqa: PLC0415
+
+    info = PythonInfo.from_exe(python_cmd, raise_on_error=False)
+    if info is None:
+        return None
+    return _format_python_version(info.version_info)
+
+
 def check_url_dependency(dep_url: str, dist: importlib.metadata.Distribution) -> bool:
     """
     Check to see if a url matches an installed distribution object. Returns false if
@@ -189,6 +231,31 @@ def get_main_filename() -> str | None:
     return None
 
 
+def _make_env(
+    noxenv: Path,
+    *,
+    reuse_existing: bool,
+    venv_backend: str,
+    download_python: Literal["auto", "never", "always"],
+    requires_python: str | None,
+) -> nox.virtualenv.ProcessEnv:
+    # python-discovery takes specifier sets like ">=3.10" directly, and
+    # prefers the running interpreter when it qualifies.
+    venv = nox.virtualenv.get_virtualenv(
+        *venv_backend.split("|"),
+        download_python=download_python,
+        reuse_existing=reuse_existing,
+        envdir=str(noxenv),
+        interpreter=requires_python,
+    )
+    try:
+        venv.create()
+    except nox.virtualenv.InterpreterNotFound as err:
+        msg = f'No Python satisfies "requires-python": {requires_python!r}'
+        raise SystemExit(msg) from err
+    return venv
+
+
 def run_script_mode(
     noxfile: str,
     envdir: Path,
@@ -197,16 +264,47 @@ def run_script_mode(
     dependencies: list[str],
     venv_backend: str,
     download_python: Literal["auto", "never", "always"],
+    requires_python: str | None,
 ) -> NoReturn:
     envdir.mkdir(exist_ok=True)
     noxenv = envdir.joinpath("_nox_script_mode")
-    venv = nox.virtualenv.get_virtualenv(
-        *venv_backend.split("|"),
-        download_python=download_python,
+
+    venv = _make_env(
+        noxenv,
         reuse_existing=reuse,
-        envdir=str(noxenv),
+        venv_backend=venv_backend,
+        download_python=download_python,
+        requires_python=requires_python,
     )
-    venv.create()
+    if requires_python:
+        if not venv.is_sandboxed:
+            version = _format_python_version(sys.version_info[:5])
+            if not check_requires_python(requires_python, version):
+                msg = (
+                    f'Python {version} does not satisfy "requires-python":'
+                    f' {requires_python!r}, and the "none" script backend cannot'
+                    " switch interpreters"
+                )
+                raise SystemExit(msg)
+        elif venv._reused:
+            # A reused environment may predate a requires-python change; its
+            # interpreter spec is not resolved on the reuse path.
+            env_version = _venv_python_version(venv)
+            if env_version is None or not check_requires_python(
+                requires_python, env_version
+            ):
+                logger.info(
+                    "Recreating script environment: its Python"
+                    f" ({env_version or 'unknown'}) does not satisfy"
+                    f' "requires-python": {requires_python!r}'
+                )
+                venv = _make_env(
+                    noxenv,
+                    reuse_existing=False,
+                    venv_backend=venv_backend,
+                    download_python=download_python,
+                    requires_python=requires_python,
+                )
     env = {k: v for k, v in venv._get_env({}).items() if v is not None}
     env["NOX_SCRIPT_MODE"] = "none"
     if venv.venv_backend == "uv":
@@ -271,8 +369,16 @@ def _main(*, main_ep: bool) -> None:
         )
         toml_config = load_toml(os.path.expandvars(noxfile), missing_ok=True)
         dependencies = toml_config.get("dependencies")
+        requires_python = toml_config.get("requires-python")
+        if dependencies is None and requires_python is not None:
+            # The script environment always needs nox itself to re-exec.
+            dependencies = ["nox"]
         if dependencies is not None:
-            valid_env = check_dependencies(dependencies)
+            # requires-python first: it raises on an invalid specifier, so it
+            # must not be short-circuited away by a failing dependency check.
+            valid_env = check_requires_python(
+                requires_python, _format_python_version(sys.version_info[:5])
+            ) and check_dependencies(dependencies)
             # Coverage misses this, but it's covered via subprocess call
             if not valid_env:  # pragma: nocover
                 venv_backend = (
@@ -313,6 +419,7 @@ def _main(*, main_ep: bool) -> None:
                     dependencies=dependencies,
                     venv_backend=venv_backend,
                     download_python=download_python,
+                    requires_python=requires_python,
                 )
 
     nox.registry.reset()
