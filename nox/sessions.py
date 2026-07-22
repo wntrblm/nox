@@ -301,8 +301,39 @@ class Session:
         interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
         terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
     ) -> str | bool | None:
-        """
-        Install dependencies and run a Python script.
+        """Install dependencies declared in a `PEP 723`_ script block and run the script.
+
+        Reads the ``/// script`` metadata block, installs the declared
+        ``dependencies`` into the session's virtualenv using :meth:`install`,
+        then runs the script with ``python``. All session state (environment
+        variables, previously installed packages) is inherited.
+
+        Example::
+
+            @nox.session
+            def run(session: nox.Session) -> None:
+                session.install_and_run_script("script.py")
+
+        Where ``script.py`` contains:
+
+        .. code-block:: python
+
+            # /// script
+            # dependencies = ["rich"]
+            # ///
+
+            import rich
+            rich.print("[green]Hello!")
+
+        Additional keyword arguments are the same as for :meth:`run`.
+
+        .. note::
+
+            ``tool.uv.sources`` and other uv-specific configuration in the
+            script block are ignored. Use :meth:`uv_run_script` instead if
+            you need those.
+
+        .. _PEP 723: https://peps.python.org/pep-0723/
         """
         deps = nox.project.load_toml(script).get("dependencies", [])
         self.install(*deps)
@@ -316,6 +347,78 @@ class Session:
             silent=silent,
             success_codes=success_codes,
             external=None,
+            log=log,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
+        )
+
+    def uv_run_script(
+        self,
+        script: str | os.PathLike[str],
+        *args: str | os.PathLike[str],
+        uv_args: Sequence[str] = (),
+        env: Mapping[str, str | None] | None = None,
+        include_outer_env: bool = True,
+        silent: bool = False,
+        success_codes: Iterable[int] | None = None,
+        log: bool = True,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] | None = subprocess.STDOUT,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> str | bool | None:
+        """Run a `PEP 723`_ script using ``uv run``.
+
+        Unlike :meth:`install_and_run_script`, this delegates entirely to
+        ``uv``, which handles dependency resolution, caching, and any
+        uv-specific configuration declared in the script block such as
+        ``tool.uv.sources``, ``tool.uv.index``, and ``tool.uv.exclude-newer``.
+        The script runs outside the session's virtualenv in an environment
+        managed by uv.
+
+        Example::
+
+            @nox.session
+            def run(session: nox.Session) -> None:
+                session.uv_run_script("script.py")
+
+        Pass extra flags to ``uv run`` using ``uv_args``::
+
+            @nox.session
+            def run(session: nox.Session) -> None:
+                session.uv_run_script(
+                    "script.py",
+                    uv_args=["--with", "extra-pkg", "--python", "3.13"],
+                )
+
+        :param uv_args: Extra arguments passed to ``uv run`` before the
+            script path, for example ``["--with", "pkg"]`` or
+            ``["--python", "3.12"]``.
+
+        Additional keyword arguments are the same as for :meth:`run`.
+
+        Raises :exc:`ValueError` if uv is not available. Install it with
+        the ``nox[uv]`` extra or separately.
+
+        .. _PEP 723: https://peps.python.org/pep-0723/
+        """
+        if not nox.virtualenv.HAS_UV:
+            msg = "uv_run_script requires uv to be installed."
+            raise ValueError(msg)
+
+        return self.run(
+            nox.virtualenv.UV,
+            "run",
+            *uv_args,
+            script,
+            *args,
+            env=env,
+            include_outer_env=include_outer_env,
+            silent=silent,
+            success_codes=success_codes,
+            external=True,
             log=log,
             stdout=stdout,
             stderr=stderr,
