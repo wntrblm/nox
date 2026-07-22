@@ -769,6 +769,13 @@ options.add_options(
         hidden=True,
         default=os.getcwd,
     ),
+    # Wall-clock duration of a parallel run, recorded by the parallel runner
+    # so the summary reports elapsed time, not the sum of session durations.
+    _option_set.Option(
+        "parallel_wall_time",
+        group=None,
+        hidden=True,
+    ),
 )
 
 

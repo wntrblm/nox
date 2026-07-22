@@ -225,20 +225,25 @@ def test_filter_manifest_no_dependencies_skips_resolution() -> None:
     assert not add_dependencies.called
 
 
+def _make_session_func(requires: list[str]) -> nox._decorators.Func:
+    def raw() -> None:
+        pass
+
+    func = typing.cast("nox._decorators.Func", raw)
+    func.python = None
+    func.venv_backend = None
+    func.should_warn = {}
+    func.tags = []
+    func.default = True
+    func.requires = requires
+    func.allow_parallel = False
+    return func
+
+
 def test_filter_manifest_no_dependencies_still_validates_requires() -> None:
     # --no-dependencies skips queueing prerequisites, but a requires= entry
     # naming a session that doesn't exist is still an error, not a silent run.
-    def broken_requires_raw() -> None:
-        pass
-
-    broken_requires = typing.cast("nox._decorators.Func", broken_requires_raw)
-    broken_requires.python = None
-    broken_requires.venv_backend = None
-    broken_requires.should_warn = {}
-    broken_requires.tags = []
-    broken_requires.default = True
-    broken_requires.requires = ["no_such_session"]
-    broken_requires.allow_parallel = False
+    broken_requires = _make_session_func(requires=["no_such_session"])
 
     config = _options.options.namespace(
         sessions=None, pythons=(), keywords=(), posargs=[], no_dependencies=True
@@ -250,17 +255,7 @@ def test_filter_manifest_no_dependencies_still_validates_requires() -> None:
 def test_filter_manifest_no_dependencies_ignores_unselected_requires() -> None:
     # Only selected sessions are validated: an unselected session with a bad
     # requires= must not fail a --no-dependencies run.
-    def broken_requires_raw() -> None:
-        pass
-
-    broken_requires = typing.cast("nox._decorators.Func", broken_requires_raw)
-    broken_requires.python = None
-    broken_requires.venv_backend = None
-    broken_requires.should_warn = {}
-    broken_requires.tags = []
-    broken_requires.default = True
-    broken_requires.requires = ["no_such_session"]
-    broken_requires.allow_parallel = False
+    broken_requires = _make_session_func(requires=["no_such_session"])
 
     config = _options.options.namespace(
         sessions=("foo",), pythons=(), keywords=(), posargs=[], no_dependencies=True
@@ -818,7 +813,9 @@ def test_print_summary() -> None:
             ),
         ]
 
-        answer = tasks.print_summary(results, argparse.Namespace())
+        answer = tasks.print_summary(
+            results, argparse.Namespace(parallel_wall_time=None)
+        )
 
         assert mock_log.call_count == 4
         calls = mock_log.call_args_list

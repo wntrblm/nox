@@ -1191,15 +1191,7 @@ class SessionRunner:
         )
         for dependency in dependencies:
             if not dependency.result:
-                self.result = Result(
-                    self,
-                    Status.ABORTED,
-                    reason=(
-                        f"Prerequisite session {dependency.friendly_name} was not"
-                        " successful"
-                    ),
-                    duration=0,
-                )
+                self.result = Result.aborted_prerequisite(self, dependency)
                 return self.result
 
         start = time.perf_counter()
@@ -1308,6 +1300,20 @@ class Result:
     def __bool__(self) -> bool:
         return self.status.value > 0
 
+    @classmethod
+    def aborted_prerequisite(
+        cls, session: SessionRunner, dependency: SessionRunner
+    ) -> Result:
+        """Return the result for a session whose prerequisite did not succeed."""
+        return cls(
+            session,
+            Status.ABORTED,
+            reason=(
+                f"Prerequisite session {dependency.friendly_name} was not successful"
+            ),
+            duration=0,
+        )
+
     @property
     def imperfect(self) -> str:
         """Return the English imperfect tense for the status.
@@ -1355,3 +1361,13 @@ class Result:
             "signatures": self.session.signatures,
             "duration": self.duration,
         }
+
+    @classmethod
+    def from_dict(cls, session: SessionRunner, entry: dict[str, Any]) -> Result:
+        """Rebuild a result from a :meth:`serialize` entry."""
+        return cls(
+            session,
+            Status[entry["result"].upper()],
+            entry.get("reason"),
+            duration=entry.get("duration", 0.0),
+        )

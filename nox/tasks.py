@@ -488,7 +488,7 @@ def print_summary(
     # Iterate over the results and print the result for each in a
     # human-readable way. In parallel mode the runner records the wall-clock
     # time; otherwise sum the per-session durations (which run back-to-back).
-    total_duration = getattr(global_config, "parallel_wall_time", None)
+    total_duration = global_config.parallel_wall_time
     if total_duration is None:
         total_duration = sum(result.duration for result in results)
     duration_str = _duration_str(total_duration, " in {time}")
