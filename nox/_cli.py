@@ -179,7 +179,8 @@ def check_requires_python(requires_python: str | None, version: str) -> bool:
 def _format_python_version(version_info: tuple[int, int, int, str, int]) -> str:
     major, minor, micro, releaselevel, serial = version_info
     pre = {"alpha": "a", "beta": "b", "candidate": "rc"}.get(releaselevel, "")
-    return f"{major}.{minor}.{micro}{pre}{serial if pre else ''}"
+    suffix = f"{pre}{serial}" if pre else ""
+    return f"{major}.{minor}.{micro}{suffix}"
 
 
 def _current_python_version() -> str:
@@ -190,23 +191,15 @@ def _current_python_version() -> str:
 
 def _venv_python_version(venv: nox.virtualenv.ProcessEnv) -> str | None:
     """The environment's Python version as PEP 440, or None if it can't run."""
-    env = {k: v for k, v in venv._get_env({}).items() if v is not None}
-    python_cmd = shutil.which("python", path=env.get("PATH"))
+    python_cmd = shutil.which("python", path=venv._get_env({}).get("PATH"))
     if python_cmd is None:
         return None
-    result = subprocess.run(
-        [python_cmd, "-c", "import sys; print(*sys.version_info)"],
-        capture_output=True,
-        check=False,
-        text=True,
-        encoding="utf-8",
-    )
-    if result.returncode != 0:
+    from python_discovery import PythonInfo  # noqa: PLC0415
+
+    info = PythonInfo.from_exe(python_cmd, raise_on_error=False)
+    if info is None:
         return None
-    major, minor, micro, releaselevel, serial = result.stdout.split()
-    return _format_python_version(
-        (int(major), int(minor), int(micro), releaselevel, int(serial))
-    )
+    return _format_python_version(info.version_info)
 
 
 def check_url_dependency(dep_url: str, dist: importlib.metadata.Distribution) -> bool:
@@ -286,34 +279,35 @@ def run_script_mode(
         download_python=download_python,
         requires_python=requires_python,
     )
-    if requires_python and not venv.is_sandboxed:
-        version = _current_python_version()
-        if not check_requires_python(requires_python, version):
-            msg = (
-                f'Python {version} does not satisfy "requires-python":'
-                f' {requires_python!r}, and the "none" script backend cannot'
-                " switch interpreters"
-            )
-            raise SystemExit(msg)
-    if requires_python and venv._reused and venv.is_sandboxed:
-        # A reused environment may predate a requires-python change; its
-        # interpreter spec is not resolved on the reuse path.
-        env_version = _venv_python_version(venv)
-        if env_version is None or not check_requires_python(
-            requires_python, env_version
-        ):
-            logger.info(
-                "Recreating script environment: its Python"
-                f" ({env_version or 'unknown'}) does not satisfy"
-                f' "requires-python": {requires_python!r}'
-            )
-            venv = _make_env(
-                noxenv,
-                reuse_existing=False,
-                venv_backend=venv_backend,
-                download_python=download_python,
-                requires_python=requires_python,
-            )
+    if requires_python:
+        if not venv.is_sandboxed:
+            version = _current_python_version()
+            if not check_requires_python(requires_python, version):
+                msg = (
+                    f'Python {version} does not satisfy "requires-python":'
+                    f' {requires_python!r}, and the "none" script backend cannot'
+                    " switch interpreters"
+                )
+                raise SystemExit(msg)
+        elif venv._reused:
+            # A reused environment may predate a requires-python change; its
+            # interpreter spec is not resolved on the reuse path.
+            env_version = _venv_python_version(venv)
+            if env_version is None or not check_requires_python(
+                requires_python, env_version
+            ):
+                logger.info(
+                    "Recreating script environment: its Python"
+                    f" ({env_version or 'unknown'}) does not satisfy"
+                    f' "requires-python": {requires_python!r}'
+                )
+                venv = _make_env(
+                    noxenv,
+                    reuse_existing=False,
+                    venv_backend=venv_backend,
+                    download_python=download_python,
+                    requires_python=requires_python,
+                )
     env = {k: v for k, v in venv._get_env({}).items() if v is not None}
     env["NOX_SCRIPT_MODE"] = "none"
     if venv.venv_backend == "uv":
