@@ -263,7 +263,7 @@ def filter_manifest(manifest: Manifest, global_config: Namespace) -> Manifest | 
     # Add dependencies, unless --no-dependencies limits the run to only the
     # explicitly selected sessions (as the parallel runner's children do).
     # Even then, a ``requires=`` entry naming a session that doesn't exist is
-    # still an error — the prerequisites just aren't queued.
+    # still an error, the prerequisites just aren't queued.
     try:
         if global_config.no_dependencies:
             for session, selected in manifest.list_all_sessions():

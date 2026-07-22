@@ -245,7 +245,7 @@ def _parallel_env_default() -> int | None:
 
     argparse applies the option's ``type`` to string defaults on every parse,
     so an invalid value returned here would break unrelated invocations
-    (``nox -l``, ``nox --version``, ...) — warn and ignore it instead.
+    (``nox -l``, ``nox --version``, ...); warn and ignore it instead.
     """
     value = os.environ.get("NOX_PARALLEL")
     if not value:

@@ -271,7 +271,7 @@ def _child_argv(
     """Build the ``nox`` command line that runs a single session in a child.
 
     Every global option that affects how a session executes must be forwarded
-    here, or parallel runs will silently diverge from sequential ones — keep
+    here, or parallel runs will silently diverge from sequential ones. Keep
     this in sync when adding options.
     """
     g = global_config
