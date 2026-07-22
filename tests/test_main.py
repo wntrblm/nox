@@ -997,9 +997,7 @@ def test_main_noxfile_options_with_ci_override(
     if should_set_ci_env_var:
         monkeypatch.setenv("CI", "True")
     # Reload nox.options taking into consideration monkeypatch.{delenv|setenv}
-    monkeypatch.setattr(
-        nox._options, "noxfile_options", nox._options.options.noxfile_namespace()
-    )
+    monkeypatch.setattr(nox._options, "noxfile_options", nox._options.NoxfileOptions())
     monkeypatch.setattr(nox, "options", nox._options.noxfile_options)
 
     if noxfile_option_value is None:
@@ -1097,9 +1095,7 @@ def test_main_noxfile_options_reuse_venv_compat_check(
     cmd_args += ["--noxfile", str(noxfile_path)]
 
     # Reset nox.options
-    monkeypatch.setattr(
-        nox._options, "noxfile_options", nox._options.options.noxfile_namespace()
-    )
+    monkeypatch.setattr(nox._options, "noxfile_options", nox._options.NoxfileOptions())
     monkeypatch.setattr(nox, "options", nox._options.noxfile_options)
 
     # Execute

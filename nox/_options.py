@@ -123,18 +123,6 @@ def _forcecolor_default() -> bool:
     }
 
 
-def _backend_serializer(flag: str) -> Any:
-    """CLI ``choices`` rejects the noxfile-only ``"uv|virtualenv"`` fallback
-    syntax, so such values are skipped; the child re-derives them."""
-
-    def _serialize(value: Any) -> list[str] | None:
-        if value and "|" not in value:
-            return [flag, str(value)]
-        return None
-
-    return _serialize
-
-
 def _serialize_color(value: Any) -> list[str]:
     return ["--forcecolor"] if value else ["--nocolor"]
 
@@ -208,7 +196,6 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--default-venv-backend",
             group="environment",
             env_var="NOX_DEFAULT_VENV_BACKEND",
-            serialize=_backend_serializer("--default-venv-backend"),
             argparse_kwargs={"choices": list(ALL_VENVS)},
             help=(
                 "Virtual environment backend to use by default for Nox sessions, this is"
@@ -272,7 +259,6 @@ class NoxfileOptions(_option_set.OptionsBase):
             "-fb",
             "--force-venv-backend",
             group="environment",
-            serialize=_backend_serializer("--force-venv-backend"),
             argparse_kwargs={"choices": list(ALL_VENVS)},
             help=(
                 "Virtual environment backend to force-use for all Nox sessions in this run,"
@@ -598,7 +584,8 @@ class NoxConfig(NoxfileOptions):
     )
     color: bool = attrs.field(
         default=False,
-        metadata=opt(hidden=True, serialize=_serialize_color),
+        # ALWAYS: the default depends on the parent's tty, so pin it for children.
+        metadata=opt(hidden=True, forward=Forward.ALWAYS, serialize=_serialize_color),
     )
     # The original working directory that Nox was invoked from, since it could
     # be different from the Noxfile's directory.
@@ -634,6 +621,7 @@ def _finalize(config: NoxConfig) -> None:
         config.set_value("extra_pythons", config.force_pythons, source)
 
     if config.R:
+        # -R wins even over an explicit --reuse-venv (long-standing behavior).
         config.set_value("reuse_venv", "yes", Source.COMMAND_LINE)
         config.set_value("reuse_existing_virtualenvs", True, Source.COMMAND_LINE)  # noqa: FBT003
         config.set_value("no_install", True, Source.COMMAND_LINE)  # noqa: FBT003
@@ -695,12 +683,10 @@ def _merge_noxfile_options(config: NoxConfig, noxfile_config: NoxfileOptions) ->
 
 options = _option_set.Options(
     NoxConfig,
-    NoxfileOptions,
     groups=GROUPS,
     description="Nox is a Python automation toolkit.",
     finalize=_finalize,
-    merge=_merge_noxfile_options,
 )
 
-noxfile_options: NoxfileOptions = options.noxfile_namespace()
+noxfile_options: NoxfileOptions = NoxfileOptions()
 """The ``nox.options`` object noxfiles mutate to configure Nox."""
