@@ -507,6 +507,8 @@ class CondaEnv(ProcessEnv):
             * ``X.Y.Z``, e.g. ``3.4.9``
             * ``pythonX.Y``, e.g. ``python2.7``
             * A path in the filesystem to a Python executable
+            * A PEP 440 range, e.g. ``>=3.10``, passed to conda as a
+              version spec
 
             If not specified, this will use the currently running Python.
         reuse_existing (Optional[bool]): Flag indicating if the conda environment
@@ -604,7 +606,14 @@ class CondaEnv(ProcessEnv):
         # Ensure the pip package is installed.
         cmd.append("pip")
 
-        python_dep = f"python={self.interpreter}" if self.interpreter else "python"
+        if self.interpreter:
+            # Conda understands PEP 440 range operators (e.g. a requires-python
+            # spec like ">=3.10,<4") directly; only a bare version needs "=".
+            spec = self.interpreter.replace(" ", "")
+            prefix = "" if spec[0] in "<>!~=" else "="
+            python_dep = f"python{prefix}{spec}"
+        else:
+            python_dep = "python"
         cmd.append(python_dep)
 
         logger.info(
