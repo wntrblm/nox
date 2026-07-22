@@ -708,14 +708,26 @@ def test_run_manifest(with_warnings: builtins.bool) -> None:
         assert result.status == sessions.Status.SUCCESS
 
 
+@pytest.mark.parametrize(
+    ("func_allow_parallel", "global_allow_parallel"),
+    [
+        pytest.param(False, False, id="explicit-false"),
+        pytest.param(None, False, id="unset-without-global"),
+        pytest.param(False, True, id="explicit-false-beats-global"),
+    ],
+)
 def test_run_manifest_sequential_without_allow_parallel(
     monkeypatch: pytest.MonkeyPatch,
+    func_allow_parallel: bool | None,
+    global_allow_parallel: bool,
 ) -> None:
     # --parallel falls back to the ordinary sequential path (with a warning)
-    # when no selected session opts in with allow_parallel=True.
+    # when no selected session allows parallel execution.
     fail_parallel = mock.Mock(side_effect=AssertionError("parallel runner used"))
     monkeypatch.setattr("nox._parallel.run_manifest_parallel", fail_parallel)
-    config = _options.options.namespace(stop_on_first_error=False, parallel=4)
+    config = _options.options.namespace(
+        stop_on_first_error=False, parallel=4, allow_parallel=global_allow_parallel
+    )
     sessions_ = [
         typing.cast("sessions.SessionRunner", mock.Mock(spec=sessions.SessionRunner)),
         typing.cast("sessions.SessionRunner", mock.Mock(spec=sessions.SessionRunner)),
@@ -723,11 +735,12 @@ def test_run_manifest_sequential_without_allow_parallel(
     manifest = Manifest({}, config)
     manifest._queue = copy.copy(sessions_)
     manifest._all_sessions = copy.copy(sessions_)
+    func = argparse.Namespace(should_warn={}, allow_parallel=func_allow_parallel)
     for mock_session in sessions_:
         mock_session.execute.return_value = sessions.Result(  # type: ignore[attr-defined]
             session=mock_session, status=sessions.Status.SUCCESS
         )
-        mock_session.func = session_func  # allow_parallel is False
+        mock_session.func = func  # type: ignore[assignment]
 
     results = tasks.run_manifest(manifest, global_config=config)
 

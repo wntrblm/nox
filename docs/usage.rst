@@ -341,10 +341,21 @@ Parallel execution is opt-in per session: only sessions declared with
     def tests(session):
         ...
 
-Sessions that don't opt in still run under ``--parallel``, but exclusively —
-they start only once nothing else is running, and nothing starts alongside
-them. If no selected session opts in, Nox warns and runs sequentially as
-usual.
+Sessions that don't opt in still run under ``--parallel``, but not in parallel.
+They start only once nothing else is running, and nothing starts alongside
+them. If no selected session opts in, Nox warns and runs sequentially as usual.
+
+.. _opt-allow-parallel:
+
+You can also flip the default with ``--allow-parallel`` (or
+``nox.options.allow_parallel = True`` in the Noxfile): every session then runs
+concurrently unless it opts out with ``allow_parallel=False``. A session's own
+``allow_parallel=`` value always wins over the global default, and
+``--no-allow-parallel`` on the command line overrides the Noxfile setting.
+This makes it easy to try ``--parallel`` on a Noxfile that hasn't declared
+anything yet::
+
+    nox --parallel auto --allow-parallel
 
 Sessions are scheduled according to their dependencies: a session declared with
 ``requires=`` does not start until all of its prerequisites have completed

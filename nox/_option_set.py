@@ -60,6 +60,7 @@ av_bool = av.instance_of(bool)
 
 @attrs.define(slots=True, kw_only=True)
 class NoxOptions:
+    allow_parallel: bool = attrs.field(validator=av_bool)
     default_venv_backend: None | str = attrs.field(validator=av_opt_str)
     download_python: None | Literal["auto", "never", "always"] = attrs.field(
         default=None, validator=av.optional(av.in_(["auto", "never", "always"]))

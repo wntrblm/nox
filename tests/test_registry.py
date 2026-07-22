@@ -76,6 +76,10 @@ def test_session_decorator_tags() -> None:
 
 def test_session_decorator_allow_parallel() -> None:
     @registry.session_decorator
+    def unset(session: nox.Session) -> None:
+        pass
+
+    @registry.session_decorator(allow_parallel=False)
     def serial(session: nox.Session) -> None:
         pass
 
@@ -83,6 +87,8 @@ def test_session_decorator_allow_parallel() -> None:
     def concurrent(session: nox.Session) -> None:
         pass
 
+    # Unset means "use the global --allow-parallel default".
+    assert unset.allow_parallel is None
     assert serial.allow_parallel is False
     assert concurrent.allow_parallel is True
     # Copies (e.g. per-interpreter expansion) keep the flag.

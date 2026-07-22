@@ -678,11 +678,23 @@ options.add_options(
         help=(
             "Run independent sessions in parallel, each in its own subprocess."
             " Pass a positive integer or ``'auto'`` (one per CPU). Only"
-            " sessions declared with ``allow_parallel=True`` run concurrently;"
-            " other sessions run one at a time. Sessions are ordered by their"
-            " ``requires=`` dependencies; their output is buffered and printed"
-            " as each session finishes. Default is 1 (sequential). Environment"
+            " sessions that allow parallel execution (``allow_parallel=True``"
+            " or ``--allow-parallel``) run concurrently; other sessions run"
+            " one at a time. Sessions are ordered by their ``requires=``"
+            " dependencies; their output is buffered and printed as each"
+            " session finishes. Default is 1 (sequential). Environment"
             " variable: NOX_PARALLEL"
+        ),
+    ),
+    *_option_set.make_flag_pair(
+        "allow_parallel",
+        ("--allow-parallel",),
+        ("--no-allow-parallel",),
+        group=options.groups["execution"],
+        help=(
+            "Allow every session to run concurrently under ``--parallel``"
+            " unless it sets ``allow_parallel`` itself; a session's own"
+            " ``allow_parallel=`` value always wins."
         ),
     ),
     _option_set.Option(

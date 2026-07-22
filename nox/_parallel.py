@@ -456,6 +456,17 @@ def run_manifest_parallel(
     # envdir is a nontrivial property (path normalization, possibly a hashing
     # warning); compute it once per session instead of on every scheduling pass.
     envdirs = {session: session.envdir for session in queue}
+    # A session's own allow_parallel= wins; unset sessions fall back to the
+    # global --allow-parallel / nox.options.allow_parallel default.
+    default_parallel = bool(global_config.allow_parallel)
+    allow_parallel = {
+        session: (
+            default_parallel
+            if session.func.allow_parallel is None
+            else session.func.allow_parallel
+        )
+        for session in queue
+    }
 
     results: dict[SessionRunner, Result] = {}
     not_started = list(queue)
@@ -496,13 +507,13 @@ def run_manifest_parallel(
         cascades down the graph. Sessions sharing an envdir (runners with
         duplicated friendly names under ``--force-python``) are never run at
         the same time, as they would build the same virtualenv concurrently.
-        Sessions that haven't opted in with ``allow_parallel=True`` run
-        exclusively: they start only when nothing else is running, and nothing
-        starts alongside them.
+        Sessions that don't allow parallel execution run exclusively: they
+        start only when nothing else is running, and nothing starts alongside
+        them.
         """
         busy_envdirs = {envdirs[running] for running in futures.values()}
         exclusive_running = any(
-            not running.func.allow_parallel for running in futures.values()
+            not allow_parallel[running] for running in futures.values()
         )
         # The fixpoint loop is load-bearing: when a failure cascades while
         # nothing is running, every transitive dependent must be aborted in
@@ -525,12 +536,12 @@ def run_manifest_parallel(
                     len(futures) < jobs
                     and not exclusive_running
                     and envdirs[session] not in busy_envdirs
-                    and (session.func.allow_parallel or not futures)
+                    and (allow_parallel[session] or not futures)
                 ):
                     not_started.remove(session)
                     progressed = True
                     busy_envdirs.add(envdirs[session])
-                    exclusive_running = not session.func.allow_parallel
+                    exclusive_running = not allow_parallel[session]
                     futures[executor.submit(worker, session)] = session
 
     start = time.monotonic()
