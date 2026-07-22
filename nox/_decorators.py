@@ -78,7 +78,7 @@ class Func:
         default: bool = True,
         requires: Sequence[str] | None = None,
         download_python: Literal["auto", "never", "always"] | None = None,
-        allow_parallel: bool = False,
+        allow_parallel: bool | None = None,
     ) -> None:
         self.func = func
         self.python = python

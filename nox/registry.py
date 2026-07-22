@@ -64,7 +64,7 @@ def session_decorator(
     default: bool = ...,
     requires: Sequence[str] | None = ...,
     download_python: Literal["auto", "never", "always"] | None = None,
-    allow_parallel: bool = ...,
+    allow_parallel: bool | None = ...,
 ) -> Callable[[RawFunc | Func], Func]: ...
 
 
@@ -82,7 +82,7 @@ def session_decorator(
     default: bool = True,
     requires: Sequence[str] | None = None,
     download_python: Literal["auto", "never", "always"] | None = None,
-    allow_parallel: bool = False,
+    allow_parallel: bool | None = None,
 ) -> Func | Callable[[RawFunc | Func], Func]:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function

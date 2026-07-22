@@ -410,14 +410,20 @@ def run_manifest(manifest: Manifest, global_config: NoxConfig) -> list[Result]:
     # When --parallel/-j requests more than one job, hand off to the parallel
     # scheduler, which runs independent sessions in their own subprocesses.
     jobs = global_config.parallel or 1
+    # A session's own allow_parallel= wins; unset sessions fall back to the
+    # global --allow-parallel / nox.options.allow_parallel default.
+    default_parallel = bool(global_config.allow_parallel)
     if jobs > 1 and not any(
-        session.func.allow_parallel
+        default_parallel
+        if session.func.allow_parallel is None
+        else session.func.allow_parallel
         for session, selected in manifest.list_all_sessions()
         if selected
     ):
         logger.warning(
-            "No selected session sets allow_parallel=True; ignoring --parallel"
-            " and running sequentially."
+            "No selected session allows parallel execution; ignoring --parallel"
+            " and running sequentially. Opt in with allow_parallel=True or"
+            " --allow-parallel."
         )
         jobs = 1
     if jobs > 1:

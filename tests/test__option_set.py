@@ -138,6 +138,7 @@ class TestOptions:
 
     def test_validation_options(self) -> None:
         options = _options.NoxfileOptions(
+            allow_parallel=False,
             default_venv_backend="virtualenv",
             download_python="auto",
             envdir=".nox",

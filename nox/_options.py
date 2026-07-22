@@ -169,6 +169,20 @@ class NoxfileOptions(_option_set.OptionsBase):
     See :doc:`usage` for more details on these settings and their effect.
     """
 
+    allow_parallel: bool = attrs.field(
+        default=False,
+        validator=av_bool,
+        metadata=opt(
+            "--allow-parallel",
+            negative_flags=("--no-allow-parallel",),
+            group="execution",
+            help=(
+                "Allow every session to run concurrently under ``--parallel``"
+                " unless it sets ``allow_parallel`` itself; a session's own"
+                " ``allow_parallel=`` value always wins."
+            ),
+        ),
+    )
     default_venv_backend: str = attrs.field(
         default="virtualenv",
         validator=av_str,
@@ -270,10 +284,11 @@ class NoxfileOptions(_option_set.OptionsBase):
             help=(
                 "Run independent sessions in parallel, each in its own subprocess."
                 " Pass a positive integer or ``'auto'`` (one per CPU). Only"
-                " sessions declared with ``allow_parallel=True`` run concurrently;"
-                " other sessions run one at a time. Sessions are ordered by their"
-                " ``requires=`` dependencies; their output is buffered and printed"
-                " as each session finishes. Default is 1 (sequential). Environment"
+                " sessions that allow parallel execution (``allow_parallel=True``"
+                " or ``--allow-parallel``) run concurrently; other sessions run"
+                " one at a time. Sessions are ordered by their ``requires=``"
+                " dependencies; their output is buffered and printed as each"
+                " session finishes. Default is 1 (sequential). Environment"
                 " variable: NOX_PARALLEL"
             ),
         ),

@@ -28,7 +28,7 @@ from unittest import mock
 import pytest
 from colorlog.escape_codes import parse_colors
 
-from nox import _options, _parallel, tasks
+from nox import _merge, _options, _parallel, tasks
 from nox.sessions import Result, Session, SessionRunner, Status
 
 if typing.TYPE_CHECKING:
@@ -45,7 +45,7 @@ class FakeSession:
         name: str,
         deps: Sequence[FakeSession] = (),
         *,
-        allow_parallel: bool = True,
+        allow_parallel: bool | None = True,
     ) -> None:
         self.friendly_name = name
         self.signatures = [name]
@@ -225,6 +225,54 @@ def test_parallel_exclusive_without_allow_parallel(
     ]
 
     results = _run(sessions, _config(), jobs=2)
+
+    assert [r.status for r in results] == [Status.SUCCESS] * 2
+    assert peak["total"] == 1
+
+
+def test_parallel_global_default_allows_overlap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Sessions that don't set allow_parallel= inherit --allow-parallel.
+    peak = _patch_run_session_tracking_concurrency(monkeypatch)
+    sessions = [
+        FakeSession("a", allow_parallel=None),
+        FakeSession("b", allow_parallel=None),
+    ]
+
+    results = _run(sessions, _config(allow_parallel=True), jobs=2)
+
+    assert [r.status for r in results] == [Status.SUCCESS] * 2
+    assert peak["total"] == 2
+
+
+def test_parallel_unset_sessions_exclusive_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Without --allow-parallel, unset sessions still run one at a time.
+    peak = _patch_run_session_tracking_concurrency(monkeypatch)
+    sessions = [
+        FakeSession("a", allow_parallel=None),
+        FakeSession("b", allow_parallel=None),
+    ]
+
+    results = _run(sessions, _config(), jobs=2)
+
+    assert [r.status for r in results] == [Status.SUCCESS] * 2
+    assert peak["total"] == 1
+
+
+def test_parallel_explicit_false_beats_global(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # allow_parallel=False keeps a session exclusive even under --allow-parallel.
+    peak = _patch_run_session_tracking_concurrency(monkeypatch)
+    sessions = [
+        FakeSession("a", allow_parallel=False),
+        FakeSession("b", allow_parallel=False),
+    ]
+
+    results = _run(sessions, _config(allow_parallel=True), jobs=2)
 
     assert [r.status for r in results] == [Status.SUCCESS] * 2
     assert peak["total"] == 1
@@ -822,3 +870,42 @@ def test_run_manifest_dispatches_to_parallel(
     )
     tasks.run_manifest(typing.cast("typing.Any", manifest), config)
     assert captured["jobs"] == 3
+
+
+def test_run_manifest_dispatches_with_global_allow_parallel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # --allow-parallel lets a Noxfile with no allow_parallel= declarations
+    # run in parallel.
+    captured: dict[str, object] = {}
+
+    def fake_parallel(
+        _manifest: object, _global_config: object, jobs: int
+    ) -> list[Result]:
+        captured["jobs"] = jobs
+        return []
+
+    monkeypatch.setattr(_parallel, "run_manifest_parallel", fake_parallel)
+    config = _options.options.namespace(
+        parallel=3, allow_parallel=True, stop_on_first_error=False
+    )
+    manifest = types.SimpleNamespace(
+        list_all_sessions=lambda: [(FakeSession("a", allow_parallel=None), True)]
+    )
+    tasks.run_manifest(typing.cast("typing.Any", manifest), config)
+    assert captured["jobs"] == 3
+
+
+def test_allow_parallel_noxfile_and_cli_merge() -> None:
+    # nox.options.allow_parallel = True is honored, and --no-allow-parallel
+    # on the command line overrides it.
+    for argv, noxfile_value, expected in [
+        ([], True, True),
+        (["--allow-parallel"], False, True),
+        (["--no-allow-parallel"], True, False),
+    ]:
+        config = _options.options.parse_args(argv)
+        noxfile_args = _options.NoxfileOptions()
+        noxfile_args.allow_parallel = noxfile_value
+        _merge.merge_noxfile_options(config, noxfile_args)
+        assert config.allow_parallel is expected, (argv, noxfile_value)
