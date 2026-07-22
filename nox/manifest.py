@@ -253,7 +253,9 @@ class Manifest:
         ) in self.parametrized_sessions_by_name.items():
             parent_func = _null_session_func.copy()
             parent_func.requires = [
-                session.signatures[0] for session in parametrized_sessions
+                session.signatures[0]
+                for session in parametrized_sessions
+                if session.signatures
             ]
             parent_session = SessionRunner(
                 parent_name, [], parent_func, self._config, self, multi=False

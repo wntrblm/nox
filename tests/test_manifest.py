@@ -409,6 +409,27 @@ def test_add_dependencies_with_empty_parametrize() -> None:
     assert [session.name for session in manifest._queue] == ["empty", "regular"]
 
 
+def test_add_dependencies_with_empty_parametrize_and_multiple_pythons() -> None:
+    manifest = Manifest({}, create_mock_config())
+
+    # A session parametrized over multiple Pythons with an empty parameter list
+    # expands to one placeholder (``multi=True``) session per interpreter, each
+    # with no signatures. ``add_dependencies`` builds a fake parent session for
+    # such parametrized names and must not assume every placeholder has a
+    # signature.
+    @nox.parametrize("param", ())
+    def empty(session: nox.Session, param: object) -> None:
+        pass
+
+    for session in manifest.make_session("empty", Func(empty, python=["3.10", "3.11"])):
+        manifest.add_session(session)
+
+    # Must not raise IndexError.
+    manifest.add_dependencies()
+
+    assert [session.name for session in manifest._queue] == ["empty", "empty"]
+
+
 def test_notify() -> None:
     manifest = Manifest({}, create_mock_config())
 
