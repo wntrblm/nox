@@ -137,7 +137,7 @@ def reset_needs_version() -> Generator[None, None, None]:
 
 @pytest.fixture
 def reset_global_nox_options() -> None:
-    nox.options = _options.options.noxfile_namespace()
+    nox.options = _options.NoxfileOptions()
 
 
 def test_load_nox_module_needs_version_static(tmp_path: Path) -> None:

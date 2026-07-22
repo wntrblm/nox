@@ -112,7 +112,8 @@ class Opt:
         completer: argcomplete completer.
         forward: See :class:`Forward`.
         serialize: Custom argv emitter; receives the value, returns the argv
-            chunk or None to skip. Overrides the generic emission.
+            chunk or None to skip. Overrides the generic emission; runs after
+            the ``forward`` policy has been applied.
         argparse_kwargs: Extra/overriding kwargs for ``add_argument``.
     """
 
@@ -147,6 +148,9 @@ class OptionsBase:
     )
 
     def provenance(self, name: str) -> Source:
+        if name not in attrs.fields_dict(type(self)):
+            msg = f"{name} is not an option."
+            raise KeyError(msg)
         return self._provenance.get(name, Source.DEFAULT)
 
     def set_value(self, name: str, value: Any, source: Source) -> None:
@@ -162,13 +166,6 @@ def record_noxfile_set(
     if not field.name.startswith("_"):
         instance._provenance[field.name] = Source.NOXFILE
     return value
-
-
-def _field_default(field: attrs.Attribute[Any]) -> Any:
-    default = field.default
-    if isinstance(default, attrs.Factory):  # type: ignore[arg-type]
-        return default.factory()  # type: ignore[union-attr]
-    return default
 
 
 def _analyze_type(tp: Any) -> tuple[str, tuple[Any, ...] | None]:
@@ -201,6 +198,7 @@ def to_argv(config: OptionsBase) -> list[str]:
     """
     argv: list[str] = []
     tail: list[str] = []
+    defaults = type(config)()
     for field in attrs.fields(type(config)):
         option = _get_opt(field)
         if option is None or option.forward is Forward.NEVER:
@@ -210,13 +208,20 @@ def to_argv(config: OptionsBase) -> list[str]:
             if value:
                 tail = ["--", *(str(v) for v in value)]
             continue
+        if option.forward is Forward.IF_CHANGED and value == getattr(
+            defaults, field.name
+        ):
+            continue
+        choices = option.argparse_kwargs.get("choices")
+        if choices is not None and value not in choices:
+            # Values the CLI grammar can't express (e.g. the noxfile-only
+            # "uv|virtualenv" fallback syntax); the child re-derives them.
+            continue
         if option.serialize is not None:
             argv += option.serialize(value) or []
             continue
         if option.negative_flags:
             argv.append(option.flags[-1] if value else option.negative_flags[-1])
-            continue
-        if option.forward is Forward.IF_CHANGED and value == _field_default(field):
             continue
         flag = option.flags[-1]
         if isinstance(value, bool):
@@ -250,32 +255,25 @@ class Options(Generic[ConfigT]):
 
     Args:
         config_class: The attrs class holding every option (the CLI surface).
-        noxfile_class: Its base class holding the noxfile-settable subset.
         groups: Mapping of group key to (title, description) for ``--help``.
         description: The parser description.
         finalize: Called with the fresh config after parsing, before returning;
             resolves aliases and cross-field options. ``ArgumentError`` raised
             here is reported via ``parser.error``.
-        merge: Called by :meth:`merge_namespaces` with (config, noxfile
-            options) to apply noxfile settings and post-merge defaults.
     """
 
     def __init__(
         self,
         config_class: type[ConfigT],
-        noxfile_class: type[OptionsBase],
         *,
         groups: dict[str, tuple[str, str]],
         description: str,
         finalize: Callable[[Any], None] | None = None,
-        merge: Callable[[Any, Any], None] | None = None,
     ) -> None:
         self.config_class = config_class
-        self.noxfile_class = noxfile_class
         self.groups = groups
         self.description = description
         self.finalize = finalize
-        self.merge = merge
         attrs.resolve_types(config_class)
 
     def _argparse_kwargs(
@@ -393,12 +391,3 @@ class Options(Generic[ConfigT]):
                 raise KeyError(msg)
             config.set_value(key, value, Source.COMMAND_LINE)
         return config
-
-    def noxfile_namespace(self) -> Any:
-        """Return a fresh instance of the noxfile-settable options."""
-        return self.noxfile_class()
-
-    def merge_namespaces(self, config: ConfigT, noxfile_config: Any) -> None:
-        """Merge the noxfile options into the parsed config."""
-        if self.merge is not None:
-            self.merge(config, noxfile_config)

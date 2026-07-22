@@ -162,7 +162,7 @@ def merge_noxfile_options(
         module (module): The Noxfile module.
         global_config (~nox.main.GlobalConfig): The global configuration.
     """
-    _options.options.merge_namespaces(global_config, nox.options)
+    _options._merge_noxfile_options(global_config, nox.options)
     return module
 
 
