@@ -551,6 +551,154 @@ class Session:
             terminate_timeout=terminate_timeout,
         )
 
+    def run_capture(
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str | None] | None = None,
+        include_outer_env: bool = True,
+        silent: bool = False,
+        success_codes: Iterable[int] | None = None,
+        success_all: bool = False,
+        log: bool = True,
+        external: ExternalType | None = None,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> tuple[str, str, int] | None:
+        """Run a command and capture its output and exit code.
+
+        Commands must be specified as a list of strings, for example::
+
+            stdout, stderr, rc = session.run_capture(
+                'pytest', '-k', 'fast', 'tests/')
+            stdout, stderr, rc = session.run_capture(
+                'flake8', '--import-order-style=google')
+
+        The standard output (``stdout``), standard error (``stderr``),
+        and exit code (``rc``) are always returned.
+
+        You **can not** just pass everything as one string. For example, this
+        **will not work**::
+
+            stdout, stderr, rc = session.run_capture('pytest -k fast tests/')
+
+        You can set environment variables for the command using ``env``::
+
+            stdout, stderr, rc = session.run_capture(
+                'bash', '-c', 'echo $SOME_ENV',
+                env={'SOME_ENV': 'Hello'})
+
+        You can extend the shutdown timeout to allow long-running cleanup tasks to
+        complete before being terminated. For example, if you wanted to allow ``pytest``
+        extra time to clean up large projects in the case that Nox receives an
+        interrupt signal from your build system and needs to terminate its child
+        processes::
+
+            stdout, stderr, rc = session.run_capture(
+                'pytest', '-k', 'long_cleanup',
+                interrupt_timeout=10.0,
+                terminate_timeout=2.0)
+
+        You can also tell Nox to treat non-zero exit codes as success using
+        ``success_codes``. For example, if you wanted to treat the ``pytest``
+        "tests discovered, but none selected" error as success::
+
+            stdout, stderr, rc = session.run_capture(
+                'pytest', '-k', 'not slow',
+                success_codes=[0, 5])
+
+        If you set ``success_all`` to ``True``, all exit codes will be accepted.
+        You can
+
+        On Windows, builtin commands like ``del`` cannot be directly invoked,
+        but you can use ``cmd /c`` to invoke them::
+
+            stdout, stderr, rc = session.run_capture(
+                'cmd', '/c', 'del', 'docs/modules.rst')
+
+        If ``session.run_capture`` fails, it will stop the session and will not run the next steps.
+        Basically, this will raise a Python exception. Taking this in count, you can use a
+        ``try...finally`` block for cleanup runs, that will run even if the other runs fail::
+
+           try:
+               stdout, stderr, rc = session.run_capture("coverage", "run", "-m", "pytest")
+           finally:
+               # Display coverage report even when tests fail.
+               session.run("coverage", "report")
+
+        If you pass ``silent=True``, the output will only be returned, but not shown to the user.
+        For example to get the current Git commit ID::
+
+            stdout, _, _ = session.run_capture(
+                "git", "rev-parse", "--short", "HEAD",
+                external=True, silent=True
+            )
+
+            print("Current Git commit is", stdout.strip())
+
+        :param env: A dictionary of environment variables to expose to the
+            command. By default, all environment variables are passed. You
+            can block an environment variable from the outer environment by
+            setting it to None.
+        :type env: dict or None
+        :param include_outer_env: Boolean parameter that determines if the
+            environment variables from the nox invocation environment should
+            be passed to the command. ``True`` by default.
+        :type include_outer_env: bool
+        :param bool silent: Silence command output. In case the command fails,
+            standard error output will always be shown. ``False`` by default.
+        :type silent: bool
+        :param success_codes: A list of return codes that are considered
+            successful. By default, only ``0`` is considered success.
+        :type success_codes: list, tuple, or None
+        :param success_all: If set to ``True``, accept all return codes.
+            ``False`` by default.
+        :type success_all: bool
+        :param external: If False (the default) then programs not in the
+            virtualenv path will cause a warning. If True, no warning will be
+            emitted. These warnings can be turned into errors using
+            ``--error-on-external-run``. This has no effect for sessions that
+            do not have a virtualenv.
+        :type external: bool or ``"error"``
+        :param interrupt_timeout: The timeout (in seconds) that Nox should wait after it
+            and its children receive an interrupt signal before sending a terminate
+            signal to its children. Set to ``None`` to never send a terminate signal.
+            Default: ``0.3``
+        :type interrupt_timeout: float or None
+        :param terminate_timeout: The timeout (in seconds) that Nox should wait after it
+            sends a terminate signal to its children before sending a kill signal to
+            them. Set to ``None`` to never send a kill signal.
+            Default: ``0.2``
+        :type terminate_timeout: float or None
+        """
+        if not args:
+            msg = "At least one argument required to run_capture()."
+            raise ValueError(msg)
+
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            msg = "First argument to `session.run_capture` is a list. Did you mean to use `session.run_capture(*args)`?"
+            raise ValueError(msg)
+
+        if self._runner.global_config.install_only:
+            logger.info(f"Skipping {args[0]} run, as --install-only is set.")
+            return None
+
+        args, env, external = self._prepare_run(
+            args=args, env=env, include_outer_env=include_outer_env, external=external
+        )
+
+        return nox.command.run_capture(
+            args,
+            env=env,
+            paths=self.bin_paths,
+            silent=silent,
+            success_codes=success_codes,
+            success_all=success_all,
+            log=log,
+            external=external,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
+        )
+
     def run_install(
         self,
         *args: str | os.PathLike[str],
@@ -667,25 +815,16 @@ class Session:
             terminate_timeout=terminate_timeout,
         )
 
-    def _run(
+    def _prepare_run(
         self,
-        *args: str | os.PathLike[str],
+        *,
+        args: tuple[str | os.PathLike[str], ...],
         env: Mapping[str, str | None] | None = None,
         include_outer_env: bool,
-        silent: bool,
-        success_codes: Iterable[int] | None,
-        log: bool,
         external: ExternalType | None,
-        stdout: int | IO[str] | None,
-        stderr: int | IO[str] | None,
-        interrupt_timeout: float | None,
-        terminate_timeout: float | None,
-    ) -> str | bool:
-        """Like run(), except that it runs even if --install-only is provided."""
-        # Legacy support - run a function given.
-        if callable(args[0]):
-            return self._run_func(args[0], args[1:])  # type: ignore[unreachable]
-
+    ) -> tuple[
+        tuple[str | os.PathLike[str], ...], Mapping[str, str | None], ExternalType
+    ]:
         # Using `"uv"` or `"uvx" when `uv` is the backend is guaranteed to
         # work, even if it was co-installed with nox.
         if self.virtualenv.venv_backend == "uv" and nox.virtualenv.UV != "uv":
@@ -714,6 +853,31 @@ class Session:
 
         if external is None:
             external = False
+
+        return args, env, external
+
+    def _run(
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str | None] | None = None,
+        include_outer_env: bool,
+        silent: bool,
+        success_codes: Iterable[int] | None,
+        log: bool,
+        external: ExternalType | None,
+        stdout: int | IO[str] | None,
+        stderr: int | IO[str] | None,
+        interrupt_timeout: float | None,
+        terminate_timeout: float | None,
+    ) -> str | bool:
+        """Like run(), except that it runs even if --install-only is provided."""
+        # Legacy support - run a function given.
+        if callable(args[0]):
+            return self._run_func(args[0], args[1:])  # type: ignore[unreachable]
+
+        args, env, external = self._prepare_run(
+            args=args, env=env, include_outer_env=include_outer_env, external=external
+        )
 
         # Run a shell command.
         return nox.command.run(
