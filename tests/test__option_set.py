@@ -59,6 +59,16 @@ class TestOptions:
         with pytest.raises(KeyError):
             make_small_options().namespace(non_existent_option="meep")
 
+    def test_provenance_non_existent_option(self) -> None:
+        with pytest.raises(KeyError, match="non_existent_option is not an option"):
+            SmallConfig().provenance("non_existent_option")
+
+    def test_parse_args_without_finalize(self) -> None:
+        config = make_small_options().parse_args(["--option-a", "moop"])
+
+        assert config.option_a == "moop"
+        assert config.provenance("option_a") is Source.COMMAND_LINE
+
     def test_parser_hidden_option(self) -> None:
         options = make_small_options()
 
@@ -227,6 +237,26 @@ class TestToArgv:
 
         assert argv[-2:] == ["--", "posarg"]
 
+    def test_always_forward_falsey_values(self) -> None:
+        """ALWAYS-forwarded options with nothing to say emit no arguments."""
+
+        @attrs.define(kw_only=True)
+        class AlwaysConfig(OptionsBase):
+            flag: bool = attrs.field(
+                default=False,
+                metadata=opt("--flag", group="g", forward=Forward.ALWAYS),
+            )
+            items: list[str] = attrs.field(
+                factory=list,
+                metadata=opt("--items", group="g", forward=Forward.ALWAYS),
+            )
+            name: str | None = attrs.field(
+                default=None,
+                metadata=opt("--name", group="g", forward=Forward.ALWAYS),
+            )
+
+        assert to_argv(AlwaysConfig()) == []
+
     def test_evolve_selects_session(self) -> None:
         """The pattern used to spawn a child nox for a single session."""
         config = _options.options.parse_args(["-s", "a", "b", "-k", "expr"])
@@ -355,6 +385,17 @@ class TestProvenance:
         config = _options.options.parse_args(["--", "x"])
 
         assert config.provenance("posargs") is Source.COMMAND_LINE
+
+    def test_private_assignment_not_recorded(self) -> None:
+        """Assigning internal state does not register as a noxfile-set option."""
+        noxfile_config = _options.NoxfileOptions()
+        noxfile_config.sessions = ["a"]
+        assert noxfile_config.provenance("sessions") is Source.NOXFILE
+
+        noxfile_config._provenance = {}
+
+        assert noxfile_config.provenance("sessions") is Source.DEFAULT
+        assert noxfile_config.provenance("_provenance") is Source.DEFAULT
 
     def test_evolve_resets_provenance(self) -> None:
         config = _options.options.parse_args(["-s", "a"])
