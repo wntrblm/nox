@@ -128,9 +128,9 @@ class TestOptions:
 
     def test_validation_options(self) -> None:
         options = _option_set.NoxOptions(
-            default_venv_backend=None,
+            default_venv_backend="virtualenv",
             download_python="auto",
-            envdir=None,
+            envdir=".nox",
             error_on_external_run=False,
             error_on_missing_interpreters=False,
             force_venv_backend=None,
@@ -138,7 +138,7 @@ class TestOptions:
             pythons=None,
             report=None,
             reuse_existing_virtualenvs=False,
-            reuse_venv=None,
+            reuse_venv="no",
             sessions=None,
             stop_on_first_error=False,
             tags=None,
@@ -151,6 +151,11 @@ class TestOptions:
 
         options.envdir = "envdir"
         options.envdir = Path("envdir")
+        # These used to accept None to mean "unset"; now they hold real values.
+        with pytest.raises(ValueError):  # noqa: PT011
+            options.reuse_venv = None
+        with pytest.raises(TypeError):
+            options.default_venv_backend = None
 
 
 def _forwardable_fields() -> list[str]:
@@ -237,7 +242,7 @@ class TestMerge:
         self, args: list[str], noxfile_config: _options.NoxfileOptions
     ) -> _options.NoxConfig:
         config = _options.options.parse_args(args)
-        _options._merge_noxfile_options(config, noxfile_config)
+        _options.merge_noxfile_options(config, noxfile_config)
         return config
 
     def test_noxfile_beats_default(self) -> None:
@@ -305,3 +310,55 @@ class TestMerge:
         assert config.envdir == ".nox"
         assert config.reuse_venv == "no"
         assert config.default_venv_backend == "virtualenv"
+
+
+class TestEnvVars:
+    def test_invalid_value_is_a_clean_error(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """A bad env-var value must produce a parser error, not a traceback."""
+        monkeypatch.setenv("NOX_DOWNLOAD_PYTHON", "bogus")
+
+        with pytest.raises(SystemExit):
+            _options.options.parse_args([])
+
+        assert "'download_python' must be in" in capsys.readouterr().err
+
+
+class TestReuseAliasPrecedence:
+    """An explicit --reuse-venv on the command line now wins over the -r/-N
+    aliases given alongside it (the aliases used to win). -R still wins."""
+
+    def test_r_with_explicit_reuse_venv(self) -> None:
+        config = _options.options.parse_args(["-r", "--reuse-venv", "never"])
+
+        assert config.reuse_venv == "never"
+
+    def test_no_reuse_with_explicit_reuse_venv(self) -> None:
+        config = _options.options.parse_args(["-N", "--reuse-venv", "always"])
+
+        assert config.reuse_venv == "always"
+
+    def test_R_beats_no_reuse(self) -> None:
+        config = _options.options.parse_args(["-N", "-R"])
+
+        assert config.reuse_venv == "yes"
+
+
+class TestProvenance:
+    def test_posargs_default(self) -> None:
+        config = _options.options.parse_args([])
+
+        assert config.provenance("posargs") is Source.DEFAULT
+
+    def test_posargs_given(self) -> None:
+        config = _options.options.parse_args(["--", "x"])
+
+        assert config.provenance("posargs") is Source.COMMAND_LINE
+
+    def test_evolve_resets_provenance(self) -> None:
+        config = _options.options.parse_args(["-s", "a"])
+        child = attrs.evolve(config)
+
+        assert config.provenance("sessions") is Source.COMMAND_LINE
+        assert child.provenance("sessions") is Source.DEFAULT

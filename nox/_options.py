@@ -52,6 +52,7 @@ __all__ = [
     "NoxConfig",
     "NoxfileOptions",
     "ReuseVenvType",
+    "merge_noxfile_options",
     "noxfile_options",
     "options",
 ]
@@ -63,9 +64,11 @@ def __dir__() -> list[str]:
 
 ReuseVenvType = Literal["no", "yes", "never", "always"]
 
+av_str: Validator = av.instance_of(str)
 av_opt_str: Validator = av.optional(av.instance_of(str))
-av_opt_path: Validator = av.optional(
-    av.or_(av.instance_of(str), av.instance_of(os.PathLike))  # type: ignore[type-abstract]
+av_path: Validator = av.or_(
+    av.instance_of(str),
+    av.instance_of(os.PathLike),  # type: ignore[type-abstract]
 )
 av_opt_list_str: Validator = av.optional(
     av.deep_iterable(
@@ -188,9 +191,9 @@ class NoxfileOptions(_option_set.OptionsBase):
     See :doc:`usage` for more details on these settings and their effect.
     """
 
-    default_venv_backend: str | None = attrs.field(
-        default=None,
-        validator=av_opt_str,
+    default_venv_backend: str = attrs.field(
+        default="virtualenv",
+        validator=av_str,
         metadata=opt(
             "-db",
             "--default-venv-backend",
@@ -217,9 +220,9 @@ class NoxfileOptions(_option_set.OptionsBase):
             ),
         ),
     )
-    envdir: str | os.PathLike[str] | None = attrs.field(
-        default=None,
-        validator=av_opt_path,
+    envdir: str | os.PathLike[str] = attrs.field(
+        default=".nox",
+        validator=av_path,
         metadata=opt(
             "--envdir",
             group="environment",
@@ -316,9 +319,9 @@ class NoxfileOptions(_option_set.OptionsBase):
             help="This is an alias for '--reuse-venv=yes|no'.",
         ),
     )
-    reuse_venv: ReuseVenvType | None = attrs.field(
-        default=None,
-        validator=av.optional(av.in_(["no", "yes", "never", "always"])),
+    reuse_venv: ReuseVenvType = attrs.field(
+        default="no",
+        validator=av.in_(["no", "yes", "never", "always"]),
         metadata=opt(
             "--reuse-venv",
             group="environment",
@@ -650,7 +653,7 @@ def _finalize(config: NoxConfig) -> None:
     config.color = config.forcecolor or (not config.nocolor and sys.stdout.isatty())
 
 
-def _merge_noxfile_options(config: NoxConfig, noxfile_config: NoxfileOptions) -> None:
+def merge_noxfile_options(config: NoxConfig, noxfile_config: NoxfileOptions) -> None:
     """Apply ``nox.options`` (as set by the noxfile) to the parsed config.
 
     A value explicitly given on the command line (or via an environment
@@ -673,12 +676,8 @@ def _merge_noxfile_options(config: NoxConfig, noxfile_config: NoxfileOptions) ->
     ):
         config.set_value("reuse_venv", "yes", Source.NOXFILE)
 
-    # Defaults that only apply once the noxfile has had its say.
-    config.envdir = os.fspath(config.envdir or ".nox")
-    if config.reuse_venv is None:
-        config.reuse_venv = "no"
-    if config.default_venv_backend is None:
-        config.default_venv_backend = "virtualenv"
+    # The noxfile may have set a PathLike envdir.
+    config.envdir = os.fspath(config.envdir)
 
 
 options = _option_set.Options(

@@ -76,7 +76,7 @@ def test_main_no_args(monkeypatch: pytest.MonkeyPatch, main: Any) -> None:
         assert config.sessions is None
         assert not config.no_venv
         assert not config.reuse_existing_virtualenvs
-        assert not config.reuse_venv
+        assert config.reuse_venv == "no"
         assert not config.stop_on_first_error
         assert config.posargs == []
 

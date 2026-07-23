@@ -306,7 +306,7 @@ def _main(*, main_ep: bool) -> None:
                     "Literal['auto', 'never', 'always']", download_python
                 )
 
-                envdir = Path(args.envdir or ".nox")
+                envdir = Path(args.envdir)
                 run_script_mode(
                     noxfile,
                     envdir,
