@@ -321,20 +321,28 @@ class OptionSet:
 
             value = getattr(args, option.name)
 
+            # argparse only checks choices for values given on the command
+            # line; re-check here so bad environment-variable defaults produce
+            # a clean error instead of misbehaving later.
+            choices = option.kwargs.get("choices")
+            if choices is not None and value is not None and value not in choices:
+                msg = f"{option.name!r} must be in {choices!r} (got {value!r})"
+                raise ArgumentError(None, msg)
+
             # Handle options that have finalizer functions.
             if option.finalizer_func:
                 setattr(args, option.name, option.finalizer_func(value, args))
 
-    def parse_args(self) -> Namespace:
+    def parse_args(self, args: Sequence[str] | None = None) -> Namespace:
         parser = self.parser()
         argcomplete.autocomplete(parser)
-        args = parser.parse_args()
+        parsed_args = parser.parse_args(args)
 
         try:
-            self._finalize_args(args)
+            self._finalize_args(parsed_args)
         except ArgumentError as err:
             parser.error(str(err))
-        return args
+        return parsed_args
 
     def namespace(self, **kwargs: Any) -> argparse.Namespace:
         """Return a namespace that contains all of the options in this set.
@@ -360,13 +368,18 @@ class OptionSet:
     def noxfile_namespace(self) -> NoxOptions:
         """Returns a namespace of options that can be set in the configuration
         file."""
-        return NoxOptions(
-            **{
-                option.name: option.default
-                for option in self.options.values()
-                if option.noxfile
-            }  # type: ignore[arg-type]
-        )
+        values = {}
+        for option in self.options.values():
+            if not option.noxfile:
+                continue
+            value = option.default
+            choices = option.kwargs.get("choices")
+            if choices is not None and value not in choices:
+                # A bad environment-variable default; this runs at import
+                # time, so leave it unset and let parse_args report it.
+                value = None
+            values[option.name] = value
+        return NoxOptions(**values)  # type: ignore[arg-type]
 
     def merge_namespaces(
         self, command_args: Namespace, noxfile_args: NoxOptions
