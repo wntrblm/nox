@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING, TypeVar
 from colorlog.escape_codes import parse_colors
 
 import nox
-from nox import _options, registry
+from nox import _merge, registry
 from nox._resolver import CycleError
 from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
 from nox.logger import logger
@@ -162,7 +162,7 @@ def merge_noxfile_options(
         module (module): The Noxfile module.
         global_config (~nox.main.GlobalConfig): The global configuration.
     """
-    _options.merge_noxfile_options(global_config, nox.options)
+    _merge.merge_noxfile_options(global_config, nox.options)
     return module
 
 
