@@ -26,7 +26,7 @@ import attrs
 import attrs.validators as av
 
 from nox import _completers, _merge, _option_set
-from nox._option_set import Forward, opt
+from nox._option_set import opt
 from nox.virtualenv import ALL_VENVS
 
 if TYPE_CHECKING:
@@ -114,10 +114,6 @@ def _forcecolor_default() -> bool:
     }
 
 
-def _serialize_color(value: Any) -> list[str]:
-    return ["--forcecolor"] if value else ["--nocolor"]
-
-
 @attrs.define(
     kw_only=True,
     on_setattr=[attrs.setters.validate, _option_set.record_noxfile_set],
@@ -178,7 +174,6 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--error-on-external-run",
             negative_flags=("--no-error-on-external-run",),
             group="execution",
-            forward=Forward.ALWAYS,
             help=(
                 "Error if run() is used to execute a program that isn't installed in a"
                 " session's virtualenv."
@@ -192,7 +187,6 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--error-on-missing-interpreters",
             negative_flags=("--no-error-on-missing-interpreters",),
             group="execution",
-            forward=Forward.ALWAYS,
             help="Error instead of skipping sessions if an interpreter can not be located.",
         ),
     )
@@ -256,7 +250,6 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--reuse-existing-virtualenvs",
             negative_flags=("-N", "--no-reuse-existing-virtualenvs"),
             group="environment",
-            forward=Forward.NEVER,  # An alias; the state lives in reuse_venv.
             help="This is an alias for '--reuse-venv=yes|no'.",
         ),
     )
@@ -297,7 +290,6 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--stop-on-first-error",
             negative_flags=("--no-stop-on-first-error",),
             group="execution",
-            forward=Forward.ALWAYS,
             help="Stop after the first error.",
         ),
     )
@@ -320,7 +312,6 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--verbose",
             negative_flags=("--no-verbose",),
             group="reporting",
-            forward=Forward.ALWAYS,
             help="Logs the output of all commands run including commands marked silent.",
         ),
     )
@@ -341,7 +332,6 @@ class NoxConfig(NoxfileOptions):
             "-h",
             "--help",
             group="general",
-            forward=Forward.NEVER,
             help="Show this help message and exit.",
         ),
     )
@@ -350,17 +340,16 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "--version",
             group="general",
-            forward=Forward.NEVER,
             help="Show the Nox version and exit.",
         ),
     )
     script_mode: Literal["none", "fresh", "reuse"] = attrs.field(
         default="reuse",
-        metadata=opt("--script-mode", group="general", forward=Forward.NEVER),
+        metadata=opt("--script-mode", group="general"),
     )
     script_venv_backend: str | None = attrs.field(
         default=None,
-        metadata=opt("--script-venv-backend", group="general", forward=Forward.NEVER),
+        metadata=opt("--script-venv-backend", group="general"),
     )
     noxfile: str = attrs.field(
         default="noxfile.py",
@@ -368,7 +357,6 @@ class NoxConfig(NoxfileOptions):
             "-f",
             "--noxfile",
             group="general",
-            forward=Forward.ALWAYS,
             help="Location of the Python file containing Nox sessions.",
         ),
     )
@@ -388,7 +376,6 @@ class NoxConfig(NoxfileOptions):
             "--list-sessions",
             "--list",
             group="sessions",
-            forward=Forward.NEVER,
             help="List all available sessions and exit.",
         ),
     )
@@ -397,7 +384,6 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "--usage",
             group="sessions",
-            forward=Forward.NEVER,
             argparse_kwargs={"nargs": 1},
             help="Print the full docstring of a given session and exit. Raises if there is no docstring.",
         ),
@@ -407,7 +393,6 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "--json",
             group="sessions",
-            forward=Forward.NEVER,
             help="JSON output formatting. Requires list-sessions currently.",
         ),
     )
@@ -447,7 +432,6 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "--no-venv",
             group="environment",
-            forward=Forward.NEVER,  # An alias; the state lives in force_venv_backend.
             help=(
                 "Runs the selected sessions directly on the current interpreter, without"
                 " creating a venv. This is an alias for '--force-venv-backend none'."
@@ -459,7 +443,6 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "-R",
             group="environment",
-            forward=Forward.NEVER,  # An alias for reuse_venv + no_install.
             help=(
                 "Reuse existing virtualenvs and skip package re-installation."
                 " This is an alias for '--reuse-existing-virtualenvs --no-install'."
@@ -512,7 +495,6 @@ class NoxConfig(NoxfileOptions):
             "--nocolor",
             "--no-color",
             group="reporting",
-            forward=Forward.NEVER,  # The state lives in color.
             help="Disable all color output. Environment variable: NO_COLOR",
         ),
     )
@@ -522,20 +504,15 @@ class NoxConfig(NoxfileOptions):
             "--forcecolor",
             "--force-color",
             group="reporting",
-            forward=Forward.NEVER,  # The state lives in color.
             help="Force color output, even if stdout is not an interactive terminal.",
         ),
     )
-    color: bool = attrs.field(
-        default=False,
-        # ALWAYS: the default depends on the parent's tty, so pin it for children.
-        metadata=opt(hidden=True, forward=Forward.ALWAYS, serialize=_serialize_color),
-    )
+    color: bool = attrs.field(default=False, metadata=opt(hidden=True))
     # The original working directory that Nox was invoked from, since it could
     # be different from the Noxfile's directory.
     invoked_from: str = attrs.field(
         default=attrs.Factory(os.getcwd),
-        metadata=opt(hidden=True, forward=Forward.NEVER),
+        metadata=opt(hidden=True),
     )
 
 

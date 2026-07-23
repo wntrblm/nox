@@ -20,7 +20,7 @@ import attrs
 import pytest
 
 from nox import _completers, _merge, _option_set, _options
-from nox._option_set import Forward, Options, OptionsBase, Source, opt, to_argv
+from nox._option_set import Options, OptionsBase, Source, opt
 
 RESOURCES = Path(__file__).parent.joinpath("resources")
 
@@ -166,105 +166,6 @@ class TestOptions:
             options.reuse_venv = None
         with pytest.raises(TypeError):
             options.default_venv_backend = None
-
-
-def _forwardable_fields() -> list[str]:
-    return [
-        field.name
-        for field in attrs.fields(_options.NoxConfig)
-        if (o := _option_set._get_opt(field)) is not None
-        and o.forward is not Forward.NEVER
-    ]
-
-
-class TestToArgv:
-    @pytest.mark.parametrize(
-        "args",
-        [
-            [],
-            ["-r"],
-            ["-R"],
-            ["--verbose", "--reuse-venv", "never", "--envdir", "elsewhere"],
-            ["--no-verbose", "--error-on-missing-interpreters"],
-            ["--forcecolor", "-s", "a", "b", "-p", "3.12", "3.13"],
-            ["--nocolor", "--install-only", "--non-interactive", "-ts"],
-            ["--default-venv-backend", "uv", "--download-python", "never"],
-            ["--force-python", "3.13", "--stop-on-first-error"],
-            ["-s", "test", "--", "-k", "foo", "--flag"],
-        ],
-    )
-    def test_round_trip(self, args: list[str]) -> None:
-        """Parsing to_argv's output must restore every forwardable value."""
-        config = _options.options.parse_args(args)
-        rebuilt = _options.options.parse_args(to_argv(config))
-
-        for name in _forwardable_fields():
-            assert getattr(rebuilt, name) == getattr(config, name), name
-
-    def test_never_forwarded(self) -> None:
-        config = _options.options.parse_args(
-            ["--list-sessions", "--json", "--no-venv", "-R"]
-        )
-        argv = to_argv(config)
-
-        for flag in ("--list-sessions", "--json", "--no-venv", "-R"):
-            assert flag not in argv
-        # The alias state is forwarded through the canonical options instead.
-        assert "--no-install" in argv
-        assert argv[argv.index("--reuse-venv") :][:2] == ["--reuse-venv", "yes"]
-
-    def test_flag_pairs_always_emitted(self) -> None:
-        """Environment-dependent pair defaults must be pinned for children."""
-        argv = to_argv(_options.options.parse_args([]))
-
-        assert (
-            "--error-on-missing-interpreters" in argv
-            or "--no-error-on-missing-interpreters" in argv
-        )
-        assert "--verbose" in argv or "--no-verbose" in argv
-
-    def test_noxfile_only_backend_skipped(self) -> None:
-        """The "a|b" fallback syntax is not valid on the CLI, so it is not
-        forwarded; children re-derive it from the noxfile."""
-        config = _options.options.namespace(default_venv_backend="uv|virtualenv")
-        argv = to_argv(config)
-
-        assert "--default-venv-backend" not in argv
-
-    def test_posargs_last(self) -> None:
-        config = _options.options.parse_args(["-v", "--", "posarg"])
-        argv = to_argv(config)
-
-        assert argv[-2:] == ["--", "posarg"]
-
-    def test_always_forward_falsey_values(self) -> None:
-        """ALWAYS-forwarded options with nothing to say emit no arguments."""
-
-        @attrs.define(kw_only=True)
-        class AlwaysConfig(OptionsBase):
-            flag: bool = attrs.field(
-                default=False,
-                metadata=opt("--flag", group="g", forward=Forward.ALWAYS),
-            )
-            items: list[str] = attrs.field(
-                factory=list,
-                metadata=opt("--items", group="g", forward=Forward.ALWAYS),
-            )
-            name: str | None = attrs.field(
-                default=None,
-                metadata=opt("--name", group="g", forward=Forward.ALWAYS),
-            )
-
-        assert to_argv(AlwaysConfig()) == []
-
-    def test_evolve_selects_session(self) -> None:
-        """The pattern used to spawn a child nox for a single session."""
-        config = _options.options.parse_args(["-s", "a", "b", "-k", "expr"])
-        child = attrs.evolve(config, sessions=["b"], keywords=None, tags=None)
-        argv = to_argv(child)
-
-        assert argv[argv.index("--session") :][:2] == ["--session", "b"]
-        assert "--keywords" not in argv
 
 
 class TestMerge:

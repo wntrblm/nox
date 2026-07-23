@@ -16,9 +16,8 @@
 
 Options are declared once as fields on attrs classes (see ``nox._options``),
 carrying CLI metadata in an :class:`Opt` record. Everything else is derived
-from the model: the argparse parser, environment-variable handling, the
-noxfile/CLI merge, and serialization back to an argument list (:func:`to_argv`)
-for spawning child ``nox`` processes.
+from the model: the argparse parser, environment-variable handling, and the
+noxfile/CLI merge.
 """
 
 from __future__ import annotations
@@ -41,14 +40,12 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ArgumentError",
-    "Forward",
     "NoxOptions",  # noqa: F822 (provided lazily by __getattr__)
     "Opt",
     "Options",
     "OptionsBase",
     "Source",
     "opt",
-    "to_argv",
 ]
 
 
@@ -80,20 +77,6 @@ class Source(enum.IntEnum):
     COMMAND_LINE = 3
 
 
-class Forward(enum.Enum):
-    """How :func:`to_argv` treats an option when rebuilding an argument list.
-
-    NEVER: not forwarded (presentation-only options, or aliases whose state
-    lives in another field). IF_CHANGED: emitted when the value differs from
-    the field default. ALWAYS: emitted unconditionally (flag pairs and options
-    whose defaults are environment-dependent, so children stay deterministic).
-    """
-
-    NEVER = enum.auto()
-    IF_CHANGED = enum.auto()
-    ALWAYS = enum.auto()
-
-
 @attrs.frozen(kw_only=True)
 class Opt:
     """CLI metadata attached to a model field via ``attrs.field(metadata=...)``.
@@ -110,10 +93,6 @@ class Opt:
         hidden: Present on the config object but not exposed on the CLI.
         positional: A positional argument (only ``posargs``).
         completer: argcomplete completer.
-        forward: See :class:`Forward`.
-        serialize: Custom argv emitter; receives the value, returns the argv
-            chunk or None to skip. Overrides the generic emission; runs after
-            the ``forward`` policy has been applied.
         argparse_kwargs: Extra/overriding kwargs for ``add_argument``.
     """
 
@@ -125,8 +104,6 @@ class Opt:
     hidden: bool = False
     positional: bool = False
     completer: Callable[..., Iterable[str]] | None = None
-    forward: Forward = Forward.IF_CHANGED
-    serialize: Callable[[Any], list[str] | None] | None = None
     argparse_kwargs: dict[str, Any] = attrs.field(factory=dict)
 
 
@@ -191,52 +168,6 @@ def _analyze_type(tp: Any) -> tuple[str, tuple[Any, ...] | None]:
     if origin in {list, tuple} or tp in {list, tuple}:
         return ("list", None)
     return ("value", None)
-
-
-def to_argv(config: OptionsBase) -> list[str]:
-    """Serialize a config back into the CLI arguments that reproduce it.
-
-    The output, parsed and finalized again, restores every forwardable value.
-    Options marked ``Forward.NEVER`` are skipped; new options are forwarded by
-    default. Positional arguments (posargs) are emitted last, after ``--``.
-    """
-    argv: list[str] = []
-    tail: list[str] = []
-    defaults = type(config)()
-    for field in attrs.fields(type(config)):
-        option = _get_opt(field)
-        if option is None or option.forward is Forward.NEVER:
-            continue
-        value = getattr(config, field.name)
-        if option.positional:
-            if value:
-                tail = ["--", *(str(v) for v in value)]
-            continue
-        if option.forward is Forward.IF_CHANGED and value == getattr(
-            defaults, field.name
-        ):
-            continue
-        choices = option.argparse_kwargs.get("choices")
-        if choices is not None and value not in choices:
-            # Values the CLI grammar can't express (e.g. the noxfile-only
-            # "uv|virtualenv" fallback syntax); the child re-derives them.
-            continue
-        if option.serialize is not None:
-            argv += option.serialize(value) or []
-            continue
-        if option.negative_flags:
-            argv.append(option.flags[-1] if value else option.negative_flags[-1])
-            continue
-        flag = option.flags[-1]
-        if isinstance(value, bool):
-            if value:
-                argv.append(flag)
-        elif isinstance(value, (list, tuple)):
-            if value:
-                argv += [flag, *(str(v) for v in value)]
-        elif value is not None:
-            argv += [flag, str(value)]
-    return argv + tail
 
 
 def apply_noxfile_values(
