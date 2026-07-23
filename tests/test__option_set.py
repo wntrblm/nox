@@ -19,7 +19,7 @@ from pathlib import Path
 import attrs
 import pytest
 
-from nox import _option_set, _options
+from nox import _completers, _merge, _option_set, _options
 from nox._option_set import Forward, Options, OptionsBase, Source, opt, to_argv
 
 RESOURCES = Path(__file__).parent.joinpath("resources")
@@ -86,7 +86,7 @@ class TestOptions:
             posargs=[],
             noxfile=str(RESOURCES.joinpath("noxfile_multiple_sessions.py")),
         )
-        actual_sessions_from_file = _options._session_completer(
+        actual_sessions_from_file = _completers.session_completer(
             prefix="", parsed_args=parsed_args
         )
 
@@ -97,7 +97,7 @@ class TestOptions:
         parsed_args = _options.options.namespace(
             sessions=("baz",), keywords=None, posargs=[]
         )
-        all_nox_sessions = _options._session_completer(
+        all_nox_sessions = _completers.session_completer(
             prefix="", parsed_args=parsed_args
         )
         assert len(list(all_nox_sessions)) == 0
@@ -107,7 +107,7 @@ class TestOptions:
             posargs=[],
             noxfile=str(RESOURCES.joinpath("noxfile_pythons.py")),
         )
-        actual_pythons_from_file = _options._python_completer(
+        actual_pythons_from_file = _completers.python_completer(
             prefix="", parsed_args=parsed_args
         )
 
@@ -119,7 +119,7 @@ class TestOptions:
             posargs=[],
             noxfile=str(RESOURCES.joinpath("noxfile_tags.py")),
         )
-        actual_tags_from_file = _options._tag_completer(
+        actual_tags_from_file = _completers.tag_completer(
             prefix="", parsed_args=parsed_args
         )
 
@@ -242,7 +242,7 @@ class TestMerge:
         self, args: list[str], noxfile_config: _options.NoxfileOptions
     ) -> _options.NoxConfig:
         config = _options.options.parse_args(args)
-        _options.merge_noxfile_options(config, noxfile_config)
+        _merge.merge_noxfile_options(config, noxfile_config)
         return config
 
     def test_noxfile_beats_default(self) -> None:
