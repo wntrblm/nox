@@ -19,7 +19,7 @@ from __future__ import annotations
 __lazy_modules__ = {
     "importlib",
     "importlib.metadata",
-    "nox._options",
+    "nox._option_set",
     "nox._version",
     "nox.command",
     "nox.logger",
@@ -52,14 +52,15 @@ import nox.command
 import nox.registry
 import nox.virtualenv
 from nox import _options, tasks, workflow
-from nox._options import DefaultStr
+from nox._option_set import Source
 from nox._version import get_nox_version
 from nox.logger import logger, setup_logging
 from nox.project import load_toml
 
 if TYPE_CHECKING:
-    from argparse import Namespace
     from collections.abc import Iterator
+
+    from nox._options import NoxConfig
 
 __all__ = ["execute_workflow", "main", "nox_main"]
 
@@ -68,7 +69,7 @@ def __dir__() -> list[str]:
     return __all__
 
 
-def execute_workflow(args: Namespace) -> int:
+def execute_workflow(args: NoxConfig) -> int:
     """
     Execute the appropriate tasks.
     """
@@ -266,7 +267,7 @@ def _main(*, main_ep: bool) -> None:
     if nox_script_mode != "none":
         noxfile = (
             args.noxfile
-            if main_ep or not isinstance(args.noxfile, DefaultStr)
+            if main_ep or args.provenance("noxfile") is not Source.DEFAULT
             else (get_main_filename() or args.noxfile)
         )
         toml_config = load_toml(os.path.expandvars(noxfile), missing_ok=True)
@@ -305,7 +306,7 @@ def _main(*, main_ep: bool) -> None:
                     "Literal['auto', 'never', 'always']", download_python
                 )
 
-                envdir = Path(args.envdir or ".nox")
+                envdir = Path(args.envdir)
                 run_script_mode(
                     noxfile,
                     envdir,

@@ -28,8 +28,9 @@ from nox._resolver import CycleError, lazy_stable_topo_sort
 from nox.sessions import Session, SessionRunner
 
 if TYPE_CHECKING:
-    import argparse
     from collections.abc import Iterable, Iterator, Sequence
+
+    from nox._options import NoxConfig
 
 __all__ = ["WARN_PYTHONS_IGNORED", "Manifest", "keyword_match"]
 
@@ -67,13 +68,13 @@ class Manifest:
     def __init__(
         self,
         session_functions: Mapping[str, Func],
-        global_config: argparse.Namespace,
+        global_config: NoxConfig,
         module_docstring: str | None = None,
     ) -> None:
         self._all_sessions: list[SessionRunner] = []
         self._queue: list[SessionRunner] = []
         self._consumed: list[SessionRunner] = []
-        self._config: argparse.Namespace = global_config
+        self._config: NoxConfig = global_config
         self.module_docstring: str | None = module_docstring
 
         # Create the sessions based on the provided session functions.
@@ -374,7 +375,8 @@ class Manifest:
         for call in calls:
             long_names = []
             if not multi or (
-                self._config.force_pythons and call.python in self._config.extra_pythons
+                self._config.force_pythons
+                and call.python in (self._config.extra_pythons or ())
             ):
                 long_names.append(f"{name}{call.session_signature}")
 

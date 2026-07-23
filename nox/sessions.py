@@ -59,7 +59,6 @@ from nox.virtualenv import (
 )
 
 if typing.TYPE_CHECKING:
-    import argparse
     from collections.abc import (
         Callable,
         Generator,
@@ -77,6 +76,7 @@ if typing.TYPE_CHECKING:
     )
 
     from nox._decorators import Func
+    from nox._options import NoxConfig
     from nox.command import ExternalType
     from nox.manifest import Manifest
 
@@ -333,7 +333,7 @@ class Session:
         to the Noxfile's directory before running any sessions. This gives
         you the original working directory that Nox was invoked form.
         """
-        return self._runner.global_config.invoked_from  # type: ignore[no-any-return]
+        return self._runner.global_config.invoked_from
 
     def chdir(self, dir: str | os.PathLike[str]) -> _WorkingDirContext:
         """Change the current working directory.
@@ -995,13 +995,69 @@ class Session:
         raise _SessionSkip(*args)
 
 
+def resolve_venv_backends(global_config: NoxConfig, func: Func) -> list[str]:
+    """The venv backends to try for a session: forced, session-declared, or default."""
+    backends = (
+        global_config.force_venv_backend
+        or func.venv_backend
+        or global_config.default_venv_backend
+    )
+    return backends.split("|")
+
+
+def resolve_download_python(
+    global_config: NoxConfig, func: Func
+) -> Literal["auto", "never", "always"]:
+    """Whether to download missing interpreters for a session."""
+    return global_config.download_python or func.download_python or "auto"
+
+
+def resolve_reuse_existing_venv(global_config: NoxConfig, func: Func) -> bool:
+    """Determines whether to reuse an existing virtual environment.
+
+    The decision matrix is as follows:
+
+    +--------------------------+-----------------+-------------+
+    | global_config.reuse_venv | func.reuse_venv | Reuse venv? |
+    +==========================+=================+=============+
+    | "always"                 | N/A             | Yes         |
+    +--------------------------+-----------------+-------------+
+    | "never"                  | N/A             | No          |
+    +--------------------------+-----------------+-------------+
+    | "yes"                    | True|None       | Yes         |
+    +--------------------------+-----------------+-------------+
+    | "yes"                    | False           | No          |
+    +--------------------------+-----------------+-------------+
+    | "no"                     | True            | Yes         |
+    +--------------------------+-----------------+-------------+
+    | "no"                     | False|None      | No          |
+    +--------------------------+-----------------+-------------+
+
+    Summary
+    ~~~~~~~
+    - "always" forces reuse regardless of `func.reuse_venv`.
+    - "never" forces recreation regardless of `func.reuse_venv`.
+    - "yes" and "no" respect `func.reuse_venv` being ``False`` or ``True`` respectively.
+    """
+    return any(
+        (
+            # "always" forces reuse regardless of func.reuse_venv
+            global_config.reuse_venv == "always",
+            # Respect func.reuse_venv when it's explicitly True, unless global_config is "never"
+            func.reuse_venv is True and global_config.reuse_venv != "never",
+            # Delegate to reuse ("yes") when func.reuse_venv is not explicitly False
+            func.reuse_venv is not False and global_config.reuse_venv == "yes",
+        )
+    )
+
+
 class SessionRunner:
     def __init__(
         self,
         name: str,
         signatures: Sequence[str],
         func: Func,
-        global_config: argparse.Namespace,
+        global_config: NoxConfig,
         manifest: Manifest,
         *,
         multi: bool = False,
@@ -1052,7 +1108,7 @@ class SessionRunner:
 
     @property
     def envdir(self) -> str:
-        return _normalize_path(self.global_config.envdir, self.friendly_name)
+        return _normalize_path(os.fspath(self.global_config.envdir), self.friendly_name)
 
     def get_direct_dependencies(
         self, sessions_by_id: Mapping[str, SessionRunner] | None = None
@@ -1093,24 +1149,11 @@ class SessionRunner:
             raise KeyError(msg) from exc
 
     def _create_venv(self) -> None:
-        reuse_existing = self.reuse_existing_venv()
-
-        backends = (
-            self.global_config.force_venv_backend
-            or self.func.venv_backend
-            or self.global_config.default_venv_backend
-            or "virtualenv"
-        ).split("|")
-
-        download_python = (
-            self.global_config.download_python or self.func.download_python or "auto"
-        )
-
         self.venv = get_virtualenv(
-            *backends,
-            download_python=download_python,
+            *resolve_venv_backends(self.global_config, self.func),
+            download_python=resolve_download_python(self.global_config, self.func),
             envdir=self.envdir,
-            reuse_existing=reuse_existing,
+            reuse_existing=self.reuse_existing_venv(),
             interpreter=self.func.python,
             venv_params=self.func.venv_params,
         )
@@ -1121,52 +1164,12 @@ class SessionRunner:
         """
         Determines whether to reuse an existing virtual environment.
 
-        The decision matrix is as follows:
-
-        +--------------------------+-----------------+-------------+
-        | global_config.reuse_venv | func.reuse_venv | Reuse venv? |
-        +==========================+=================+=============+
-        | "always"                 | N/A             | Yes         |
-        +--------------------------+-----------------+-------------+
-        | "never"                  | N/A             | No          |
-        +--------------------------+-----------------+-------------+
-        | "yes"                    | True|None       | Yes         |
-        +--------------------------+-----------------+-------------+
-        | "yes"                    | False           | No          |
-        +--------------------------+-----------------+-------------+
-        | "no"                     | True            | Yes         |
-        +--------------------------+-----------------+-------------+
-        | "no"                     | False|None      | No          |
-        +--------------------------+-----------------+-------------+
-
-        Summary
-        ~~~~~~~
-        - "always" forces reuse regardless of `func.reuse_venv`.
-        - "never" forces recreation regardless of `func.reuse_venv`.
-        - "yes" and "no" respect `func.reuse_venv` being ``False`` or ``True`` respectively.
+        See :func:`resolve_reuse_existing_venv` for the decision matrix.
 
         Returns:
             bool: True if the existing virtual environment should be reused, False otherwise.
         """
-        if self.global_config.reuse_venv not in {"always", "never", "no", "yes", None}:
-            msg = (
-                "nox.options.reuse_venv must be set to 'always', 'never', 'no', or 'yes',"
-                f" got {self.global_config.reuse_venv!r}!"
-            )
-            raise AttributeError(msg)
-
-        return any(
-            (
-                # "always" forces reuse regardless of func.reuse_venv
-                self.global_config.reuse_venv == "always",
-                # Respect func.reuse_venv when it's explicitly True, unless global_config is "never"
-                self.func.reuse_venv is True
-                and self.global_config.reuse_venv != "never",
-                # Delegate to reuse ("yes") when func.reuse_venv is not explicitly False
-                self.func.reuse_venv is not False
-                and self.global_config.reuse_venv == "yes",
-            )
-        )
+        return resolve_reuse_existing_venv(self.global_config, self.func)
 
     def execute(self) -> Result:
         logger.session_info(f"Running session {self.friendly_name}")
