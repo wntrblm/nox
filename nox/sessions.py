@@ -278,9 +278,7 @@ class Session:
     @property
     def cache_dir(self) -> pathlib.Path:
         """Create and return a 'shared cache' directory to be used across sessions."""
-        path = pathlib.Path(self._runner.global_config.envdir or ".nox").joinpath(
-            ".cache"
-        )
+        path = pathlib.Path(self._runner.global_config.envdir).joinpath(".cache")
         path.mkdir(parents=True, exist_ok=True)
         return path
 
@@ -1003,7 +1001,6 @@ def resolve_venv_backends(global_config: NoxConfig, func: Func) -> list[str]:
         global_config.force_venv_backend
         or func.venv_backend
         or global_config.default_venv_backend
-        or "virtualenv"
     )
     return backends.split("|")
 
@@ -1111,9 +1108,7 @@ class SessionRunner:
 
     @property
     def envdir(self) -> str:
-        return _normalize_path(
-            os.fspath(self.global_config.envdir or ".nox"), self.friendly_name
-        )
+        return _normalize_path(os.fspath(self.global_config.envdir), self.friendly_name)
 
     def get_direct_dependencies(
         self, sessions_by_id: Mapping[str, SessionRunner] | None = None

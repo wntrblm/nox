@@ -141,7 +141,11 @@ def _get_opt(field: attrs.Attribute[Any]) -> Opt | None:
 
 @attrs.define(kw_only=True)
 class OptionsBase:
-    """Base for option models; tracks the provenance of each field's value."""
+    """Base for option models; tracks the provenance of each field's value.
+
+    ``attrs.evolve`` builds the copy through ``__init__``, so the copy's
+    provenance resets to ``Source.DEFAULT`` for every field.
+    """
 
     _provenance: dict[str, Source] = attrs.field(
         init=False, factory=dict, repr=False, eq=False
@@ -358,7 +362,11 @@ class Options(Generic[ConfigT]):
             if option is None:
                 continue
             if field.name in sparse:
-                config.set_value(field.name, sparse[field.name], Source.COMMAND_LINE)
+                value = sparse[field.name]
+                # argparse always fills positionals in; empty means not given.
+                if option.positional and not value:
+                    continue
+                config.set_value(field.name, value, Source.COMMAND_LINE)
             elif option.env_var and (env_value := os.environ.get(option.env_var)):
                 kind, _ = _analyze_type(field.type)
                 value = env_value.split(",") if kind == "list" else env_value
@@ -369,7 +377,11 @@ class Options(Generic[ConfigT]):
         parser = self.parser()
         argcomplete.autocomplete(parser)
         namespace = parser.parse_args(args)
-        config = self.expand(namespace)
+        try:
+            config = self.expand(namespace)
+        except ValueError as err:
+            # Bad environment-variable values fail their field validator.
+            parser.error(str(err.args[0]) if err.args else str(err))
         try:
             if self.finalize is not None:
                 self.finalize(config)
