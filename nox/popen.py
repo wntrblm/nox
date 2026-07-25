@@ -32,6 +32,8 @@ __all__ = [
     "popen",
 ]
 
+_CMD_META = frozenset("&<>^|")
+
 
 def __dir__() -> list[str]:
     return __all__
@@ -39,6 +41,21 @@ def __dir__() -> list[str]:
 
 DEFAULT_INTERRUPT_TIMEOUT = 0.3
 DEFAULT_TERMINATE_TIMEOUT = 0.2
+
+
+def _windows_batch_command(args: Sequence[str]) -> str:
+    """Build a command line that protects cmd.exe metacharacters."""
+
+    quoted_args = []
+    for arg in args:
+        if _CMD_META.isdisjoint(arg):
+            quoted_args.append(subprocess.list2cmdline([arg]))
+        else:
+            # Force list2cmdline to quote the argument, then remove the
+            # temporary leading space without changing the argument itself.
+            quoted = subprocess.list2cmdline([f" {arg}"])
+            quoted_args.append(f"{quoted[0]}{quoted[2:]}")
+    return " ".join(quoted_args)
 
 
 def shutdown_process(
@@ -97,7 +114,11 @@ def popen(
     if silent:
         stdout = subprocess.PIPE
 
-    proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=stderr)
+    popen_args: Sequence[str] | str = args
+    if sys.platform.startswith("win") and args[0].casefold().endswith((".bat", ".cmd")):
+        popen_args = _windows_batch_command(args)
+
+    proc = subprocess.Popen(popen_args, env=env, stdout=stdout, stderr=stderr)
 
     try:
         out, _err = proc.communicate()

@@ -45,6 +45,33 @@ only_on_windows = pytest.mark.skipif(
 )
 
 
+def test_windows_batch_command() -> None:
+    command = nox.popen._windows_batch_command(
+        [r"C:\Program Files\tool.cmd", "plain", "has space", "requests<99"]
+    )
+
+    assert command == (r'"C:\Program Files\tool.cmd" plain "has space" "requests<99"')
+
+
+@only_on_windows
+@pytest.mark.parametrize("suffix", [".bat", ".cmd"])
+@pytest.mark.parametrize(
+    "argument", ["name&value", "name<value", "name>value", "name^value", "name|value"]
+)
+def test_run_windows_batch_metacharacter_arg(
+    tmp_path: Path, suffix: str, argument: str
+) -> None:
+    batch = tmp_path / f"echo-arg{suffix}"
+    batch.write_text(
+        f'@"{PYTHON}" -c "import sys; print(sys.argv[1])" %*\n',
+        encoding="utf-8",
+    )
+
+    result = nox.command.run([batch, argument], silent=True)
+
+    assert result.strip() == argument
+
+
 def test_run_defaults() -> None:
     result = nox.command.run([PYTHON, "-c", "print(123)"])
 
