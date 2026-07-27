@@ -104,10 +104,12 @@ def _sessions_merge_func(
             command-line.
         noxfile_Args (NoxOptions): The options specified in the
             Noxfile."""
+    # A bare flag parses to an empty value, which is still an explicit choice
+    # that must win over the Noxfile, so compare against None here.
     if (
-        not command_args.sessions
-        and not command_args.keywords
-        and not command_args.tags
+        command_args.sessions is None
+        and command_args.keywords is None
+        and command_args.tags is None
     ):
         return getattr(noxfile_args, key)  # type: ignore[no-any-return]
     return getattr(command_args, key)  # type: ignore[no-any-return]
@@ -173,22 +175,22 @@ def _reuse_venv_merge_func(
     """Merge reuse_venv from command args and Noxfile while maintaining
     backwards compatibility with reuse_existing_virtualenvs. Default is "no".
 
+    The -r/-N/-R aliases are already folded into the command-line reuse_venv
+    by :func:`_reuse_venv_finalizer`, so any command-line value wins over the
+    Noxfile.
+
     Args:
         command_args (_option_set.Namespace): The options specified on the
             command-line.
         noxfile_Args (NoxOptions): The options specified in the
             Noxfile.
     """
-    # back-compat scenario with no_reuse_existing_virtualenvs/reuse_existing_virtualenvs
-    if command_args.no_reuse_existing_virtualenvs:
-        return "no"
-    if (
-        command_args.reuse_existing_virtualenvs
-        or noxfile_args.reuse_existing_virtualenvs
-    ):
+    if command_args.reuse_venv is not None:
+        return command_args.reuse_venv  # type: ignore[no-any-return]
+    # back-compat scenario with reuse_existing_virtualenvs in the Noxfile
+    if noxfile_args.reuse_existing_virtualenvs:
         return "yes"
-    # regular option behavior
-    return command_args.reuse_venv or noxfile_args.reuse_venv or "no"
+    return noxfile_args.reuse_venv or "no"
 
 
 def default_env_var_list_factory(env_var: str) -> Callable[[], list[str] | None]:
@@ -242,21 +244,26 @@ def _force_pythons_finalizer(
 
 
 def _R_finalizer(value: bool, args: argparse.Namespace) -> bool:  # noqa: FBT001
-    """Propagate -R to --reuse-existing-virtualenvs and --no-install and --reuse-venv=yes."""
+    """Propagate -R to --reuse-existing-virtualenvs and --no-install."""
     if value:
-        args.reuse_venv = "yes"
         args.reuse_existing_virtualenvs = args.no_install = value
     return value
 
 
-def _reuse_existing_virtualenvs_finalizer(
-    value: bool,  # noqa: FBT001
-    args: argparse.Namespace,
-) -> bool:
-    """Propagate --reuse-existing-virtualenvs to --reuse-venv=yes."""
-    if value:
-        args.reuse_venv = "yes"
-    return value
+def _reuse_venv_finalizer(
+    value: ReuseVenvType | None, args: argparse.Namespace
+) -> ReuseVenvType | None:
+    """Fold the -r/-N/-R aliases into --reuse-venv. An explicit --reuse-venv
+    wins over -r and -N given alongside it, but -R always forces reuse."""
+    if args.R:
+        return "yes"
+    if value is not None:
+        return value
+    if args.no_reuse_existing_virtualenvs:
+        return "no"
+    if args.reuse_existing_virtualenvs:
+        return "yes"
+    return None
 
 
 def _posargs_finalizer(
@@ -501,6 +508,7 @@ options.add_options(
         group=options.groups["environment"],
         noxfile=True,
         merge_func=_reuse_venv_merge_func,
+        finalizer_func=_reuse_venv_finalizer,
         help=(
             "Controls existing virtualenvs recreation. This is ``'no'`` by"
             " default, but any of ``('yes', 'no', 'always', 'never')`` are accepted."
@@ -516,7 +524,6 @@ options.add_options(
         ),
         group=options.groups["environment"],
         help="This is an alias for '--reuse-venv=yes|no'.",
-        finalizer_func=_reuse_existing_virtualenvs_finalizer,
     ),
     _option_set.Option(
         "R",

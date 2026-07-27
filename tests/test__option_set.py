@@ -15,10 +15,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from nox import _option_set, _options
+
+if TYPE_CHECKING:
+    import argparse
 
 # The vast majority of _option_set is tested by test_main, but the test helper
 # :func:`OptionSet.namespace` needs a bit of help to get to full coverage.
@@ -158,3 +162,110 @@ class TestOptionSet:
 
         options.envdir = "envdir"
         options.envdir = Path("envdir")
+
+
+class TestMerge:
+    def parse_and_merge(
+        self, args: list[str], noxfile_config: _option_set.NoxOptions
+    ) -> argparse.Namespace:
+        config = _options.options.parse_args(args)
+        _options.options.merge_namespaces(config, noxfile_config)
+        return config
+
+    def test_noxfile_beats_default(self) -> None:
+        noxfile_config = _options.options.noxfile_namespace()
+        noxfile_config.sessions = ["lint"]
+        config = self.parse_and_merge([], noxfile_config)
+
+        assert config.sessions == ["lint"]
+
+    def test_cli_beats_noxfile(self) -> None:
+        noxfile_config = _options.options.noxfile_namespace()
+        noxfile_config.sessions = ["lint"]
+        config = self.parse_and_merge(["-s", "test"], noxfile_config)
+
+        assert config.sessions == ["test"]
+
+    def test_cli_reuse_venv_beats_noxfile_alias(self) -> None:
+        """An explicit CLI --reuse-venv wins over the noxfile's legacy
+        reuse_existing_virtualenvs alias (this used to be reversed)."""
+        noxfile_config = _options.options.noxfile_namespace()
+        noxfile_config.reuse_existing_virtualenvs = True
+        config = self.parse_and_merge(["--reuse-venv", "never"], noxfile_config)
+
+        assert config.reuse_venv == "never"
+
+    def test_bare_sessions_flag_beats_noxfile(self) -> None:
+        """An explicit but empty -s means "no sessions", not "use the
+        noxfile's list" (this used to fall through to the noxfile)."""
+        noxfile_config = _options.options.noxfile_namespace()
+        noxfile_config.sessions = ["lint"]
+        config = self.parse_and_merge(["-s"], noxfile_config)
+
+        assert config.sessions == []
+
+    def test_cli_keywords_suppress_noxfile_sessions(self) -> None:
+        noxfile_config = _options.options.noxfile_namespace()
+        noxfile_config.sessions = ["lint"]
+        config = self.parse_and_merge(["-k", "test"], noxfile_config)
+
+        assert config.sessions is None
+        assert config.keywords == "test"
+
+    def test_env_sessions_suppress_noxfile_sessions(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("NOXSESSION", "a,b")
+        noxfile_config = _options.options.noxfile_namespace()
+        noxfile_config.sessions = ["lint"]
+        config = self.parse_and_merge([], noxfile_config)
+
+        assert config.sessions == ["a", "b"]
+
+    def test_noxfile_beats_ci_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CI", "1")
+        noxfile_config = _options.options.noxfile_namespace()
+        noxfile_config.error_on_missing_interpreters = False
+        config = self.parse_and_merge([], noxfile_config)
+
+        assert config.error_on_missing_interpreters is False
+
+    def test_merged_defaults(self) -> None:
+        config = self.parse_and_merge([], _options.options.noxfile_namespace())
+
+        assert config.envdir == ".nox"
+        assert config.reuse_venv == "no"
+        assert config.default_venv_backend == "virtualenv"
+
+
+class TestEnvVars:
+    def test_invalid_value_is_a_clean_error(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """A bad env-var value must produce a parser error, not a traceback."""
+        monkeypatch.setenv("NOX_DOWNLOAD_PYTHON", "bogus")
+
+        with pytest.raises(SystemExit):
+            _options.options.parse_args([])
+
+        assert "'download_python' must be in" in capsys.readouterr().err
+
+
+class TestReuseAliasPrecedence:
+    """An explicit --reuse-venv on the command line now wins over the -r/-N
+    aliases given alongside it (the aliases used to win). -R still wins."""
+
+    def test_r_with_explicit_reuse_venv(self) -> None:
+        config = _options.options.parse_args(["-r", "--reuse-venv", "never"])
+
+        assert config.reuse_venv == "never"
+
+    def test_no_reuse_with_explicit_reuse_venv(self) -> None:
+        config = _options.options.parse_args(["-N", "--reuse-venv", "always"])
+
+        assert config.reuse_venv == "always"
+
+    def test_R_beats_no_reuse(self) -> None:
+        config = _options.options.parse_args(["-N", "-R"])
+
+        assert config.reuse_venv == "yes"
