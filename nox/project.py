@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 import packaging.requirements
 import packaging.specifiers
+import packaging.version
 from dependency_groups import resolve
 
 if TYPE_CHECKING:
@@ -108,7 +109,7 @@ def _load_script_block(filepath: Path, *, missing_ok: bool) -> dict[str, Any]:
 
 
 def python_versions(
-    pyproject: dict[str, Any], *, max_version: str | None = None
+    pyproject: dict[str, Any], *, max_version: str | None = None, sort: bool = True
 ) -> list[str]:
     """
     Read a list of supported Python versions. Without ``max_version``, this
@@ -116,6 +117,9 @@ def python_versions(
     will read the requires-python setting for a lower bound, and will use the
     value of ``max_version`` as the upper bound. (Reminder: you should never
     set an upper bound in ``requires-python``).
+
+    Classifier-derived versions are sorted by default. Set ``sort=False`` to
+    preserve classifier order.
 
     Example:
 
@@ -137,6 +141,8 @@ def python_versions(
             if c.startswith("Programming Language :: Python :: 3.")
         ]
         if from_classifiers:
+            if sort:
+                return sorted(from_classifiers, key=packaging.version.Version)
             return from_classifiers
         msg = 'No Python version classifiers found in "project.classifiers"'
         raise ValueError(msg)
