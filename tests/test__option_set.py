@@ -19,7 +19,7 @@ from pathlib import Path
 import attrs
 import pytest
 
-from nox import _completers, _merge, _option_set, _options
+from nox import _completers, _merge, _options
 from nox._option_set import Options, OptionsBase, Source, opt
 
 RESOURCES = Path(__file__).parent.joinpath("resources")
@@ -137,7 +137,7 @@ class TestOptions:
         assert expected_tags == set(actual_tags_from_file)
 
     def test_validation_options(self) -> None:
-        options = _option_set.NoxOptions(
+        options = _options.NoxfileOptions(
             default_venv_backend="virtualenv",
             download_python="auto",
             envdir=".nox",
@@ -155,17 +155,17 @@ class TestOptions:
             verbose=False,
         )
         options.sessions = ["testytest"]
-        options.sessions = ("testytest",)
+        options.sessions = ("testytest",)  # type: ignore[assignment]
         with pytest.raises(ValueError):  # noqa: PT011
-            options.sessions = "testytest"
+            options.sessions = "testytest"  # type: ignore[assignment]
 
         options.envdir = "envdir"
         options.envdir = Path("envdir")
         # These used to accept None to mean "unset"; now they hold real values.
         with pytest.raises(ValueError):  # noqa: PT011
-            options.reuse_venv = None
+            options.reuse_venv = None  # type: ignore[assignment]
         with pytest.raises(TypeError):
-            options.default_venv_backend = None
+            options.default_venv_backend = None  # type: ignore[assignment]
 
 
 class TestMerge:

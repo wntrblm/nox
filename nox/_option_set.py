@@ -40,7 +40,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ArgumentError",
-    "NoxOptions",  # noqa: F822 (provided lazily by __getattr__)
     "Opt",
     "Options",
     "OptionsBase",
@@ -51,16 +50,6 @@ __all__ = [
 
 def __dir__() -> list[str]:
     return __all__
-
-
-def __getattr__(name: str) -> Any:
-    # Compatibility alias; NoxOptions was defined here before the model moved.
-    if name == "NoxOptions":
-        from nox._options import NoxfileOptions  # noqa: PLC0415
-
-        return NoxfileOptions
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
 
 
 METADATA_KEY = "nox_opt"
