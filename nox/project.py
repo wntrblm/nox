@@ -5,6 +5,7 @@ __lazy_modules__ = {
     "packaging",
     "packaging.requirements",
     "packaging.specifiers",
+    "packaging.version",
     "pathlib",
     "tomllib",
 }
