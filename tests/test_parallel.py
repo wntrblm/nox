@@ -447,6 +447,24 @@ def test_child_argv_skips_fallback_backend() -> None:
     assert "--force-venv-backend" not in argv
 
 
+def test_child_argv_pins_explicit_default_values() -> None:
+    # An explicit CLI value equal to the class default (--reuse-venv=no against
+    # a Noxfile that sets "yes") must still reach the child; otherwise the
+    # child re-reads the Noxfile and diverges from the parent.
+    config = _options.options.parse_args(["--reuse-venv", "no"])
+    noxfile_config = _options.NoxfileOptions()
+    noxfile_config.reuse_venv = "yes"
+    _merge.merge_noxfile_options(config, noxfile_config)
+    assert config.reuse_venv == "no"
+
+    argv = _parallel._child_argv(
+        typing.cast("typing.Any", config),
+        _fake_runner(FakeSession("tests")),
+        "r.json",
+    )
+    assert argv[argv.index("--reuse-venv") + 1] == "no"
+
+
 def test_child_argv_forwards_new_options_automatically() -> None:
     # The argv is derived from the option model, so an option _child_argv
     # never names (like --allow-parallel) is forwarded without a code change.

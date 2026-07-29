@@ -23,10 +23,10 @@ their ``requires=`` dependency graph and never executes a session itself.
 from __future__ import annotations
 
 __lazy_modules__ = {
-    "attrs",
     "colorlog",
     "colorlog.escape_codes",
     "contextlib",
+    "copy",
     "io",
     "json",
     "shutil",
@@ -37,6 +37,7 @@ __lazy_modules__ = {
 }
 
 import contextlib
+import copy
 import io
 import json
 import os
@@ -51,7 +52,6 @@ import time
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import TYPE_CHECKING
 
-import attrs
 from colorlog.escape_codes import parse_colors
 
 from nox import _option_set
@@ -275,19 +275,23 @@ def _child_argv(
 
     The config is serialized back into arguments with ``to_argv``, so every
     option is forwarded by its declared ``Forward`` policy and new options
-    reach children without changes here. Only the child-specific overrides
-    (select exactly this session, run it alone, report to a file) are set
-    on an evolved copy of the config.
+    reach children without changes here. The copy keeps the parent's value
+    provenance (``attrs.evolve`` would reset it, silently dropping explicit
+    CLI values that equal a field default); only the child-specific overrides
+    (select exactly this session, run it alone, report to a file) are applied
+    on top.
     """
-    child_config = attrs.evolve(
-        global_config,
-        sessions=[_session_selector(session)],
-        keywords=None,
-        tags=None,
-        parallel=1,
-        no_dependencies=True,
-        report=report_path,
-    )
+    child_config = copy.deepcopy(global_config)
+    overrides: dict[str, object] = {
+        "sessions": [_session_selector(session)],
+        "keywords": None,
+        "tags": None,
+        "parallel": 1,
+        "no_dependencies": True,
+        "report": report_path,
+    }
+    for name, value in overrides.items():
+        child_config.set_value(name, value, _option_set.Source.COMMAND_LINE)
     return [sys.executable, "-m", "nox", *_option_set.to_argv(child_config)]
 
 

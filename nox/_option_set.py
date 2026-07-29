@@ -187,7 +187,12 @@ def to_argv(config: OptionsBase) -> list[str]:
 
     The output, parsed and finalized again, restores every forwardable value.
     Options marked ``Forward.NEVER`` are skipped; new options are forwarded by
-    default. Positional arguments (posargs) are emitted last, after ``--``.
+    default. An ``IF_CHANGED`` option is emitted when its value was explicitly
+    set (per provenance) or differs from the field default — provenance alone
+    is not enough, or an explicit CLI value that equals the default (say,
+    ``--reuse-venv=no``) would be dropped and a Noxfile could override it in
+    the reparsing process. Positional arguments (posargs) are emitted last,
+    after ``--``.
     """
     argv: list[str] = []
     tail: list[str] = []
@@ -201,8 +206,10 @@ def to_argv(config: OptionsBase) -> list[str]:
             if value:
                 tail = ["--", *(str(v) for v in value)]
             continue
-        if option.forward is Forward.IF_CHANGED and value == getattr(
-            defaults, field.name
+        if (
+            option.forward is Forward.IF_CHANGED
+            and config.provenance(field.name) is Source.DEFAULT
+            and value == getattr(defaults, field.name)
         ):
             continue
         choices = option.argparse_kwargs.get("choices")
