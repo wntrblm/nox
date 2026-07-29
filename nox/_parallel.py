@@ -169,8 +169,7 @@ class _Reporter:
             f"{_c('queued', 'yellow')} {queued}"
         )
         if self._skipped:
-            # bold_black (grey), not light_black: absent from colorlog < 4.6
-            header += f" · {_c('skipped', 'bold_black')} {self._skipped}"
+            header += f" · {_c('skipped', 'thin')} {self._skipped}"
         plain_header = _ANSI.sub("", header)
         if width and len(plain_header) > width - 1:
             # Too narrow for the styled header; truncate the plain text instead.
@@ -197,7 +196,7 @@ class _Reporter:
                 preview = preview[:budget] if budget > 0 else ""
             line = " ".join(_c(text, *codes) for text, codes in segments)
             if preview:
-                line += f"  {_c(preview, 'bold_black')}"
+                line += f"  {_c(preview, 'thin')}"
             lines.append(line)
         return lines
 
