@@ -23,6 +23,7 @@ their ``requires=`` dependency graph and never executes a session itself.
 from __future__ import annotations
 
 __lazy_modules__ = {
+    "attrs",
     "colorlog",
     "colorlog.escape_codes",
     "contextlib",
@@ -50,8 +51,10 @@ import time
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from typing import TYPE_CHECKING
 
+import attrs
 from colorlog.escape_codes import parse_colors
 
+from nox import _option_set
 from nox.sessions import Result, Status, _duration_str
 
 if TYPE_CHECKING:
@@ -270,73 +273,22 @@ def _child_argv(
 ) -> list[str]:
     """Build the ``nox`` command line that runs a single session in a child.
 
-    Every global option that affects how a session executes must be forwarded
-    here, or parallel runs will silently diverge from sequential ones. Keep
-    this in sync when adding options.
+    The config is serialized back into arguments with ``to_argv``, so every
+    option is forwarded by its declared ``Forward`` policy and new options
+    reach children without changes here. Only the child-specific overrides
+    (select exactly this session, run it alone, report to a file) are set
+    on an evolved copy of the config.
     """
-    g = global_config
-    argv = [
-        sys.executable,
-        "-m",
-        "nox",
-        "--noxfile",
-        str(g.noxfile),
-        "-s",
-        _session_selector(session),
-        "--no-dependencies",
-        "--parallel",
-        "1",
-        "--report",
-        report_path,
-    ]
-    if g.envdir:
-        argv += ["--envdir", str(g.envdir)]
-    if g.reuse_venv:
-        argv += ["--reuse-venv", str(g.reuse_venv)]
-    if g.no_install:
-        argv.append("--no-install")
-    if g.install_only:
-        argv.append("--install-only")
-    # The "uv|virtualenv" fallback syntax is only valid in the Noxfile, not on
-    # the command line (which validates against single backends). The child
-    # re-reads the Noxfile, so only forward a backend that names a single one;
-    # a fallback expression is re-derived from the Noxfile by the child.
-    if g.default_venv_backend and "|" not in g.default_venv_backend:
-        argv += ["--default-venv-backend", str(g.default_venv_backend)]
-    if g.force_venv_backend and "|" not in g.force_venv_backend:
-        argv += ["--force-venv-backend", str(g.force_venv_backend)]
-    if g.download_python:
-        argv += ["--download-python", str(g.download_python)]
-    # Reproduce the parent's interpreter selection so the child rebuilds the
-    # same manifest; otherwise forced/extra-python signatures (e.g. tests-3.12)
-    # don't exist in the child and it fails with "Sessions not found".
-    if g.force_pythons:
-        argv += ["--force-python", *g.force_pythons]
-    if g.extra_pythons:
-        argv += ["--extra-python", *g.extra_pythons]
-    if g.pythons:
-        argv += ["--python", *g.pythons]
-    argv.append(
-        "--error-on-missing-interpreters"
-        if g.error_on_missing_interpreters
-        else "--no-error-on-missing-interpreters"
+    child_config = attrs.evolve(
+        global_config,
+        sessions=[_session_selector(session)],
+        keywords=None,
+        tags=None,
+        parallel=1,
+        no_dependencies=True,
+        report=report_path,
     )
-    argv.append(
-        "--error-on-external-run"
-        if g.error_on_external_run
-        else "--no-error-on-external-run"
-    )
-    if g.non_interactive:
-        argv.append("--non-interactive")
-    if g.add_timestamp:
-        argv.append("--add-timestamp")
-    if g.verbose:
-        argv.append("-v")
-    argv.append("--forcecolor" if g.color else "--nocolor")
-    if g.posargs:
-        argv.append("--")
-        argv.extend(g.posargs)
-    return argv
+    return [sys.executable, "-m", "nox", *_option_set.to_argv(child_config)]
 
 
 def _read_report(path: str, session: SessionRunner, returncode: int) -> Result:

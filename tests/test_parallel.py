@@ -344,7 +344,7 @@ def test_child_argv_full() -> None:
 
     assert argv[:3] == [sys.executable, "-m", "nox"]
     assert "--no-dependencies" in argv
-    assert argv[argv.index("-s") + 1] == "tests-3.12"
+    assert argv[argv.index("--session") + 1] == "tests-3.12"
     assert argv[argv.index("--parallel") + 1] == "1"
     assert argv[argv.index("--report") + 1] == "report.json"
     assert argv[argv.index("--noxfile") + 1] == "nf.py"
@@ -358,7 +358,7 @@ def test_child_argv_full() -> None:
     assert "--error-on-missing-interpreters" in argv
     assert "--error-on-external-run" in argv
     assert "--non-interactive" in argv
-    assert "-v" in argv
+    assert "--verbose" in argv
     assert "--forcecolor" in argv
     assert "--add-timestamp" in argv
     assert argv[-3:] == ["--", "-k", "foo"]
@@ -380,7 +380,7 @@ def test_child_argv_uses_unique_signature() -> None:
     argv = _parallel._child_argv(
         typing.cast("typing.Any", config), _fake_runner(session), "r.json"
     )
-    assert argv[argv.index("-s") + 1] == "test-3.10(x=1)"
+    assert argv[argv.index("--session") + 1] == "test-3.10(x=1)"
 
 
 def test_child_argv_forwards_python_selection() -> None:
@@ -445,6 +445,36 @@ def test_child_argv_skips_fallback_backend() -> None:
     )
     assert "--default-venv-backend" not in argv
     assert "--force-venv-backend" not in argv
+
+
+def test_child_argv_forwards_new_options_automatically() -> None:
+    # The argv is derived from the option model, so an option _child_argv
+    # never names (like --allow-parallel) is forwarded without a code change.
+    config = _options.options.parse_args(["--allow-parallel", "-R"])
+    argv = _parallel._child_argv(
+        typing.cast("typing.Any", config),
+        _fake_runner(FakeSession("tests")),
+        "r.json",
+    )
+    assert "--allow-parallel" in argv
+    # -R is an alias; the fields finalize() resolves it into are forwarded.
+    assert "-R" not in argv
+    assert argv[argv.index("--reuse-venv") + 1] == "yes"
+    assert "--no-install" in argv
+
+
+def test_child_argv_omits_unset_options() -> None:
+    # Options left at their defaults are re-derived by the child (same
+    # environment, same Noxfile) instead of being pinned on the command line.
+    config = _options.options.parse_args([])
+    argv = _parallel._child_argv(
+        typing.cast("typing.Any", config),
+        _fake_runner(FakeSession("tests")),
+        "r.json",
+    )
+    assert "--envdir" not in argv
+    assert "--reuse-venv" not in argv
+    assert "--error-on-missing-interpreters" not in argv
 
 
 def _write_report(
