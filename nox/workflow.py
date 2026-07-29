@@ -17,8 +17,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    import argparse
     from collections.abc import Callable, Iterable
+
+    from nox._options import NoxConfig
 
 __all__ = ["execute"]
 
@@ -27,9 +28,7 @@ def __dir__() -> list[str]:
     return __all__
 
 
-def execute(
-    workflow: Iterable[Callable[..., Any]], global_config: argparse.Namespace
-) -> int:
+def execute(workflow: Iterable[Callable[..., Any]], global_config: NoxConfig) -> int:
     """Execute each function in the workflow.
 
     Each function in the workflow receives the result of the previous one
