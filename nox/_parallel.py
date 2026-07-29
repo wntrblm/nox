@@ -38,6 +38,7 @@ __lazy_modules__ = {
 
 import contextlib
 import copy
+import dataclasses
 import io
 import json
 import os
@@ -79,17 +80,18 @@ _TERMINATE_TIMEOUT = 2.0
 _EXPERIMENTAL = "--parallel is experimental — looking for feedback!"
 
 
-def _make_color_formatter(*, color: bool) -> Callable[..., str]:
-    """Return a function that wraps text in ANSI codes, or a no-op if disabled."""
-    if not color:
-        return lambda text, *codes: text
+@dataclasses.dataclass(frozen=True)
+class _Colorizer:
+    """Wraps text in ANSI codes, or returns it unchanged if color is disabled."""
 
-    def colorize(text: str, *codes: str) -> str:
+    color: bool
+
+    def __call__(self, text: str, *codes: str) -> str:
+        if not self.color:
+            return text
         return (
             "".join(parse_colors(code) for code in codes) + text + parse_colors("reset")
         )
-
-    return colorize
 
 
 def _preview_text(line: str) -> str:
@@ -111,7 +113,7 @@ class _Reporter:
     """
 
     def __init__(self, *, color: bool, tty: bool, total: int = 0) -> None:
-        self._c = _make_color_formatter(color=color)
+        self._c = _Colorizer(color)
         self.tty = tty
         self.stream = sys.stdout
         self._lock = threading.RLock()
