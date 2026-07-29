@@ -75,8 +75,7 @@ def _patch_run_session(
     def fake_run_session(
         session: SessionRunner,
         _global_config: object,
-        _procs: object,
-        _procs_lock: object,
+        _children: object,
         **_kwargs: object,
     ) -> tuple[Result, str]:
         if calls is not None:
@@ -172,8 +171,7 @@ def _patch_run_session_tracking_concurrency(
     def fake_run_session(
         session: SessionRunner,
         _global_config: object,
-        _procs: object,
-        _procs_lock: object,
+        _children: object,
         **_kwargs: object,
     ) -> tuple[Result, str]:
         with lock:
@@ -290,8 +288,7 @@ def test_parallel_exclusive_session_runs_alone(
     def fake_run_session(
         session: SessionRunner,
         _global_config: object,
-        _procs: object,
-        _procs_lock: object,
+        _children: object,
         **_kwargs: object,
     ) -> tuple[Result, str]:
         name = session.friendly_name
@@ -739,8 +736,7 @@ def test_run_session_spawns_subprocess(
     result, output = _parallel._run_session(
         _fake_runner(FakeSession("x")),
         _config(),
-        set(),
-        threading.Lock(),
+        _parallel._Children(),
         on_line=seen.append,
     )
     assert result.status is Status.SUCCESS
@@ -750,7 +746,7 @@ def test_run_session_spawns_subprocess(
 
     # Without a callback (the default), output is still captured.
     _, output2 = _parallel._run_session(
-        _fake_runner(FakeSession("x")), _config(), set(), threading.Lock()
+        _fake_runner(FakeSession("x")), _config(), _parallel._Children()
     )
     assert "child output" in output2
 
@@ -776,8 +772,7 @@ def test_run_session_preserves_carriage_returns(
     _, output = _parallel._run_session(
         _fake_runner(FakeSession("x")),
         _config(),
-        set(),
-        threading.Lock(),
+        _parallel._Children(),
         on_line=seen.append,
     )
     assert "10%\r50%\r100%\n" in output
@@ -884,8 +879,7 @@ def test_worker_skips_preview_callback_without_tty(
     def fake_run_session(
         session: SessionRunner,
         _global_config: object,
-        _procs: object,
-        _procs_lock: object,
+        _children: object,
         on_line: object = None,
     ) -> tuple[Result, str]:
         captured["on_line"] = on_line

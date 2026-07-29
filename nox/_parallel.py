@@ -59,7 +59,7 @@ from nox import _option_set
 from nox.sessions import Result, Status, _duration_str
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection
+    from collections.abc import Callable, Collection, Iterator
 
     from nox._options import NoxConfig
     from nox.manifest import Manifest
@@ -104,6 +104,7 @@ def _preview_text(line: str) -> str:
     return _ANSI.sub("", line.rstrip("\r\n").rsplit("\r", 1)[-1]).strip()
 
 
+@dataclasses.dataclass(kw_only=True)
 class _Reporter:
     """Buffers per-session output and renders progress.
 
@@ -112,12 +113,14 @@ class _Reporter:
     session's full output is flushed as one block when it finishes.
     """
 
-    def __init__(self, *, color: bool, tty: bool, total: int = 0) -> None:
-        self._c = _Colorizer(color)
-        self.tty = tty
+    color: bool
+    tty: bool
+    total: int = 0
+
+    def __post_init__(self) -> None:
+        self._c = _Colorizer(self.color)
         self.stream = sys.stdout
         self._lock = threading.RLock()
-        self._total = total
         self._passed = 0
         self._failed = 0
         self._skipped = 0
@@ -162,7 +165,7 @@ class _Reporter:
         _c = self._c
         running = len(self._active)
         done = self._passed + self._failed + self._skipped
-        queued = max(0, self._total - done - running)
+        queued = max(0, self.total - done - running)
         header = (
             f"{_c('nox > --parallel:', 'bold', 'purple')} "
             f"{_c('running', 'blue')} {running} · "
@@ -268,6 +271,20 @@ class _Reporter:
                 self._draw_board()
 
 
+@dataclasses.dataclass(frozen=True, eq=False, kw_only=True)
+class _Node:
+    """A queued session with everything the scheduler needs to place it.
+
+    ``deps`` holds only the prerequisites that are also in the queue. Every
+    field is resolved once, not on each scheduling pass.
+    """
+
+    session: SessionRunner
+    deps: list[SessionRunner]
+    envdir: str
+    allow_parallel: bool
+
+
 def _session_selector(session: SessionRunner) -> str:
     """Return an unambiguous ``-s`` value selecting exactly this session.
 
@@ -325,25 +342,26 @@ def _read_report(path: str, session: SessionRunner, returncode: int) -> Result:
     return result
 
 
-def _run_session(
-    session: SessionRunner,
-    global_config: NoxConfig,
-    procs: set[subprocess.Popen[bytes]],
-    procs_lock: threading.Lock,
-    on_line: Callable[[str], None] | None = None,
-) -> tuple[Result, str]:
-    """Run a single session in a subprocess; return its result and output.
+class _Children:
+    """The child processes that are running right now.
 
-    Output is read line by line so ``on_line`` (if given) sees each line as it
-    arrives, letting the caller show a live preview while the session runs.
+    Each session's child is registered for as long as it runs, so an interrupt
+    in the main thread can stop whatever is running at that moment.
     """
-    with tempfile.TemporaryDirectory() as tmp:
-        report_path = os.path.join(tmp, "report.json")
-        lines: list[str] = []
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._procs: set[subprocess.Popen[bytes]] = set()
+
+    @contextlib.contextmanager
+    def spawn(
+        self, argv: list[str], cwd: str | None
+    ) -> Iterator[subprocess.Popen[bytes]]:
+        """Start a session's child process, tracked for as long as it runs."""
         # The context manager waits for the process and closes its pipes.
         with subprocess.Popen(
-            _child_argv(global_config, session, report_path),
-            cwd=global_config.invoked_from,
+            argv,
+            cwd=cwd,
             # Detach stdin so the child never sees a TTY: parallel sessions
             # must not prompt or read from the shared terminal (they would
             # race/hang).
@@ -354,29 +372,53 @@ def _run_session(
             # tree, including the session's own subprocesses.
             start_new_session=(os.name == "posix"),
         ) as proc:
-            with procs_lock:
-                procs.add(proc)
+            with self._lock:
+                self._procs.add(proc)
             try:
-                assert proc.stdout is not None
-                # newline="" splits at \r too but doesn't translate it, so
-                # progress-bar redraws stay overwrites instead of becoming
-                # separate lines in the buffered block.
-                reader = io.TextIOWrapper(
-                    proc.stdout,
-                    encoding="utf-8",
-                    errors="backslashreplace",
-                    newline="",
-                )
-                for raw_line in iter(reader.readline, ""):
-                    line = (
-                        f"{raw_line[:-2]}\n" if raw_line.endswith("\r\n") else raw_line
-                    )
-                    lines.append(line)
-                    if on_line is not None:
-                        on_line(line)
+                yield proc
             finally:
-                with procs_lock:
-                    procs.discard(proc)
+                with self._lock:
+                    self._procs.discard(proc)
+
+    def stop_all(self) -> None:
+        with self._lock:
+            running = list(self._procs)
+        _stop_procs(running)
+
+
+def _run_session(
+    session: SessionRunner,
+    global_config: NoxConfig,
+    children: _Children,
+    on_line: Callable[[str], None] | None = None,
+) -> tuple[Result, str]:
+    """Run a single session in a subprocess; return its result and output.
+
+    Output is read line by line so ``on_line`` (if given) sees each line as it
+    arrives, letting the caller show a live preview while the session runs.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        report_path = os.path.join(tmp, "report.json")
+        lines: list[str] = []
+        with children.spawn(
+            _child_argv(global_config, session, report_path),
+            global_config.invoked_from,
+        ) as proc:
+            assert proc.stdout is not None
+            # newline="" splits at \r too but doesn't translate it, so
+            # progress-bar redraws stay overwrites instead of becoming
+            # separate lines in the buffered block.
+            reader = io.TextIOWrapper(
+                proc.stdout,
+                encoding="utf-8",
+                errors="backslashreplace",
+                newline="",
+            )
+            for raw_line in iter(reader.readline, ""):
+                line = f"{raw_line[:-2]}\n" if raw_line.endswith("\r\n") else raw_line
+                lines.append(line)
+                if on_line is not None:
+                    on_line(line)
         return _read_report(report_path, session, proc.returncode), "".join(lines)
 
 
@@ -417,30 +459,27 @@ def run_manifest_parallel(
     """
     queue = list(manifest)
     in_queue = set(queue)
-    deps: dict[SessionRunner, list[SessionRunner]] = {
-        session: [d for d in session.get_direct_dependencies() if d in in_queue]
-        for session in queue
-    }
-    # envdir is a nontrivial property (path normalization, possibly a hashing
-    # warning); compute it once per session instead of on every scheduling pass.
-    envdirs = {session: session.envdir for session in queue}
-    # A session's own allow_parallel= wins; unset sessions fall back to the
-    # global --allow-parallel / nox.options.allow_parallel default.
     default_parallel = bool(global_config.allow_parallel)
-    allow_parallel = {
-        session: (
-            default_parallel
+    nodes = [
+        _Node(
+            session=session,
+            deps=[d for d in session.get_direct_dependencies() if d in in_queue],
+            # envdir is a nontrivial property (path normalization, possibly a
+            # hashing warning); compute it once instead of on every pass.
+            envdir=session.envdir,
+            # A session's own allow_parallel= wins; unset sessions fall back to
+            # the global --allow-parallel / nox.options.allow_parallel default.
+            allow_parallel=default_parallel
             if session.func.allow_parallel is None
-            else session.func.allow_parallel
+            else session.func.allow_parallel,
         )
         for session in queue
-    }
+    ]
 
     results: dict[SessionRunner, Result] = {}
-    not_started = list(queue)
-    futures: dict[Future[Result], SessionRunner] = {}
-    procs: set[subprocess.Popen[bytes]] = set()
-    procs_lock = threading.Lock()
+    not_started = list(nodes)
+    futures: dict[Future[Result], _Node] = {}
+    children = _Children()
     stop = False
 
     reporter = _Reporter(
@@ -449,14 +488,13 @@ def run_manifest_parallel(
         total=len(queue),
     )
 
-    def worker(session: SessionRunner) -> Result:
-        name = session.friendly_name
+    def worker(node: _Node) -> Result:
+        name = node.session.friendly_name
         reporter.started(name)
         result, output = _run_session(
-            session,
+            node.session,
             global_config,
-            procs,
-            procs_lock,
+            children,
             # The preview only feeds the TTY status board; skip the per-line
             # work entirely when there isn't one.
             on_line=(lambda line: reporter.update(name, line))
@@ -479,9 +517,9 @@ def run_manifest_parallel(
         start only when nothing else is running, and nothing starts alongside
         them.
         """
-        busy_envdirs = {envdirs[running] for running in futures.values()}
+        busy_envdirs = {running.envdir for running in futures.values()}
         exclusive_running = any(
-            not allow_parallel[running] for running in futures.values()
+            not running.allow_parallel for running in futures.values()
         )
         # The fixpoint loop is load-bearing: when a failure cascades while
         # nothing is running, every transitive dependent must be aborted in
@@ -489,28 +527,27 @@ def run_manifest_parallel(
         progressed = True
         while progressed:
             progressed = False
-            for session in list(not_started):
-                session_deps = deps[session]
-                if not all(dep in results for dep in session_deps):
+            for node in list(not_started):
+                if not all(dep in results for dep in node.deps):
                     continue
-                failed = [dep for dep in session_deps if not results[dep]]
+                failed = [dep for dep in node.deps if not results[dep]]
                 if failed:
-                    not_started.remove(session)
+                    not_started.remove(node)
                     progressed = True
-                    result = Result.aborted_prerequisite(session, failed[0])
-                    results[session] = result
-                    reporter.finished(session.friendly_name, result, "")
+                    result = Result.aborted_prerequisite(node.session, failed[0])
+                    results[node.session] = result
+                    reporter.finished(node.session.friendly_name, result, "")
                 elif (
                     len(futures) < jobs
                     and not exclusive_running
-                    and envdirs[session] not in busy_envdirs
-                    and (allow_parallel[session] or not futures)
+                    and node.envdir not in busy_envdirs
+                    and (node.allow_parallel or not futures)
                 ):
-                    not_started.remove(session)
+                    not_started.remove(node)
                     progressed = True
-                    busy_envdirs.add(envdirs[session])
-                    exclusive_running = not allow_parallel[session]
-                    futures[executor.submit(worker, session)] = session
+                    busy_envdirs.add(node.envdir)
+                    exclusive_running = not node.allow_parallel
+                    futures[executor.submit(worker, node)] = node
 
     start = time.monotonic()
     with reporter, ThreadPoolExecutor(max_workers=jobs) as executor:
@@ -522,15 +559,13 @@ def run_manifest_parallel(
                     break
                 done, _ = wait(futures, return_when=FIRST_COMPLETED)
                 for future in done:
-                    session = futures.pop(future)
+                    node = futures.pop(future)
                     result = future.result()
-                    results[session] = result
+                    results[node.session] = result
                     if not result and global_config.stop_on_first_error:
                         stop = True
         except KeyboardInterrupt:  # pragma: no cover - hard to trigger in tests
-            with procs_lock:
-                running = list(procs)
-            _stop_procs(running)
+            children.stop_all()
             executor.shutdown(wait=False, cancel_futures=True)
             raise
 
