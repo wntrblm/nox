@@ -481,9 +481,10 @@ def test_child_argv_forwards_new_options_automatically() -> None:
     assert "--no-install" in argv
 
 
-def test_child_argv_omits_unset_options() -> None:
+def test_child_argv_omits_unset_options(monkeypatch: pytest.MonkeyPatch) -> None:
     # Options left at their defaults are re-derived by the child (same
     # environment, same Noxfile) instead of being pinned on the command line.
+    monkeypatch.delenv("CI", raising=False)
     config = _options.options.parse_args([])
     argv = _parallel._child_argv(
         typing.cast("typing.Any", config),
@@ -493,6 +494,8 @@ def test_child_argv_omits_unset_options() -> None:
     assert "--envdir" not in argv
     assert "--reuse-venv" not in argv
     assert "--error-on-missing-interpreters" not in argv
+    # ALWAYS-forwarded pairs pin the env-dependent default explicitly.
+    assert "--no-error-on-missing-interpreters" in argv
 
 
 def _write_report(
