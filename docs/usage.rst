@@ -324,6 +324,12 @@ If the Noxfile sets ``nox.options.stop_on_first_error``, you can override the No
 Running sessions in parallel
 ----------------------------
 
+.. warning::
+
+   Parallel execution is experimental. The behavior, options, and output can
+   change in a future release. Please report problems and give feedback on the
+   `issue tracker <https://github.com/wntrblm/nox/issues>`_.
+
 By default Nox runs sessions one at a time. Use ``-j`` / ``--parallel`` to run
 independent sessions concurrently, each in its own subprocess::
 

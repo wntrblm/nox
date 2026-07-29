@@ -565,8 +565,10 @@ def test_reporter_render() -> None:
     reporter._active = {"a": 100.0, "b": 100.0}
     reporter._preview = {"a": "compiling module x"}
     lines = reporter._render(105.0, width=0)
-    # A summary header, then a line per running session (``a`` has a preview).
+    # An experimental banner, a summary header, then a line per running
+    # session (``a`` has a preview).
     assert lines == [
+        " --parallel is experimental — looking for feedback! ",
         "nox > --parallel: running 2 · passed 0 · failed 0 · queued 0",
         "⠋ a (5s)  compiling module x",
         "⠋ b (5s)",
@@ -579,15 +581,16 @@ def test_reporter_render_header_counts() -> None:
     reporter._passed = 2
     reporter._failed = 1
     # queued = total - (passed + failed) - running = 6 - 3 - 2 = 1
-    assert reporter._render(105.0, width=0)[0] == (
+    assert reporter._render(105.0, width=0)[1] == (
         "nox > --parallel: running 2 · passed 2 · failed 1 · queued 1"
     )
     # No running sessions -> nothing is drawn.
     reporter._active = {}
     assert reporter._render(105.0, width=0) == []
-    # Narrow width hard-truncates the (plain) header.
+    # Narrow width hard-truncates the (plain) banner and header.
     reporter._active = {"a": 100.0}
-    header = reporter._render(105.0, width=8)[0]
+    banner, header = reporter._render(105.0, width=8)[:2]
+    assert len(banner) == 7
     assert len(header) == 7
     assert "\x1b" not in header
 
@@ -597,11 +600,11 @@ def test_reporter_render_truncates_to_width() -> None:
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "x" * 200}
     # Wide enough for the header plus a trimmed preview: fills width - 1.
-    assert len(reporter._render(105.0, width=20)[1]) == 19
+    assert len(reporter._render(105.0, width=20)[2]) == 19
     # No room for a preview after the header: session line only, no trailing spaces.
-    assert reporter._render(105.0, width=11)[1] == "⠋ a (5s)"
+    assert reporter._render(105.0, width=11)[2] == "⠋ a (5s)"
     # Too narrow even for the header: hard truncation to width - 1.
-    line = reporter._render(105.0, width=5)[1]
+    line = reporter._render(105.0, width=5)[2]
     assert len(line) == 4
     assert "\x1b" not in line
 
@@ -611,10 +614,13 @@ def test_reporter_render_color() -> None:
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "installing"}
     reporter._skipped = 1
-    header, line = reporter._render(105.0, width=0)
+    banner, header, line = reporter._render(105.0, width=0)
     # Bold escape codes vary between colorlog versions, so build the expected
     # sequences with parse_colors instead of hard-coding them.
     bold, grey, reset = (parse_colors(c) for c in ("bold", "bold_black", "reset"))
+    assert "\x1b[43m" in banner  # yellow background
+    assert "\x1b[30m" in banner  # black text
+    assert "experimental" in banner
     assert f"{bold}\x1b[35mnox > --parallel:{reset}" in header  # bold purple prefix
     assert "\x1b[34m" in header  # blue "running"
     assert "\x1b[32m" in header  # green "passed"
@@ -650,6 +656,8 @@ def test_reporter_started_and_finished(capsys: pytest.CaptureFixture[str]) -> No
             "session output\n",
         )
     out = capsys.readouterr().out
+    # Without a TTY the banner is printed once, when the reporter starts.
+    assert "--parallel is experimental" in out
     assert "Starting session a..." in out
     assert "✓ a: success" in out
     assert "session output" in out
@@ -683,7 +691,7 @@ def test_reporter_counts_skipped_separately() -> None:
     assert reporter._passed == 0
     assert reporter._skipped == 1
     reporter._active = {"a": 100.0}
-    header = reporter._render(105.0, width=0)[0]
+    header = reporter._render(105.0, width=0)[1]
     assert "skipped 1" in header
     # queued = total - done - running = 3 - 1 - 1 = 1
     assert "queued 1" in header

@@ -76,6 +76,8 @@ _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 # How long a child gets to exit after SIGTERM before it is SIGKILLed.
 _TERMINATE_TIMEOUT = 2.0
 
+_EXPERIMENTAL = "--parallel is experimental — looking for feedback!"
+
 
 def _make_color_formatter(*, color: bool) -> Callable[..., str]:
     """Return a function that wraps text in ANSI codes, or a no-op if disabled."""
@@ -128,7 +130,16 @@ class _Reporter:
         if self.tty:  # pragma: no cover - requires a live TTY
             self._thread = threading.Thread(target=self._run, daemon=True)
             self._thread.start()
+        else:
+            # No live board to carry the banner; print it once instead.
+            self.stream.write(self._banner() + "\n")
+            self.stream.flush()
         return self
+
+    def _banner(self, width: int = 0) -> str:
+        if width and len(_EXPERIMENTAL) + 2 > width - 1:
+            return _EXPERIMENTAL[: width - 1]
+        return self._c(f" {_EXPERIMENTAL} ", "bg_yellow", "black")
 
     def __exit__(self, *exc: object) -> None:
         self._stop.set()
@@ -164,7 +175,7 @@ class _Reporter:
         if width and len(plain_header) > width - 1:
             # Too narrow for the styled header; truncate the plain text instead.
             header = plain_header[: width - 1]
-        lines = [header]
+        lines = [self._banner(width), header]
 
         frame = _SPINNER[self._spin % len(_SPINNER)]
         for name, start in self._active.items():
