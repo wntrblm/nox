@@ -114,10 +114,6 @@ def _forcecolor_default() -> bool:
     }
 
 
-def _serialize_color(value: Any) -> list[str]:
-    return ["--forcecolor"] if value else ["--nocolor"]
-
-
 def parse_parallel(value: str | int) -> int:
     """Resolve a ``--parallel`` value to a positive integer.
 
@@ -617,8 +613,16 @@ class NoxConfig(NoxfileOptions):
     )
     color: bool = attrs.field(
         default=False,
-        # ALWAYS: the default depends on the parent's tty, so pin it for children.
-        metadata=opt(hidden=True, forward=Forward.ALWAYS, serialize=_serialize_color),
+        # ALWAYS: the default depends on the parent's tty, so pin it for
+        # children. Hidden options never reach the parser, so the flag pair
+        # here exists purely for ``to_argv``; the real CLI flags live on the
+        # ``nocolor``/``forcecolor`` alias fields above.
+        metadata=opt(
+            "--forcecolor",
+            negative_flags=("--nocolor",),
+            hidden=True,
+            forward=Forward.ALWAYS,
+        ),
     )
     # Wall-clock duration of a parallel run, recorded by the parallel runner
     # so the summary reports elapsed time, not the sum of session durations.

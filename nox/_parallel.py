@@ -39,6 +39,7 @@ __lazy_modules__ = {
 import contextlib
 import copy
 import dataclasses
+import functools
 import io
 import json
 import os
@@ -56,7 +57,7 @@ from typing import TYPE_CHECKING
 from colorlog.escape_codes import parse_colors
 
 from nox import _option_set
-from nox.sessions import Result, Status, _duration_str
+from nox.sessions import Result, Status, _duration_str, resolve_allow_parallel
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterator
@@ -80,6 +81,13 @@ _TERMINATE_TIMEOUT = 2.0
 _EXPERIMENTAL = "--parallel is experimental — looking for feedback!"
 
 
+@functools.cache
+def _parse_colors(code: str) -> str:
+    # The status board re-renders the same handful of codes 4x/second;
+    # parse each one once.
+    return parse_colors(code)
+
+
 @dataclasses.dataclass(frozen=True)
 class _Colorizer:
     """Wraps text in ANSI codes, or returns it unchanged if color is disabled."""
@@ -90,7 +98,9 @@ class _Colorizer:
         if not self.color:
             return text
         return (
-            "".join(parse_colors(code) for code in codes) + text + parse_colors("reset")
+            "".join(_parse_colors(code) for code in codes)
+            + text
+            + _parse_colors("reset")
         )
 
 
@@ -459,7 +469,6 @@ def run_manifest_parallel(
     """
     queue = list(manifest)
     in_queue = set(queue)
-    default_parallel = bool(global_config.allow_parallel)
     nodes = [
         _Node(
             session=session,
@@ -467,11 +476,7 @@ def run_manifest_parallel(
             # envdir is a nontrivial property (path normalization, possibly a
             # hashing warning); compute it once instead of on every pass.
             envdir=session.envdir,
-            # A session's own allow_parallel= wins; unset sessions fall back to
-            # the global --allow-parallel / nox.options.allow_parallel default.
-            allow_parallel=default_parallel
-            if session.func.allow_parallel is None
-            else session.func.allow_parallel,
+            allow_parallel=resolve_allow_parallel(global_config, session.func),
         )
         for session in queue
     ]

@@ -39,20 +39,22 @@ if typing.TYPE_CHECKING:
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 
 
-def session_func_raw() -> None:
-    pass
+def _make_session_func(requires: list[str]) -> nox._decorators.Func:
+    def raw() -> None:
+        pass
+
+    func = typing.cast("nox._decorators.Func", raw)
+    func.python = None
+    func.venv_backend = None
+    func.should_warn = {}
+    func.tags = []
+    func.default = True
+    func.requires = requires
+    func.allow_parallel = False
+    return func
 
 
-session_func = typing.cast("nox._decorators.Func", session_func_raw)
-
-
-session_func.python = None
-session_func.venv_backend = None
-session_func.should_warn = {}
-session_func.tags = []
-session_func.default = True
-session_func.requires = []
-session_func.allow_parallel = False
+session_func = _make_session_func([])
 
 
 def session_func_with_python_raw() -> None:
@@ -223,21 +225,6 @@ def test_filter_manifest_no_dependencies_skips_resolution() -> None:
     assert return_value is manifest
     # --no-dependencies runs only the selected sessions; nothing is pulled in.
     assert not add_dependencies.called
-
-
-def _make_session_func(requires: list[str]) -> nox._decorators.Func:
-    def raw() -> None:
-        pass
-
-    func = typing.cast("nox._decorators.Func", raw)
-    func.python = None
-    func.venv_backend = None
-    func.should_warn = {}
-    func.tags = []
-    func.default = True
-    func.requires = requires
-    func.allow_parallel = False
-    return func
 
 
 def test_filter_manifest_no_dependencies_still_validates_requires() -> None:

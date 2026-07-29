@@ -495,10 +495,11 @@ def test_child_argv_omits_unset_options(monkeypatch: pytest.MonkeyPatch) -> None
     assert "--no-error-on-missing-interpreters" in argv
 
 
-def _write_report(
-    path: str, *, result: str = "success", reason: object = None, duration: float = 1.5
-) -> None:
-    data = {
+def _report_data(
+    *, result: str = "success", reason: object = None, duration: float = 1.5
+) -> dict[str, object]:
+    """A ``--report`` file's contents for a single session named ``x``."""
+    return {
         "result": 1,
         "sessions": [
             {
@@ -511,8 +512,13 @@ def _write_report(
             }
         ],
     }
+
+
+def _write_report(
+    path: str, *, result: str = "success", reason: object = None, duration: float = 1.5
+) -> None:
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f)
+        json.dump(_report_data(result=result, reason=reason, duration=duration), f)
 
 
 def test_read_report_success(tmp_path: object) -> None:
@@ -711,19 +717,7 @@ def test_run_session_spawns_subprocess(
     def fake_child_argv(
         _global_config: object, _session: object, report_path: str
     ) -> list[str]:
-        report = {
-            "result": 1,
-            "sessions": [
-                {
-                    "name": "x",
-                    "result": "success",
-                    "result_code": 1,
-                    "reason": None,
-                    "signatures": ["x"],
-                    "duration": 0.5,
-                }
-            ],
-        }
+        report = _report_data(duration=0.5)
         code = (
             "import json,sys;"
             f"open({report_path!r}, 'w').write({json.dumps(json.dumps(report))});"

@@ -1018,6 +1018,17 @@ def resolve_venv_backends(global_config: NoxConfig, func: Func) -> list[str]:
     return backends.split("|")
 
 
+def resolve_allow_parallel(global_config: NoxConfig, func: Func) -> bool:
+    """Whether a session may run concurrently under ``--parallel``.
+
+    A session's own ``allow_parallel=`` wins; unset sessions fall back to the
+    global ``--allow-parallel`` / ``nox.options.allow_parallel`` default.
+    """
+    if func.allow_parallel is None:
+        return bool(global_config.allow_parallel)
+    return func.allow_parallel
+
+
 def resolve_download_python(
     global_config: NoxConfig, func: Func
 ) -> Literal["auto", "never", "always"]:
@@ -1189,13 +1200,11 @@ class SessionRunner:
 
         # With --no-dependencies, prerequisites aren't queued (and may not have
         # run in this process), so skip the dependency-result check entirely.
-        dependencies = (
-            [] if self.global_config.no_dependencies else self.get_direct_dependencies()
-        )
-        for dependency in dependencies:
-            if not dependency.result:
-                self.result = Result.aborted_prerequisite(self, dependency)
-                return self.result
+        if not self.global_config.no_dependencies:
+            for dependency in self.get_direct_dependencies():
+                if not dependency.result:
+                    self.result = Result.aborted_prerequisite(self, dependency)
+                    return self.result
 
         start = time.perf_counter()
         try:

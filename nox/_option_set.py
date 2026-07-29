@@ -100,9 +100,6 @@ class Opt:
         positional: A positional argument (only ``posargs``).
         completer: argcomplete completer.
         forward: See :class:`Forward`.
-        serialize: Custom argv emitter; receives the value, returns the argv
-            chunk or None to skip. Overrides the generic emission; runs after
-            the ``forward`` policy has been applied.
         argparse_kwargs: Extra/overriding kwargs for ``add_argument``.
     """
 
@@ -115,7 +112,6 @@ class Opt:
     positional: bool = False
     completer: Callable[..., Iterable[str]] | None = None
     forward: Forward = Forward.IF_CHANGED
-    serialize: Callable[[Any], list[str] | None] | None = None
     argparse_kwargs: dict[str, Any] = attrs.field(factory=dict)
 
 
@@ -216,9 +212,6 @@ def to_argv(config: OptionsBase) -> list[str]:
         if choices is not None and value not in choices:
             # Values the CLI grammar can't express (e.g. the noxfile-only
             # "uv|virtualenv" fallback syntax); the child re-derives them.
-            continue
-        if option.serialize is not None:
-            argv += option.serialize(value) or []
             continue
         if option.negative_flags:
             argv.append(option.flags[-1] if value else option.negative_flags[-1])
