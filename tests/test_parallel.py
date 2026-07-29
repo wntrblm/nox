@@ -615,9 +615,7 @@ def test_reporter_render_color() -> None:
     reporter._preview = {"a": "installing"}
     reporter._skipped = 1
     banner, header, line = reporter._render(105.0, width=0)
-    # Bold escape codes vary between colorlog versions, so build the expected
-    # sequences with parse_colors instead of hard-coding them.
-    bold, grey, reset = (parse_colors(c) for c in ("bold", "bold_black", "reset"))
+    bold, dim, reset = (parse_colors(c) for c in ("bold", "thin", "reset"))
     assert "\x1b[43m" in banner  # yellow background
     assert "\x1b[30m" in banner  # black text
     assert "experimental" in banner
@@ -626,10 +624,10 @@ def test_reporter_render_color() -> None:
     assert "\x1b[32m" in header  # green "passed"
     assert "\x1b[31m" in header  # red "failed"
     assert "\x1b[33m" in header  # yellow "queued"
-    assert f"{grey}skipped{reset}" in header  # grey "skipped"
+    assert f"{dim}skipped{reset}" in header  # dim "skipped"
     assert "\x1b[36m" in line  # cyan spinner/name
     assert "\x1b[32m" in line  # green elapsed time
-    assert f"{grey}installing{reset}" in line  # grey preview
+    assert f"{dim}installing{reset}" in line  # dim preview
     assert bold in line  # bold name
 
 
