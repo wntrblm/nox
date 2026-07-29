@@ -777,6 +777,17 @@ def test_run_session_preserves_carriage_returns(
     assert any(line.endswith("100%\n") for line in seen)
 
 
+def test_children_stop_all_terminates_running_children() -> None:
+    # stop_all is the KeyboardInterrupt path: it must stop whatever child is
+    # registered at that moment.
+    children = _parallel._Children()
+    argv = [sys.executable, "-c", "import time; time.sleep(60)"]
+    with children.spawn(argv, None) as proc:
+        children.stop_all()
+        proc.wait(timeout=30)
+    assert proc.returncode != 0
+
+
 def test_stop_procs_escalates_to_kill(monkeypatch: pytest.MonkeyPatch) -> None:
     if os.name != "posix":  # pragma: no cover
         pytest.skip("process groups are POSIX-only")
