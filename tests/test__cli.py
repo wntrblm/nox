@@ -195,34 +195,88 @@ def test_dependencies_with_url(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-@pytest.mark.parametrize("backend", ["uv", "virtualenv"])
-def test_run_script_mode_pip_resolution(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, backend: str
-) -> None:
-    """pip must be resolved against the venv's PATH (Windows searches the parent's)."""
-    calls: list[list[str]] = []
+def make_fake_script_venv(**overrides: object) -> SimpleNamespace:
+    """A stand-in for the venv run_script_mode builds."""
+    defaults: dict[str, object] = {
+        "venv_backend": "uv",
+        "create": lambda: None,
+        "_get_env": lambda _env: {"PATH": "/fake/venv/bin"},
+    }
+    return SimpleNamespace(**{**defaults, **overrides})
 
-    fake_venv = SimpleNamespace(
-        venv_backend=backend,
-        create=lambda: None,
-        _get_env=lambda _env: {"PATH": "/fake/venv/bin"},
-    )
-    monkeypatch.setattr(
-        nox.virtualenv, "get_virtualenv", lambda *_args, **_kwargs: fake_venv
-    )
+
+@pytest.fixture
+def script_mode_exec(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
+    """Stub the install/exec plumbing at the end of run_script_mode.
+
+    Returns the list of commands passed to subprocess.run.
+    """
+    calls: list[list[str]] = []
 
     def fake_run(cmd: list[str], **_kwargs: object) -> SimpleNamespace:
         calls.append(list(cmd))
         return SimpleNamespace(returncode=0)
 
-    monkeypatch.setattr(subprocess, "run", fake_run)
-    monkeypatch.setattr(shutil, "which", lambda cmd, path=None: f"{path}/{cmd}")
-
     def fake_execle(_path: str, *_args: object) -> typing.NoReturn:
         raise SystemExit(0)
 
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(shutil, "which", lambda cmd, path=None: f"{path}/{cmd}")
     monkeypatch.setattr(os, "execle", fake_execle)
     monkeypatch.setattr(sys, "argv", ["nox"])
+    return calls
+
+
+def run_main_with_script(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    toml: str,
+    *,
+    deps_ok: bool = True,
+    argv: list[str] | None = None,
+) -> tuple[dict[str, object], pytest.ExceptionInfo[SystemExit]]:
+    """Run main() against a script-block noxfile written in tmp_path.
+
+    Returns the kwargs run_script_mode received (empty if it never triggered)
+    and the resulting SystemExit.
+    """
+    monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
+    monkeypatch.setattr(sys, "argv", ["nox", *(argv or [])])
+    # This will return pytest's filename instead, so patching it to None
+    monkeypatch.setattr(nox._cli, "get_main_filename", lambda: None)
+    monkeypatch.setattr(nox._cli, "check_dependencies", lambda _deps: deps_ok)
+    monkeypatch.setattr(nox._cli, "execute_workflow", lambda _args: 0)
+
+    captured: dict[str, object] = {}
+
+    def fake_run_script_mode(*_args: object, **kwargs: object) -> typing.NoReturn:
+        captured.update(kwargs)
+        raise SystemExit(0)
+
+    monkeypatch.setattr(nox._cli, "run_script_mode", fake_run_script_mode)
+    monkeypatch.chdir(tmp_path)
+    tmp_path.joinpath("noxfile.py").write_text(
+        f"# /// script\n{toml}# ///", encoding="utf-8"
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        nox._cli.main()
+
+    return captured, excinfo
+
+
+@pytest.mark.parametrize("backend", ["uv", "virtualenv"])
+def test_run_script_mode_pip_resolution(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    backend: str,
+    script_mode_exec: list[list[str]],
+) -> None:
+    """pip must be resolved against the venv's PATH (Windows searches the parent's)."""
+    fake_venv = make_fake_script_venv(venv_backend=backend)
+    monkeypatch.setattr(
+        nox.virtualenv, "get_virtualenv", lambda *_args, **_kwargs: fake_venv
+    )
 
     with pytest.raises(SystemExit):
         nox._cli.run_script_mode(
@@ -239,7 +293,7 @@ def test_run_script_mode_pip_resolution(
         if backend == "uv"
         else ["/fake/venv/bin/pip", "install"]
     )
-    assert calls[0] == [*expected, "nox", "cowsay"]
+    assert script_mode_exec[0] == [*expected, "nox", "cowsay"]
 
 
 @pytest.mark.parametrize(
@@ -269,32 +323,17 @@ def test_script_mode_download_python_precedence(
             monkeypatch.delenv(var, raising=False)
         else:
             monkeypatch.setenv(var, value)
-    monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
     monkeypatch.delenv("NOX_SCRIPT_VENV_BACKEND", raising=False)
-    monkeypatch.setattr(sys, "argv", ["nox", *cli_args])
-    # This will return pytest's filename instead, so patching it to None
-    monkeypatch.setattr(nox._cli, "get_main_filename", lambda: None)
-    monkeypatch.setattr(nox._cli, "check_dependencies", lambda _deps: False)
-
-    captured: dict[str, object] = {}
-
-    def fake_run_script_mode(*_args: object, **kwargs: object) -> typing.NoReturn:
-        captured.update(kwargs)
-        raise SystemExit(0)
-
-    monkeypatch.setattr(nox._cli, "run_script_mode", fake_run_script_mode)
-    monkeypatch.chdir(tmp_path)
     toml_line = (
         f"# tool.nox.script-download-python = '{toml_value}'\n" if toml_value else ""
     )
-    tmp_path.joinpath("noxfile.py").write_text(
-        f"# /// script\n# dependencies=['nox']\n{toml_line}# ///",
-        encoding="utf-8",
+    captured, _ = run_main_with_script(
+        monkeypatch,
+        tmp_path,
+        f"# dependencies=['nox']\n{toml_line}",
+        deps_ok=False,
+        argv=cli_args,
     )
-
-    with pytest.raises(SystemExit):
-        nox._cli.main()
-
     assert captured["download_python"] == expected
 
 
