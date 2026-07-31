@@ -1319,9 +1319,11 @@ def test_get_python_discovery_cache_oserror(monkeypatch: pytest.MonkeyPatch) -> 
         ("<3.14,!=3.13.*", "3.12"),
         ("<3.14,!=3.13.*,!=3.12.*", "3.11"),
         ("<3.14t,!=3.13.*", "3.12t"),
+        ("<3.13,<3.14t", "3.12t"),
         ("<3.1,!=3.0.*", None),
-        # python-discovery's permissive grammar accepts this; packaging can't.
+        # python-discovery's permissive grammar accepts these; packaging can't.
         ("<3.12.", None),
+        ("<3.14,<3.12.", None),
         ("<4", None),
         ("<3.0", None),
         ("!=3.12", None),

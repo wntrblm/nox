@@ -49,7 +49,7 @@ from nox.logger import logger
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
-    from python_discovery import DiskCache, PythonInfo, SimpleSpecifier
+    from python_discovery import DiskCache, PythonInfo
 
     from nox._typing import Python
 
@@ -190,8 +190,10 @@ def _find_python(interpreter: str) -> str | None:
     return info.executable if info is not None else None
 
 
-def _highest_under_upper_bound(specifier: SimpleSpecifier) -> str | None:
-    """Return the highest ``X.Y`` version fully below a ``<``/``<=`` clause.
+def _highest_under_upper_bound(
+    operator: str, version_str: str
+) -> tuple[int, int] | None:
+    """Return the highest ``(major, minor)`` fully below a ``<``/``<=`` clause.
 
     Installers resolve ``X.Y`` to its latest patch release, so the pick must
     allow *every* ``X.Y`` patch; that is always the minor below the bound's:
@@ -200,11 +202,10 @@ def _highest_under_upper_bound(specifier: SimpleSpecifier) -> str | None:
     ``None`` for other operators or when no minor version can be picked
     (``<4``, ``<3.0``).
     """
-    if specifier.operator not in {"<", "<="}:
+    if operator not in {"<", "<="}:
         return None
-    free_threaded = specifier.version_str.endswith("t")
     try:
-        release = version.Version(specifier.version_str.removesuffix("t")).release
+        release = version.Version(version_str).release
     except version.InvalidVersion:
         return None
     if len(release) < 2:
@@ -212,7 +213,7 @@ def _highest_under_upper_bound(specifier: SimpleSpecifier) -> str | None:
     major, minor = release[0], release[1] - 1
     if minor < 0:
         return None
-    return f"{major}.{minor}{'t' if free_threaded else ''}"
+    return major, minor
 
 
 def _concrete_install_target(interpreter: str) -> str | None:
@@ -239,30 +240,34 @@ def _concrete_install_target(interpreter: str) -> str | None:
         if specifier.operator in {">=", "==", "~=", ">"}:
             return f"{prefix}{specifier.version_str}"
 
+    # python-discovery's specifiers don't understand the free-threaded "t"
+    # suffix, so strip it up front and do the version arithmetic with packaging.
+    suffix = (
+        "t"
+        if any(s.version_str.endswith("t") for s in spec.version_specifier.specifiers)
+        else ""
+    )
+    clauses = [
+        (s.operator, s.version_str.removesuffix("t"))
+        for s in spec.version_specifier.specifiers
+    ]
     candidates = [
         candidate
-        for specifier in spec.version_specifier.specifiers
-        if (candidate := _highest_under_upper_bound(specifier)) is not None
+        for op, ver in clauses
+        if (candidate := _highest_under_upper_bound(op, ver)) is not None
     ]
     if not candidates:
         return None
+    try:
+        allowed = specifiers.SpecifierSet(",".join(f"{op}{ver}" for op, ver in clauses))
+    except specifiers.InvalidSpecifier:
+        return None
     # The tightest upper bound wins, but another clause (an "!=") can exclude
     # the pick, so step down through the minors until one clears the whole set.
-    # python-discovery's specifiers don't understand the free-threaded "t"
-    # suffix, so check with packaging without it.
-    target = min(candidates, key=lambda c: version.Version(c.removesuffix("t")))
-    allowed = specifiers.SpecifierSet(
-        ",".join(
-            f"{s.operator}{s.version_str.removesuffix('t')}"
-            for s in spec.version_specifier.specifiers
-        )
-    )
-    suffix = "t" if target.endswith("t") else ""
-    major, minor = version.Version(target.removesuffix("t")).release[:2]
-    while minor >= 0:
+    major, top_minor = min(candidates)
+    for minor in range(top_minor, -1, -1):
         if allowed.contains(f"{major}.{minor}"):
             return f"{prefix}{major}.{minor}{suffix}"
-        minor -= 1
     return None
 
 
