@@ -8,6 +8,17 @@ on:
 
 env:
   FORCE_COLOR: "1"
+  # conda.anaconda.org rate-limits shared CI IPs (HTTP 429), and its sharded
+  # repodata fetch bypasses conda's retry settings, so a single 429 kills the
+  # solve. Resolve conda-forge via the prefix.dev mirror, which isn't throttled.
+  CONDA_CHANNEL_ALIAS: "https://prefix.dev"
+  # Defense in depth: retry the non-sharded repodata fetches with backoff too.
+  CONDA_REMOTE_MAX_RETRIES: "8"
+  CONDA_REMOTE_BACKOFF_FACTOR: "4"
+  # Cache downloaded packages and repodata here, and reuse cached repodata for a
+  # day so repeat runs don't re-fetch metadata.
+  CONDA_PKGS_DIRS: ~/conda_pkgs_dir
+  CONDA_LOCAL_REPODATA_TTL: "86400"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -51,13 +62,20 @@ jobs:
           allow-prereleases: true
       - name: Setup uv
         uses: astral-sh/setup-uv@v8.2.0
+      - name: Cache conda packages
+        uses: actions/cache@v5.0.5
+        if: matrix.python-version == '3.14'
+        with:
+          path: ~/conda_pkgs_dir
+          key: conda-${{ runner.os }}-${{ hashFiles('requirements-conda-test.txt') }}
+          restore-keys: conda-${{ runner.os }}-
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v4
         if: matrix.python-version == '3.14'
         with:
+          miniforge-version: latest
           channels: conda-forge
           conda-remove-defaults: true
-          conda-version: '26.5.2'
           activate-environment:
       - name: Install Nox-under-test (uv)
         run:  uv pip install --system .
