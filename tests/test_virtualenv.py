@@ -1307,7 +1307,25 @@ def test_get_python_discovery_cache_oserror(monkeypatch: pytest.MonkeyPatch) -> 
         ("pypy>=3.10", "pypy3.10"),
         ("cpython>=3.12", "3.12"),
         (">=3.13t", "3.13t"),
-        ("<3.14", None),
+        ("<3.14", "3.13"),
+        ("<=3.14", "3.13"),
+        ("<3.14.4", "3.13"),
+        ("<=3.14.4", "3.13"),
+        ("<3.14.0", "3.13"),
+        ("<3.14t", "3.13t"),
+        ("pypy<3.11", "pypy3.10"),
+        ("<3.14,<3.12", "3.11"),
+        ("<3.12,!=3.11.*", "3.10"),
+        ("<3.14,!=3.13.*", "3.12"),
+        ("<3.14,!=3.13.*,!=3.12.*", "3.11"),
+        ("<3.14t,!=3.13.*", "3.12t"),
+        ("<3.13,<3.14t", "3.12t"),
+        ("<3.1,!=3.0.*", None),
+        # python-discovery's permissive grammar accepts these; packaging can't.
+        ("<3.12.", None),
+        ("<3.14,<3.12.", None),
+        ("<4", None),
+        ("<3.0", None),
         ("!=3.12", None),
     ],
 )
@@ -1816,8 +1834,11 @@ def test_download_python_range_installs_floor(
 
 
 @pytest.mark.parametrize("download_python", ["always", "auto"])
-@mock.patch("nox.virtualenv.pbs_install_python")
-@mock.patch("nox.virtualenv.uv_install_python")
+@mock.patch(
+    "nox.virtualenv.pbs_install_python",
+    return_value="/.local/share/nox/cpython@3.13.0/bin/python3.13",
+)
+@mock.patch("nox.virtualenv.uv_install_python", return_value=True)
 def test_download_python_range_without_floor(
     uv_install_mock: mock.Mock,
     pbs_install_mock: mock.Mock,
@@ -1825,9 +1846,30 @@ def test_download_python_range_without_floor(
     make_one: Callable[..., tuple[VirtualEnv, Path]],
     patch_discover: Callable[[str | None], list[str]],
 ) -> None:
-    # An upper-bound-only range has no installable floor: never install, error.
+    # An upper-bound-only range installs the highest version it allows.
     patch_discover(None)
     venv, _ = make_one(interpreter="<3.14", download_python=download_python)
+
+    assert (
+        venv._resolved_interpreter == "/.local/share/nox/cpython@3.13.0/bin/python3.13"
+    )
+    pbs_install_mock.assert_called_once_with("python3.13")
+    uv_install_mock.assert_not_called()
+
+
+@pytest.mark.parametrize("download_python", ["always", "auto"])
+@mock.patch("nox.virtualenv.pbs_install_python")
+@mock.patch("nox.virtualenv.uv_install_python")
+def test_download_python_range_without_bounds(
+    uv_install_mock: mock.Mock,
+    pbs_install_mock: mock.Mock,
+    download_python: str,
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+    patch_discover: Callable[[str | None], list[str]],
+) -> None:
+    # An exclusion-only range has no version to install: never install, error.
+    patch_discover(None)
+    venv, _ = make_one(interpreter="!=3.14", download_python=download_python)
 
     with pytest.raises(nox.virtualenv.InterpreterNotFound):
         _ = venv._resolved_interpreter
