@@ -159,7 +159,7 @@ Nox will use the first installed interpreter that satisfies it:
     Range specifiers are only supported on the ``venv``, ``virtualenv``, and ``uv``
     backends, not on conda backends.
 
-If the specified python interpreter is not found, Nox can automatically download it when ``--download-python`` is set to ``auto`` (the default) or ``always``. ``never`` avoids the download. This requires the ``[pbs]`` extra when not using uv as a backend. When a range is given, the floor of its lowest bound is downloaded (``>=3.14`` downloads ``3.14``); a range with no lower bound (such as ``<3.14``) cannot be downloaded.
+If the specified python interpreter is not found, Nox can automatically download it when ``--download-python`` is set to ``auto`` (the default) or ``always``. ``never`` avoids the download. This requires the ``[pbs]`` extra when not using uv as a backend. When a range is given, the floor of its lowest bound is downloaded (``>=3.14`` downloads ``3.14``). A range with only upper bounds downloads the highest version below the tightest bound that the range allows (``<3.14`` downloads ``3.13``, ``<3.14,!=3.13.*`` downloads ``3.12``). A range with no usable bound (such as ``!=3.12``) cannot be downloaded.
 
 When collecting your sessions, Nox will create a separate session for each interpreter. You can see these sessions when running ``nox --list``. For example this Noxfile:
 

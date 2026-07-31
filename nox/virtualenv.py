@@ -40,7 +40,7 @@ from pathlib import Path
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any, Literal
 
-from packaging import version
+from packaging import specifiers, version
 
 import nox
 import nox.command
@@ -49,7 +49,7 @@ from nox.logger import logger
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
-    from python_discovery import DiskCache, PythonInfo
+    from python_discovery import DiskCache, PythonInfo, SimpleSpecifier
 
     from nox._typing import Python
 
@@ -190,27 +190,79 @@ def _find_python(interpreter: str) -> str | None:
     return info.executable if info is not None else None
 
 
+def _highest_under_upper_bound(specifier: SimpleSpecifier) -> str | None:
+    """Return the highest ``X.Y`` version a ``<``/``<=`` clause allows.
+
+    ``<=3.12`` -> ``3.12``, ``<3.12`` -> ``3.11``, ``<3.12.4`` -> ``3.12``.
+    Returns ``None`` for other operators or when no minor version can be picked
+    (``<4``, ``<3.0``).
+    """
+    if specifier.operator not in {"<", "<="}:
+        return None
+    free_threaded = specifier.version_str.endswith("t")
+    try:
+        release = version.Version(specifier.version_str.removesuffix("t")).release
+    except version.InvalidVersion:
+        return None
+    if len(release) < 2:
+        return None
+    major, minor = release[0], release[1]
+    # "<3.12" and "<3.12.0" both exclude every 3.12 release.
+    if specifier.operator == "<" and (len(release) < 3 or release[2] == 0):
+        minor -= 1
+    if minor < 0:
+        return None
+    return f"{major}.{minor}{'t' if free_threaded else ''}"
+
+
 def _concrete_install_target(interpreter: str) -> str | None:
     """Return a concrete version to hand to an installer, or ``None``.
 
     Non-range specs (names, concrete versions, paths) are returned unchanged.
     For a PEP 440 range (``>=3.14``) the floor of the first lower-bound clause
-    is returned (``3.14``) so a concrete interpreter can be downloaded. A
-    non-CPython implementation prefix is preserved (``pypy>=3.10`` -> ``pypy3.10``)
-    so the right flavor is installed; the floor already carries any free-threaded
-    ``t`` suffix. Upper-bound-only (``<3.14``) or ``!=`` ranges have no
-    installable floor and return ``None``.
+    is returned (``3.14``) so a concrete interpreter can be downloaded. Without
+    a lower bound, the highest version under the tightest upper bound that the
+    other clauses allow is used instead (``<3.12`` -> ``3.11``,
+    ``<3.14,!=3.13.*`` -> ``3.12``). A non-CPython implementation prefix is
+    preserved (``pypy>=3.10`` -> ``pypy3.10``) so the right flavor is installed;
+    the version already carries any free-threaded ``t`` suffix. Ranges with no
+    usable bound (``!=3.12``, ``<4``) return ``None``.
     """
     from python_discovery import PythonSpec  # noqa: PLC0415
 
     spec = PythonSpec.from_string_spec(interpreter)
     if spec.version_specifier is None:
         return interpreter
+    impl = spec.implementation
+    prefix = impl if impl and impl != "cpython" else ""
     for specifier in spec.version_specifier.specifiers:
         if specifier.operator in {">=", "==", "~=", ">"}:
-            impl = spec.implementation
-            prefix = impl if impl and impl != "cpython" else ""
             return f"{prefix}{specifier.version_str}"
+
+    candidates = [
+        candidate
+        for specifier in spec.version_specifier.specifiers
+        if (candidate := _highest_under_upper_bound(specifier)) is not None
+    ]
+    if not candidates:
+        return None
+    # The tightest upper bound wins, but another clause (an "!=") can exclude
+    # the pick, so step down through the minors until one clears the whole set.
+    # python-discovery's specifiers don't understand the free-threaded "t"
+    # suffix, so check with packaging without it.
+    target = min(candidates, key=lambda c: version.Version(c.removesuffix("t")))
+    allowed = specifiers.SpecifierSet(
+        ",".join(
+            f"{s.operator}{s.version_str.removesuffix('t')}"
+            for s in spec.version_specifier.specifiers
+        )
+    )
+    suffix = "t" if target.endswith("t") else ""
+    major, minor = version.Version(target.removesuffix("t")).release[:2]
+    while minor >= 0:
+        if allowed.contains(f"{major}.{minor}"):
+            return f"{prefix}{major}.{minor}{suffix}"
+        minor -= 1
     return None
 
 
@@ -865,9 +917,10 @@ class VirtualEnv(ProcessEnv):
     def _install_python(self, interpreter: str) -> str | None:
         """Install the requested interpreter for this backend, if possible.
 
-        For a version range the floor is installed (e.g. ``>=3.14`` -> ``3.14``);
-        ranges with no installable floor return ``None``. Returns the resolved
-        interpreter on success, or ``None`` on failure.
+        For a version range a concrete version is installed (e.g. ``>=3.14`` ->
+        ``3.14``, ``<3.12`` -> ``3.11``); ranges with no usable bound return
+        ``None``. Returns the resolved interpreter on success, or ``None`` on
+        failure.
         """
         target = _concrete_install_target(interpreter)
         if target is None:
