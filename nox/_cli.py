@@ -200,9 +200,18 @@ def _venv_python_version(venv: nox.virtualenv.ProcessEnv) -> str | None:
     except OSError:
         # The cache dir exists but isn't writable; probe without it.
         info = PythonInfo.from_exe(python_cmd, raise_on_error=False)
-    if info is None:
+    if info is not None:
+        return _format_python_version(info.version_info)
+    # Discovery can fail to introspect an interpreter that still runs fine
+    # (e.g. restricted filesystem permissions); ask the interpreter directly.
+    cmd = [python_cmd, "-c", "import sys; print(*sys.version_info[:5])"]
+    try:
+        out = subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+        major, minor, micro, releaselevel, serial = out.split()
+        version_info = (int(major), int(minor), int(micro), releaselevel, int(serial))
+    except (OSError, subprocess.CalledProcessError, ValueError):
         return None
-    return _format_python_version(info.version_info)
+    return _format_python_version(version_info)
 
 
 def check_url_dependency(dep_url: str, dist: importlib.metadata.Distribution) -> bool:

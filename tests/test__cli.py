@@ -153,9 +153,17 @@ def test_venv_python_version(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(shutil, "which", lambda _cmd, **_kwargs: None)
     assert nox._cli._venv_python_version(fake_venv) is None  # type: ignore[arg-type]
 
+    # Discovery failure falls back to probing the interpreter directly.
     monkeypatch.setattr(shutil, "which", lambda _cmd, **_kwargs: sys.executable)
     monkeypatch.setattr(
         python_discovery.PythonInfo, "from_exe", lambda *_args, **_kwargs: None
+    )
+    version = nox._cli._venv_python_version(fake_venv)  # type: ignore[arg-type]
+    assert version == nox._cli._format_python_version(sys.version_info[:5])
+
+    # If the direct probe also fails, give up with None.
+    monkeypatch.setattr(
+        shutil, "which", lambda _cmd, **_kwargs: "/fake/venv/bin/python"
     )
     assert nox._cli._venv_python_version(fake_venv) is None  # type: ignore[arg-type]
 
@@ -290,7 +298,7 @@ def script_mode_exec(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
 
     def fake_run(cmd: list[str], **_kwargs: object) -> SimpleNamespace:
         calls.append(list(cmd))
-        return SimpleNamespace(returncode=0)
+        return SimpleNamespace(returncode=0, stdout="")
 
     def fake_execle(_path: str, *_args: object) -> typing.NoReturn:
         raise SystemExit(0)
