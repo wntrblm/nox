@@ -1343,6 +1343,30 @@ def test_uv_install(requested_python: str, expected_result: bool) -> None:
     assert nox.virtualenv.uv_install_python(requested_python) == expected_result
 
 
+def test_uv_install_no_bin_shims(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Provisioning must not write python3.X shims into ~/.local/bin (#1139)."""
+    captured: dict[str, object] = {}
+
+    def mock_run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        captured.update(kwargs)
+        return subprocess.CompletedProcess(args=[], returncode=0)
+
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    monkeypatch.delenv("UV_PYTHON_INSTALL_BIN", raising=False)
+
+    assert nox.virtualenv.uv_install_python("3.12")
+    env = captured["env"]
+    assert isinstance(env, dict)
+    assert env["UV_PYTHON_INSTALL_BIN"] == "0"
+
+    # An explicit user setting wins over our default.
+    monkeypatch.setenv("UV_PYTHON_INSTALL_BIN", "1")
+    assert nox.virtualenv.uv_install_python("3.12")
+    env = captured["env"]
+    assert isinstance(env, dict)
+    assert env["UV_PYTHON_INSTALL_BIN"] == "1"
+
+
 def test_create_reuse_venv_environment(
     make_one: Callable[..., tuple[VirtualEnv | ProcessEnv, Path]],
     monkeypatch: pytest.MonkeyPatch,
