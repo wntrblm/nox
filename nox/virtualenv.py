@@ -191,10 +191,13 @@ def _find_python(interpreter: str) -> str | None:
 
 
 def _highest_under_upper_bound(specifier: SimpleSpecifier) -> str | None:
-    """Return the highest ``X.Y`` version a ``<``/``<=`` clause allows.
+    """Return the highest ``X.Y`` version fully below a ``<``/``<=`` clause.
 
-    ``<=3.12`` -> ``3.12``, ``<3.12`` -> ``3.11``, ``<3.12.4`` -> ``3.12``.
-    Returns ``None`` for other operators or when no minor version can be picked
+    Installers resolve ``X.Y`` to its latest patch release, so the pick must
+    allow *every* ``X.Y`` patch; that is always the minor below the bound's:
+    ``<3.12`` -> ``3.11``, ``<=3.12`` -> ``3.11``, ``<3.12.4`` -> ``3.11``
+    (``3.12`` would install a patch that may exceed ``3.12.4``). Returns
+    ``None`` for other operators or when no minor version can be picked
     (``<4``, ``<3.0``).
     """
     if specifier.operator not in {"<", "<="}:
@@ -206,10 +209,7 @@ def _highest_under_upper_bound(specifier: SimpleSpecifier) -> str | None:
         return None
     if len(release) < 2:
         return None
-    major, minor = release[0], release[1]
-    # "<3.12" and "<3.12.0" both exclude every 3.12 release.
-    if specifier.operator == "<" and (len(release) < 3 or release[2] == 0):
-        minor -= 1
+    major, minor = release[0], release[1] - 1
     if minor < 0:
         return None
     return f"{major}.{minor}{'t' if free_threaded else ''}"
