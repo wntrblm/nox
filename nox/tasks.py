@@ -43,7 +43,7 @@ from nox._resolver import CycleError
 from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
 from nox.logger import logger
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
-from nox.sessions import Result, Status, _duration_str
+from nox.sessions import Result, Status, _duration_str, resolve_allow_parallel
 
 if TYPE_CHECKING:
     import types
@@ -260,9 +260,17 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
         logger.error("No sessions selected after filtering by keyword.")
         return 3
 
-    # Add dependencies.
+    # Add dependencies, unless --no-dependencies limits the run to only the
+    # explicitly selected sessions (as the parallel runner's children do).
+    # Even then, a ``requires=`` entry naming a session that doesn't exist is
+    # still an error, the prerequisites just aren't queued.
     try:
-        manifest.add_dependencies()
+        if global_config.no_dependencies:
+            for session, selected in manifest.list_all_sessions():
+                if selected:
+                    list(session.get_direct_dependencies())
+        else:
+            manifest.add_dependencies()
     except (KeyError, CycleError) as exc:
         logger.error("Error while resolving session dependencies.")
         logger.error(exc.args[0])
@@ -399,6 +407,26 @@ def run_manifest(manifest: Manifest, global_config: NoxConfig) -> list[Result]:
         tuple[~nox.sessions.Session,~.SessionStatus]: A two-tuple of the
             sessions and the result of each session that was run.
     """
+    # When --parallel/-j requests more than one job, hand off to the parallel
+    # scheduler, which runs independent sessions in their own subprocesses.
+    jobs = global_config.parallel or 1
+    if jobs > 1 and not any(
+        resolve_allow_parallel(global_config, session.func)
+        for session, selected in manifest.list_all_sessions()
+        if selected
+    ):
+        logger.warning(
+            "No selected session allows parallel execution; ignoring --parallel"
+            " and running sequentially. Opt in with allow_parallel=True or"
+            " --allow-parallel."
+        )
+        jobs = 1
+    if jobs > 1:
+        # Imported lazily so sequential runs don't pay for the parallel machinery.
+        from nox._parallel import run_manifest_parallel  # noqa: PLC0415
+
+        return run_manifest_parallel(manifest, global_config, jobs)
+
     results = []
 
     # Iterate over each session in the manifest, and execute it.
@@ -434,7 +462,7 @@ Sequence_Results_T = TypeVar("Sequence_Results_T", bound=Sequence[Result])
 
 def print_summary(
     results: Sequence_Results_T,
-    global_config: NoxConfig,  # noqa: ARG001
+    global_config: NoxConfig,
 ) -> Sequence_Results_T:
     """Print a summary of the results.
 
@@ -451,8 +479,11 @@ def print_summary(
         return results
 
     # Iterate over the results and print the result for each in a
-    # human-readable way.
-    total_duration = sum(result.duration for result in results)
+    # human-readable way. In parallel mode the runner records the wall-clock
+    # time; otherwise sum the per-session durations (which run back-to-back).
+    total_duration = global_config.parallel_wall_time
+    if total_duration is None:
+        total_duration = sum(result.duration for result in results)
     duration_str = _duration_str(total_duration, " in {time}")
     logger.session_info(f"Ran {len(results)} sessions{duration_str}:")
     for result in results:

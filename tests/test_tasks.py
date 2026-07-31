@@ -39,19 +39,22 @@ if typing.TYPE_CHECKING:
 RESOURCES = os.path.join(os.path.dirname(__file__), "resources")
 
 
-def session_func_raw() -> None:
-    pass
+def _make_session_func(requires: list[str]) -> nox._decorators.Func:
+    def raw() -> None:
+        pass
+
+    func = typing.cast("nox._decorators.Func", raw)
+    func.python = None
+    func.venv_backend = None
+    func.should_warn = {}
+    func.tags = []
+    func.default = True
+    func.requires = requires
+    func.allow_parallel = False
+    return func
 
 
-session_func = typing.cast("nox._decorators.Func", session_func_raw)
-
-
-session_func.python = None
-session_func.venv_backend = None
-session_func.should_warn = {}
-session_func.tags = []
-session_func.default = True
-session_func.requires = []
+session_func = _make_session_func([])
 
 
 def session_func_with_python_raw() -> None:
@@ -210,6 +213,42 @@ def test_filter_manifest() -> None:
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
     assert len(manifest) == 2
+
+
+def test_filter_manifest_no_dependencies_skips_resolution() -> None:
+    config = _options.options.namespace(
+        sessions=None, pythons=(), keywords=None, posargs=[], no_dependencies=True
+    )
+    manifest = Manifest({"foo": session_func}, config)
+    with mock.patch.object(Manifest, "add_dependencies") as add_dependencies:
+        return_value = tasks.filter_manifest(manifest, config)
+    assert return_value is manifest
+    # --no-dependencies runs only the selected sessions; nothing is pulled in.
+    assert not add_dependencies.called
+
+
+def test_filter_manifest_no_dependencies_still_validates_requires() -> None:
+    # --no-dependencies skips queueing prerequisites, but a requires= entry
+    # naming a session that doesn't exist is still an error, not a silent run.
+    broken_requires = _make_session_func(requires=["no_such_session"])
+
+    config = _options.options.namespace(
+        sessions=None, pythons=(), keywords=None, posargs=[], no_dependencies=True
+    )
+    manifest = Manifest({"foo": broken_requires}, config)
+    assert tasks.filter_manifest(manifest, config) == 3
+
+
+def test_filter_manifest_no_dependencies_ignores_unselected_requires() -> None:
+    # Only selected sessions are validated: an unselected session with a bad
+    # requires= must not fail a --no-dependencies run.
+    broken_requires = _make_session_func(requires=["no_such_session"])
+
+    config = _options.options.namespace(
+        sessions=("foo",), pythons=(), keywords=None, posargs=[], no_dependencies=True
+    )
+    manifest = Manifest({"foo": session_func, "broken": broken_requires}, config)
+    assert tasks.filter_manifest(manifest, config) is manifest
 
 
 def test_filter_manifest_not_found() -> None:
@@ -655,6 +694,46 @@ def test_run_manifest(with_warnings: builtins.bool) -> None:
         assert result.status == sessions.Status.SUCCESS
 
 
+@pytest.mark.parametrize(
+    ("func_allow_parallel", "global_allow_parallel"),
+    [
+        pytest.param(False, False, id="explicit-false"),
+        pytest.param(None, False, id="unset-without-global"),
+        pytest.param(False, True, id="explicit-false-beats-global"),
+    ],
+)
+def test_run_manifest_sequential_without_allow_parallel(
+    monkeypatch: pytest.MonkeyPatch,
+    func_allow_parallel: bool | None,
+    global_allow_parallel: bool,
+) -> None:
+    # --parallel falls back to the ordinary sequential path (with a warning)
+    # when no selected session allows parallel execution.
+    fail_parallel = mock.Mock(side_effect=AssertionError("parallel runner used"))
+    monkeypatch.setattr("nox._parallel.run_manifest_parallel", fail_parallel)
+    config = _options.options.namespace(
+        stop_on_first_error=False, parallel=4, allow_parallel=global_allow_parallel
+    )
+    sessions_ = [
+        typing.cast("sessions.SessionRunner", mock.Mock(spec=sessions.SessionRunner)),
+        typing.cast("sessions.SessionRunner", mock.Mock(spec=sessions.SessionRunner)),
+    ]
+    manifest = Manifest({}, config)
+    manifest._queue = copy.copy(sessions_)
+    manifest._all_sessions = copy.copy(sessions_)
+    func = argparse.Namespace(should_warn={}, allow_parallel=func_allow_parallel)
+    for mock_session in sessions_:
+        mock_session.execute.return_value = sessions.Result(  # type: ignore[attr-defined]
+            session=mock_session, status=sessions.Status.SUCCESS
+        )
+        mock_session.func = func  # type: ignore[assignment]
+
+    results = tasks.run_manifest(manifest, global_config=config)
+
+    assert len(results) == 2
+    assert all(result.status == sessions.Status.SUCCESS for result in results)
+
+
 def test_run_manifest_abort_on_first_failure() -> None:
     # Set up a valid manifest.
     config = _options.options.namespace(stop_on_first_error=True)
@@ -743,6 +822,31 @@ def test_print_summary() -> None:
     assert answer is results
 
 
+def test_print_summary_uses_parallel_wall_time() -> None:
+    results = [
+        sessions.Result(
+            session=typing.cast(
+                "sessions.SessionRunner", argparse.Namespace(friendly_name="foo")
+            ),
+            status=sessions.Status.SUCCESS,
+        ),
+        sessions.Result(
+            session=typing.cast(
+                "sessions.SessionRunner", argparse.Namespace(friendly_name="bar")
+            ),
+            status=sessions.Status.SUCCESS,
+        ),
+    ]
+    config = _options.options.namespace(parallel_wall_time=120.0)
+    with (
+        mock.patch.object(sessions.Result, "log"),
+        mock.patch.object(tasks, "logger") as logger,
+    ):
+        tasks.print_summary(results, config)
+    # The summary reports wall-clock time, not the sum of session durations.
+    assert "Ran 2 sessions in 2 minutes" in logger.session_info.call_args[0][0]
+
+
 def test_create_report_noop() -> None:
     config = _options.options.namespace(report=None)
     with mock.patch.object(builtins, "open", autospec=True) as open_:
@@ -775,6 +879,7 @@ def test_create_report() -> None:
                             "signatures": ["foosig"],
                             "result": "success",
                             "result_code": 1,
+                            "reason": None,
                             "args": {},
                             "duration": 0.0,
                         }

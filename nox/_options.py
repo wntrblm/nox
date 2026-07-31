@@ -26,7 +26,7 @@ import attrs
 import attrs.validators as av
 
 from nox import _completers, _merge, _option_set
-from nox._option_set import opt
+from nox._option_set import Forward, opt
 from nox.virtualenv import ALL_VENVS
 
 if TYPE_CHECKING:
@@ -114,9 +114,50 @@ def _forcecolor_default() -> bool:
     }
 
 
+def parse_parallel(value: str | int) -> int:
+    """Resolve a ``--parallel`` value to a positive integer.
+
+    Accepts a positive integer (or its string form) or ``"auto"`` (the CPU
+    count). Used for command-line, ``NOX_PARALLEL``, and Noxfile-set values.
+
+    Raises:
+        ValueError: If the value is not ``"auto"`` or a positive integer.
+    """
+    if isinstance(value, str) and value.strip().lower() == "auto":
+        return os.cpu_count() or 1
+    try:
+        jobs = int(value)
+    except (TypeError, ValueError):
+        msg = (
+            f"invalid parallel value {value!r} (expected a positive integer or 'auto')"
+        )
+        raise ValueError(msg) from None
+    if jobs < 1:
+        msg = f"parallel value must be >= 1, got {jobs}"
+        raise ValueError(msg)
+    return jobs
+
+
+def _parallel_converter(value: str | int | None) -> int | None:
+    """Normalize ``parallel`` however it arrives (CLI, env var, or Noxfile)."""
+    return None if value is None else parse_parallel(value)
+
+
+def _parallel_arg(value: str) -> int:
+    """``argparse`` type for ``--parallel`` that reports errors nicely."""
+    try:
+        return parse_parallel(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from None
+
+
 @attrs.define(
     kw_only=True,
-    on_setattr=[attrs.setters.validate, _option_set.record_noxfile_set],
+    on_setattr=[
+        attrs.setters.convert,
+        attrs.setters.validate,
+        _option_set.record_noxfile_set,
+    ],
 )
 class NoxfileOptions(_option_set.OptionsBase):
     """Options that are configurable in the Noxfile.
@@ -128,6 +169,20 @@ class NoxfileOptions(_option_set.OptionsBase):
     See :doc:`usage` for more details on these settings and their effect.
     """
 
+    allow_parallel: bool = attrs.field(
+        default=False,
+        validator=av_bool,
+        metadata=opt(
+            "--allow-parallel",
+            negative_flags=("--no-allow-parallel",),
+            group="execution",
+            help=(
+                "Allow every session to run concurrently under ``--parallel``"
+                " unless it sets ``allow_parallel`` itself; a session's own"
+                " ``allow_parallel=`` value always wins."
+            ),
+        ),
+    )
     default_venv_backend: str = attrs.field(
         default="virtualenv",
         validator=av_str,
@@ -174,6 +229,7 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--error-on-external-run",
             negative_flags=("--no-error-on-external-run",),
             group="execution",
+            forward=Forward.ALWAYS,
             help=(
                 "Error if run() is used to execute a program that isn't installed in a"
                 " session's virtualenv."
@@ -187,6 +243,7 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--error-on-missing-interpreters",
             negative_flags=("--no-error-on-missing-interpreters",),
             group="execution",
+            forward=Forward.ALWAYS,
             help="Error instead of skipping sessions if an interpreter can not be located.",
         ),
     )
@@ -214,6 +271,28 @@ class NoxfileOptions(_option_set.OptionsBase):
             group="sessions",
             completer=_completers.empty_completer,
             help="Only run sessions that match the given expression.",
+        ),
+    )
+    parallel: int | None = attrs.field(
+        default=None,
+        converter=_parallel_converter,
+        validator=av.optional(av.instance_of(int)),
+        metadata=opt(
+            "-j",
+            "--parallel",
+            group="execution",
+            env_var="NOX_PARALLEL",
+            argparse_kwargs={"type": _parallel_arg, "metavar": "N"},
+            help=(
+                "Run independent sessions in parallel, each in its own subprocess."
+                " Pass a positive integer or ``'auto'`` (one per CPU). Only"
+                " sessions that allow parallel execution (``allow_parallel=True``"
+                " or ``--allow-parallel``) run concurrently; other sessions run"
+                " one at a time. Sessions are ordered by their ``requires=``"
+                " dependencies; their output is buffered and printed as each"
+                " session finishes. Default is 1 (sequential). Environment"
+                " variable: NOX_PARALLEL"
+            ),
         ),
     )
     pythons: list[str] | None = attrs.field(
@@ -250,6 +329,7 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--reuse-existing-virtualenvs",
             negative_flags=("-N", "--no-reuse-existing-virtualenvs"),
             group="environment",
+            forward=Forward.NEVER,  # An alias; the state lives in reuse_venv.
             help="This is an alias for '--reuse-venv=yes|no'.",
         ),
     )
@@ -290,6 +370,7 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--stop-on-first-error",
             negative_flags=("--no-stop-on-first-error",),
             group="execution",
+            forward=Forward.ALWAYS,
             help="Stop after the first error.",
         ),
     )
@@ -312,12 +393,13 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--verbose",
             negative_flags=("--no-verbose",),
             group="reporting",
+            forward=Forward.ALWAYS,
             help="Logs the output of all commands run including commands marked silent.",
         ),
     )
 
 
-@attrs.define(kw_only=True, on_setattr=attrs.setters.validate)
+@attrs.define(kw_only=True, on_setattr=[attrs.setters.convert, attrs.setters.validate])
 class NoxConfig(NoxfileOptions):
     """The full configuration: every CLI option, including the noxfile-settable
     ones inherited from :class:`NoxfileOptions`.
@@ -332,6 +414,7 @@ class NoxConfig(NoxfileOptions):
             "-h",
             "--help",
             group="general",
+            forward=Forward.NEVER,
             help="Show this help message and exit.",
         ),
     )
@@ -340,16 +423,17 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "--version",
             group="general",
+            forward=Forward.NEVER,
             help="Show the Nox version and exit.",
         ),
     )
     script_mode: Literal["none", "fresh", "reuse"] = attrs.field(
         default="reuse",
-        metadata=opt("--script-mode", group="general"),
+        metadata=opt("--script-mode", group="general", forward=Forward.NEVER),
     )
     script_venv_backend: str | None = attrs.field(
         default=None,
-        metadata=opt("--script-venv-backend", group="general"),
+        metadata=opt("--script-venv-backend", group="general", forward=Forward.NEVER),
     )
     noxfile: str = attrs.field(
         default="noxfile.py",
@@ -357,6 +441,7 @@ class NoxConfig(NoxfileOptions):
             "-f",
             "--noxfile",
             group="general",
+            forward=Forward.ALWAYS,
             help="Location of the Python file containing Nox sessions.",
         ),
     )
@@ -376,6 +461,7 @@ class NoxConfig(NoxfileOptions):
             "--list-sessions",
             "--list",
             group="sessions",
+            forward=Forward.NEVER,
             help="List all available sessions and exit.",
         ),
     )
@@ -384,6 +470,7 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "--usage",
             group="sessions",
+            forward=Forward.NEVER,
             argparse_kwargs={"nargs": 1},
             help="Print the full docstring of a given session and exit. Raises if there is no docstring.",
         ),
@@ -393,6 +480,7 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "--json",
             group="sessions",
+            forward=Forward.NEVER,
             help="JSON output formatting. Requires list-sessions currently.",
         ),
     )
@@ -432,6 +520,7 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "--no-venv",
             group="environment",
+            forward=Forward.NEVER,  # An alias; the state lives in force_venv_backend.
             help=(
                 "Runs the selected sessions directly on the current interpreter, without"
                 " creating a venv. This is an alias for '--force-venv-backend none'."
@@ -443,9 +532,22 @@ class NoxConfig(NoxfileOptions):
         metadata=opt(
             "-R",
             group="environment",
+            forward=Forward.NEVER,  # An alias for reuse_venv + no_install.
             help=(
                 "Reuse existing virtualenvs and skip package re-installation."
                 " This is an alias for '--reuse-existing-virtualenvs --no-install'."
+            ),
+        ),
+    )
+    no_dependencies: bool = attrs.field(
+        default=False,
+        metadata=opt(
+            "--no-dependencies",
+            group="execution",
+            help=(
+                "Run only the explicitly selected sessions, skipping any sessions"
+                " they ``require``. Assumes prerequisites have already run; mainly"
+                " used internally by ``--parallel``."
             ),
         ),
     )
@@ -495,6 +597,7 @@ class NoxConfig(NoxfileOptions):
             "--nocolor",
             "--no-color",
             group="reporting",
+            forward=Forward.NEVER,  # The state lives in color.
             help="Disable all color output. Environment variable: NO_COLOR",
         ),
     )
@@ -504,15 +607,33 @@ class NoxConfig(NoxfileOptions):
             "--forcecolor",
             "--force-color",
             group="reporting",
+            forward=Forward.NEVER,  # The state lives in color.
             help="Force color output, even if stdout is not an interactive terminal.",
         ),
     )
-    color: bool = attrs.field(default=False, metadata=opt(hidden=True))
+    color: bool = attrs.field(
+        default=False,
+        # ALWAYS: the default depends on the parent's tty, so pin it for
+        # children. Hidden options never reach the parser, so the flag pair
+        # here exists purely for ``to_argv``; the real CLI flags live on the
+        # ``nocolor``/``forcecolor`` alias fields above.
+        metadata=opt(
+            "--forcecolor",
+            negative_flags=("--nocolor",),
+            hidden=True,
+            forward=Forward.ALWAYS,
+        ),
+    )
+    # Wall-clock duration of a parallel run, recorded by the parallel runner
+    # so the summary reports elapsed time, not the sum of session durations.
+    parallel_wall_time: float | None = attrs.field(
+        default=None, metadata=opt(hidden=True, forward=Forward.NEVER)
+    )
     # The original working directory that Nox was invoked from, since it could
     # be different from the Noxfile's directory.
     invoked_from: str = attrs.field(
         default=attrs.Factory(os.getcwd),
-        metadata=opt(hidden=True),
+        metadata=opt(hidden=True, forward=Forward.NEVER),
     )
 
 
