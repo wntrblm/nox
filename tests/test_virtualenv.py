@@ -391,6 +391,29 @@ def test_conda_env_create_verbose(
     assert kwargs["log"]
 
 
+@pytest.mark.parametrize(
+    ("interpreter", "expected"),
+    [
+        (None, "python"),
+        ("3.12", "python=3.12"),
+        (">=3.10", "python>=3.10"),
+        (">= 3.10, <4", "python>=3.10,<4"),
+    ],
+)
+def test_condaenv_python_dep(
+    make_conda: Callable[..., tuple[CondaEnv, Path]],
+    interpreter: str | None,
+    expected: str,
+) -> None:
+    """PEP 440 ranges must become valid conda specs."""
+    venv, _dir = make_conda(interpreter=interpreter)
+    with mock.patch("nox.virtualenv.nox.command.run") as mock_run:
+        venv.create()
+
+    (cmd,), _kwargs = mock_run.call_args
+    assert cmd[-1] == expected
+
+
 @mock.patch("nox.virtualenv._PLATFORM", new="win32")
 def test_condaenv_bin_windows(make_conda: Callable[..., tuple[CondaEnv, Path]]) -> None:
     venv, dir_ = make_conda()
