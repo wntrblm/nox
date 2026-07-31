@@ -248,9 +248,13 @@ def uv_version(uv_bin: str) -> version.Version:
 def uv_install_python(python_version: str) -> bool:
     """Attempts to install a given python version with uv"""
     _, uv, _ = _uv_state()
+    # Do not write python3.X shims to ~/.local/bin (uv >= 0.8 default); an
+    # explicit user setting still wins. See #1139.
+    env = {"UV_PYTHON_INSTALL_BIN": "0", **os.environ}
     ret = subprocess.run(
         [uv, "python", "install", python_version],
         check=False,
+        env=env,
     )
     return ret.returncode == 0
 
