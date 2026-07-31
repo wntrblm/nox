@@ -627,7 +627,9 @@ dependencies for your noxfile, a minimum version of nox, or a Python version
 requirement here. If the running interpreter does not satisfy
 ``requires-python``, nox will find or download a matching Python for the
 environment (controlled by ``--download-python``, ``NOX_SCRIPT_DOWNLOAD_PYTHON``,
-or ``tool.nox.script-download-python``). If only ``requires-python``
+or ``tool.nox.script-download-python``), and a reused environment is rebuilt
+if its Python no longer qualifies. The ``none`` script backend cannot switch
+interpreters, so a mismatch there is an error. If only ``requires-python``
 is given, nox itself is the implied dependency. You can control this with
 ``--script-mode``/``NOX_SCRIPT_MODE``; ``none`` will deactivate it, and
 ``fresh`` will rebuild it; the default is ``reuse``. You can also set
