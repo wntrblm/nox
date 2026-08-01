@@ -206,7 +206,9 @@ def _venv_python_version(venv: nox.virtualenv.ProcessEnv) -> str | None:
     # (e.g. restricted filesystem permissions); ask the interpreter directly.
     cmd = [python_cmd, "-c", "import sys; print(*sys.version_info[:5])"]
     try:
-        out = subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+        out = subprocess.run(
+            cmd, check=True, capture_output=True, encoding="utf-8"
+        ).stdout
         major, minor, micro, releaselevel, serial = out.split()
         version_info = (int(major), int(minor), int(micro), releaselevel, int(serial))
     except (OSError, subprocess.CalledProcessError, ValueError):
