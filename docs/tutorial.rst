@@ -621,10 +621,16 @@ And the following block of code:
        nox.main()
 
 If this comment block is present, nox will also read it, and run a custom
-environment (``_nox_script_mode``) if the dependencies are not met in the
-current environment. This allows you to specify dependencies for your noxfile
-or a minimum version of nox here (``requires-python`` version setting not
-supported yet, but planned). You can control this with
+environment (``_nox_script_mode``) if the dependencies or ``requires-python``
+are not met in the current environment. This allows you to specify
+dependencies for your noxfile, a minimum version of nox, or a Python version
+requirement here. If the running interpreter does not satisfy
+``requires-python``, nox will find or download a matching Python for the
+environment (controlled by ``--download-python``, ``NOX_SCRIPT_DOWNLOAD_PYTHON``,
+or ``tool.nox.script-download-python``), and a reused environment is rebuilt
+if its Python no longer qualifies. The ``none`` script backend cannot switch
+interpreters, so a mismatch there is an error. If only ``requires-python``
+is given, nox itself is the implied dependency. You can control this with
 ``--script-mode``/``NOX_SCRIPT_MODE``; ``none`` will deactivate it, and
 ``fresh`` will rebuild it; the default is ``reuse``. You can also set
 ``--script-venv-backend``/``tool.nox.script-venv-backend``/``NOX_SCRIPT_VENV_BACKEND``
