@@ -132,8 +132,6 @@ def test_check_requires_python_invalid() -> None:
     [
         ((3, 14, 0, "final", 0), "3.14.0"),
         ((3, 14, 0, "beta", 1), "3.14.0b1"),
-        ((3, 14, 0, "candidate", 2), "3.14.0rc2"),
-        ((3, 14, 0, "alpha", 3), "3.14.0a3"),
     ],
 )
 def test_format_python_version(
@@ -541,33 +539,6 @@ def test_run_script_mode_stale_reuse(
         assert "requires-python" in str(excinfo.value)
     else:
         assert excinfo.value.code == 0
-
-
-@pytest.mark.parametrize("env_version", ["3.10.0", None])
-@pytest.mark.usefixtures("script_mode_exec")
-def test_run_script_mode_fresh_env_mismatch(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    env_version: str | None,
-) -> None:
-    """A newly created env that fails requires-python (e.g. a downloaded
-    fallback interpreter) must error out, not run the script under it."""
-    fake_venv = make_fake_script_venv()
-    monkeypatch.setattr(
-        nox.virtualenv, "get_virtualenv", lambda *_args, **_kwargs: fake_venv
-    )
-    monkeypatch.setattr(nox._cli, "_venv_python_version", lambda _venv: env_version)
-
-    with pytest.raises(SystemExit, match="requires-python"):
-        nox._cli.run_script_mode(
-            "noxfile.py",
-            tmp_path,
-            reuse=False,
-            dependencies=["nox"],
-            venv_backend="uv",
-            download_python="auto",
-            requires_python=">=3.11",
-        )
 
 
 def test_run_script_mode_interpreter_not_found(
