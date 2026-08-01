@@ -20,10 +20,10 @@ jobs:
   dist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: hynek/build-and-inspect-python-package@v2
+      - uses: hynek/build-and-inspect-python-package@v2.18.0
 
   deploy:
     needs: [dist]
@@ -42,7 +42,7 @@ jobs:
           path: dist
 
       - name: Generate artifact attestation for sdist and wheel
-        uses: actions/attest@v4.1.0
+        uses: actions/attest@v4.2.0
         with:
           subject-path: "dist/*"
 
