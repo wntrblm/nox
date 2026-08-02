@@ -1697,7 +1697,12 @@ def test_download_python_auto_missing_interpreter(
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
     patch_discover: Callable[[str | None], list[str]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Pretend uv is available so the uv install path is exercised even on
+    # hosts without uv installed (gh-1045).
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version("0.10.0"))
     specs = patch_discover(None)
     venv, _ = make_one(
         interpreter="python3.11",
@@ -1736,7 +1741,12 @@ def test_download_python_always_preexisting_interpreter(
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
     patch_discover: Callable[[str | None], list[str]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Pretend uv is available so the uv install path is exercised even on
+    # hosts without uv installed (gh-1045).
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version("0.10.0"))
     specs = patch_discover("/usr/bin/python3.11")
     venv, _ = make_one(
         interpreter="python3.11",
@@ -1809,7 +1819,12 @@ def test_download_python_range_installs_floor(
     venv_backend: str,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
     patch_discover: Callable[[str | None], list[str]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Pretend uv is available so the uv install path is exercised even on
+    # hosts without uv installed (gh-1045).
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version("0.10.0"))
     # A range that isn't found installs its floor (">=3.14" -> "python3.14").
     patch_discover(None)
     venv, _ = make_one(
