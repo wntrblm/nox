@@ -101,13 +101,13 @@ And you can tell ``nox`` to run the session using the custom name:
 Configuring a session's virtualenv
 ----------------------------------
 
-By default, Nox will create a new virtualenv for each session using the same interpreter that Nox uses. If you installed Nox using Python 3.6, Nox will use Python 3.6 by default for all of your sessions.
+By default, Nox will create a new virtualenv for each session using the same interpreter that Nox uses. If you installed Nox using Python 3.12, Nox will use Python 3.12 by default for all of your sessions.
 
 You can tell Nox to use a different Python interpreter/version by specifying the ``python`` argument (or its alias ``py``) to ``@nox.session``:
 
 .. code-block:: python
 
-    @nox.session(python='2.7')
+    @nox.session(python='3.12')
     def tests(session):
         pass
 
@@ -123,11 +123,11 @@ You can tell Nox to use a different Python interpreter/version by specifying the
     .. _python-discovery: https://pypi.org/project/python-discovery/
     .. _PEP 514: https://peps.python.org/pep-0514/
 
-You can also tell Nox to run your session against multiple Python interpreters. Nox will create a separate virtualenv and run the session for each interpreter you specify. For example, this session will run twice - once for Python 2.7 and once for Python 3.6:
+You can also tell Nox to run your session against multiple Python interpreters. Nox will create a separate virtualenv and run the session for each interpreter you specify. For example, this session will run twice - once for Python 3.13 and once for Python 3.14:
 
 .. code-block:: python
 
-    @nox.session(python=['2.7', '3.6'])
+    @nox.session(python=['3.13', '3.14'])
     def tests(session):
         pass
 
@@ -135,7 +135,7 @@ When you provide a version number, Nox automatically prepends python to determin
 
 .. code-block:: python
 
-    @nox.session(python=['2.7', '3.6', 'pypy-6.0'])
+    @nox.session(python=['3.13', '3.14', 'pypy3.11'])
     def tests(session):
         pass
 
@@ -202,7 +202,7 @@ You can also specify that the virtualenv should *always* be reused instead of re
 .. code-block:: python
 
     @nox.session(
-        python=['2.7', '3.6'],
+        python=['3.13', '3.14'],
         reuse_venv=True)
     def tests(session):
         pass
@@ -268,7 +268,7 @@ particular file:
 
         session.run('pytest', *test_files)
 
-Now you if you run:
+Now if you run:
 
 
 .. code-block:: console
@@ -312,7 +312,7 @@ Session arguments can be parametrized with the :func:`nox.parametrize` decorator
         session.install(f'django=={django}')
         session.run('pytest')
 
-When you run ``nox``, it will create a two distinct sessions:
+When you run ``nox``, it will create two distinct sessions:
 
 .. code-block:: console
 
@@ -460,7 +460,7 @@ Just as tags can be :ref:`assigned to normal sessions <session tags>`, they can 
     @nox.parametrize('dependency',
         ['1.0', '2.0'],
         tags=[['old'], ['new']])
-    @nox.parametrize('database'
+    @nox.parametrize('database',
         ['postgres', 'mysql'],
         tags=[['psql'], ['mysql']])
     def tests(session, dependency, database):
@@ -501,7 +501,7 @@ More sophisticated tag assignment can be performed by passing a generator to the
     def tests(session, dependency, database):
         ...
 
-In this example, the ``quick`` tag is assigned to the single combination of the latest version of the dependency along with the SQLite database backend, allowing a developer to run the tests in a single configuration as a basic sanity test.  The ``standard`` tag, in contrast, selects combinations targeting either the latest version of the dependency *or* the SQLite database backend.  If the developer runs ``tox --tags standard``, the tests will be run against all supported versions of the dependency with the SQLite backend, as well as against all supported database backends under the latest version of the dependency, giving much more comprehensive test coverage while using only five of the potential nine test matrix combinations.
+In this example, the ``quick`` tag is assigned to the single combination of the latest version of the dependency along with the SQLite database backend, allowing a developer to run the tests in a single configuration as a basic sanity test.  The ``standard`` tag, in contrast, selects combinations targeting either the latest version of the dependency *or* the SQLite database backend.  If the developer runs ``nox --tags standard``, the tests will be run against all supported versions of the dependency with the SQLite backend, as well as against all supported database backends under the latest version of the dependency, giving much more comprehensive test coverage while using only five of the potential nine test matrix combinations.
 
 
 The session object
@@ -545,7 +545,7 @@ Or, if you wanted to provide a set of sessions that are run by default (this ove
 
     import nox
 
-    nox.options.sessions = ["lint", "tests-3.6"]
+    nox.options.sessions = ["lint", "tests-3.14"]
 
     ...
 

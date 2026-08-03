@@ -29,24 +29,23 @@ Either way, Nox is usually installed *globally*, similar to ``tox``, ``pip``, an
 
 If you're interested in running ``nox`` within `docker`_, you can use the `thekevjames/nox images`_ on DockerHub which contain builds for all ``nox`` versions and all supported ``python`` versions. Nox is also supported via ``pipx run nox`` in the `manylinux images`_.
 
-If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/nox`` action, which installs the latest ``nox`` and makes available all active CPython and PyPY versions provided by the GitHub Actions environment:
+If you want to run ``nox`` within `GitHub Actions`_, you can use the ``wntrblm/nox`` action, which installs the latest ``nox`` and makes available a default set of active CPython versions:
 
 .. code-block:: yaml
 
-    # setup nox with all active CPython and PyPY versions provided by
-    # the GitHub Actions environment i.e.
-    # python-versions: "3.8, 3.9, 3.10, 3.11, 3.12, pypy-3.8, pypy-3.9, pypy-3.10"
+    # setup nox with the default set of CPython versions i.e.
+    # python-versions: "3.10, 3.11, 3.12, 3.13, 3.14"
     # Any Nox tag will work here
-    - uses: wntrblm/nox@2024.04.15
+    - uses: wntrblm/nox@2026.07.11
 
     # setup nox only for a given list of python versions
     # Limitations:
     # - Version specifiers shall be supported by actions/setup-python
     # - There can only be one "major.minor" per interpreter i.e. "3.12.0, 3.12.1" is invalid
     # Any Nox tag will work here
-    - uses: wntrblm/nox@2024.04.15
+    - uses: wntrblm/nox@2026.07.11
       with:
-          python-versions: "2.7, 3.5, 3.11, pypy-3.9"
+          python-versions: "3.10, 3.14, pypy-3.11"
 
 .. _pip: https://pip.readthedocs.org
 .. _user site: https://packaging.python.org/tutorials/installing-packages/#installing-to-the-user-site
@@ -92,7 +91,7 @@ like this:
 
     $ nox
     nox > Running session lint
-    nox > Creating virtualenv using python3.7 in .nox/lint
+    nox > Creating virtualenv using python3.14 in .nox/lint
     nox > pip install flake8
     nox > flake8 example.py
     nox > Session lint was successful.
@@ -206,7 +205,7 @@ You can make a session for it like this:
    def peps(session):
        requirements = nox.project.load_toml("peps.py")["dependencies"]
        session.install(*requirements)
-       session.run("peps.py")
+       session.run("python", "peps.py")
 
 This is a common structure for scripts following this PEP, so a helper for it
 is provided:
@@ -489,7 +488,7 @@ Install packages with conda:
     session.conda_install("pytest", channels=["conda-forge"])
 
 It is possible to install packages with pip into the conda environment, but
-it's a best practice only install pip packages with the ``--no-deps`` option.
+it's a best practice to only install pip packages with the ``--no-deps`` option.
 This prevents pip from breaking the conda environment by installing incompatible
 versions of packages already installed with conda. You should always specify
 channels for consistency; default channels can vary (and ``micromamba`` has none).
@@ -641,7 +640,7 @@ Next steps
 
 Look at you! You're now basically an expert at Nox! ✨
 
-For this point you can:
+From this point you can:
 
 * Read more docs, such as :doc:`usage` and :doc:`config`.
 * Give us feedback or contribute, see :doc:`CONTRIBUTING`.
