@@ -108,9 +108,10 @@ lint.ignore = [
   "T20",     # We use print
   "TD",      # TODO format
 ]
-lint.per-file-ignores.".github/**.py" = [ "INP001" ]
-lint.per-file-ignores."docs/**.py" = [ "ERA001", "INP001" ]
-lint.per-file-ignores."tests/*.py" = [ "FBT001", "INP001" ]
+lint.per-file-ignores.".github/**.py" = [ "CPY001", "INP001" ]
+lint.per-file-ignores."docs/**.py" = [ "CPY001", "ERA001", "INP001" ]
+lint.per-file-ignores."noxfile.py" = [ "CPY001" ]
+lint.per-file-ignores."tests/*.py" = [ "CPY001", "FBT001", "INP001" ]
 lint.per-file-ignores."tests/resources/**.py" = [ "ANN", "ARG001", "DTZ001", "ERA001", "TRY002" ]
 lint.typing-modules = [ "nox._typing" ]
 lint.flake8-annotations.allow-star-arg-any = true

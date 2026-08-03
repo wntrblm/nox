@@ -561,7 +561,7 @@ class TestSession:
         ):
             shutdown_process.return_value = ("", "")
 
-            timeout_kwargs: dict[str, None | float] = {}
+            timeout_kwargs: dict[str, float | None] = {}
             if interrupt_timeout_setting != "default":
                 timeout_kwargs["interrupt_timeout"] = interrupt_timeout_setting
             if terminate_timeout_setting != "default":
@@ -1292,7 +1292,7 @@ class TestSessionRunner:
     def test__create_venv_options(
         self,
         create_method: str,
-        venv_backend: None | str,
+        venv_backend: str | None,
         expected_backend: type[nox.virtualenv.VirtualEnv | nox.virtualenv.CondaEnv],
     ) -> None:
         runner = self.make_runner()

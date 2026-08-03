@@ -752,7 +752,7 @@ class VirtualEnv(ProcessEnv):
         self.location_name = location
         self.location = os.path.abspath(location)
         self.interpreter = interpreter
-        self._resolved: None | str | InterpreterNotFound = None
+        self._resolved: str | InterpreterNotFound | None = None
         self.reuse_existing = reuse_existing
         self._venv_backend = venv_backend
         self.venv_params = list(venv_params)

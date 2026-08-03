@@ -333,7 +333,7 @@ def test_filter_manifest_keywords_syntax_error() -> None:
     ],
 )
 def test_filter_manifest_tags(
-    tags: None | builtins.list[builtins.str],
+    tags: builtins.list[builtins.str] | None,
     session_count: builtins.int,
 ) -> None:
     @nox.session(tags=["foo"])
@@ -432,7 +432,7 @@ def test_merge_tags(generate_noxfile_options: Callable[..., str]) -> None:
 
 
 @pytest.mark.parametrize("selection", [None, ["qux"], ["quuz"], ["qux", "quuz"]])
-def test_default_false(selection: None | builtins.list[builtins.str]) -> None:
+def test_default_false(selection: builtins.list[builtins.str] | None) -> None:
     @nox.session()
     def qux() -> None:
         pass
@@ -482,7 +482,7 @@ def test_honor_list_request_noop() -> None:
     ],
 )
 def test_honor_list_request(
-    description: None | builtins.str, module_docstring: None | builtins.str
+    description: builtins.str | None, module_docstring: builtins.str | None
 ) -> None:
     config = _options.options.namespace(
         list_sessions=True, noxfile="noxfile.py", color=False
