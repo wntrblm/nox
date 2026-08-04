@@ -212,7 +212,7 @@ Similarly you can override ``nox.options.reuse_venvs`` from the Noxfile via the 
 
 .. note::
 
-    ``--reuse-existing-virtualenvs`` is a alias for ``--reuse-venv=yes`` and ``--no-reuse-existing-virtualenvs`` is an alias for ``--reuse-venv=no``.
+    ``--reuse-existing-virtualenvs`` is an alias for ``--reuse-venv=yes`` and ``--no-reuse-existing-virtualenvs`` is an alias for ``--reuse-venv=no``.
 
 Additionally, you can skip the re-installation of packages when a virtualenv is reused.
 Use ``-R`` or ``--reuse-existing-virtualenvs --no-install`` or ``--reuse-venv=yes --no-install``:
@@ -404,7 +404,7 @@ If being run on Continuous Integration (CI) systems, Nox will treat missing inte
 Disallowing external programs
 -----------------------------
 
-By default Nox will warn but ultimately allow you to run programs not installed in the session's virtualenv. You can use ``--error-on-external-run`` to make Nox fail the session if it uses any external program without explicitly passing ``external=True`` into :func:`session.run <nox.session.Session.run>`:
+By default Nox will warn but ultimately allow you to run programs not installed in the session's virtualenv. You can use ``--error-on-external-run`` to make Nox fail the session if it uses any external program without explicitly passing ``external=True`` into :func:`session.run <nox.sessions.Session.run>`:
 
 .. code-block:: console
 
@@ -482,9 +482,9 @@ Forcing non-interactive behavior
         ...
 
         if session.interactive:
-            nox.run("sphinx-autobuild", ...)
+            session.run("sphinx-autobuild", ...)
         else:
-            nox.run("sphinx-build", ...)
+            session.run("sphinx-build", ...)
 
 Sometimes it's useful to force Nox to see the session as non-interactive. You can use the ``--non-interactive`` argument to do this:
 
@@ -499,7 +499,7 @@ This will cause ``session.interactive`` to always return ``False``.
 Controlling color output
 ------------------------
 
-By default, Nox will output colorful logs if you're using in an interactive
+By default, Nox will output colorful logs if you're using it in an interactive
 terminal. However, if you are redirecting ``stderr`` to a file or otherwise
 not using an interactive terminal, or the environment variable ``NO_COLOR`` is
 set, Nox will output in plaintext. If this is not set, and ``FORCE_COLOR`` is
