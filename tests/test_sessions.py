@@ -742,7 +742,6 @@ class TestSession:
                 "--prefix",
                 "/path/to/conda/env",
                 "requests",
-                # this will be double quoted if unquoted constraint is present
                 passed_arg,
                 **_run_with_defaults(silent=False, external="error"),
             )

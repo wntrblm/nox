@@ -44,15 +44,26 @@ DEFAULT_TERMINATE_TIMEOUT = 0.2
 
 
 def _windows_batch_command(args: Sequence[str]) -> str:
-    """Build a command line that protects cmd.exe metacharacters."""
+    """Build a command line that protects the cmd.exe metacharacters ``&<>^|``.
+
+    Note that ``%`` cannot be protected at this layer: cmd.exe expands
+    ``%VAR%`` references even inside double quotes.
+    """
 
     quoted_args = []
     for arg in args:
         if _CMD_META.isdisjoint(arg):
             quoted_args.append(subprocess.list2cmdline([arg]))
+        elif '"' in arg:
+            # list2cmdline escapes embedded quotes with backslashes, but
+            # cmd.exe knows no backslash escapes - it only counts quote
+            # characters - so such an argument cannot be quoted safely.
+            msg = f"Cannot escape argument for batch script: {arg}"
+            raise ValueError(msg)
         else:
             # Force list2cmdline to quote the argument, then remove the
-            # temporary leading space without changing the argument itself.
+            # temporary leading space without changing the argument itself:
+            # ' requests<99' -> '" requests<99"' -> '"requests<99"'
             quoted = subprocess.list2cmdline([f" {arg}"])
             quoted_args.append(f"{quoted[0]}{quoted[2:]}")
     return " ".join(quoted_args)

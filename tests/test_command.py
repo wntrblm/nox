@@ -53,6 +53,15 @@ def test_windows_batch_command() -> None:
     assert command == (r'"C:\Program Files\tool.cmd" plain "has space" "requests<99"')
 
 
+@pytest.mark.parametrize("argument", ['"urllib3<1.25"', 'a"<b', 'a">b'])
+def test_windows_batch_command_rejects_quoted_metacharacters(argument: str) -> None:
+    # cmd.exe only counts quote characters, so an argument mixing quotes and
+    # metacharacters cannot be escaped reliably; 'a">b' would even run
+    # successfully while silently redirecting output into a stray file "b".
+    with pytest.raises(ValueError, match="Cannot escape"):
+        nox.popen._windows_batch_command([r"C:\tool.bat", argument])
+
+
 @only_on_windows
 @pytest.mark.parametrize("suffix", [".bat", ".cmd"])
 @pytest.mark.parametrize(
@@ -70,6 +79,24 @@ def test_run_windows_batch_metacharacter_arg(
     result = nox.command.run([batch, argument], silent=True)
 
     assert result.strip() == argument
+
+
+@only_on_windows
+def test_run_windows_batch_quoted_metacharacter_arg(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    batch = tmp_path / "echo-arg.bat"
+    batch.write_text(
+        f'@"{PYTHON}" -c "import sys; print(sys.argv[1])" %*\n',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(ValueError, match="Cannot escape"):
+        nox.command.run([batch, 'a">b'], silent=True)
+
+    # the command must not have run at all, let alone create "b" via redirection
+    assert list(tmp_path.iterdir()) == [batch]
 
 
 def test_run_defaults() -> None:
