@@ -32,8 +32,6 @@ __all__ = [
     "popen",
 ]
 
-_CMD_META = frozenset("&<>^|")
-
 
 def __dir__() -> list[str]:
     return __all__
@@ -41,6 +39,8 @@ def __dir__() -> list[str]:
 
 DEFAULT_INTERRUPT_TIMEOUT = 0.3
 DEFAULT_TERMINATE_TIMEOUT = 0.2
+
+_CMD_META = frozenset("&<>^|")
 
 
 def _windows_batch_command(args: Sequence[str]) -> str:

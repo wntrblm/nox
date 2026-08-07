@@ -45,12 +45,22 @@ only_on_windows = pytest.mark.skipif(
 )
 
 
+def _write_echo_batch(tmp_path: Path, suffix: str = ".bat") -> Path:
+    """Write a batch script that echoes its first argument."""
+    batch = tmp_path / f"echo-arg{suffix}"
+    batch.write_text(
+        f'@"{PYTHON}" -c "import sys; print(sys.argv[1])" %*\n',
+        encoding="utf-8",
+    )
+    return batch
+
+
 def test_windows_batch_command() -> None:
     command = nox.popen._windows_batch_command(
         [r"C:\Program Files\tool.cmd", "plain", "has space", "requests<99"]
     )
 
-    assert command == (r'"C:\Program Files\tool.cmd" plain "has space" "requests<99"')
+    assert command == r'"C:\Program Files\tool.cmd" plain "has space" "requests<99"'
 
 
 @pytest.mark.parametrize("argument", ['"urllib3<1.25"', 'a"<b', 'a">b'])
@@ -70,11 +80,7 @@ def test_windows_batch_command_rejects_quoted_metacharacters(argument: str) -> N
 def test_run_windows_batch_metacharacter_arg(
     tmp_path: Path, suffix: str, argument: str
 ) -> None:
-    batch = tmp_path / f"echo-arg{suffix}"
-    batch.write_text(
-        f'@"{PYTHON}" -c "import sys; print(sys.argv[1])" %*\n',
-        encoding="utf-8",
-    )
+    batch = _write_echo_batch(tmp_path, suffix)
 
     result = nox.command.run([batch, argument], silent=True)
 
@@ -85,11 +91,7 @@ def test_run_windows_batch_metacharacter_arg(
 def test_run_windows_batch_quoted_metacharacter_arg(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    batch = tmp_path / "echo-arg.bat"
-    batch.write_text(
-        f'@"{PYTHON}" -c "import sys; print(sys.argv[1])" %*\n',
-        encoding="utf-8",
-    )
+    batch = _write_echo_batch(tmp_path)
     monkeypatch.chdir(tmp_path)
 
     with pytest.raises(ValueError, match="Cannot escape"):
