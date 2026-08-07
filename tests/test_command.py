@@ -98,7 +98,7 @@ def test_run_windows_batch_quoted_metacharacter_arg(
         nox.command.run([batch, 'a">b'], silent=True)
 
     # the command must not have run at all, let alone create "b" via redirection
-    assert list(tmp_path.iterdir()) == [batch]
+    assert [path.name for path in tmp_path.iterdir()] == [batch.name]
 
 
 def test_run_defaults() -> None:
