@@ -46,13 +46,14 @@ def __dir__() -> list[str]:
 
 
 directory_completer: argcomplete.completers.DirectoriesCompleter = (
-    argcomplete.completers.DirectoriesCompleter()  # type: ignore[no-untyped-call]
+    argcomplete.completers.DirectoriesCompleter()
 )
 json_file_completer: argcomplete.completers.FilesCompleter = (
-    argcomplete.completers.FilesCompleter(("json",))  # type: ignore[no-untyped-call]
+    argcomplete.completers.FilesCompleter(("json",))
 )
+# argcomplete only iterates the choices, but it types them as a mapping.
 empty_completer: argcomplete.completers.ChoicesCompleter = (
-    argcomplete.completers.ChoicesCompleter(())  # type: ignore[no-untyped-call]
+    argcomplete.completers.ChoicesCompleter({})
 )
 
 
