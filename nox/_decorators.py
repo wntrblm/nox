@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
     from . import _typing
     from ._parametrize import Param
+    from .environments import Environment
 
 T = TypeVar("T", bound=Callable[..., Any])
 
@@ -56,6 +57,10 @@ def _copy_func(src: T, name: str | None = None) -> T:
 
 class Func:
     """This is a function decorator that adds additional Nox-specific metadata."""
+
+    # Set when this function is a task attached to an environment.
+    task_name: str | None = None
+    env: Environment | None = None
 
     def __new__(  # noqa: PYI034
         cls, func: Callable[..., Any], *args: Any, **kwargs: Any
