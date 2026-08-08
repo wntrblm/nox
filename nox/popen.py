@@ -14,10 +14,12 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"contextlib", "locale"}
+__lazy_modules__ = {"contextlib", "itertools", "locale"}
 
 import contextlib
+import itertools
 import locale
+import os
 import subprocess
 import sys
 from typing import IO, TYPE_CHECKING
@@ -39,6 +41,92 @@ def __dir__() -> list[str]:
 
 DEFAULT_INTERRUPT_TIMEOUT = 0.3
 DEFAULT_TERMINATE_TIMEOUT = 0.2
+
+_CMD_META = frozenset("&<>^|()")
+
+# Variables cmd.exe resolves dynamically or defines itself, so a reference to
+# one expands even when it is absent from the child process environment.
+_CMD_AUTO_VARS = frozenset(
+    {
+        "__APPDIR__",
+        "__CD__",
+        "CD",
+        "CMDCMDLINE",
+        "CMDEXTVERSION",
+        "COMSPEC",
+        "DATE",
+        "ERRORLEVEL",
+        "HIGHESTNUMANODENUMBER",
+        "PATHEXT",
+        "PROMPT",
+        "RANDOM",
+        "TIME",
+    }
+)
+
+
+def _expandable_reference(arg: str, env: Mapping[str, str]) -> str | None:
+    """Find a ``%VAR%`` reference that cmd.exe would expand, if there is one.
+
+    cmd.exe scans the text between each pair of ``%`` characters; when it
+    names a defined (or dynamic) variable - optionally followed by ``:``
+    modifiers, the value is substituted, even inside double quotes. An
+    undefined name is left alone and the scan resumes at the trailing ``%``.
+    """
+    defined = {name.upper() for name in env}
+    percents = [index for index, char in enumerate(arg) if char == "%"]
+    for start, end in itertools.pairwise(percents):
+        name = arg[start + 1 : end].partition(":")[0].upper()
+        if name and (
+            name in defined
+            or name in _CMD_AUTO_VARS
+            # hidden variables such as the per-drive working directory "=C:"
+            or name.startswith("=")
+        ):
+            return arg[start : end + 1]
+    return None
+
+
+def _windows_batch_command(
+    args: Sequence[str], env: Mapping[str, str] | None = None
+) -> str:
+    """Build a command line that protects the cmd.exe metacharacters ``&<>^|()``.
+
+    Arguments cmd.exe would corrupt anyway are rejected: ``%VAR%`` references
+    are expanded even inside double quotes, and quote characters cannot be
+    escaped. cmd.exe doesn't have backslash escapes, it only counts quotes.
+    """
+    if env is None:
+        env = os.environ
+
+    quoted_args = []
+    for arg in args:
+        reference = _expandable_reference(arg, env)
+        if reference is not None:
+            msg = (
+                "Cannot escape argument for batch script, cmd.exe would"
+                f" expand {reference}: {arg}"
+            )
+            raise ValueError(msg)
+        if _CMD_META.isdisjoint(arg):
+            quoted_args.append(subprocess.list2cmdline([arg]))
+        elif len(arg) >= 2 and arg[0] == arg[-1] == '"' and '"' not in arg[1:-1]:
+            # A pre-quoted argument such as '"urllib3<1.25"' (the historical
+            # workaround): its outer quotes already protect the
+            # metacharacters, so pass it through unchanged.
+            quoted_args.append(arg)
+        elif '"' in arg:
+            # list2cmdline escapes embedded quotes with backslashes, but
+            # cmd.exe doesn't have backslash escapes.
+            msg = f"Cannot escape argument for batch script: {arg}"
+            raise ValueError(msg)
+        else:
+            # Force list2cmdline to quote the argument, then remove the
+            # temporary leading space without changing the argument itself:
+            # ' requests<99' -> '" requests<99"' -> '"requests<99"'
+            quoted = subprocess.list2cmdline([f" {arg}"])
+            quoted_args.append(f"{quoted[0]}{quoted[2:]}")
+    return " ".join(quoted_args)
 
 
 def shutdown_process(
@@ -97,7 +185,11 @@ def popen(
     if silent:
         stdout = subprocess.PIPE
 
-    proc = subprocess.Popen(args, env=env, stdout=stdout, stderr=stderr)
+    popen_args: Sequence[str] | str = args
+    if sys.platform.startswith("win") and args[0].casefold().endswith((".bat", ".cmd")):
+        popen_args = _windows_batch_command(args, env)
+
+    proc = subprocess.Popen(popen_args, env=env, stdout=stdout, stderr=stderr)
 
     try:
         out, _err = proc.communicate()

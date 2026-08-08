@@ -93,10 +93,11 @@ def xonda_tests(session: nox.Session, xonda: str) -> None:
     )
     env = {"COVERAGE_FILE": coverage_file}
 
-    # Windows breaks currently either with or without quoting, so it's omitted there.
-    extra_specs = [] if sys.platform.startswith("win32") else ["requests<99"]
     session.conda_install(
-        "--file", "requirements-conda-test.txt", *extra_specs, channel="conda-forge"
+        "--file",
+        "requirements-conda-test.txt",
+        "requests<99",
+        channel="conda-forge",
     )
     session.install("-e.", "--no-deps")
 

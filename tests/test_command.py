@@ -45,6 +45,143 @@ only_on_windows = pytest.mark.skipif(
 )
 
 
+def _write_echo_batch(tmp_path: Path, suffix: str = ".bat") -> Path:
+    """Write a batch script that echoes its first argument."""
+    batch = tmp_path / f"echo-arg{suffix}"
+    batch.write_text(
+        f'@"{PYTHON}" -c "import sys; print(sys.argv[1])" %*\n',
+        encoding="utf-8",
+    )
+    return batch
+
+
+def test_windows_batch_command() -> None:
+    command = nox.popen._windows_batch_command(
+        [r"C:\Program Files\tool.cmd", "plain", "has space", "requests<99", "py(3)"]
+    )
+
+    expected = r'"C:\Program Files\tool.cmd" plain "has space" "requests<99" "py(3)"'
+    assert command == expected
+
+
+@pytest.mark.parametrize("argument", ['a"<b', 'a">b', '"urllib3<1.25', 'urllib3<1.25"'])
+def test_windows_batch_command_rejects_quoted_metacharacters(argument: str) -> None:
+    # cmd.exe only counts quote characters, so an argument mixing quotes and
+    # metacharacters cannot be escaped reliably; 'a">b' would even run
+    # successfully while silently redirecting output into a stray file "b".
+    with pytest.raises(ValueError, match="Cannot escape"):
+        nox.popen._windows_batch_command([r"C:\tool.bat", argument])
+
+
+def test_windows_batch_command_accepts_pre_quoted_argument() -> None:
+    # the historical workaround from #312: the caller quotes the constraint
+    # themselves, and the outer quotes already protect the metacharacters.
+    command = nox.popen._windows_batch_command([r"C:\tool.bat", '"urllib3<1.25"'])
+
+    assert command == r'C:\tool.bat "urllib3<1.25"'
+
+
+@pytest.mark.parametrize(
+    "argument",
+    ["%NOX_TEST_VAR%", "pre%NOX_TEST_VAR%post", "%%NOX_TEST_VAR%%", '"%NOX_TEST_VAR%"'],
+)
+def test_windows_batch_command_rejects_percent_expansion(argument: str) -> None:
+    # cmd.exe expands %VAR% references even inside double quotes, so an
+    # argument referencing a defined variable cannot be passed through
+    # faithfully; a variable value could even inject extra commands.
+    with pytest.raises(ValueError, match="would expand %NOX_TEST_VAR%"):
+        nox.popen._windows_batch_command(
+            [r"C:\tool.bat", argument], {"nox_test_var": "value"}
+        )
+
+
+@pytest.mark.parametrize("argument", ["%RANDOM%", "%__CD__%", "%=C:%", "%PATH:;=,%"])
+def test_windows_batch_command_rejects_dynamic_percent_expansion(
+    argument: str,
+) -> None:
+    # these expand even when the variable is missing from the child
+    # environment: cmd.exe resolves them dynamically or defines them itself.
+    with pytest.raises(ValueError, match="would expand"):
+        nox.popen._windows_batch_command([r"C:\tool.bat", argument], {"PATH": "C:;D:"})
+
+
+@pytest.mark.parametrize(
+    "argument", ["100%", "%%", "%undefined_variable%", "https://x.test/%20a%20b.whl"]
+)
+def test_windows_batch_command_allows_literal_percents(argument: str) -> None:
+    # cmd.exe leaves references to undefined variables alone, so these
+    # arguments survive verbatim and are safe to pass through.
+    command = nox.popen._windows_batch_command([r"C:\tool.bat", argument], {})
+
+    assert command == f"C:\\tool.bat {argument}"
+
+
+@only_on_windows
+@pytest.mark.parametrize("suffix", [".bat", ".cmd"])
+@pytest.mark.parametrize(
+    "argument",
+    [
+        "name&value",
+        "name<value",
+        "name>value",
+        "name^value",
+        "name|value",
+        "name(value",
+        "name)value",
+    ],
+)
+def test_run_windows_batch_metacharacter_arg(
+    tmp_path: Path, suffix: str, argument: str
+) -> None:
+    batch = _write_echo_batch(tmp_path, suffix)
+
+    result = nox.command.run([batch, argument], silent=True)
+
+    assert result.strip() == argument
+
+
+@only_on_windows
+def test_run_windows_batch_paren_arg_in_block(tmp_path: Path) -> None:
+    # conda.bat-style scripts wrap commands in if (...) blocks, where an
+    # unquoted ")" in an argument ends the block early and silently corrupts
+    # the argument (or aborts with "... was unexpected at this time").
+    batch = tmp_path / "block.bat"
+    batch.write_text(
+        f'@echo off\nif "1"=="1" (\n'
+        f'  "{PYTHON}" -c "import sys; print(sys.argv[1])" %*\n)\n',
+        encoding="utf-8",
+    )
+
+    result = nox.command.run([batch, "(pkg)"], silent=True)
+
+    assert result.strip() == "(pkg)"
+
+
+@only_on_windows
+def test_run_windows_batch_pre_quoted_arg(tmp_path: Path) -> None:
+    # the pre-quoted idiom from #312 keeps working; the child process sees
+    # the argument without the caller's quotes, which is what conda expects.
+    batch = _write_echo_batch(tmp_path)
+
+    result = nox.command.run([batch, '"urllib3<1.25"'], silent=True)
+
+    assert result.strip() == "urllib3<1.25"
+
+
+@only_on_windows
+def test_run_windows_batch_quoted_metacharacter_arg(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    batch = _write_echo_batch(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(ValueError, match="Cannot escape"):
+        nox.command.run([batch, 'a">b'], silent=True)
+
+    # the command must not have run at all, let alone create "b" via redirection
+    assert [path.name for path in tmp_path.iterdir()] == [batch.name]
+
+
 def test_run_defaults() -> None:
     result = nox.command.run([PYTHON, "-c", "print(123)"])
 
