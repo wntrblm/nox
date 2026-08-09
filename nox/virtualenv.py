@@ -94,6 +94,7 @@ _BLACKLISTED_ENV_VARS = frozenset(
     [
         "PIP_RESPECT_VIRTUALENV",
         "PIP_REQUIRE_VIRTUALENV",
+        "PYTHONHOME",
         "__PYVENV_LAUNCHER__",
         "UV_SYSTEM_PYTHON",
         "UV_PYTHON",
