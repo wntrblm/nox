@@ -379,6 +379,67 @@ def test_run_script_mode_pip_resolution(
 
 
 @pytest.mark.parametrize(
+    ("is_sandboxed", "backend", "expected_pythonpath"),
+    [(True, "uv", None), (False, "none", "/outer/packages")],
+)
+def test_run_script_mode_pythonpath_isolation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    is_sandboxed: bool,
+    backend: str,
+    expected_pythonpath: str | None,
+) -> None:
+    """A sandboxed script environment must not import from the outer environment."""
+    seen_envs: list[dict[str, str]] = []
+
+    def fake_get_env(env: dict[str, str | None]) -> dict[str, str | None]:
+        return {
+            "PATH": "/fake/venv/bin",
+            "PYTHONPATH": "/outer/packages",
+            "OUTER_VAR": "kept",
+            **env,
+        }
+
+    def fake_run(_cmd: list[str], **kwargs: object) -> SimpleNamespace:
+        seen_envs.append(typing.cast("dict[str, str]", kwargs["env"]))
+        return SimpleNamespace(returncode=0)
+
+    def fake_execle(_path: str, *_args: object) -> typing.NoReturn:
+        seen_envs.append(typing.cast("dict[str, str]", _args[-1]))
+        raise SystemExit(0)
+
+    fake_venv = make_fake_script_venv(
+        _get_env=fake_get_env,
+        is_sandboxed=is_sandboxed,
+        venv_backend=backend,
+    )
+    monkeypatch.setattr(
+        nox.virtualenv, "get_virtualenv", lambda *_args, **_kwargs: fake_venv
+    )
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(shutil, "which", lambda cmd, path=None: f"{path}/{cmd}")
+    monkeypatch.setattr(os, "execle", fake_execle)
+    monkeypatch.setattr(sys, "argv", ["nox"])
+
+    with pytest.raises(SystemExit):
+        nox._cli.run_script_mode(
+            "noxfile.py",
+            tmp_path,
+            reuse=False,
+            dependencies=["nox", "cowsay"],
+            venv_backend=backend,
+            download_python="never",
+            requires_python=None,
+        )
+
+    assert len(seen_envs) == 2
+    assert all(env.get("PYTHONPATH") == expected_pythonpath for env in seen_envs)
+    assert all(env["OUTER_VAR"] == "kept" for env in seen_envs)
+    assert all(env["PATH"] == "/fake/venv/bin" for env in seen_envs)
+    assert all(env["NOX_SCRIPT_MODE"] == "none" for env in seen_envs)
+
+
+@pytest.mark.parametrize(
     ("script_env", "global_env", "toml_value", "cli_args", "expected"),
     [
         ("always", "never", "never", ["--download-python", "never"], "always"),

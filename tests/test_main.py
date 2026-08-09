@@ -1141,9 +1141,18 @@ def test_symlink_sym_not(monkeypatch: pytest.MonkeyPatch) -> None:
     assert res.returncode == 1
 
 
-@xfail_mingw_uv
-def test_noxfile_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_noxfile_script_mode(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
+    monkeypatch.delenv("NOX_SCRIPT_VENV_BACKEND", raising=False)
+    monkeypatch.delenv("NOX_SCRIPT_DOWNLOAD_PYTHON", raising=False)
+    monkeypatch.delenv("NOX_DOWNLOAD_PYTHON", raising=False)
+    outer_packages = tmp_path / "outer-packages"
+    dist_info = outer_packages / "nox-999.dist-info"
+    dist_info.mkdir(parents=True)
+    dist_info.joinpath("METADATA").write_text(
+        "Metadata-Version: 2.1\nName: nox\nVersion: 999\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("PYTHONPATH", str(outer_packages))
     job = subprocess.run(
         [
             sys.executable,
@@ -1153,6 +1162,12 @@ def test_noxfile_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
             Path(RESOURCES) / "noxfile_script_mode.py",
             "-s",
             "example",
+            "--script-mode",
+            "fresh",
+            "--script-venv-backend",
+            "virtualenv",
+            "--envdir",
+            tmp_path / "envs",
         ],
         check=False,
         capture_output=True,

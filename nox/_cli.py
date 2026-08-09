@@ -334,7 +334,10 @@ def run_script_mode(
                     f' does not satisfy "requires-python": {requires_python!r}'
                 )
                 raise SystemExit(msg)
-    env = {k: v for k, v in venv._get_env({}).items() if v is not None}
+    # An outer PYTHONPATH can make the installer and the child Nox process load
+    # packages from outside the script environment instead of its dependencies.
+    env_overrides = {"PYTHONPATH": None} if venv.is_sandboxed else {}
+    env = {k: v for k, v in venv._get_env(env_overrides).items() if v is not None}
     env["NOX_SCRIPT_MODE"] = "none"
     if venv.venv_backend == "uv":
         cmd = [nox.virtualenv.UV, "pip", "install"]
