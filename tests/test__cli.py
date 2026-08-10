@@ -287,18 +287,27 @@ def make_fake_script_venv(**overrides: object) -> SimpleNamespace:
 
 
 @pytest.fixture
-def script_mode_exec(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
+def script_mode_exec(
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[tuple[list[str], dict[str, str]]]:
     """Stub the install/exec plumbing at the end of run_script_mode.
 
-    Returns the list of commands passed to subprocess.run.
+    Returns the (command, env) pairs passed to subprocess.run and os.execle.
     """
-    calls: list[list[str]] = []
+    calls: list[tuple[list[str], dict[str, str]]] = []
 
-    def fake_run(cmd: list[str], **_kwargs: object) -> SimpleNamespace:
-        calls.append(list(cmd))
+    def fake_run(cmd: list[str], **kwargs: object) -> SimpleNamespace:
+        # Interpreter-probe calls pass no env; record them with an empty one.
+        calls.append((list(cmd), typing.cast("dict[str, str]", kwargs.get("env", {}))))
         return SimpleNamespace(returncode=0, stdout="")
 
-    def fake_execle(_path: str, *_args: object) -> typing.NoReturn:
+    def fake_execle(_path: str, *args: object) -> typing.NoReturn:
+        calls.append(
+            (
+                [str(a) for a in args[:-1]],
+                typing.cast("dict[str, str]", args[-1]),
+            )
+        )
         raise SystemExit(0)
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -351,7 +360,7 @@ def test_run_script_mode_pip_resolution(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     backend: str,
-    script_mode_exec: list[list[str]],
+    script_mode_exec: list[tuple[list[str], dict[str, str]]],
 ) -> None:
     """pip must be resolved against the venv's PATH (Windows searches the parent's)."""
     fake_venv = make_fake_script_venv(venv_backend=backend)
@@ -375,7 +384,73 @@ def test_run_script_mode_pip_resolution(
         if backend == "uv"
         else ["/fake/venv/bin/pip", "install"]
     )
-    assert script_mode_exec[0] == [*expected, "nox", "cowsay"]
+    assert script_mode_exec[0][0] == [*expected, "nox", "cowsay"]
+
+
+@pytest.mark.parametrize(("is_sandboxed", "backend"), [(True, "uv"), (False, "none")])
+def test_run_script_mode_pythonpath_isolation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    is_sandboxed: bool,
+    backend: str,
+    script_mode_exec: list[tuple[list[str], dict[str, str]]],
+) -> None:
+    """A sandboxed script environment must not import from the outer environment."""
+    monkeypatch.setenv("PYTHONPATH", "/outer/packages")
+
+    def fake_get_env(env: dict[str, str | None]) -> dict[str, str | None]:
+        return {
+            "PATH": "/fake/venv/bin",
+            "PYTHONPATH": "/outer/packages",
+            "OUTER_VAR": "kept",
+            **env,
+        }
+
+    fake_venv = make_fake_script_venv(
+        _get_env=fake_get_env,
+        is_sandboxed=is_sandboxed,
+        venv_backend=backend,
+    )
+    monkeypatch.setattr(
+        nox.virtualenv, "get_virtualenv", lambda *_args, **_kwargs: fake_venv
+    )
+
+    with pytest.raises(SystemExit):
+        nox._cli.run_script_mode(
+            "noxfile.py",
+            tmp_path,
+            reuse=False,
+            dependencies=["nox", "cowsay"],
+            venv_backend=backend,
+            download_python="never",
+            requires_python=None,
+        )
+
+    envs = [env for _cmd, env in script_mode_exec]
+    assert len(envs) == 2
+    if is_sandboxed:
+        # "not in" rather than "is None": a None value would crash the real exec.
+        assert all("PYTHONPATH" not in env for env in envs)
+        assert all(env["NOX_OUTER_PYTHONPATH"] == "/outer/packages" for env in envs)
+    else:
+        assert all(env["PYTHONPATH"] == "/outer/packages" for env in envs)
+        assert all("NOX_OUTER_PYTHONPATH" not in env for env in envs)
+    assert all(env["OUTER_VAR"] == "kept" for env in envs)
+    assert all(env["PATH"] == "/fake/venv/bin" for env in envs)
+    assert all(env["NOX_SCRIPT_MODE"] == "none" for env in envs)
+
+
+def test_main_restores_outer_pythonpath(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The re-exec'd child must give sessions the PYTHONPATH the user exported."""
+    monkeypatch.setenv("NOX_OUTER_PYTHONPATH", "/outer/packages")
+    monkeypatch.delenv("PYTHONPATH", raising=False)
+
+    run_main_with_script(monkeypatch, tmp_path, "")
+
+    assert os.environ["PYTHONPATH"] == "/outer/packages"
+    assert "NOX_OUTER_PYTHONPATH" not in os.environ
 
 
 @pytest.mark.parametrize(

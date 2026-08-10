@@ -334,7 +334,17 @@ def run_script_mode(
                     f' does not satisfy "requires-python": {requires_python!r}'
                 )
                 raise SystemExit(msg)
-    env = {k: v for k, v in venv._get_env({}).items() if v is not None}
+    # An outer PYTHONPATH can make the installer and the child Nox process load
+    # packages from outside the script environment instead of its dependencies.
+    # Stash it so the child can restore it for sessions, which must see the
+    # same environment as a NOX_SCRIPT_MODE=none run.
+    env_overrides: dict[str, str | None] = {}
+    if venv.is_sandboxed:
+        env_overrides["PYTHONPATH"] = None
+        outer_pythonpath = os.environ.get("PYTHONPATH")
+        if outer_pythonpath is not None:
+            env_overrides["NOX_OUTER_PYTHONPATH"] = outer_pythonpath
+    env = {k: v for k, v in venv._get_env(env_overrides).items() if v is not None}
     env["NOX_SCRIPT_MODE"] = "none"
     if venv.venv_backend == "uv":
         cmd = [nox.virtualenv.UV, "pip", "install"]
@@ -386,6 +396,11 @@ def _main(*, main_ep: bool) -> None:
     setup_logging(
         color=args.color, verbose=args.verbose, add_timestamp=args.add_timestamp
     )
+    # run_script_mode stripped PYTHONPATH so the re-exec'd Nox interpreter does
+    # not import from the outer environment; sessions must still see it.
+    outer_pythonpath = os.environ.pop("NOX_OUTER_PYTHONPATH", None)
+    if outer_pythonpath is not None:
+        os.environ["PYTHONPATH"] = outer_pythonpath
     nox_script_mode = os.environ.get("NOX_SCRIPT_MODE", "") or args.script_mode
     if nox_script_mode not in {"none", "reuse", "fresh"}:
         msg = f"Invalid NOX_SCRIPT_MODE: {nox_script_mode!r}, must be one of 'none', 'reuse', or 'fresh'"

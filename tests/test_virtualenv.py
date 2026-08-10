@@ -561,6 +561,16 @@ def test_blacklisted_env(
     assert "__PYVENV_LAUNCHER__" not in venv.bin
 
 
+def test_pythonhome_blacklisted(
+    monkeypatch: pytest.MonkeyPatch,
+    make_one: Callable[..., tuple[VirtualEnv, Path]],
+) -> None:
+    """A mismatched outer PYTHONHOME is fatal to any venv interpreter."""
+    monkeypatch.setenv("PYTHONHOME", "/outer/python")
+    venv, _ = make_one()
+    assert venv._get_env({})["PYTHONHOME"] is None
+
+
 def test__clean_location(
     monkeypatch: pytest.MonkeyPatch,
     make_one: Callable[..., tuple[VirtualEnv, Path]],
