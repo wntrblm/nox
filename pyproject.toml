@@ -47,7 +47,8 @@ dependencies = [
   "platformdirs>=2",
   "python-discovery>=1",
   "tomli>=1.1; python_version<'3.11'",
-  "virtualenv>=20.15",
+  "virtualenv>=20.15; python_version<'3.15'",
+  "virtualenv>=21; python_version>='3.15'",
 ]
 optional-dependencies.pbs = [
   "pbs-installer[all]>=2025.1.6",
