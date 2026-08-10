@@ -1,5 +1,65 @@
 # Changelog
 
+## 2026.08.10
+
+This release can run sessions in parallel with `--parallel`/`-j` (experimental
+for now, report any bugs!). Requires session opt-in, or use `--allow-parallel`.
+Interpreter discovery now uses the `python-discovery` package, which should be
+better at finding Python and supports version specifier sets. Using this,
+script mode reads `requires-python`. Many bugs were fixed, mostly in Python
+version handling, conda version specifiers, and option precedence. Unrecognized
+global options are now an error.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @henryiii
+* @Himanshuagrawal4
+* @chuenchen309 (first contribution)
+* @ColumbusLabs (first contribution)
+* @deepakganesh78 (first contribution)
+* @espressolee (first contribution)
+* @Sanjays2402 (first contribution)
+* @uttam12331 (first contribution)
+* @yangfan-yf-yf (first contribution)
+
+
+Features:
+
+* Run sessions in parallel with `--parallel`/`-j` by @henryiii in https://github.com/wntrblm/nox/pull/1131
+* Use `python-discovery` for interpreter discovery by @henryiii in https://github.com/wntrblm/nox/pull/1086
+* Support `requires-python` in script mode by @henryiii in https://github.com/wntrblm/nox/pull/1142
+* Sort classifier-derived Python versions by @Himanshuagrawal4 in https://github.com/wntrblm/nox/pull/1100
+
+Fixes:
+
+* Isolate script mode from inherited `PYTHONPATH` by @yangfan-yf-yf in https://github.com/wntrblm/nox/pull/1157
+* Require virtualenv 21+ on Python 3.15 by @henryiii in https://github.com/wntrblm/nox/pull/1158
+* Correct conda version constraints on Windows by @deepakganesh78 in https://github.com/wntrblm/nox/pull/1146
+* Make explicit command-line options beat noxfile and alias values by @henryiii in https://github.com/wntrblm/nox/pull/1145
+* Translate PEP 440 range interpreters to conda version specs by @henryiii in https://github.com/wntrblm/nox/pull/1150
+* Download upper-bound-only Python ranges by @henryiii in https://github.com/wntrblm/nox/pull/1148
+* Do not write `~/.local/bin` shims when provisioning with uv by @henryiii in https://github.com/wntrblm/nox/pull/1149
+* Don't crash `python_versions()` on a major-only `max_version` by @chuenchen309 in https://github.com/wntrblm/nox/pull/1140
+* Correct `python_versions()` minimum for major-only and multiple lower bounds by @Sanjays2402 in https://github.com/wntrblm/nox/pull/1127
+* Don't crash building the manifest when a python-matrix session has an empty parametrize by @chuenchen309 in https://github.com/wntrblm/nox/pull/1141
+* Keep an empty inner `@parametrize` from being dropped when stacked by @chuenchen309 in https://github.com/wntrblm/nox/pull/1138
+
+Documentation:
+
+* Add a multi-version pytest coverage recipe by @ColumbusLabs in https://github.com/wntrblm/nox/pull/1143
+* Fix broken examples, stale versions, and typos by @henryiii in https://github.com/wntrblm/nox/pull/1154
+
+Internal changes:
+
+* Statically-typed option model as the single source of truth by @henryiii in https://github.com/wntrblm/nox/pull/1144
+* Fix flake8-lazy merge by @henryiii in https://github.com/wntrblm/nox/pull/1147
+* Drop stale type ignores for argcomplete 3.7.2 by @henryiii in https://github.com/wntrblm/nox/pull/1155
+* Make `test_download_python_failed_install` pass without uv installed by @uttam12331 in https://github.com/wntrblm/nox/pull/1137
+* Make the remaining uv download tests pass without uv installed by @espressolee in https://github.com/wntrblm/nox/pull/1153
+* Update the auto-release recipe to bump-my-version by @ColumbusLabs in https://github.com/wntrblm/nox/pull/1136
+* Bump the github-actions group with 5 updates by @dependabot in https://github.com/wntrblm/nox/pull/1151
+* Bump the pre-commit group with 6 updates by @dependabot in https://github.com/wntrblm/nox/pull/1152
+
 ## 2026.07.11
 
 This release drops Python 3.9 and brings a batch of performance improvements,
