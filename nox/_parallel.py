@@ -73,6 +73,12 @@ _SYMBOLS = {
     Status.FAILED: "✗",
     Status.ABORTED: "↯",
 }
+_ASCII_SYMBOLS = {
+    Status.SUCCESS: "+",
+    Status.SKIPPED: "-",
+    Status.FAILED: "x",
+    Status.ABORTED: "!",
+}
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 # How long a child gets to exit after SIGTERM before it is SIGKILLed.
@@ -112,6 +118,15 @@ def _preview_text(line: str) -> str:
     an escape sequence and corrupt the terminal.
     """
     return _ANSI.sub("", line.rstrip("\r\n").rsplit("\r", 1)[-1]).strip()
+
+
+def _status_symbol(status: Status, encoding: str | None) -> str:
+    symbol = _SYMBOLS[status]
+    try:
+        symbol.encode(encoding or "utf-8")
+    except UnicodeEncodeError:
+        return _ASCII_SYMBOLS[status]
+    return symbol
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -237,7 +252,7 @@ class _Reporter:
             self._board_lines = 0
 
     def _emit_block(self, name: str, result: Result, output: str) -> None:
-        symbol = _SYMBOLS[result.status]
+        symbol = _status_symbol(result.status, self.stream.encoding)
         duration = _duration_str(result.duration, ", {time}")
         rule = "=" * 10
         self.stream.write(
