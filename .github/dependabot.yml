@@ -22,3 +22,7 @@ updates:
           - "*"
     cooldown:
       default-days: 7
+    ignore:
+      # 2.27+ rewrites the zero-padded CalVer in project.version
+      - dependency-name: "https://github.com/tox-dev/pyproject-fmt"
+        versions: [ ">=2.27" ]
