@@ -613,6 +613,15 @@ def test_reporter_render_truncates_to_width() -> None:
     assert "\x1b" not in line
 
 
+def test_reporter_render_uses_ascii_spinner_for_legacy_encoding() -> None:
+    buffer = io.BytesIO()
+    with io.TextIOWrapper(buffer, encoding="cp1252") as stream:
+        reporter = _parallel._Reporter(color=False, tty=True, total=1)
+        reporter.stream = stream
+        reporter._active = {"a": 100.0}
+        assert reporter._render(105.0, width=0)[2] == "| a (5s)"
+
+
 def test_reporter_render_color() -> None:
     reporter = _parallel._Reporter(color=True, tty=False, total=1)
     reporter._active = {"a": 100.0}

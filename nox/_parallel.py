@@ -67,6 +67,7 @@ if TYPE_CHECKING:
     from nox.sessions import SessionRunner
 
 _SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+_ASCII_SPINNER = "|/-\\"
 _SYMBOLS = {
     Status.SUCCESS: "✓",
     Status.SKIPPED: "⊘",
@@ -127,6 +128,15 @@ def _status_symbol(status: Status, encoding: str | None) -> str:
     except UnicodeEncodeError:
         return _ASCII_SYMBOLS[status]
     return symbol
+
+
+def _spinner_frame(spin: int, encoding: str | None) -> str:
+    frame = _SPINNER[spin % len(_SPINNER)]
+    try:
+        frame.encode(encoding or "utf-8")
+    except UnicodeEncodeError:
+        return _ASCII_SPINNER[spin % len(_ASCII_SPINNER)]
+    return frame
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -206,7 +216,7 @@ class _Reporter:
             header = plain_header[: width - 1]
         lines = [self._banner(width), header]
 
-        frame = _SPINNER[self._spin % len(_SPINNER)]
+        frame = _spinner_frame(self._spin, self.stream.encoding)
         for name, start in self._active.items():
             # Plain and colored renderings are built from the same segments so
             # the width math can't drift from what is actually displayed.
