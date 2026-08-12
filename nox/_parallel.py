@@ -67,11 +67,18 @@ if TYPE_CHECKING:
     from nox.sessions import SessionRunner
 
 _SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+_ASCII_SPINNER = "|/-\\"
 _SYMBOLS = {
     Status.SUCCESS: "✓",
     Status.SKIPPED: "⊘",
     Status.FAILED: "✗",
     Status.ABORTED: "↯",
+}
+_ASCII_SYMBOLS = {
+    Status.SUCCESS: "+",
+    Status.SKIPPED: "-",
+    Status.FAILED: "x",
+    Status.ABORTED: "!",
 }
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
@@ -112,6 +119,24 @@ def _preview_text(line: str) -> str:
     an escape sequence and corrupt the terminal.
     """
     return _ANSI.sub("", line.rstrip("\r\n").rsplit("\r", 1)[-1]).strip()
+
+
+def _status_symbol(status: Status, encoding: str | None) -> str:
+    symbol = _SYMBOLS[status]
+    try:
+        symbol.encode(encoding or "utf-8")
+    except UnicodeEncodeError:
+        return _ASCII_SYMBOLS[status]
+    return symbol
+
+
+def _spinner_frame(spin: int, encoding: str | None) -> str:
+    frame = _SPINNER[spin % len(_SPINNER)]
+    try:
+        frame.encode(encoding or "utf-8")
+    except UnicodeEncodeError:
+        return _ASCII_SPINNER[spin % len(_ASCII_SPINNER)]
+    return frame
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -191,7 +216,7 @@ class _Reporter:
             header = plain_header[: width - 1]
         lines = [self._banner(width), header]
 
-        frame = _SPINNER[self._spin % len(_SPINNER)]
+        frame = _spinner_frame(self._spin, self.stream.encoding)
         for name, start in self._active.items():
             # Plain and colored renderings are built from the same segments so
             # the width math can't drift from what is actually displayed.
@@ -237,7 +262,7 @@ class _Reporter:
             self._board_lines = 0
 
     def _emit_block(self, name: str, result: Result, output: str) -> None:
-        symbol = _SYMBOLS[result.status]
+        symbol = _status_symbol(result.status, self.stream.encoding)
         duration = _duration_str(result.duration, ", {time}")
         rule = "=" * 10
         self.stream.write(
