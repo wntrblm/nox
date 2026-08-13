@@ -477,6 +477,7 @@ def _stop_procs(procs: Collection[subprocess.Popen[bytes]]) -> None:
             proc.wait(timeout=max(0.0, deadline - time.monotonic()))
         except subprocess.TimeoutExpired:  # noqa: PERF203 - cold shutdown path
             _signal_group(proc, kill=True)
+            proc.wait()
 
 
 def run_manifest_parallel(
