@@ -189,17 +189,17 @@ def popen(
     if sys.platform.startswith("win") and args[0].casefold().endswith((".bat", ".cmd")):
         popen_args = _windows_batch_command(args, env)
 
-    proc = subprocess.Popen(popen_args, env=env, stdout=stdout, stderr=stderr)
-
-    try:
-        out, _err = proc.communicate()
-        sys.stdout.flush()
-
-    except KeyboardInterrupt:
-        out, _err = shutdown_process(proc, interrupt_timeout, terminate_timeout)
-        if proc.returncode != 0:
-            raise
-
-    return_code = proc.wait()
+    with subprocess.Popen(popen_args, env=env, stdout=stdout, stderr=stderr) as proc:
+        try:
+            out, _err = proc.communicate()
+            sys.stdout.flush()
+        except KeyboardInterrupt:
+            out, _err = shutdown_process(proc, interrupt_timeout, terminate_timeout)
+            if proc.returncode != 0:
+                raise
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+        return_code = proc.returncode
 
     return return_code, decode_output(out) if out else ""
