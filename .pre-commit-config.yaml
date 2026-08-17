@@ -41,7 +41,7 @@ repos:
     rev: v2.3.0
     hooks:
       - id: mypy
-        files: ^(nox/|tests/)
+        files: ^(nox/|tests/|\.github/|noxfile\.py$)
         exclude: ^tests/resources/
         args: []
         additional_dependencies:

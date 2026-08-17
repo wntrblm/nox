@@ -35,7 +35,9 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: 3.15",
+  "Programming Language :: Python :: Implementation :: CPython",
   "Topic :: Software Development :: Testing",
+  "Typing :: Typed",
 ]
 dependencies = [
   "argcomplete>=1.9.4,<4",
@@ -124,17 +126,20 @@ max_supported_python = "3.15"
 
 [tool.mypy]
 mypy_path = [ ".github" ]
+files = [ ".github", "nox", "noxfile.py", "tests" ]
+exclude = [ "^tests/resources/" ]
 python_version = "3.10"
 warn_unreachable = true
 enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
 strict = true
+native_parser = true
 overrides = [ { module = [ "tox.*" ], ignore_missing_imports = true } ]
 
 [tool.pytest]
 ini_options.minversion = "7.0"
 ini_options.testpaths = [ "tests" ]
 ini_options.pythonpath = [ ".github/" ]
-ini_options.addopts = [ "-ra", "--strict-markers", "--strict-config" ]
+ini_options.addopts = [ "-ra", "--strict-markers", "--strict-config", "-p", "no:legacypath" ]
 ini_options.markers = [
   "conda: test requires conda",
 ]
