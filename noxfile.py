@@ -122,13 +122,13 @@ def conda_tests(session: nox.Session) -> None:
     xonda_tests(session, "conda")
 
 
-@nox.session(venv_backend="mamba", default=shutil.which("mamba"))
+@nox.session(venv_backend="mamba", default=bool(shutil.which("mamba")))
 def mamba_tests(session: nox.Session) -> None:
     """Run test suite set up with mamba."""
     xonda_tests(session, "mamba")
 
 
-@nox.session(venv_backend="micromamba", default=shutil.which("micromamba"))
+@nox.session(venv_backend="micromamba", default=bool(shutil.which("micromamba")))
 def micromamba_tests(session: nox.Session) -> None:
     """Run test suite set up with micromamba."""
     xonda_tests(session, "micromamba")
@@ -183,6 +183,8 @@ def docs(session: nox.Session) -> None:
 
 # The following sessions are only to be run in CI to check the nox GHA action
 def _check_python_version(session: nox.Session) -> None:
+    # Callers parametrize with a list of version strings, so this is always a str.
+    assert isinstance(session.python, str)
     if session.python.startswith("pypy"):
         # Drop starting "pypy" and maybe "-"
         python_version = session.python.lstrip("py-")
