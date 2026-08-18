@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026.08.17
+
+This is a small follow-up release to better support running the parallel mode
+on legacy windows.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @henryiii
+* @nightcityblade (first contribution)
+
+Fixes:
+
+* Support legacy encodings in the parallel reporter by @nightcityblade in https://github.com/wntrblm/nox/pull/1160
+
+Internal changes:
+
+* Tighten mypy and pytest config by @henryiii in https://github.com/wntrblm/nox/pull/1167
+* Bump pre-commit hooks, hold pyproject-fmt at 2.26.0 by @henryiii in https://github.com/wntrblm/nox/pull/1163
+* Bump the github-actions group with 2 updates by @dependabot in https://github.com/wntrblm/nox/pull/1162
+
+
 ## 2026.08.10
 
 This release can run sessions in parallel with `--parallel`/`-j` (experimental
