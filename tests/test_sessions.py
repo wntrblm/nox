@@ -356,6 +356,41 @@ class TestSession:
         with pytest.raises(nox.command.CommandFailed):
             session.run(sys.executable, "-c", "import sys; sys.exit(1)")
 
+    def test_background(self) -> None:
+        session, runner = self.make_session_and_runner()
+
+        with mock.patch("nox.command.run_background", autospec=True) as run_background:
+            handle = session.background(sys.executable, "--version")
+
+        run_background.assert_called_once_with(
+            (sys.executable, "--version"),
+            env=mock.ANY,
+            paths=["/no/bin/for/you"],
+            log=True,
+            external=False,
+            stdout=None,
+            stderr=None,
+            interrupt_timeout=nox.popen.DEFAULT_INTERRUPT_TIMEOUT,
+            terminate_timeout=nox.popen.DEFAULT_TERMINATE_TIMEOUT,
+        )
+        assert handle is run_background.return_value
+        # The handle is tracked so it can be cleaned up when the session ends.
+        assert runner.background_commands == [handle]
+
+    def test_background_no_args(self) -> None:
+        session, _ = self.make_session_and_runner()
+
+        with pytest.raises(
+            ValueError, match="At least one argument required to background"
+        ):
+            session.background()
+
+    def test_background_list_arg(self) -> None:
+        session, _ = self.make_session_and_runner()
+
+        with pytest.raises(ValueError, match="is a list"):
+            session.background([sys.executable, "--version"])  # type: ignore[arg-type]
+
     def test_run_install_script(self) -> None:
         session, _ = self.make_session_and_runner()
 
@@ -1378,6 +1413,40 @@ class TestSessionRunner:
         assert result
         runner.func.assert_called_once_with(mock.ANY)  # type: ignore[attr-defined]
         assert "Running session test(1, 2)" in caplog.text
+
+    def test_execute_stops_background_commands(self) -> None:
+        runner = self.make_runner_with_mock_venv()
+        command = mock.Mock(spec=nox.command.BackgroundCommand)
+
+        def func(session: nox.Session) -> None:
+            session._runner.background_commands.append(command)
+
+        func.requires = []  # type: ignore[attr-defined]
+        runner.func = func  # type: ignore[assignment]
+
+        result = runner.execute()
+
+        assert result.status == nox.sessions.Status.SUCCESS
+        command.stop.assert_called_once_with()
+        assert runner.background_commands == []
+
+    def test_execute_stops_background_commands_on_failure(self) -> None:
+        runner = self.make_runner_with_mock_venv()
+        command = mock.Mock(spec=nox.command.BackgroundCommand)
+
+        def func(session: nox.Session) -> None:
+            session._runner.background_commands.append(command)
+            msg = "boom"
+            raise ValueError(msg)
+
+        func.requires = []  # type: ignore[attr-defined]
+        runner.func = func  # type: ignore[assignment]
+
+        result = runner.execute()
+
+        assert result.status == nox.sessions.Status.FAILED
+        command.stop.assert_called_once_with()
+        assert runner.background_commands == []
 
     def test_execute_quit(self) -> None:
         runner = self.make_runner_with_mock_venv()

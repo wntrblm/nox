@@ -525,6 +525,100 @@ class Session:
             terminate_timeout=terminate_timeout,
         )
 
+    def background(
+        self,
+        *args: str | os.PathLike[str],
+        env: Mapping[str, str | None] | None = None,
+        include_outer_env: bool = True,
+        log: bool = True,
+        external: ExternalType | None = None,
+        stdout: int | IO[str] | None = None,
+        stderr: int | IO[str] | None = None,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> nox.command.BackgroundCommand:
+        """Start a command in the background and return a handle to it.
+
+        Unlike :func:`run`, this does not wait for the command to finish. It is
+        handy for commands that should keep running while the session does
+        something else, such as a server that the tests talk to::
+
+            server = session.background("python", "-m", "my_app")
+            try:
+                session.run("pytest", "tests/")
+            finally:
+                server.stop()
+
+        The returned :class:`nox.command.BackgroundCommand` can also be used as a
+        context manager, which stops the command on exit::
+
+            with session.background("python", "-m", "my_app"):
+                session.run("pytest", "tests/")
+
+        Any background commands still running when the session ends are stopped
+        automatically, so an explicit :meth:`~nox.command.BackgroundCommand.stop`
+        is only needed to shut one down earlier.
+
+        The arguments behave the same as :func:`run`, except that ``stdout`` and
+        ``stderr`` are inherited from Nox by default so the command's output is
+        shown as it happens. ``interrupt_timeout`` and ``terminate_timeout``
+        control how long :meth:`~nox.command.BackgroundCommand.stop` waits before
+        escalating from an interrupt to a terminate and then a kill.
+
+        :param env: A dictionary of environment variables to expose to the
+            command. By default, all environment variables are passed. You
+            can block an environment variable from the outer environment by
+            setting it to None.
+        :type env: dict or None
+        :param include_outer_env: Boolean parameter that determines if the
+            environment variables from the nox invocation environment should
+            be passed to the command. ``True`` by default.
+        :type include_outer_env: bool
+        :param external: If False (the default) then programs not in the
+            virtualenv path will cause a warning. If True, no warning will be
+            emitted. These warnings can be turned into errors using
+            ``--error-on-external-run``. This has no effect for sessions that
+            do not have a virtualenv.
+        :type external: bool
+        :param interrupt_timeout: The timeout (in seconds) that Nox should wait
+            when stopping the command before sending it a terminate signal. Set
+            to ``None`` to never send a terminate signal. Default: ``0.3``
+        :type interrupt_timeout: float or None
+        :param terminate_timeout: The timeout (in seconds) that Nox should wait
+            after it sends a terminate signal before sending a kill signal. Set
+            to ``None`` to never send a kill signal. Default: ``0.2``
+        :type terminate_timeout: float or None
+        :param stdout: Redirect standard output of the command into a file.
+        :type stdout: file or file descriptor
+        :param stderr: Redirect standard error of the command into a file.
+        :type stderr: file or file descriptor
+        """
+        if not args:
+            msg = "At least one argument required to background()."
+            raise ValueError(msg)
+
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            msg = "First argument to `session.background` is a list. Did you mean to use `session.background(*args)`?"
+            raise ValueError(msg)
+
+        args, env, external = self._resolve_run_args(
+            args, env=env, include_outer_env=include_outer_env, external=external
+        )
+
+        command = nox.command.run_background(
+            args,
+            env=env,
+            paths=self.bin_paths,
+            log=log,
+            external=external,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
+        )
+        self._runner.background_commands.append(command)
+        return command
+
     def run_install(
         self,
         *args: str | os.PathLike[str],
@@ -660,6 +754,34 @@ class Session:
         if callable(args[0]):
             return self._run_func(args[0], args[1:])  # type: ignore[unreachable]
 
+        args, env, external = self._resolve_run_args(
+            args, env=env, include_outer_env=include_outer_env, external=external
+        )
+
+        # Run a shell command.
+        return nox.command.run(
+            args,
+            env=env,
+            paths=self.bin_paths,
+            silent=silent,
+            success_codes=success_codes,
+            log=log,
+            external=external,
+            stdout=stdout,
+            stderr=stderr,
+            interrupt_timeout=interrupt_timeout,
+            terminate_timeout=terminate_timeout,
+        )
+
+    def _resolve_run_args(
+        self,
+        args: tuple[str | os.PathLike[str], ...],
+        *,
+        env: Mapping[str, str | None] | None,
+        include_outer_env: bool,
+        external: ExternalType | None,
+    ) -> tuple[tuple[str | os.PathLike[str], ...], dict[str, str | None], ExternalType]:
+        """Apply the uv shim, virtualenv env, and external policy shared by runs."""
         # Using `"uv"` or `"uvx" when `uv` is the backend is guaranteed to
         # work, even if it was co-installed with nox.
         if self.virtualenv.venv_backend == "uv" and nox.virtualenv.UV != "uv":
@@ -689,20 +811,7 @@ class Session:
         if external is None:
             external = False
 
-        # Run a shell command.
-        return nox.command.run(
-            args,
-            env=env,
-            paths=self.bin_paths,
-            silent=silent,
-            success_codes=success_codes,
-            log=log,
-            external=external,
-            stdout=stdout,
-            stderr=stderr,
-            interrupt_timeout=interrupt_timeout,
-            terminate_timeout=terminate_timeout,
-        )
+        return args, env, external
 
     def conda_install(
         self,
@@ -1065,6 +1174,7 @@ class SessionRunner:
         self.posargs: list[str] = global_config.posargs[:]
         self.result: Result | None = None
         self.multi = multi
+        self.background_commands: list[nox.command.BackgroundCommand] = []
 
         if getattr(func, "parametrize", None):
             self.multi = True
@@ -1165,6 +1275,11 @@ class SessionRunner:
         """
         return resolve_reuse_existing_venv(self.global_config, self.func)
 
+    def _stop_background_commands(self) -> None:
+        """Stop any background commands the session left running."""
+        while self.background_commands:
+            self.background_commands.pop().stop()
+
     def execute(self) -> Result:
         logger.session_info(f"Running session {self.friendly_name}")
 
@@ -1184,7 +1299,10 @@ class SessionRunner:
                 self._create_venv()
                 session = Session(self)
                 session.env["NOX_CURRENT_SESSION"] = session.name
-                self.func(session)
+                try:
+                    self.func(session)
+                finally:
+                    self._stop_background_commands()
 
             # Nothing went wrong; return a success.
             self.result = Result(
