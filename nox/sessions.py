@@ -20,12 +20,10 @@ __lazy_modules__ = {
     "humanize",
     "inspect",
     "nox.logger",
-    "nox.popen",
     "nox.virtualenv",
     "pathlib",
     "re",
     "shutil",
-    "subprocess",
     "unicodedata",
 }
 
