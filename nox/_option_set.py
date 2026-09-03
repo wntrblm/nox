@@ -166,7 +166,8 @@ def _analyze_type(tp: Any) -> tuple[str, tuple[Any, ...] | None]:
     origin = typing.get_origin(tp)
     if origin in {typing.Union, types.UnionType}:
         non_none = [a for a in typing.get_args(tp) if a is not type(None)]
-        if len(non_none) == 1:
+        kinds = {_analyze_type(a)[0] for a in non_none}
+        if len(kinds) == 1:
             return _analyze_type(non_none[0])
         return ("value", None)
     if origin is Literal:
