@@ -50,7 +50,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - name: Setup uv
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@v10.0.1
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v4
         if: matrix.python-version == '3.14'
@@ -102,7 +102,7 @@ jobs:
             mingw-w64-x86_64-python-virtualenv
             mingw-w64-x86_64-gcc
       - name: Setup uv
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@v10.0.1
       - name: Install Nox-under-test
         run: python -m pip install .
       # Force virtualenv so the session venv stays a MinGW interpreter
@@ -134,7 +134,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Setup uv
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@v10.0.1
       - name: Install Nox-under-test
         run:  uv pip install --system .
       - name: Download individual coverage reports
@@ -172,7 +172,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Setup uv
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@v10.0.1
       - name: Install Nox-under-test
         run:  uv pip install --system .
       - name: Docs
