@@ -329,7 +329,7 @@ class Manifest:
         if self._config.extra_pythons:
             # If extra python is provided, expand the func.python list to
             # include additional python interpreters
-            extra_pythons: list[str] = self._config.extra_pythons
+            extra_pythons: Sequence[str] = self._config.extra_pythons
             if isinstance(func.python, (list, tuple, set)):
                 func.python = _unique_list(*func.python, *extra_pythons)
             elif not multi and func.python:
