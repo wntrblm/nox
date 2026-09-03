@@ -294,7 +294,7 @@ class NoxfileOptions(_option_set.OptionsBase):
             ),
         ),
     )
-    pythons: list[str] | None = attrs.field(
+    pythons: list[str] | tuple[str, ...] | None = attrs.field(
         default=None,
         validator=av_opt_list_str,
         metadata=opt(
@@ -344,7 +344,7 @@ class NoxfileOptions(_option_set.OptionsBase):
             ),
         ),
     )
-    sessions: list[str] | None = attrs.field(
+    sessions: list[str] | tuple[str, ...] | None = attrs.field(
         default=None,
         validator=av_opt_list_str,
         metadata=opt(
@@ -373,7 +373,7 @@ class NoxfileOptions(_option_set.OptionsBase):
             help="Stop after the first error.",
         ),
     )
-    tags: list[str] | None = attrs.field(
+    tags: list[str] | tuple[str, ...] | None = attrs.field(
         default=None,
         validator=av_opt_list_str,
         metadata=opt(
@@ -444,7 +444,7 @@ class NoxConfig(NoxfileOptions):
             help="Location of the Python file containing Nox sessions.",
         ),
     )
-    posargs: list[str] = attrs.field(
+    posargs: list[str] | tuple[str, ...] = attrs.field(
         factory=list,
         metadata=opt(
             group="general",
@@ -464,7 +464,7 @@ class NoxConfig(NoxfileOptions):
             help="List all available sessions and exit.",
         ),
     )
-    usage: list[str] | None = attrs.field(
+    usage: list[str] | tuple[str, ...] | None = attrs.field(
         default=None,
         metadata=opt(
             "--usage",
@@ -483,7 +483,7 @@ class NoxConfig(NoxfileOptions):
             help="JSON output formatting. Requires list-sessions currently.",
         ),
     )
-    extra_pythons: list[str] | None = attrs.field(
+    extra_pythons: list[str] | tuple[str, ...] | None = attrs.field(
         default=None,
         metadata=opt(
             "--extra-pythons",
@@ -497,7 +497,7 @@ class NoxConfig(NoxfileOptions):
             ),
         ),
     )
-    force_pythons: list[str] | None = attrs.field(
+    force_pythons: list[str] | tuple[str, ...] | None = attrs.field(
         default=None,
         metadata=opt(
             "-P",

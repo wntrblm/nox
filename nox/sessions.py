@@ -1062,7 +1062,7 @@ class SessionRunner:
         self.global_config = global_config
         self.manifest = manifest
         self.venv: ProcessEnv | None = None
-        self.posargs: list[str] = global_config.posargs[:]
+        self.posargs: list[str] = list(global_config.posargs)
         self.result: Result | None = None
         self.multi = multi
 
