@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"copy", f"{__spec__.parent}._decorators", "functools", "warnings"}
+__lazy_modules__ = {"copy", "functools", "warnings", f"{__spec__.parent}._decorators"}
 
 import copy
 import functools

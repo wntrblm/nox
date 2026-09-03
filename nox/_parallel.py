@@ -25,7 +25,6 @@ from __future__ import annotations
 __lazy_modules__ = {
     "colorlog",
     "colorlog.escape_codes",
-    "contextlib",
     "copy",
     "io",
     "json",

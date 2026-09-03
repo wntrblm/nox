@@ -16,8 +16,6 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"argparse", "nox._option_set", "nox.virtualenv"}
-
 import argparse
 import os
 from typing import TYPE_CHECKING, Any, Literal
