@@ -217,6 +217,9 @@ You are not limited to virtualenv, there is a selection of backends you can choo
 
 You can chain together optional backends with ``|``, such as ``uv|virtualenv``
 or ``micromamba|mamba|conda``, and the first available backend will be selected.
+A backend that is known to reject the session's Python is skipped too, so
+``uv|virtualenv`` falls back to ``virtualenv`` for Python older than 3.8, which
+``uv`` cannot create.
 You cannot put anything after a backend that can't be missing like ``venv`` or
 ``virtualenv``.
 

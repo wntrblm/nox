@@ -161,7 +161,7 @@ Note that using this option does not change the backend for sessions where ``ven
    as ``uv pip`` is used to install programs instead. If you need to manually
    interact with pip, you should install it with ``session.install("pip")``.
 
-Backends that could be missing (``uv``, ``conda``, ``mamba``, and ``micromamba``) can have a fallback using ``|``, such as ``uv|virtualenv`` or ``micromamba|mamba|conda``. This will use the first item that is available on the users system.
+Backends that could be missing (``uv``, ``conda``, ``mamba``, and ``micromamba``) can have a fallback using ``|``, such as ``uv|virtualenv`` or ``micromamba|mamba|conda``. This will use the first item that is available on the users system. A backend is also skipped when it is known to reject the session's Python: ``uv`` cannot create an environment for Python older than 3.8, so ``uv|virtualenv`` uses ``virtualenv`` for those sessions.
 
 If you need to check to see which backend was selected, you can access it via
 ``session.venv_backend`` in your noxfile.
