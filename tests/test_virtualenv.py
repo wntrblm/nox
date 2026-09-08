@@ -2069,7 +2069,7 @@ def test_download_python_uv_unsupported_version(
 def test_rattler_parse_args(tmp_path: Path) -> None:
     parse = nox.virtualenv._parse_conda_args
     spec_file = tmp_path / "specs.txt"
-    spec_file.write_text("# comment\nnumpy>=2  # pinned\n\nscipy\n")
+    spec_file.write_text("# comment\nnumpy>=2  # pinned\n\nscipy\n", encoding="utf-8")
     assert parse([]) == ([], [])
     assert parse(["-c", "a", "--channel", "b", "--channel=c", "numpy"]) == (
         ["a", "b", "c"],
