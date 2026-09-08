@@ -156,7 +156,8 @@ By default Nox uses ``virtualenv`` as the virtual environment backend for the se
    program. Install it with the ``nox[rattler]`` extra; in script mode, list
    ``nox[rattler]`` in the script dependencies. It solves from ``conda-forge``
    unless ``venv_params`` sets ``--channel``. :meth:`session.conda_install
-   <nox.sessions.Session.conda_install>` accepts specs and ``--file`` only.
+   <nox.sessions.Session.conda_install>` accepts specs, ``--channel`` and
+   ``--file`` only.
 
 You can also set this option with the ``NOX_DEFAULT_VENV_BACKEND`` environment variable, or in the Noxfile with ``nox.options.default_venv_backend``. In case more than one is provided, the command line argument overrides the environment variable, which in turn overrides the Noxfile configuration.
 

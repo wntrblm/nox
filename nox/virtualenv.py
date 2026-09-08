@@ -612,22 +612,16 @@ class CondaEnv(ProcessEnv):
         if os.path.exists(self.location):
             if self.reuse_existing and is_conda:
                 return False
-            if not is_conda:
-                shutil.rmtree(self.location, ignore_errors=True)
-            else:
-                cmd = [
-                    self.conda_cmd,
-                    "remove",
-                    "--yes",
-                    "--prefix",
-                    self.location,
-                    "--all",
-                ]
-                nox.command.run(cmd, silent=True, log=False)
+            if is_conda:
+                self._remove_env()
             # Make sure that location is clean
             shutil.rmtree(self.location, ignore_errors=True)
 
         return True
+
+    def _remove_env(self) -> None:
+        cmd = [self.conda_cmd, "remove", "--yes", "--prefix", self.location, "--all"]
+        nox.command.run(cmd, silent=True, log=False)
 
     @property
     def bin_paths(self) -> list[str]:
@@ -658,6 +652,14 @@ class CondaEnv(ProcessEnv):
 
             return False
 
+        python_dep = self._python_spec()
+        logger.info(
+            f"Creating {self.venv_backend} env in {self.location_name} with {python_dep}"
+        )
+        self._create_env(python_dep)
+        return True
+
+    def _create_env(self, python_dep: str) -> None:
         cmd = [self.conda_cmd, "create", "--yes", "--prefix", self.location]
         if self.conda_cmd == "micromamba" and not any(
             v.startswith(("--channel=", "-c")) or v == "--channel"
@@ -669,17 +671,8 @@ class CondaEnv(ProcessEnv):
         cmd.extend(self.venv_params)
 
         # Ensure the pip package is installed.
-        cmd.append("pip")
-
-        python_dep = self._python_spec()
-        cmd.append(python_dep)
-
-        logger.info(
-            f"Creating {self.conda_cmd} env in {self.location_name} with {python_dep}"
-        )
+        cmd.extend(["pip", python_dep])
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
-
-        return True
 
     def _python_spec(self) -> str:
         """Conda spec for the requested interpreter.
@@ -715,22 +708,29 @@ class CondaEnv(ProcessEnv):
         return self.conda_cmd
 
 
-def _parse_rattler_params(venv_params: Sequence[str]) -> tuple[list[str], list[str]]:
-    """Split conda-style ``venv_params`` into channels and extra specs."""
+def _parse_conda_args(args: Sequence[str]) -> tuple[list[str], list[str]]:
+    """Split conda-style args into channels and specs, expanding ``--file``.
+
+    Only ``-c``/``--channel`` and ``--file`` are accepted; any other option
+    raises ``ValueError``.
+    """
     channels: list[str] = []
     specs: list[str] = []
-    params = iter(venv_params)
+    params = iter(args)
     for param in params:
-        if param in {"-c", "--channel"}:
-            channels.append(next(params))
-        elif param.startswith("--channel="):
-            channels.append(param.removeprefix("--channel="))
+        opt, _, value = param.partition("=")
+        if opt in {"-c", "--channel", "--file"} and not value:
+            value = next(params)
+        if opt in {"-c", "--channel"}:
+            channels.append(value)
+        elif opt == "--file":
+            specs.extend(_rattler.read_spec_file(value))
         elif param.startswith("-"):
-            msg = f"The rattler backend only supports --channel in venv_params, got {param!r}."
+            msg = f"The rattler backend does not support the {param!r} option."
             raise ValueError(msg)
         else:
             specs.append(param)
-    return channels or list(_rattler.DEFAULT_CHANNELS), specs
+    return channels, specs
 
 
 class RattlerEnv(CondaEnv):
@@ -740,75 +740,35 @@ class RattlerEnv(CondaEnv):
     are accepted in ``venv_params``; the channels default to ``conda-forge``.
     """
 
-    def __init__(
-        self,
-        location: str,
-        interpreter: str | None = None,
-        *,
-        reuse_existing: bool = False,
-        venv_params: Sequence[str] = (),
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            location,
-            interpreter,
-            reuse_existing=reuse_existing,
-            venv_params=venv_params,
-            conda_cmd="rattler",
-            **kwargs,
-        )
-        self.channels, self._extra_specs = _parse_rattler_params(venv_params)
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        channels, self._extra_specs = _parse_conda_args(self.venv_params)
+        self.channels = channels or ["conda-forge"]
 
     @property
     def allowed_globals(self) -> tuple[str, ...]:
         return ()
 
-    def _clean_location(self) -> bool:
-        """Deletes an existing environment unless it is reused."""
-        is_conda = os.path.isdir(os.path.join(self.location, "conda-meta"))
-        if os.path.exists(self.location):
-            if self.reuse_existing and is_conda:
-                return False
-            shutil.rmtree(self.location, ignore_errors=True)
-        return True
+    @property
+    def venv_backend(self) -> str:
+        return "rattler"
 
-    def create(self) -> bool:
-        """Create the environment with py-rattler."""
-        nox_dir = Path(self.location).parent
-        _ensure_gitignore(nox_dir)
-        _ensure_cachedir_tag(nox_dir)
+    def _remove_env(self) -> None:
+        """Nothing to do: the caller removes the prefix."""
 
-        if not self._clean_location():
-            logger.debug(f"Reusing existing rattler env at {self.location_name}.")
-            self._reused = True
-            return False
-
-        python_dep = self._python_spec()
-        logger.info(f"Creating rattler env in {self.location_name} with {python_dep}")
+    def _create_env(self, python_dep: str) -> None:
         self.install("pip", python_dep, *self._extra_specs)
-        return True
 
     def install(
         self, *args: str, channel: Sequence[str] = (), offline: bool = False
     ) -> None:
         """Install conda specs into the environment.
 
-        Accepts specs and ``--file <path>`` like ``conda install``. Channels
-        given here take priority over the environment's channels.
+        Accepts specs, ``--channel`` and ``--file <path>`` like ``conda
+        install``. Channels given here take priority over the environment's.
         """
-        specs: list[str] = []
-        params = iter(args)
-        for param in params:
-            if param == "--file":
-                specs.extend(_rattler.read_spec_file(next(params)))
-            elif param.startswith("--file="):
-                specs.extend(_rattler.read_spec_file(param.removeprefix("--file=")))
-            elif param.startswith("-"):
-                msg = f"The rattler backend does not support the {param!r} option."
-                raise ValueError(msg)
-            else:
-                specs.append(param)
-        channels = [*channel, *(c for c in self.channels if c not in channel)]
+        arg_channels, specs = _parse_conda_args(args)
+        channels = list(dict.fromkeys([*channel, *arg_channels, *self.channels]))
         _rattler.sync(self.location, specs, channels, offline=offline)
 
 

@@ -16,23 +16,21 @@
 
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
-import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 import nox.virtualenv
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 pytest.importorskip("rattler")
 
 pytestmark = pytest.mark.rattler
-
-
-def _python(location: Path) -> Path:
-    if sys.platform.startswith("win"):
-        return location / "python.exe"
-    return location / "bin" / "python"
 
 
 def test_rattler_create_and_install(tmp_path: Path) -> None:
@@ -41,8 +39,10 @@ def test_rattler_create_and_install(tmp_path: Path) -> None:
     assert venv.create()
     assert (location / "conda-meta").is_dir()
 
+    python = shutil.which("python", path=os.pathsep.join(venv.bin_paths))
+    assert python
     out = subprocess.run(
-        [str(_python(location)), "-c", "import sys, pip; print(sys.version_info[:2])"],
+        [python, "-c", "import sys, pip; print(sys.version_info[:2])"],
         check=True,
         capture_output=True,
         text=True,
@@ -52,7 +52,7 @@ def test_rattler_create_and_install(tmp_path: Path) -> None:
     # A second install keeps the earlier requested specs (pip, python).
     venv.install("six")
     subprocess.run(
-        [str(_python(location)), "-c", "import pip, six"],
+        [python, "-c", "import pip, six"],
         check=True,
     )
     assert any(p.name.startswith("pip-") for p in (location / "conda-meta").iterdir())

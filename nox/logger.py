@@ -159,3 +159,4 @@ def setup_logging(
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("python_discovery").setLevel(logging.WARNING)
+    logging.getLogger("asyncio").setLevel(logging.WARNING)

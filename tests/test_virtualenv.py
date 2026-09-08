@@ -2066,15 +2066,21 @@ def test_download_python_uv_unsupported_version(
         assert specs == ["python3.11"]
 
 
-def test_rattler_parse_params() -> None:
-    parse = nox.virtualenv._parse_rattler_params
-    assert parse([]) == (["conda-forge"], [])
+def test_rattler_parse_args(tmp_path: Path) -> None:
+    parse = nox.virtualenv._parse_conda_args
+    spec_file = tmp_path / "specs.txt"
+    spec_file.write_text("# comment\nnumpy>=2  # pinned\n\nscipy\n")
+    assert parse([]) == ([], [])
     assert parse(["-c", "a", "--channel", "b", "--channel=c", "numpy"]) == (
         ["a", "b", "c"],
         ["numpy"],
     )
-    with pytest.raises(ValueError, match="only supports --channel"):
-        parse(["--override-channels"])
+    assert parse(["--file", str(spec_file), f"--file={spec_file}", "six"]) == (
+        [],
+        ["numpy>=2", "scipy", "numpy>=2", "scipy", "six"],
+    )
+    with pytest.raises(ValueError, match="does not support the '--yes' option"):
+        parse(["--yes", "six"])
 
 
 def test_rattler_env_create(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2113,26 +2119,24 @@ def test_rattler_env_create(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 def test_rattler_env_install(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     sync = mock.Mock()
     monkeypatch.setattr(nox._rattler, "sync", sync)
-    spec_file = tmp_path / "specs.txt"
-    spec_file.write_text("# comment\nnumpy>=2  # pinned\n\nscipy\n")
     venv = nox.virtualenv.RattlerEnv(str(tmp_path / "renv"))
 
-    venv.install("--file", str(spec_file), f"--file={spec_file}", "six")
+    venv.install("six")
+    sync.assert_called_once_with(
+        str(tmp_path / "renv"), ["six"], ["conda-forge"], offline=False
+    )
+
+    # Explicit channels come first, then args, then the env's, without repeats.
+    sync.reset_mock()
+    venv.install(
+        "-c", "extra", "six", channel=["bioconda", "conda-forge"], offline=True
+    )
     sync.assert_called_once_with(
         str(tmp_path / "renv"),
-        ["numpy>=2", "scipy", "numpy>=2", "scipy", "six"],
-        ["conda-forge"],
-        offline=False,
+        ["six"],
+        ["bioconda", "conda-forge", "extra"],
+        offline=True,
     )
-
-    sync.reset_mock()
-    venv.install("six", channel=["bioconda", "conda-forge"], offline=True)
-    sync.assert_called_once_with(
-        str(tmp_path / "renv"), ["six"], ["bioconda", "conda-forge"], offline=True
-    )
-
-    with pytest.raises(ValueError, match="does not support the '--yes' option"):
-        venv.install("--yes", "six")
 
 
 def test_rattler_missing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2141,4 +2145,4 @@ def test_rattler_missing(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setitem(sys.modules, "rattler", None)
     with pytest.raises(RuntimeError, match=r"\[rattler\]"):
-        nox._rattler.sync("/no/such/prefix", ["python"])
+        nox._rattler.sync("/no/such/prefix", ["python"], ["conda-forge"])

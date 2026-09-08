@@ -16,18 +16,18 @@
 
 from __future__ import annotations
 
-import asyncio
+__lazy_modules__ = {"importlib", "importlib.util", "pathlib"}
+
+import functools
 import importlib.util
-import logging
-import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import Sequence
 
 __all__ = ["is_available", "read_spec_file", "sync"]
-
-DEFAULT_CHANNELS = ("conda-forge",)
 
 
 def __dir__() -> list[str]:
@@ -52,6 +52,17 @@ def _rattler() -> Any:
     return rattler
 
 
+@functools.cache
+def _gateway(*, offline: bool) -> Any:
+    """One Gateway per process so repodata is loaded once."""
+    rattler = _rattler()
+    return rattler.Gateway(
+        default_config=rattler.SourceConfig(
+            cache_action="use-cache-only" if offline else "cache-or-fetch"
+        )
+    )
+
+
 def read_spec_file(path: str | os.PathLike[str]) -> list[str]:
     """Read a conda ``--file`` style spec list: one spec per line, ``#`` comments."""
     with open(path, encoding="utf-8") as f:
@@ -59,30 +70,10 @@ def read_spec_file(path: str | os.PathLike[str]) -> list[str]:
         return [line for line in lines if line]
 
 
-def _installed_records(rattler: Any, prefix: str) -> list[Any]:
-    meta = os.path.join(prefix, "conda-meta")
-    if not os.path.isdir(meta):
-        return []
-    return [
-        rattler.PrefixRecord.from_path(os.path.join(meta, name))
-        for name in sorted(os.listdir(meta))
-        if name.endswith(".json")
-    ]
-
-
-def _requested_specs(records: Sequence[Any]) -> list[str]:
-    specs: list[str] = []
-    for record in records:
-        for spec in record.requested_specs or ():
-            if spec not in specs:
-                specs.append(spec)
-    return specs
-
-
 def sync(
     prefix: str,
     specs: Sequence[str],
-    channels: Sequence[str] = DEFAULT_CHANNELS,
+    channels: Sequence[str],
     *,
     offline: bool = False,
 ) -> None:
@@ -91,23 +82,24 @@ def sync(
     Creates the prefix if it does not exist. Specs requested by earlier calls
     are kept, so this behaves like ``conda install --prefix``.
     """
-    rattler = _rattler()
-    installed = _installed_records(rattler, prefix)
-    requested = _requested_specs(installed)
-    requested += [spec for spec in specs if spec not in requested]
+    import asyncio  # noqa: PLC0415
 
-    gateway = rattler.Gateway(
-        default_config=rattler.SourceConfig(
-            cache_action="use-cache-only" if offline else "cache-or-fetch"
-        )
+    rattler = _rattler()
+    installed = [
+        rattler.PrefixRecord.from_path(path)
+        for path in sorted(Path(prefix, "conda-meta").glob("*.json"))
+    ]
+    requested = dict.fromkeys(
+        spec for record in installed for spec in record.requested_specs or ()
     )
+    requested.update(dict.fromkeys(specs))
     match_specs = [rattler.MatchSpec(spec) for spec in requested]
 
     async def run() -> None:
         records = await rattler.solve(
             list(channels),
             match_specs,
-            gateway=gateway,
+            gateway=_gateway(offline=offline),
             virtual_packages=rattler.VirtualPackage.detect(),
             locked_packages=installed,
         )
@@ -116,10 +108,9 @@ def sync(
             prefix,
             installed_packages=installed,
             show_progress=False,
-            # py-rattler 0.25 wants the FFI object here, not the wrapper.
-            requested_specs=[getattr(ms, "_match_spec", ms) for ms in match_specs],
+            # py-rattler passes this to the FFI unchanged, which wants the
+            # inner object rather than the wrapper.
+            requested_specs=[ms._match_spec for ms in match_specs],
         )
 
-    # asyncio logs its selector choice at DEBUG, which Nox's logger shows.
-    logging.getLogger("asyncio").setLevel(logging.WARNING)
     asyncio.run(run())

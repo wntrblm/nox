@@ -759,8 +759,9 @@ class Session:
         set default channels, and default channels vary for conda. Note that
         "defaults" is also not permissively licensed like "conda-forge" is.
 
-        The ``rattler`` backend runs in-process and accepts specs and
-        ``--file`` only; other ``conda install`` options raise ``ValueError``.
+        The ``rattler`` backend runs in-process and accepts specs,
+        ``--channel`` and ``--file`` only; other ``conda install`` options
+        raise ``ValueError``.
 
         Additional keyword args are the same as for :meth:`run`.
 
