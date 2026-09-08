@@ -80,7 +80,8 @@ def sync(
     """Add ``specs`` to the requested set of ``prefix`` and bring it up to date.
 
     Creates the prefix if it does not exist. Specs requested by earlier calls
-    are kept, so this behaves like ``conda install --prefix``.
+    are kept unless the same package is requested again, so this behaves like
+    ``conda install --prefix``.
     """
     import asyncio  # noqa: PLC0415
 
@@ -89,11 +90,16 @@ def sync(
         rattler.PrefixRecord.from_path(path)
         for path in sorted(Path(prefix, "conda-meta").glob("*.json"))
     ]
-    requested = dict.fromkeys(
-        spec for record in installed for spec in record.requested_specs or ()
-    )
-    requested.update(dict.fromkeys(specs))
-    match_specs = [rattler.MatchSpec(spec) for spec in requested]
+    # Keyed by package name so a new request replaces the historical one.
+    requested = {
+        ms.name.normalized: ms
+        for spec in (
+            *(s for record in installed for s in record.requested_specs or ()),
+            *specs,
+        )
+        for ms in (rattler.MatchSpec(spec),)
+    }
+    match_specs = list(requested.values())
 
     async def run() -> None:
         records = await rattler.solve(

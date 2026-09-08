@@ -57,6 +57,17 @@ def test_rattler_create_and_install(tmp_path: Path) -> None:
     )
     assert any(p.name.startswith("pip-") for p in (location / "conda-meta").iterdir())
 
+    # A new pin replaces the earlier one instead of conflicting with it.
+    venv.install("six==1.16.0")
+    venv.install("six==1.17.0")
+    out = subprocess.run(
+        [python, "-c", "import six; print(six.__version__)"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert out.strip() == "1.17.0"
+
     # Reuse detects the existing environment.
     venv = nox.virtualenv.RattlerEnv(str(location), reuse_existing=True)
     assert not venv.create()
