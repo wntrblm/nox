@@ -622,6 +622,32 @@ def test_reporter_render_uses_ascii_spinner_for_legacy_encoding() -> None:
         assert reporter._render(105.0, width=0)[2] == "| a (5s)"
 
 
+def test_reporter_banner_uses_ascii_for_legacy_encoding() -> None:
+    # cp437/cp932/ascii cannot encode the em dash in the banner text.
+    for encoding in ("cp437", "cp932", "ascii"):
+        buffer = io.BytesIO()
+        with io.TextIOWrapper(buffer, encoding=encoding) as stream:
+            reporter = _parallel._Reporter(color=False, tty=False, total=1)
+            reporter.stream = stream
+            banner = reporter._banner()
+            assert "\u2014" not in banner
+            banner.encode(encoding)
+
+
+def test_reporter_header_uses_ascii_for_legacy_encoding() -> None:
+    # cp932 and ascii cannot encode the middle dot separating the counters.
+    for encoding in ("cp932", "ascii"):
+        buffer = io.BytesIO()
+        with io.TextIOWrapper(buffer, encoding=encoding) as stream:
+            reporter = _parallel._Reporter(color=False, tty=True, total=1)
+            reporter.stream = stream
+            reporter._active = {"a": 100.0}
+            reporter._skipped = 1
+            header = reporter._render(105.0, width=0)[1]
+            assert "\u00b7" not in header
+            header.encode(encoding)
+
+
 def test_reporter_render_color() -> None:
     reporter = _parallel._Reporter(color=True, tty=False, total=1)
     reporter._active = {"a": 100.0}

@@ -79,6 +79,7 @@ _ASCII_SYMBOLS = {
     Status.FAILED: "x",
     Status.ABORTED: "!",
 }
+_ASCII_PUNCTUATION = str.maketrans({"\u2014": "-", "\u00b7": "|"})
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 # How long a child gets to exit after SIGTERM before it is SIGKILLed.
@@ -129,6 +130,15 @@ def _status_symbol(status: Status, encoding: str | None) -> str:
     return symbol
 
 
+def _encodable(text: str, encoding: str | None) -> str:
+    """Return *text*, or an ASCII rendering when the console cannot encode it."""
+    try:
+        text.encode(encoding or "utf-8")
+    except UnicodeEncodeError:
+        return text.translate(_ASCII_PUNCTUATION)
+    return text
+
+
 def _spinner_frame(spin: int, encoding: str | None) -> str:
     frame = _SPINNER[spin % len(_SPINNER)]
     try:
@@ -176,9 +186,10 @@ class _Reporter:
         return self
 
     def _banner(self, width: int = 0) -> str:
-        if width and len(_EXPERIMENTAL) + 2 > width - 1:
-            return _EXPERIMENTAL[: width - 1]
-        return self._c(f" {_EXPERIMENTAL} ", "bg_yellow", "black")
+        text = _encodable(_EXPERIMENTAL, self.stream.encoding)
+        if width and len(text) + 2 > width - 1:
+            return text[: width - 1]
+        return self._c(f" {text} ", "bg_yellow", "black")
 
     def __exit__(self, *exc: object) -> None:
         self._stop.set()
@@ -209,6 +220,7 @@ class _Reporter:
         )
         if self._skipped:
             header += f" · {_c('skipped', 'thin')} {self._skipped}"
+        header = _encodable(header, self.stream.encoding)
         plain_header = _ANSI.sub("", header)
         if width and len(plain_header) > width - 1:
             # Too narrow for the styled header; truncate the plain text instead.
