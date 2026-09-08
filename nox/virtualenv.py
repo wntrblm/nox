@@ -44,6 +44,7 @@ from packaging import specifiers, version
 
 import nox
 import nox.command
+from nox import _rattler
 from nox.logger import logger
 
 if TYPE_CHECKING:
@@ -70,6 +71,7 @@ __all__ = [
     "InterpreterNotFound",
     "PassthroughEnv",
     "ProcessEnv",
+    "RattlerEnv",
     "VirtualEnv",
     "find_uv",
     "get_virtualenv",
@@ -414,6 +416,7 @@ def __getattr__(name: str) -> Any:
             "conda": shutil.which("conda") is not None,
             "mamba": shutil.which("mamba") is not None,
             "micromamba": shutil.which("micromamba") is not None,
+            "rattler": _rattler.is_available(),
             "uv": _uv_state()[0],
         }
     msg = f"module {__name__!r} has no attribute {name!r}"
@@ -668,14 +671,7 @@ class CondaEnv(ProcessEnv):
         # Ensure the pip package is installed.
         cmd.append("pip")
 
-        if self.interpreter:
-            # Conda understands PEP 440 range operators (e.g. ">=3.10,<4")
-            # directly; only a bare version needs "=".
-            spec = self.interpreter.replace(" ", "")
-            prefix = "" if spec[0] in "<>!~=" else "="
-            python_dep = f"python{prefix}{spec}"
-        else:
-            python_dep = "python"
+        python_dep = self._python_spec()
         cmd.append(python_dep)
 
         logger.info(
@@ -684,6 +680,18 @@ class CondaEnv(ProcessEnv):
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
         return True
+
+    def _python_spec(self) -> str:
+        """Conda spec for the requested interpreter.
+
+        Conda understands PEP 440 range operators (e.g. ">=3.10,<4") directly;
+        only a bare version needs "=".
+        """
+        if not self.interpreter:
+            return "python"
+        spec = self.interpreter.replace(" ", "")
+        prefix = "" if spec[0] in "<>!~=" else "="
+        return f"python{prefix}{spec}"
 
     @staticmethod
     def is_offline() -> bool:
@@ -705,6 +713,103 @@ class CondaEnv(ProcessEnv):
     @property
     def venv_backend(self) -> str:
         return self.conda_cmd
+
+
+def _parse_rattler_params(venv_params: Sequence[str]) -> tuple[list[str], list[str]]:
+    """Split conda-style ``venv_params`` into channels and extra specs."""
+    channels: list[str] = []
+    specs: list[str] = []
+    params = iter(venv_params)
+    for param in params:
+        if param in {"-c", "--channel"}:
+            channels.append(next(params))
+        elif param.startswith("--channel="):
+            channels.append(param.removeprefix("--channel="))
+        elif param.startswith("-"):
+            msg = f"The rattler backend only supports --channel in venv_params, got {param!r}."
+            raise ValueError(msg)
+        else:
+            specs.append(param)
+    return channels or list(_rattler.DEFAULT_CHANNELS), specs
+
+
+class RattlerEnv(CondaEnv):
+    """Conda environment created in-process with py-rattler.
+
+    Needs the ``[rattler]`` extra. Only ``--channel``/``-c`` and package specs
+    are accepted in ``venv_params``; the channels default to ``conda-forge``.
+    """
+
+    def __init__(
+        self,
+        location: str,
+        interpreter: str | None = None,
+        *,
+        reuse_existing: bool = False,
+        venv_params: Sequence[str] = (),
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            location,
+            interpreter,
+            reuse_existing=reuse_existing,
+            venv_params=venv_params,
+            conda_cmd="rattler",
+            **kwargs,
+        )
+        self.channels, self._extra_specs = _parse_rattler_params(venv_params)
+
+    @property
+    def allowed_globals(self) -> tuple[str, ...]:
+        return ()
+
+    def _clean_location(self) -> bool:
+        """Deletes an existing environment unless it is reused."""
+        is_conda = os.path.isdir(os.path.join(self.location, "conda-meta"))
+        if os.path.exists(self.location):
+            if self.reuse_existing and is_conda:
+                return False
+            shutil.rmtree(self.location, ignore_errors=True)
+        return True
+
+    def create(self) -> bool:
+        """Create the environment with py-rattler."""
+        nox_dir = Path(self.location).parent
+        _ensure_gitignore(nox_dir)
+        _ensure_cachedir_tag(nox_dir)
+
+        if not self._clean_location():
+            logger.debug(f"Reusing existing rattler env at {self.location_name}.")
+            self._reused = True
+            return False
+
+        python_dep = self._python_spec()
+        logger.info(f"Creating rattler env in {self.location_name} with {python_dep}")
+        self.install("pip", python_dep, *self._extra_specs)
+        return True
+
+    def install(
+        self, *args: str, channel: Sequence[str] = (), offline: bool = False
+    ) -> None:
+        """Install conda specs into the environment.
+
+        Accepts specs and ``--file <path>`` like ``conda install``. Channels
+        given here take priority over the environment's channels.
+        """
+        specs: list[str] = []
+        params = iter(args)
+        for param in params:
+            if param == "--file":
+                specs.extend(_rattler.read_spec_file(next(params)))
+            elif param.startswith("--file="):
+                specs.extend(_rattler.read_spec_file(param.removeprefix("--file=")))
+            elif param.startswith("-"):
+                msg = f"The rattler backend does not support the {param!r} option."
+                raise ValueError(msg)
+            else:
+                specs.append(param)
+        channels = [*channel, *(c for c in self.channels if c not in channel)]
+        _rattler.sync(self.location, specs, channels, offline=offline)
 
 
 class VirtualEnv(ProcessEnv):
@@ -1017,6 +1122,7 @@ ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {
     "conda": functools.partial(CondaEnv, conda_cmd="conda"),
     "mamba": functools.partial(CondaEnv, conda_cmd="mamba"),
     "micromamba": functools.partial(CondaEnv, conda_cmd="micromamba"),
+    "rattler": RattlerEnv,
     "virtualenv": functools.partial(VirtualEnv, venv_backend="virtualenv"),
     "venv": functools.partial(VirtualEnv, venv_backend="venv"),
     "uv": functools.partial(VirtualEnv, venv_backend="uv"),

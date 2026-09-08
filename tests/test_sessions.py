@@ -670,6 +670,36 @@ class TestSession:
                 **_run_with_defaults(silent=True, external="error"),
             )
 
+    @pytest.mark.parametrize("offline", [False, True])
+    @pytest.mark.parametrize("channel", ["", "conda-forge", ["a", "b"]])
+    def test_conda_install_rattler(
+        self, offline: bool, channel: str | list[str]
+    ) -> None:
+        _, runner = self.make_session_and_runner()
+        runner.venv = mock.create_autospec(nox.virtualenv.RattlerEnv)
+        assert runner.venv
+        runner.venv.location = "/path/to/rattler/env"
+        runner.venv.is_offline = lambda: offline  # type: ignore[union-attr]
+        runner.venv._reused = False
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        session = SessionNoSlots(runner=runner)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.conda_install("requests<99", "--file", "specs.txt", channel=channel)
+
+        assert not run.called
+        channels = [channel] if isinstance(channel, str) and channel else channel
+        runner.venv.install.assert_called_once_with(  # type: ignore[union-attr]
+            "requests<99",
+            "--file",
+            "specs.txt",
+            channel=channels or [],
+            offline=offline,
+        )
+
     @pytest.mark.parametrize(
         ("no_install", "reused", "run_called"),
         [

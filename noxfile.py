@@ -67,7 +67,7 @@ def tests(session: nox.Session) -> None:
         "pytest",
         *parallel,
         "-m",
-        "not conda",
+        "not conda and not rattler",
         *session.posargs,
         env=env,
     )
@@ -82,7 +82,7 @@ def minimums(session: nox.Session) -> None:
 
     session.install("-e.", "--group=test", "--resolution=lowest-direct")
     session.run("uv", "pip", "list")
-    session.run("pytest", "-m", "not conda", *session.posargs)
+    session.run("pytest", "-m", "not conda and not rattler", *session.posargs)
 
 
 def xonda_tests(session: nox.Session, xonda: str) -> None:
@@ -132,6 +132,14 @@ def mamba_tests(session: nox.Session) -> None:
 def micromamba_tests(session: nox.Session) -> None:
     """Run test suite set up with micromamba."""
     xonda_tests(session, "micromamba")
+
+
+@nox.session(venv_backend="rattler", default=False)
+def rattler_tests(session: nox.Session) -> None:
+    """Run the rattler backend tests. Requires nox[rattler]."""
+    session.conda_install("--file", "requirements-conda-test.txt", "py-rattler")
+    session.install("-e.", "--no-deps")
+    session.run("pytest", "-m", "rattler", *session.posargs)
 
 
 @nox.session(default=False)

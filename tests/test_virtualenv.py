@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import functools
+import importlib.util
 import os
 import re
 import shutil
@@ -32,6 +33,7 @@ import pytest
 import python_discovery
 from packaging import version
 
+import nox._rattler
 import nox.command
 import nox.virtualenv
 
@@ -1203,7 +1205,7 @@ def test_lazy_uv_module_attrs(monkeypatch: pytest.MonkeyPatch) -> None:
     assert isinstance(nox.virtualenv.UV_VERSION, version.Version)
 
     optional_venvs = nox.virtualenv.OPTIONAL_VENVS
-    assert set(optional_venvs) == {"conda", "mamba", "micromamba", "uv"}
+    assert set(optional_venvs) == {"conda", "mamba", "micromamba", "rattler", "uv"}
     assert optional_venvs["uv"] == nox.virtualenv.HAS_UV
 
     # A monkeypatched HAS_UV must flow into OPTIONAL_VENVS.
@@ -2062,3 +2064,81 @@ def test_download_python_uv_unsupported_version(
         assert specs == []
     else:  # auto
         assert specs == ["python3.11"]
+
+
+def test_rattler_parse_params() -> None:
+    parse = nox.virtualenv._parse_rattler_params
+    assert parse([]) == (["conda-forge"], [])
+    assert parse(["-c", "a", "--channel", "b", "--channel=c", "numpy"]) == (
+        ["a", "b", "c"],
+        ["numpy"],
+    )
+    with pytest.raises(ValueError, match="only supports --channel"):
+        parse(["--override-channels"])
+
+
+def test_rattler_env_create(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sync = mock.Mock()
+    monkeypatch.setattr(nox._rattler, "sync", sync)
+    location = tmp_path / "renv"
+    venv = nox.virtualenv.RattlerEnv(
+        str(location), interpreter="3.12", venv_params=["-c", "bioconda", "zstd"]
+    )
+
+    assert venv.venv_backend == "rattler"
+    assert venv.allowed_globals == ()
+    assert venv.channels == ["bioconda"]
+    assert venv.create()
+    sync.assert_called_once_with(
+        str(location), ["pip", "python=3.12", "zstd"], ["bioconda"], offline=False
+    )
+
+    # Reuse only when the prefix looks like a conda environment.
+    venv = nox.virtualenv.RattlerEnv(str(location), reuse_existing=True)
+    location.mkdir()
+    assert venv.create()
+    (location / "conda-meta").mkdir(parents=True)
+    assert not venv.create()
+    assert venv._reused
+
+    # Without reuse the prefix is removed directly, with no conda command.
+    venv = nox.virtualenv.RattlerEnv(str(location), interpreter=">=3.10")
+    with mock.patch.object(nox.command, "run") as run:
+        assert venv.create()
+    assert not run.called
+    assert not location.exists()
+    assert sync.call_args.args[1] == ["pip", "python>=3.10"]
+
+
+def test_rattler_env_install(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sync = mock.Mock()
+    monkeypatch.setattr(nox._rattler, "sync", sync)
+    spec_file = tmp_path / "specs.txt"
+    spec_file.write_text("# comment\nnumpy>=2  # pinned\n\nscipy\n")
+    venv = nox.virtualenv.RattlerEnv(str(tmp_path / "renv"))
+
+    venv.install("--file", str(spec_file), f"--file={spec_file}", "six")
+    sync.assert_called_once_with(
+        str(tmp_path / "renv"),
+        ["numpy>=2", "scipy", "numpy>=2", "scipy", "six"],
+        ["conda-forge"],
+        offline=False,
+    )
+
+    sync.reset_mock()
+    venv.install("six", channel=["bioconda", "conda-forge"], offline=True)
+    sync.assert_called_once_with(
+        str(tmp_path / "renv"), ["six"], ["bioconda", "conda-forge"], offline=True
+    )
+
+    with pytest.raises(ValueError, match="does not support the '--yes' option"):
+        venv.install("--yes", "six")
+
+
+def test_rattler_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(importlib.util, "find_spec", lambda _: None)
+    assert not nox._rattler.is_available()
+
+    monkeypatch.setitem(sys.modules, "rattler", None)
+    with pytest.raises(RuntimeError, match=r"\[rattler\]"):
+        nox._rattler.sync("/no/such/prefix", ["python"])

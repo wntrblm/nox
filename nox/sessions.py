@@ -52,6 +52,7 @@ from nox.virtualenv import (
     CondaEnv,
     PassthroughEnv,
     ProcessEnv,
+    RattlerEnv,
     VirtualEnv,
     get_virtualenv,
 )
@@ -758,6 +759,9 @@ class Session:
         set default channels, and default channels vary for conda. Note that
         "defaults" is also not permissively licensed like "conda-forge" is.
 
+        The ``rattler`` backend runs in-process and accepts specs and
+        ``--file`` only; other ``conda install`` options raise ``ValueError``.
+
         Additional keyword args are the same as for :meth:`run`.
 
         .. _conda install:
@@ -786,19 +790,25 @@ class Session:
         if silent is None:
             silent = not self._runner.global_config.verbose
 
-        extraopts: list[str] = []
-        if auto_offline and venv.is_offline():
+        offline = auto_offline and venv.is_offline()
+        if offline:
             logger.warning(
                 "Automatically setting the `--offline` flag as conda repo seems"
                 " unreachable."
             )
-            extraopts.append("--offline")
+        channels = [channel] if isinstance(channel, str) else list(channel)
+        channels = [c for c in channels if c]
 
-        if channel:
-            if isinstance(channel, str):
-                extraopts.append(f"--channel={channel}")
-            else:
-                extraopts += [f"--channel={c}" for c in channel]
+        if isinstance(venv, RattlerEnv):
+            if log:
+                logger.info(f"rattler install {' '.join(args)}")
+            venv.install(*args, channel=channels, offline=offline)
+            return
+
+        extraopts: list[str] = []
+        if offline:
+            extraopts.append("--offline")
+        extraopts += [f"--channel={c}" for c in channels]
 
         self._run(
             venv.conda_cmd,
