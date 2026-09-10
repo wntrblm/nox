@@ -22,6 +22,7 @@ __lazy_modules__ = {
     "functools",
     "pathlib",
     "re",
+    "shlex",
     "subprocess",
 }
 
@@ -29,6 +30,7 @@ import argparse
 import functools
 import os
 import re
+import shlex
 import sys
 from configparser import ConfigParser
 from pathlib import Path
@@ -109,7 +111,7 @@ def main() -> None:
         config[name]["set_env"] = set_env
 
         config[name]["commands"] = [
-            wrapjoin(c.split()) for c in section["commands"].strip().splitlines()
+            wrapjoin(shlex.split(c)) for c in section["commands"].strip().splitlines()
         ]
 
         config[name]["deps"] = wrapjoin(
