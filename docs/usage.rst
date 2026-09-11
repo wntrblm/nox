@@ -151,9 +151,9 @@ By default Nox uses ``virtualenv`` as the virtual environment backend for the se
    respective programs be pre-installed. ``uv`` is distributed as a Python
    package and can be installed with the ``nox[uv]`` extra.
 
-   The ``rattler`` backend creates conda environments in-process with
-   `py-rattler <https://github.com/conda/rattler>`_ and needs no conda
-   program. Install it with the ``nox[rattler]`` extra; in script mode, list
+   The ``rattler`` backend creates conda environments with `py-rattler
+   <https://github.com/conda/rattler>`_ without needing an installed CLI.
+   Install it with the ``nox[rattler]`` extra; in script mode, list
    ``nox[rattler]`` in the script dependencies. It solves from ``conda-forge``
    unless ``venv_params`` sets ``--channel``. :meth:`session.conda_install
    <nox.sessions.Session.conda_install>` accepts specs, ``--channel`` and
