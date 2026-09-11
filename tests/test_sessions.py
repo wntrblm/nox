@@ -670,10 +670,11 @@ class TestSession:
                 **_run_with_defaults(silent=True, external="error"),
             )
 
+    @pytest.mark.parametrize("log", [False, True])
     @pytest.mark.parametrize("offline", [False, True])
     @pytest.mark.parametrize("channel", ["", "conda-forge", ["a", "b"]])
     def test_conda_install_rattler(
-        self, offline: bool, channel: str | list[str]
+        self, offline: bool, channel: str | list[str], log: bool
     ) -> None:
         _, runner = self.make_session_and_runner()
         runner.venv = mock.create_autospec(nox.virtualenv.RattlerEnv)
@@ -688,7 +689,9 @@ class TestSession:
         session = SessionNoSlots(runner=runner)
 
         with mock.patch.object(session, "_run", autospec=True) as run:
-            session.conda_install("requests<99", "--file", "specs.txt", channel=channel)
+            session.conda_install(
+                "requests<99", "--file", "specs.txt", channel=channel, log=log
+            )
 
         assert not run.called
         channels = [channel] if isinstance(channel, str) and channel else channel

@@ -137,9 +137,18 @@ def micromamba_tests(session: nox.Session) -> None:
 @nox.session(venv_backend="rattler", default=False)
 def rattler_tests(session: nox.Session) -> None:
     """Run the rattler backend tests. Requires nox[rattler]."""
+    coverage_file = f".coverage.rattler.{sys.platform}.{platform.machine()}"
+    env = {"COVERAGE_FILE": coverage_file}
+
     session.conda_install("--file", "requirements-conda-test.txt", "py-rattler")
     session.install("-e.", "--no-deps")
-    session.run("pytest", "-m", "rattler", *session.posargs)
+
+    session.run("coverage", "erase", env=env)
+    session.run(
+        "coverage", "run", "-m", "pytest", "-m", "rattler", *session.posargs, env=env
+    )
+    session.run("coverage", "combine", env=env)
+    session.run("coverage", "report", env=env)
 
 
 @nox.session(default=False)
