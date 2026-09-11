@@ -79,13 +79,13 @@ _ASCII_SYMBOLS = {
     Status.FAILED: "x",
     Status.ABORTED: "!",
 }
-_ASCII_PUNCTUATION = str.maketrans({"\u2014": "-", "\u00b7": "|"})
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 # How long a child gets to exit after SIGTERM before it is SIGKILLed.
 _TERMINATE_TIMEOUT = 2.0
 
 _EXPERIMENTAL = "--parallel is experimental — looking for feedback!"
+_ASCII_EXPERIMENTAL = _EXPERIMENTAL.replace("—", "-")
 
 
 @functools.cache
@@ -121,31 +121,25 @@ def _preview_text(line: str) -> str:
     return _ANSI.sub("", line.rstrip("\r\n").rsplit("\r", 1)[-1]).strip()
 
 
-def _status_symbol(status: Status, encoding: str | None) -> str:
-    symbol = _SYMBOLS[status]
-    try:
-        symbol.encode(encoding or "utf-8")
-    except UnicodeEncodeError:
-        return _ASCII_SYMBOLS[status]
-    return symbol
-
-
-def _encodable(text: str, encoding: str | None) -> str:
-    """Return *text*, or an ASCII rendering when the console cannot encode it."""
+def _fallback(text: str, ascii_text: str, encoding: str | None) -> str:
+    """Return *text*, or *ascii_text* when the console cannot encode it."""
     try:
         text.encode(encoding or "utf-8")
     except UnicodeEncodeError:
-        return text.translate(_ASCII_PUNCTUATION)
+        return ascii_text
     return text
 
 
+def _status_symbol(status: Status, encoding: str | None) -> str:
+    return _fallback(_SYMBOLS[status], _ASCII_SYMBOLS[status], encoding)
+
+
 def _spinner_frame(spin: int, encoding: str | None) -> str:
-    frame = _SPINNER[spin % len(_SPINNER)]
-    try:
-        frame.encode(encoding or "utf-8")
-    except UnicodeEncodeError:
-        return _ASCII_SPINNER[spin % len(_ASCII_SPINNER)]
-    return frame
+    return _fallback(
+        _SPINNER[spin % len(_SPINNER)],
+        _ASCII_SPINNER[spin % len(_ASCII_SPINNER)],
+        encoding,
+    )
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -181,12 +175,25 @@ class _Reporter:
             self._thread.start()
         else:
             # No live board to carry the banner; print it once instead.
-            self.stream.write(self._banner() + "\n")
+            self._write(self._banner() + "\n")
             self.stream.flush()
         return self
 
+    def _write(self, text: str) -> None:
+        """Write *text*, escaping anything the console encoding cannot represent.
+
+        Session names and child output are arbitrary; the console is not
+        always UTF-8 (cp932 or ascii on a redirected Windows stdout).
+        """
+        encoding = self.stream.encoding or "utf-8"
+        try:
+            text.encode(encoding)
+        except UnicodeEncodeError:
+            text = text.encode(encoding, "backslashreplace").decode(encoding)
+        self.stream.write(text)
+
     def _banner(self, width: int = 0) -> str:
-        text = _encodable(_EXPERIMENTAL, self.stream.encoding)
+        text = _fallback(_EXPERIMENTAL, _ASCII_EXPERIMENTAL, self.stream.encoding)
         if width and len(text) + 2 > width - 1:
             return text[: width - 1]
         return self._c(f" {text} ", "bg_yellow", "black")
@@ -220,7 +227,7 @@ class _Reporter:
         )
         if self._skipped:
             header += f" · {_c('skipped', 'thin')} {self._skipped}"
-        header = _encodable(header, self.stream.encoding)
+        header = _fallback(header, header.replace("·", "|"), self.stream.encoding)
         plain_header = _ANSI.sub("", header)
         if width and len(plain_header) > width - 1:
             # Too narrow for the styled header; truncate the plain text instead.
@@ -262,7 +269,7 @@ class _Reporter:
         width = shutil.get_terminal_size().columns
         lines = self._render(time.monotonic(), width)
         for line in lines:
-            self.stream.write(line + "\n")
+            self._write(line + "\n")
         self.stream.flush()
         self._board_lines = len(lines)
 
@@ -276,13 +283,13 @@ class _Reporter:
         symbol = _status_symbol(result.status, self.stream.encoding)
         duration = _duration_str(result.duration, ", {time}")
         rule = "=" * 10
-        self.stream.write(
+        self._write(
             f"{rule} {symbol} {name}: {result.status.name.lower()}{duration} {rule}\n"
         )
         if output:
-            self.stream.write(output if output.endswith("\n") else output + "\n")
+            self._write(output if output.endswith("\n") else output + "\n")
         elif result.reason:
-            self.stream.write(f"  {result.reason}\n")
+            self._write(f"  {result.reason}\n")
         self.stream.flush()
 
     def started(self, name: str) -> None:
@@ -291,7 +298,7 @@ class _Reporter:
             if self.tty:  # pragma: no cover - requires a live TTY
                 self._draw_board()
             else:
-                self.stream.write(f"Starting session {name}...\n")
+                self._write(f"Starting session {name}...\n")
                 self.stream.flush()
 
     def update(self, name: str, line: str) -> None:
