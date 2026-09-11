@@ -621,6 +621,15 @@ class NoxConfig(NoxfileOptions):
             forward=Forward.ALWAYS,
         ),
     )
+    # Internal marker: parallel workers run with --parallel 1.
+    parallel_worker: bool = attrs.field(
+        default=False,
+        metadata=opt(
+            "--parallel-worker",
+            group="execution",
+            help=argparse.SUPPRESS,
+        ),
+    )
     # Wall-clock duration of a parallel run, recorded by the parallel runner
     # so the summary reports elapsed time, not the sum of session durations.
     parallel_wall_time: float | None = attrs.field(

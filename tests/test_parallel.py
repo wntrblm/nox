@@ -34,6 +34,7 @@ from nox.sessions import Result, Session, SessionRunner, Status
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
 
     from nox.manifest import Manifest
 
@@ -314,6 +315,89 @@ def test_parallel_exclusive_session_runs_alone(
 
     assert [r.status for r in results] == [Status.SUCCESS] * 4
     assert not overlaps
+
+
+@pytest.mark.parametrize("parallel_worker", [False, True])
+def test_session_parallel(parallel_worker: bool) -> None:
+    config = _config(parallel=1, parallel_worker=parallel_worker)
+    runner = types.SimpleNamespace(global_config=config)
+    session = Session(typing.cast("SessionRunner", runner))
+
+    assert session.parallel is parallel_worker
+
+
+def test_child_argv_marks_parallel_worker() -> None:
+    config = _config(parallel=4)
+    argv = _parallel._child_argv(config, _fake_runner(FakeSession("tests")), "r.json")
+    child_config = _options.options.parse_args(argv[3:])
+
+    assert child_config.parallel_worker is True
+    assert child_config.parallel == 1
+    assert config.parallel_worker is False
+    assert config.parallel == 4
+
+
+def test_parallel_worker_is_internal() -> None:
+    assert not hasattr(_options.NoxfileOptions(), "parallel_worker")
+    assert "--parallel-worker" not in _options.options.parser().format_help()
+
+
+@pytest.mark.parametrize(
+    ("args", "allow_parallel", "expected"),
+    [
+        ([], True, False),
+        (["-j", "1"], True, False),
+        (["-j", "2"], True, True),
+        (["-j", "2"], False, False),
+        (["-j", "2", "--allow-parallel"], None, True),
+    ],
+)
+def test_session_parallel_subprocess(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    args: list[str],
+    allow_parallel: bool | None,
+    expected: bool,
+) -> None:
+    monkeypatch.setenv("NOX_PARALLEL", "1")
+    monkeypatch.setenv("PYTHONIOENCODING", "utf-8")
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(
+        f"""import nox
+
+@nox.session(venv_backend="none", allow_parallel={allow_parallel!r})
+@nox.parametrize("index", [1, 2])
+def probe(session, index):
+    session.log(f"parallel={{session.parallel}}")
+
+@nox.session(venv_backend="none", allow_parallel=False)
+def exclusive(session):
+    session.log(f"parallel={{session.parallel}}")
+""",
+        encoding="utf-8",
+    )
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "nox",
+            "--noxfile",
+            str(noxfile),
+            "--session",
+            "probe",
+            "exclusive",
+            "--nocolor",
+            *args,
+        ],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+        timeout=30,
+    )
+    output = completed.stdout + completed.stderr
+
+    assert completed.returncode == 0, output
+    assert output.count(f"parallel={expected}") == 3
 
 
 def test_child_argv_full() -> None:
