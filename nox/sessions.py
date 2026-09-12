@@ -260,6 +260,16 @@ class Session:
         """Returns True if Nox is being run in an interactive session or False otherwise."""
         return not self._runner.global_config.non_interactive and sys.stdin.isatty()
 
+    @property
+    def parallel(self) -> bool:
+        """Whether this session is running under Nox's parallel scheduler.
+
+        This describes the execution mode, not the number of sessions
+        currently running. It remains true for a session that runs alone
+        because of dependencies or ``allow_parallel=False``.
+        """
+        return self._runner.global_config.parallel_worker
+
     def install_and_run_script(
         self,
         script: str | os.PathLike[str],

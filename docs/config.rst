@@ -512,6 +512,16 @@ The session object
 Nox will call your session functions with an instance of the :class:`Session`
 class.
 
+Use :attr:`Session.parallel` to detect execution under Nox's parallel
+scheduler and avoid enabling another layer of automatic parallelism:
+
+.. code-block:: python
+
+    @nox.session(allow_parallel=True)
+    def tests(session):
+        session.install("pytest", "pytest-xdist")
+        session.run("pytest", "-n", "0" if session.parallel else "auto")
+
 .. autoclass:: Session
     :members:
     :undoc-members:
