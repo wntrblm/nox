@@ -130,6 +130,20 @@ def _fallback(text: str, ascii_text: str, encoding: str | None) -> str:
     return text
 
 
+def _escape(text: str, encoding: str | None) -> str:
+    """Backslash-escape whatever the console encoding cannot represent.
+
+    Session names and child output are arbitrary; the console is not always
+    UTF-8 (cp932 or ascii on a redirected Windows stdout).
+    """
+    encoding = encoding or "utf-8"
+    try:
+        text.encode(encoding)
+    except UnicodeEncodeError:
+        return text.encode(encoding, "backslashreplace").decode(encoding)
+    return text
+
+
 def _status_symbol(status: Status, encoding: str | None) -> str:
     return _fallback(_SYMBOLS[status], _ASCII_SYMBOLS[status], encoding)
 
@@ -180,17 +194,8 @@ class _Reporter:
         return self
 
     def _write(self, text: str) -> None:
-        """Write *text*, escaping anything the console encoding cannot represent.
-
-        Session names and child output are arbitrary; the console is not
-        always UTF-8 (cp932 or ascii on a redirected Windows stdout).
-        """
-        encoding = self.stream.encoding or "utf-8"
-        try:
-            text.encode(encoding)
-        except UnicodeEncodeError:
-            text = text.encode(encoding, "backslashreplace").decode(encoding)
-        self.stream.write(text)
+        """Write *text*, escaping anything the console encoding cannot represent."""
+        self.stream.write(_escape(text, self.stream.encoding))
 
     def _banner(self, width: int = 0) -> str:
         text = _fallback(_EXPERIMENTAL, _ASCII_EXPERIMENTAL, self.stream.encoding)
@@ -234,13 +239,16 @@ class _Reporter:
             header = plain_header[: width - 1]
         lines = [self._banner(width), header]
 
-        frame = _spinner_frame(self._spin, self.stream.encoding)
+        encoding = self.stream.encoding
+        frame = _spinner_frame(self._spin, encoding)
         for name, start in self._active.items():
             # Plain and colored renderings are built from the same segments so
-            # the width math can't drift from what is actually displayed.
+            # the width math can't drift from what is actually displayed. The
+            # name and preview are escaped here, before truncation, so what
+            # _write() emits is exactly as wide as what was measured.
             segments = [
                 (frame, ("cyan",)),
-                (name, ("bold", "cyan")),
+                (_escape(name, encoding), ("bold", "cyan")),
                 (f"({int(now - start)}s)", ("green",)),
             ]
             head = " ".join(text for text, _ in segments)
@@ -248,7 +256,7 @@ class _Reporter:
                 # Too narrow even for the session line; plain truncation.
                 lines.append(head[: width - 1])
                 continue
-            preview = self._preview.get(name, "")
+            preview = _escape(self._preview.get(name, ""), encoding)
             if preview and width:
                 budget = width - 1 - len(head) - 2  # 2 for the separating spaces
                 preview = preview[:budget] if budget > 0 else ""

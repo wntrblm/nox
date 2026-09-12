@@ -668,6 +668,21 @@ def test_reporter_escapes_unencodable_output() -> None:
     assert "\\u2500\\u2500\\u2500" in out
 
 
+def test_reporter_render_escapes_before_truncating() -> None:
+    # Escaping after truncation would let the written line outgrow the width
+    # the board accounts for, so redraws leave stale rows behind.
+    buffer = io.BytesIO()
+    with io.TextIOWrapper(buffer, encoding="cp1252") as stream:
+        reporter = _parallel._Reporter(color=False, tty=True, total=1)
+        reporter.stream = stream
+        reporter._active = {"tést": 100.0}
+        reporter._preview = {"tést": "─" * 100}
+        line = reporter._render(105.0, width=40)[2]
+        assert line.startswith("| tést (5s)  \\u2500\\u2500")
+        assert len(line) == 39
+        assert len(line.encode("cp1252")) == 39
+
+
 def test_reporter_render_color() -> None:
     reporter = _parallel._Reporter(color=True, tty=False, total=1)
     reporter._active = {"a": 100.0}
