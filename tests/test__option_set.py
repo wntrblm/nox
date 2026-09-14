@@ -156,7 +156,7 @@ class TestOptions:
             verbose=False,
         )
         options.sessions = ["testytest"]
-        options.sessions = ("testytest",)  # type: ignore[assignment]
+        options.sessions = ("testytest",)
         with pytest.raises(ValueError):  # noqa: PT011
             options.sessions = "testytest"  # type: ignore[assignment]
 
@@ -183,6 +183,17 @@ class TestMerge:
         config = self.parse_and_merge([], noxfile_config)
 
         assert config.sessions == ["lint"]
+
+    def test_noxfile_tuple_sessions(self) -> None:
+        """A tuple is accepted, not only a list (gh-1172)."""
+        noxfile_config = _options.NoxfileOptions()
+        noxfile_config.sessions = ("lint", "test")
+        noxfile_config.tags = ("fast",)
+        config = self.parse_and_merge([], noxfile_config)
+
+        assert config.sessions == ("lint", "test")
+        argv = to_argv(config)
+        assert argv[argv.index("--session") :][:3] == ["--session", "lint", "test"]
 
     def test_cli_beats_noxfile(self) -> None:
         noxfile_config = _options.NoxfileOptions()
