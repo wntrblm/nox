@@ -207,7 +207,7 @@ You can also specify that the virtualenv should *always* be reused instead of re
     def tests(session):
         pass
 
-You are not limited to virtualenv, there is a selection of backends you can choose from as venv, uv, conda, mamba, micromamba, or virtualenv (default):
+You are not limited to virtualenv, there is a selection of backends you can choose from as venv, uv, conda, mamba, micromamba, rattler, or virtualenv (default):
 
 .. code-block:: python
 
@@ -216,7 +216,7 @@ You are not limited to virtualenv, there is a selection of backends you can choo
         pass
 
 You can chain together optional backends with ``|``, such as ``uv|virtualenv``
-or ``micromamba|mamba|conda``, and the first available backend will be selected.
+or ``rattler|micromamba|mamba|conda``, and the first available backend will be selected.
 You cannot put anything after a backend that can't be missing like ``venv`` or
 ``virtualenv``.
 

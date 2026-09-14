@@ -55,6 +55,9 @@ dependencies = [
 optional-dependencies.pbs = [
   "pbs-installer[all]>=2025.1.6",
 ]
+optional-dependencies.rattler = [
+  "py-rattler>=0.16",
+]
 optional-dependencies.tox-to-nox = [
   "jinja2",
   "tox>=4",
@@ -133,7 +136,7 @@ warn_unreachable = true
 enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
 strict = true
 native_parser = true
-overrides = [ { module = [ "tox.*" ], ignore_missing_imports = true } ]
+overrides = [ { module = [ "rattler.*", "tox.*" ], ignore_missing_imports = true } ]
 
 [tool.pytest]
 ini_options.minversion = "7.0"
@@ -142,6 +145,7 @@ ini_options.pythonpath = [ ".github/" ]
 ini_options.addopts = [ "-ra", "--strict-markers", "--strict-config", "-p", "no:legacypath" ]
 ini_options.markers = [
   "conda: test requires conda",
+  "rattler: test requires py-rattler and network access",
 ]
 ini_options.xfail_strict = true
 ini_options.filterwarnings = [ "error" ]
