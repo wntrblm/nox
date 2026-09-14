@@ -1024,6 +1024,30 @@ ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {
 }
 
 
+# The oldest Python uv will build an environment for; older targets fail with
+# "Python <version> is not supported. Please use Python 3.8 or newer."
+_UV_MIN_PYTHON = (3, 8)
+
+
+def _backend_supports_interpreter(backend: str, interpreter: Python) -> bool:
+    """Return ``False`` when ``backend`` is known to reject ``interpreter``.
+
+    Only ``uv`` has a known floor, and it fails outright instead of leaving the
+    interpreter to another backend. An interpreter that does not resolve to a
+    concrete ``major.minor`` (a bare name, a path, or a PEP 440 range) is
+    reported as supported, so the backend still makes its own decision.
+    """
+    if backend != "uv" or not isinstance(interpreter, str):
+        return True
+
+    from python_discovery import PythonSpec  # noqa: PLC0415
+
+    spec = PythonSpec.from_string_spec(interpreter)
+    if spec.major is None or spec.minor is None:
+        return True
+    return (spec.major, spec.minor) >= _UV_MIN_PYTHON
+
+
 def get_virtualenv(
     *backends: str,
     download_python: Literal["auto", "never", "always"],
@@ -1045,10 +1069,21 @@ def get_virtualenv(
             msg = f"Only optional backends ({sorted(optional_venvs)!r}) may have a fallback, {bk!r} is not optional."
             raise ValueError(msg)
 
-    for bk in backends:
-        if optional_venvs.get(bk, True):
-            backend = bk
-            break
+    for index, bk in enumerate(backends):
+        if not optional_venvs.get(bk, True):
+            continue
+        # A backend that can't handle the requested interpreter is skipped only
+        # while a fallback is still left; as the last candidate it is used
+        # anyway, so the backend's own error is what the user sees.
+        if index < len(backends) - 1 and not _backend_supports_interpreter(
+            bk, interpreter
+        ):
+            logger.debug(
+                f"Skipping the {bk!r} backend, which does not support {interpreter!r}."
+            )
+            continue
+        backend = bk
+        break
     else:
         msg = f"No backends present, looked for {backends!r}."
         raise ValueError(msg)
