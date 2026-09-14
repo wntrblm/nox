@@ -50,15 +50,28 @@ Enter the ``dev`` nox session:
         Set up a python development environment for the project at ".venv".
         """
 
-        session.install("virtualenv")
+        session.install("virtualenv", "pip>=22.3")
 
-        session.run("virtualenv", ".venv", silent=True)
+        session.run("python", "-m", "virtualenv", ".venv", silent=True)
 
-        # Use the venv's interpreter to install the project along with
-        # all its dev dependencies, this ensures it's installed in the right way
-        session.run(".venv/bin/pip", "install", "-e", ".[dev]", external=True)
+        # Install into .venv rather than the Nox session's environment.
+        session.run(
+            "python", "-m", "pip", "--python", ".venv",
+            "install", "-e", ".[dev]",
+        )
 
 With this, a user can simply run ``nox -s dev`` and have their entire environment set up automatically!
+
+This recipe assumes the project defines a ``dev`` extra containing its development
+dependencies. Replace ``.[dev]`` with ``.`` if no extra is needed. The editable
+installation means changes to the project's source are available in ``.venv``
+without reinstalling it.
+
+The ``--python`` option requires pip 22.3 or newer and accepts a virtual environment
+directory. This lets pip target ``.venv`` on both Windows and Unix without
+hard-coding ``Scripts`` or ``bin`` paths. Installing pip explicitly in the Nox
+session also allows this recipe to work with the ``uv`` backend, which does not
+install pip by default.
 
 
 The Auto-Release
