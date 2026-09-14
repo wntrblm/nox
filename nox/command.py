@@ -24,13 +24,26 @@ import sys
 from typing import TYPE_CHECKING, Literal, overload
 
 from nox.logger import logger
-from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT, popen
+from nox.popen import (
+    DEFAULT_INTERRUPT_TIMEOUT,
+    DEFAULT_TERMINATE_TIMEOUT,
+    popen,
+    popen_background,
+    shutdown_process,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
     from typing import IO
 
-__all__ = ["CommandFailed", "ExternalType", "run", "which"]
+__all__ = [
+    "BackgroundCommand",
+    "CommandFailed",
+    "ExternalType",
+    "run",
+    "run_background",
+    "which",
+]
 
 _PLATFORM = sys.platform
 
@@ -86,6 +99,45 @@ def _clean_env(env: Mapping[str, str | None] | None = None) -> dict[str, str] | 
 
 def _shlex_join(args: Sequence[str | os.PathLike[str]]) -> str:
     return " ".join(shlex.quote(os.fspath(arg)) for arg in args)
+
+
+def _prepare_run(
+    args: Sequence[str | os.PathLike[str]],
+    *,
+    paths: Sequence[str | os.PathLike[str]] | None,
+    log: bool,
+    external: ExternalType,
+) -> tuple[list[str], str]:
+    """Resolve the executable, log the command, and enforce the external policy."""
+    cmd, args = args[0], args[1:]
+    full_cmd = f"{cmd} {_shlex_join(args)}"
+
+    cmd_path = which(os.fspath(cmd), paths)
+    str_args = [os.fspath(arg) for arg in args]
+
+    if log:
+        logger.info(full_cmd)
+
+    is_external_tool = paths is not None and not any(
+        cmd_path.startswith(str(path)) for path in paths
+    )
+    if is_external_tool:
+        if external == "error":
+            logger.error(
+                f"Error: {cmd} is not installed into the virtualenv, it is located"
+                f" at {cmd_path}. Pass external=True into run() to explicitly allow"
+                " this."
+            )
+            msg = "External program disallowed."
+            raise CommandFailed(msg)
+        if external is False and log:
+            logger.warning(
+                f"Warning: {cmd} is not installed into the virtualenv, it is"
+                f" located at {cmd_path}. This might cause issues! Pass"
+                " external=True into run() to silence this message."
+            )
+
+    return [cmd_path, *str_args], full_cmd
 
 
 @overload
@@ -158,39 +210,13 @@ def run(
     if success_codes is None:
         success_codes = [0]
 
-    cmd, args = args[0], args[1:]
-    full_cmd = f"{cmd} {_shlex_join(args)}"
-
-    cmd_path = which(os.fspath(cmd), paths)
-    str_args = [os.fspath(arg) for arg in args]
-
-    if log:
-        logger.info(full_cmd)
-
-    is_external_tool = paths is not None and not any(
-        cmd_path.startswith(str(path)) for path in paths
-    )
-    if is_external_tool:
-        if external == "error":
-            logger.error(
-                f"Error: {cmd} is not installed into the virtualenv, it is located"
-                f" at {cmd_path}. Pass external=True into run() to explicitly allow"
-                " this."
-            )
-            msg = "External program disallowed."
-            raise CommandFailed(msg)
-        if external is False and log:
-            logger.warning(
-                f"Warning: {cmd} is not installed into the virtualenv, it is"
-                f" located at {cmd_path}. This might cause issues! Pass"
-                " external=True into run() to silence this message."
-            )
+    popen_args, full_cmd = _prepare_run(args, paths=paths, log=log, external=external)
 
     env = _clean_env(env)
 
     try:
         return_code, output = popen(
-            [cmd_path, *str_args],
+            popen_args,
             silent=silent,
             env=env,
             stdout=stdout,
@@ -219,3 +245,83 @@ def run(
         raise
 
     return output if silent else True
+
+
+class BackgroundCommand:
+    """A handle to a command started in the background.
+
+    Instances are returned by :meth:`nox.sessions.Session.background`. The
+    process keeps running while the rest of the session executes; call
+    :meth:`stop` (or use the object as a context manager) to shut it down. Any
+    background commands still running when the session ends are stopped
+    automatically.
+    """
+
+    def __init__(
+        self,
+        process: subprocess.Popen[bytes],
+        *,
+        interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+        terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+    ) -> None:
+        self.process = process
+        self.interrupt_timeout = interrupt_timeout
+        self.terminate_timeout = terminate_timeout
+
+    @property
+    def returncode(self) -> int | None:
+        """The command's exit code, or ``None`` while it is still running."""
+        return self.process.returncode
+
+    def poll(self) -> int | None:
+        """Check whether the command has finished without blocking."""
+        return self.process.poll()
+
+    def wait(self, timeout: float | None = None) -> int:
+        """Wait for the command to finish and return its exit code."""
+        return self.process.wait(timeout)
+
+    def stop(self) -> int:
+        """Gracefully stop the command and return its exit code.
+
+        Nothing happens if the command has already finished. Otherwise it is
+        given ``interrupt_timeout`` seconds to exit before being terminated, and
+        ``terminate_timeout`` seconds more before being killed.
+        """
+        if self.process.poll() is None:
+            shutdown_process(
+                self.process, self.interrupt_timeout, self.terminate_timeout
+            )
+        return self.process.wait()
+
+    def __enter__(self) -> BackgroundCommand:  # noqa: PYI034
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.stop()
+
+
+def run_background(
+    args: Sequence[str | os.PathLike[str]],
+    *,
+    env: Mapping[str, str | None] | None = None,
+    paths: Sequence[str | os.PathLike[str]] | None = None,
+    log: bool = True,
+    external: ExternalType = False,
+    stdout: int | IO[str] | None = None,
+    stderr: int | IO[str] | None = None,
+    interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+    terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+) -> BackgroundCommand:
+    """Start a command-line program in the background."""
+    popen_args, _full_cmd = _prepare_run(args, paths=paths, log=log, external=external)
+
+    process = popen_background(
+        popen_args, env=_clean_env(env), stdout=stdout, stderr=stderr
+    )
+
+    return BackgroundCommand(
+        process,
+        interrupt_timeout=interrupt_timeout,
+        terminate_timeout=terminate_timeout,
+    )
