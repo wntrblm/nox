@@ -410,6 +410,25 @@ Produces these sessions when running ``nox --list``:
     * tests(psql, new)
     * tests(mysql, new)
 
+Instead of a fixed list, ``ids`` can also be a callable, just like `pytest's parametrize <https://docs.pytest.org/en/stable/how-to/parametrize.html>`_. The callable is invoked with each argument value and returns the ID to use for that value, or ``None`` to fall back to the automatically generated ID. This is handy for deriving shell-friendly names from the parameter values so you don't have to quote them:
+
+.. code-block:: python
+
+    @nox.session
+    @nox.parametrize(
+        'dependency',
+        ['flask==1.0', 'flask==2.0'],
+        ids=lambda dependency: dependency.replace('==', '-'))
+    def tests(session, dependency):
+        ...
+
+Produces these sessions, which don't need quoting to run:
+
+.. code-block:: console
+
+    * tests(flask-1.0)
+    * tests(flask-2.0)
+
 
 Parametrizing the session Python
 --------------------------------
