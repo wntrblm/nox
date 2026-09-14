@@ -360,11 +360,106 @@ class TestSession:
         session, _ = self.make_session_and_runner()
 
         with mock.patch.object(nox.command, "run") as run:
-            session.install_and_run_script(DIR / "resources/pep721example1.py")
+            session.install_and_run_script(DIR / "resources/pep723example1.py")
 
         assert len(run.call_args_list) == 2
         assert "rich" in run.call_args_list[0][0][0]
-        assert DIR / "resources/pep721example1.py" in run.call_args_list[1][0][0]
+        assert DIR / "resources/pep723example1.py" in run.call_args_list[1][0][0]
+
+    def test_uv_run_script(self) -> None:
+        session, _ = self.make_session_and_runner()
+
+        with (
+            mock.patch.object(nox.virtualenv, "HAS_UV", new=True),
+            mock.patch.object(nox.virtualenv, "UV", "uv"),
+            mock.patch.object(nox.command, "run") as run,
+        ):
+            session.uv_run_script(DIR / "resources/pep723example1.py")
+
+        run.assert_called_once()
+        cmd = run.call_args[0][0]
+        assert cmd[0] == "uv"
+        assert cmd[1] == "run"
+        assert DIR / "resources/pep723example1.py" in cmd
+
+    def test_uv_run_script_uv_args(self) -> None:
+        session, _ = self.make_session_and_runner()
+
+        with (
+            mock.patch.object(nox.virtualenv, "HAS_UV", new=True),
+            mock.patch.object(nox.virtualenv, "UV", "uv"),
+            mock.patch.object(nox.command, "run") as run,
+        ):
+            session.uv_run_script(
+                DIR / "resources/pep723example1.py",
+                uv_args=["--with", "nox", "--python", "3.13"],
+            )
+
+        cmd = run.call_args[0][0]
+        assert list(cmd) == [
+            "uv",
+            "run",
+            "--with",
+            "nox",
+            "--python",
+            "3.13",
+            DIR / "resources/pep723example1.py",
+        ]
+
+    def test_uv_run_script_with_uv_sources(self) -> None:
+        session, _ = self.make_session_and_runner()
+
+        with (
+            mock.patch.object(nox.virtualenv, "HAS_UV", new=True),
+            mock.patch.object(nox.virtualenv, "UV", "uv"),
+            mock.patch.object(nox.command, "run") as run,
+        ):
+            session.uv_run_script(DIR / "resources/pep723example2.py")
+
+        run.assert_called_once()
+        cmd = run.call_args[0][0]
+        assert cmd[0] == "uv"
+        assert cmd[1] == "run"
+        assert DIR / "resources/pep723example2.py" in cmd
+
+    def test_uv_run_script_no_uv(self) -> None:
+        session, _ = self.make_session_and_runner()
+
+        with (
+            mock.patch.object(nox.virtualenv, "HAS_UV", new=False),
+            pytest.raises(ValueError, match="uv"),
+        ):
+            session.uv_run_script(DIR / "resources/pep723example1.py")
+
+    @pytest.mark.network
+    @pytest.mark.skipif(not nox.virtualenv.HAS_UV, reason="uv not available")
+    def test_uv_run_script_integration(self) -> None:
+        session, _ = self.make_session_and_runner()
+        result = session.uv_run_script(DIR / "resources/pep723example1.py", silent=True)
+        assert result
+
+    @pytest.mark.network
+    @pytest.mark.skipif(not nox.virtualenv.HAS_UV, reason="uv not available")
+    def test_uv_run_script_integration_with_flag(self) -> None:
+        session, _ = self.make_session_and_runner()
+        result = session.uv_run_script(
+            DIR / "resources/pep723example3.py",
+            uv_args=["--with", "packaging"],
+            silent=True,
+        )
+        assert result
+
+    @pytest.mark.network
+    @pytest.mark.skipif(not nox.virtualenv.HAS_UV, reason="uv not available")
+    def test_uv_run_script_integration_python_flag(self) -> None:
+        current = f"{sys.version_info.major}.{sys.version_info.minor}"
+        session, _ = self.make_session_and_runner()
+        result = session.uv_run_script(
+            DIR / "resources/pep723example1.py",
+            uv_args=["--python", current],
+            silent=True,
+        )
+        assert result
 
     def test_run_overly_env(self) -> None:
         session, runner = self.make_session_and_runner()
