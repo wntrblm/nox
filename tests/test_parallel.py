@@ -706,6 +706,67 @@ def test_reporter_render_uses_ascii_spinner_for_legacy_encoding() -> None:
         assert reporter._render(105.0, width=0)[2] == "| a (5s)"
 
 
+@pytest.mark.parametrize("encoding", ["cp437", "cp932", "ascii"])
+def test_reporter_banner_uses_ascii_for_legacy_encoding(encoding: str) -> None:
+    # None of these can encode the em dash in the banner text.
+    buffer = io.BytesIO()
+    with io.TextIOWrapper(buffer, encoding=encoding) as stream:
+        reporter = _parallel._Reporter(color=False, tty=False, total=1)
+        reporter.stream = stream
+        banner = reporter._banner()
+        assert "\u2014" not in banner
+        banner.encode(encoding)
+
+
+@pytest.mark.parametrize("encoding", ["cp932", "ascii"])
+def test_reporter_header_uses_ascii_for_legacy_encoding(encoding: str) -> None:
+    # Neither can encode the middle dot separating the counters.
+    buffer = io.BytesIO()
+    with io.TextIOWrapper(buffer, encoding=encoding) as stream:
+        reporter = _parallel._Reporter(color=False, tty=True, total=1)
+        reporter.stream = stream
+        reporter._active = {"a": 100.0}
+        reporter._skipped = 1
+        header = reporter._render(105.0, width=0)[1]
+        assert "\u00b7" not in header
+        header.encode(encoding)
+
+
+def test_reporter_escapes_unencodable_output() -> None:
+    # Session names and child output are arbitrary text; a strict legacy
+    # console must not abort the run.
+    buffer = io.BytesIO()
+    with io.TextIOWrapper(buffer, encoding="ascii") as stream:
+        with _parallel._Reporter(color=False, tty=False) as reporter:
+            reporter.stream = stream
+            reporter.started("tést")
+            reporter.finished(
+                "tést",
+                Result(_fake_runner(FakeSession("tést")), Status.SUCCESS, duration=0.0),
+                "───\n",
+            )
+        stream.flush()
+        out = buffer.getvalue().decode("ascii")
+    assert "Starting session t\\xe9st..." in out
+    assert "+ t\\xe9st: success" in out
+    assert "\\u2500\\u2500\\u2500" in out
+
+
+def test_reporter_render_escapes_before_truncating() -> None:
+    # Escaping after truncation would let the written line outgrow the width
+    # the board accounts for, so redraws leave stale rows behind.
+    buffer = io.BytesIO()
+    with io.TextIOWrapper(buffer, encoding="cp1252") as stream:
+        reporter = _parallel._Reporter(color=False, tty=True, total=1)
+        reporter.stream = stream
+        reporter._active = {"tést": 100.0}
+        reporter._preview = {"tést": "─" * 100}
+        line = reporter._render(105.0, width=40)[2]
+        assert line.startswith("| tést (5s)  \\u2500\\u2500")
+        assert len(line) == 39
+        assert len(line.encode("cp1252")) == 39
+
+
 def test_reporter_render_color() -> None:
     reporter = _parallel._Reporter(color=True, tty=False, total=1)
     reporter._active = {"a": 100.0}
