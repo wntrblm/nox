@@ -85,6 +85,7 @@ _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 _TERMINATE_TIMEOUT = 2.0
 
 _EXPERIMENTAL = "--parallel is experimental — looking for feedback!"
+_ASCII_EXPERIMENTAL = _EXPERIMENTAL.replace("—", "-")
 
 
 @functools.cache
@@ -120,22 +121,39 @@ def _preview_text(line: str) -> str:
     return _ANSI.sub("", line.rstrip("\r\n").rsplit("\r", 1)[-1]).strip()
 
 
-def _status_symbol(status: Status, encoding: str | None) -> str:
-    symbol = _SYMBOLS[status]
+def _fallback(text: str, ascii_text: str, encoding: str | None) -> str:
+    """Return *text*, or *ascii_text* when the console cannot encode it."""
     try:
-        symbol.encode(encoding or "utf-8")
+        text.encode(encoding or "utf-8")
     except UnicodeEncodeError:
-        return _ASCII_SYMBOLS[status]
-    return symbol
+        return ascii_text
+    return text
+
+
+def _escape(text: str, encoding: str | None) -> str:
+    """Backslash-escape whatever the console encoding cannot represent.
+
+    Session names and child output are arbitrary; the console is not always
+    UTF-8 (cp932 or ascii on a redirected Windows stdout).
+    """
+    encoding = encoding or "utf-8"
+    try:
+        text.encode(encoding)
+    except UnicodeEncodeError:
+        return text.encode(encoding, "backslashreplace").decode(encoding)
+    return text
+
+
+def _status_symbol(status: Status, encoding: str | None) -> str:
+    return _fallback(_SYMBOLS[status], _ASCII_SYMBOLS[status], encoding)
 
 
 def _spinner_frame(spin: int, encoding: str | None) -> str:
-    frame = _SPINNER[spin % len(_SPINNER)]
-    try:
-        frame.encode(encoding or "utf-8")
-    except UnicodeEncodeError:
-        return _ASCII_SPINNER[spin % len(_ASCII_SPINNER)]
-    return frame
+    return _fallback(
+        _SPINNER[spin % len(_SPINNER)],
+        _ASCII_SPINNER[spin % len(_ASCII_SPINNER)],
+        encoding,
+    )
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -171,14 +189,19 @@ class _Reporter:
             self._thread.start()
         else:
             # No live board to carry the banner; print it once instead.
-            self.stream.write(self._banner() + "\n")
+            self._write(self._banner() + "\n")
             self.stream.flush()
         return self
 
+    def _write(self, text: str) -> None:
+        """Write *text*, escaping anything the console encoding cannot represent."""
+        self.stream.write(_escape(text, self.stream.encoding))
+
     def _banner(self, width: int = 0) -> str:
-        if width and len(_EXPERIMENTAL) + 2 > width - 1:
-            return _EXPERIMENTAL[: width - 1]
-        return self._c(f" {_EXPERIMENTAL} ", "bg_yellow", "black")
+        text = _fallback(_EXPERIMENTAL, _ASCII_EXPERIMENTAL, self.stream.encoding)
+        if width and len(text) + 2 > width - 1:
+            return text[: width - 1]
+        return self._c(f" {text} ", "bg_yellow", "black")
 
     def __exit__(self, *exc: object) -> None:
         self._stop.set()
@@ -209,19 +232,23 @@ class _Reporter:
         )
         if self._skipped:
             header += f" · {_c('skipped', 'thin')} {self._skipped}"
+        header = _fallback(header, header.replace("·", "|"), self.stream.encoding)
         plain_header = _ANSI.sub("", header)
         if width and len(plain_header) > width - 1:
             # Too narrow for the styled header; truncate the plain text instead.
             header = plain_header[: width - 1]
         lines = [self._banner(width), header]
 
-        frame = _spinner_frame(self._spin, self.stream.encoding)
+        encoding = self.stream.encoding
+        frame = _spinner_frame(self._spin, encoding)
         for name, start in self._active.items():
             # Plain and colored renderings are built from the same segments so
-            # the width math can't drift from what is actually displayed.
+            # the width math can't drift from what is actually displayed. The
+            # name and preview are escaped here, before truncation, so what
+            # _write() emits is exactly as wide as what was measured.
             segments = [
                 (frame, ("cyan",)),
-                (name, ("bold", "cyan")),
+                (_escape(name, encoding), ("bold", "cyan")),
                 (f"({int(now - start)}s)", ("green",)),
             ]
             head = " ".join(text for text, _ in segments)
@@ -229,7 +256,7 @@ class _Reporter:
                 # Too narrow even for the session line; plain truncation.
                 lines.append(head[: width - 1])
                 continue
-            preview = self._preview.get(name, "")
+            preview = _escape(self._preview.get(name, ""), encoding)
             if preview and width:
                 budget = width - 1 - len(head) - 2  # 2 for the separating spaces
                 preview = preview[:budget] if budget > 0 else ""
@@ -250,7 +277,7 @@ class _Reporter:
         width = shutil.get_terminal_size().columns
         lines = self._render(time.monotonic(), width)
         for line in lines:
-            self.stream.write(line + "\n")
+            self._write(line + "\n")
         self.stream.flush()
         self._board_lines = len(lines)
 
@@ -264,13 +291,13 @@ class _Reporter:
         symbol = _status_symbol(result.status, self.stream.encoding)
         duration = _duration_str(result.duration, ", {time}")
         rule = "=" * 10
-        self.stream.write(
+        self._write(
             f"{rule} {symbol} {name}: {result.status.name.lower()}{duration} {rule}\n"
         )
         if output:
-            self.stream.write(output if output.endswith("\n") else output + "\n")
+            self._write(output if output.endswith("\n") else output + "\n")
         elif result.reason:
-            self.stream.write(f"  {result.reason}\n")
+            self._write(f"  {result.reason}\n")
         self.stream.flush()
 
     def started(self, name: str) -> None:
@@ -279,7 +306,7 @@ class _Reporter:
             if self.tty:  # pragma: no cover - requires a live TTY
                 self._draw_board()
             else:
-                self.stream.write(f"Starting session {name}...\n")
+                self._write(f"Starting session {name}...\n")
                 self.stream.flush()
 
     def update(self, name: str, line: str) -> None:
