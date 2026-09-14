@@ -90,16 +90,19 @@ def sync(
         rattler.PrefixRecord.from_path(path)
         for path in sorted(Path(prefix, "conda-meta").glob("*.json"))
     ]
-    # Keyed by package name so a new request replaces the historical one.
-    requested = {
-        ms.name.normalized: ms
-        for spec in (
-            *(s for record in installed for s in record.requested_specs or ()),
-            *specs,
-        )
+    new_specs = [rattler.MatchSpec(spec) for spec in specs]
+    new_names = {ms.name.normalized for ms in new_specs}
+    # A new request for a package replaces every historical request for it.
+    # All specs from the current call are kept so `pkg>=2` and `pkg<3` both
+    # reach the solver.
+    match_specs = [
+        ms
+        for record in installed
+        for spec in record.requested_specs or ()
         for ms in (rattler.MatchSpec(spec),)
-    }
-    match_specs = list(requested.values())
+        if ms.name.normalized not in new_names
+    ]
+    match_specs.extend(new_specs)
 
     async def run() -> None:
         records = await rattler.solve(
