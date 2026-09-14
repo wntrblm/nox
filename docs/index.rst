@@ -41,7 +41,7 @@ To run both of these sessions, just run::
 
     nox
 
-For each session, Nox will automatically create a `virtualenv`_ with the appropriate interpreter, install the specified dependencies, and run the commands in order.
+For each session, Nox will automatically create an isolated environment with the appropriate Python interpreter using the configured :ref:`environment backend <virtualenv config>`, install the specified dependencies, and run the commands in order.
 
 To learn how to install and use Nox, see the :doc:`tutorial`. For documentation on configuring sessions, see :doc:`config`. For documentation on running ``nox``, see :doc:`usage`.
 
