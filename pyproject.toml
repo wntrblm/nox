@@ -136,7 +136,7 @@ warn_unreachable = true
 enable_error_code = [ "ignore-without-code", "redundant-expr", "truthy-bool" ]
 strict = true
 native_parser = true
-overrides = [ { module = [ "rattler.*", "tox.*" ], ignore_missing_imports = true } ]
+overrides = [ { module = [ "tox.*" ], ignore_missing_imports = true } ]
 
 [tool.pytest]
 ini_options.minversion = "7.0"
