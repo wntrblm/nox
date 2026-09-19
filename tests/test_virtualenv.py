@@ -299,6 +299,84 @@ def test_get_virtualenv_non_optional_fallback(
         )
 
 
+@pytest.fixture
+def uv_available(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make uv the only available optional backend."""
+    monkeypatch.setattr(
+        nox.virtualenv,
+        "OPTIONAL_VENVS",
+        {"conda": False, "mamba": False, "micromamba": False, "uv": True},
+    )
+
+
+@pytest.mark.parametrize("interpreter", ["3.6", "python3.7", "pypy3.7", "3.7t"])
+@pytest.mark.usefixtures("uv_available")
+def test_get_virtualenv_uv_falls_back_below_floor(
+    tmp_path: Path,
+    interpreter: str,
+) -> None:
+    """uv cannot create these, so the fallback backend must be used."""
+    venv = nox.virtualenv.get_virtualenv(
+        "uv",
+        "virtualenv",
+        download_python="auto",
+        envdir=str(tmp_path),
+        reuse_existing=False,
+        interpreter=interpreter,
+    )
+    assert venv.venv_backend == "virtualenv"
+
+
+@pytest.mark.parametrize("interpreter", ["3.8", "3.12", "python3.13", "pypy3.10"])
+@pytest.mark.usefixtures("uv_available")
+def test_get_virtualenv_uv_kept_at_or_above_floor(
+    tmp_path: Path,
+    interpreter: str,
+) -> None:
+    venv = nox.virtualenv.get_virtualenv(
+        "uv",
+        "virtualenv",
+        download_python="auto",
+        envdir=str(tmp_path),
+        reuse_existing=False,
+        interpreter=interpreter,
+    )
+    assert venv.venv_backend == "uv"
+
+
+@pytest.mark.parametrize("interpreter", [None, "python", ">=3.6", "<3.8"])
+@pytest.mark.usefixtures("uv_available")
+def test_get_virtualenv_uv_kept_when_version_unknown(
+    tmp_path: Path,
+    interpreter: str | None,
+) -> None:
+    """Only a concrete version can rule uv out; anything else stays with uv."""
+    venv = nox.virtualenv.get_virtualenv(
+        "uv",
+        "virtualenv",
+        download_python="auto",
+        envdir=str(tmp_path),
+        reuse_existing=False,
+        interpreter=interpreter,
+    )
+    assert venv.venv_backend == "uv"
+
+
+@pytest.mark.usefixtures("uv_available")
+def test_get_virtualenv_uv_without_fallback_is_not_skipped(
+    tmp_path: Path,
+) -> None:
+    """With no fallback, uv must still be chosen so uv reports its own error."""
+    venv = nox.virtualenv.get_virtualenv(
+        "uv",
+        download_python="auto",
+        envdir=str(tmp_path),
+        reuse_existing=False,
+        interpreter="3.6",
+    )
+    assert venv.venv_backend == "uv"
+
+
 def test_condaenv_constructor_defaults(
     make_conda: Callable[..., tuple[CondaEnv, Path]],
 ) -> None:
