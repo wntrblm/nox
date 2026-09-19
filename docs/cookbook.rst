@@ -182,6 +182,46 @@ By default, ``nox-uv`` also validates that the lockfile is up-to-date.
         nox.main()
 
 
+Testing on every supported Python
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``Programming Language :: Python :: 3.X`` trove classifiers in
+``pyproject.toml`` already list every Python your project supports.
+:func:`nox.project.python_versions` reads them, so the session matrix follows
+the classifiers without a second copy of the list. If the project also has a
+``Programming Language :: Python :: Free Threading`` classifier, the
+non-experimental free-threaded builds (``3.14t`` and newer) are added too:
+
+.. code-block:: toml
+
+    [project]
+    classifiers = [
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+      "Programming Language :: Python :: 3.14",
+      "Programming Language :: Python :: 3.15",
+      "Programming Language :: Python :: Free Threading :: 3 - Stable",
+    ]
+
+.. code-block:: python
+
+    import nox
+
+    PYPROJECT = nox.project.load_toml("pyproject.toml")
+    # ["3.12", "3.13", "3.14", "3.14t, "3.15", "5.15t"]
+    ALL_PYTHON = nox.project.python_versions(PYPROJECT)
+
+
+    @nox.session(python=ALL_PYTHON)
+    def tests(session: nox.Session) -> None:
+        session.install("-e.", "pytest")
+        session.run("pytest")
+
+Pass ``free_threaded=False`` to leave the free-threaded builds out, or
+``free_threaded=True`` to add them without the classifier. 3.13t is never
+added automatically, as free threading was experimental in 3.13.
+
+
 Combining coverage across Python versions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

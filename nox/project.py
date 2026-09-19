@@ -124,7 +124,11 @@ def _load_script_block(filepath: Path, *, missing_ok: bool) -> dict[str, Any]:
 
 
 def python_versions(
-    pyproject: dict[str, Any], *, max_version: str | None = None, sort: bool = True
+    pyproject: dict[str, Any],
+    *,
+    max_version: str | None = None,
+    sort: bool = True,
+    free_threaded: bool | None = None,
 ) -> list[str]:
     """
     Read a list of supported Python versions. Without ``max_version``, this
@@ -135,6 +139,11 @@ def python_versions(
 
     Classifier-derived versions are sorted by default. Set ``sort=False`` to
     preserve classifier order.
+
+    If the project has a ``Programming Language :: Python :: Free Threading``
+    classifier, free-threaded versions (like ``"3.14t"``) are appended for
+    every version from 3.14 on. 3.13t is not included, as it was experimental.
+    Set ``free_threaded`` to force this on or off.
 
     Example:
 
@@ -148,19 +157,26 @@ def python_versions(
         # Or from requires-python
         PYTHON_VERSIONS = nox.project.python_versions(PYPROJECT, max_version="3.13")
     """
+    classifiers = pyproject.get("project", {}).get("classifiers", [])
+    if free_threaded is None:
+        free_threaded = any(
+            c.startswith("Programming Language :: Python :: Free Threading")
+            for c in classifiers
+        )
+
     if max_version is None:
         # Classifiers are a list of every Python version
         from_classifiers = [
             c.split()[-1]
-            for c in pyproject.get("project", {}).get("classifiers", [])
+            for c in classifiers
             if c.startswith("Programming Language :: Python :: 3.")
         ]
-        if from_classifiers:
-            if sort:
-                return sorted(from_classifiers, key=packaging.version.Version)
-            return from_classifiers
-        msg = 'No Python version classifiers found in "project.classifiers"'
-        raise ValueError(msg)
+        if not from_classifiers:
+            msg = 'No Python version classifiers found in "project.classifiers"'
+            raise ValueError(msg)
+        if sort:
+            from_classifiers = sorted(from_classifiers, key=packaging.version.Version)
+        return _with_free_threaded(from_classifiers, free_threaded=free_threaded)
 
     requires_python_str = pyproject.get("project", {}).get("requires-python", "")
     if not requires_python_str:
@@ -179,7 +195,18 @@ def python_versions(
 
     max_minor_version = int(max_version.split(".")[1]) if "." in max_version else 0
 
-    return [f"3.{v}" for v in range(min_minor_version, max_minor_version + 1)]
+    versions = [f"3.{v}" for v in range(min_minor_version, max_minor_version + 1)]
+    return _with_free_threaded(versions, free_threaded=free_threaded)
+
+
+def _with_free_threaded(versions: list[str], *, free_threaded: bool) -> list[str]:
+    if not free_threaded:
+        return versions
+    return versions + [
+        f"{v}t"
+        for v in versions
+        if packaging.version.Version(v) >= packaging.version.Version("3.14")
+    ]
 
 
 def dependency_groups(pyproject: dict[str, Any], *groups: str) -> tuple[str, ...]:
