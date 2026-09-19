@@ -60,8 +60,8 @@ _TEMPLATE = jinja2.Template(
 
 
 def wrapjoin(seq: Iterable[Any]) -> str:
-    """Wrap each item in single quotes and join them with a comma."""
-    return ", ".join([f"'{item}'" for item in seq])
+    """Quote each item as a Python string literal and join them with a comma."""
+    return ", ".join(repr(str(item)) for item in seq)
 
 
 def fixname(envname: str) -> str:
