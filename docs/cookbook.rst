@@ -208,7 +208,7 @@ non-experimental free-threaded builds (``3.14t`` and newer) are added too:
     import nox
 
     PYPROJECT = nox.project.load_toml("pyproject.toml")
-    # ["3.12", "3.13", "3.14", "3.14t, "3.15", "5.15t"]
+    # ["3.12", "3.13", "3.14", "3.14t, "3.15", "3.15t"]
     ALL_PYTHON = nox.project.python_versions(PYPROJECT)
 
 
