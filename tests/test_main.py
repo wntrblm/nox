@@ -1242,4 +1242,5 @@ def test_noxfile_script_mode_url_req() -> None:
     print(job.stdout)
     print(job.stderr)
     assert job.returncode == 0
-    assert job.stdout.rstrip() == "2024.10.9"
+    # Newer hatchling keeps the tag as written, older versions normalize it
+    assert job.stdout.rstrip() in {"2024.10.9", "2024.10.09"}
