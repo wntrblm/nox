@@ -54,6 +54,7 @@ repos:
           - packaging
           - pbs_installer
           - platformdirs
+          - py-rattler>=0.16
           - python-discovery
           - pytest
           - tomli

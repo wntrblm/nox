@@ -55,6 +55,9 @@ dependencies = [
 optional-dependencies.pbs = [
   "pbs-installer[all]>=2025.1.6",
 ]
+optional-dependencies.rattler = [
+  "py-rattler>=0.16",
+]
 optional-dependencies.tox-to-nox = [
   "jinja2",
   "tox>=4",
@@ -142,6 +145,7 @@ ini_options.pythonpath = [ ".github/" ]
 ini_options.addopts = [ "-ra", "--strict-markers", "--strict-config", "-p", "no:legacypath" ]
 ini_options.markers = [
   "conda: test requires conda",
+  "rattler: test requires py-rattler and network access",
 ]
 ini_options.xfail_strict = true
 ini_options.filterwarnings = [ "error" ]
