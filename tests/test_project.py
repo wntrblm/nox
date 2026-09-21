@@ -51,6 +51,81 @@ def test_classifiers_can_preserve_order() -> None:
     assert python_versions(pyproject, sort=False) == ["3.12", "3.10", "3.11"]
 
 
+def test_classifiers_free_threaded() -> None:
+    pyproject = {
+        "project": {
+            "classifiers": [
+                "Programming Language :: Python :: 3.15",
+                "Programming Language :: Python :: 3.12",
+                "Programming Language :: Python :: 3.14",
+                "Programming Language :: Python :: 3.13",
+                "Programming Language :: Python :: Free Threading :: 3 - Stable",
+            ],
+        }
+    }
+
+    assert python_versions(pyproject) == [
+        "3.12",
+        "3.13",
+        "3.14",
+        "3.15",
+        "3.14t",
+        "3.15t",
+    ]
+    assert python_versions(pyproject, free_threaded=False) == [
+        "3.12",
+        "3.13",
+        "3.14",
+        "3.15",
+    ]
+
+
+def test_classifiers_free_threaded_unsorted() -> None:
+    pyproject = {
+        "project": {
+            "classifiers": [
+                "Programming Language :: Python :: Free Threading :: 1 - Unstable",
+                "Programming Language :: Python :: 3.15",
+                "Programming Language :: Python :: 3.14",
+            ],
+        }
+    }
+
+    assert python_versions(pyproject, sort=False) == ["3.15", "3.14", "3.15t", "3.14t"]
+
+
+def test_classifiers_free_threaded_explicit() -> None:
+    pyproject = {
+        "project": {
+            "classifiers": [
+                "Programming Language :: Python :: 3.13",
+                "Programming Language :: Python :: 3.14",
+            ],
+        }
+    }
+
+    assert python_versions(pyproject) == ["3.13", "3.14"]
+    assert python_versions(pyproject, free_threaded=True) == ["3.13", "3.14", "3.14t"]
+
+
+def test_python_range_free_threaded() -> None:
+    pyproject = {
+        "project": {
+            "classifiers": ["Programming Language :: Python :: Free Threading"],
+            "requires-python": ">=3.13",
+        }
+    }
+
+    assert python_versions(pyproject, max_version="3.15") == [
+        "3.13",
+        "3.14",
+        "3.15",
+        "3.14t",
+        "3.15t",
+    ]
+    assert python_versions(pyproject, max_version="3.13") == ["3.13"]
+
+
 def test_no_classifiers() -> None:
     pyproject = {"project": {"requires-python": ">=3.10"}}
     with pytest.raises(ValueError, match="No Python version classifiers"):
