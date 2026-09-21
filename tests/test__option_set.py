@@ -169,6 +169,23 @@ class TestOptions:
             options.default_venv_backend = None  # type: ignore[assignment]
 
 
+class TestAnalyzeType:
+    @pytest.mark.parametrize(
+        ("tp", "kind"),
+        [
+            (bool, "flag"),
+            (list[str], "list"),
+            (tuple[str, ...], "list"),
+            (str, "value"),
+            (list[str] | None, "list"),
+            (list[str] | tuple[str, ...] | None, "list"),
+            (list[str] | str, "value"),
+        ],
+    )
+    def test_kinds(self, tp: object, kind: str) -> None:
+        assert _option_set._analyze_type(tp)[0] == kind
+
+
 class TestMerge:
     def parse_and_merge(
         self, args: list[str], noxfile_config: _options.NoxfileOptions
