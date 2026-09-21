@@ -346,9 +346,9 @@ class Manifest:
                 func.python = _unique_list(*extra_pythons)
 
         # If the func has the python attribute set to a list, we'll need
-        # to expand them.
+        # to expand them. Duplicates would make identical sessions.
         if isinstance(func.python, (list, tuple, set)):
-            for python in func.python:
+            for python in _unique_list(*func.python):
                 single_func = func.copy()
                 single_func.python = python
                 sessions.extend(self.make_session(name, single_func, multi=True))
