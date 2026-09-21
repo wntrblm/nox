@@ -64,6 +64,60 @@ def wrapjoin(seq: Iterable[Any]) -> str:
     return ", ".join(repr(str(item)) for item in seq)
 
 
+def _split_windows_command(command: str) -> list[str]:
+    """
+    Split a command line quoted by ``subprocess.list2cmdline``, which is what
+    tox uses on Windows. ``shlex`` only understands POSIX quoting.
+    """
+    args: list[str] = []
+    current: list[str] = []
+    backslashes = 0
+    in_quotes = False
+    started = False
+
+    for char in command:
+        if char == "\\":
+            backslashes += 1
+            continue
+        if char == '"':
+            # Only backslashes before a quote are special, and they pair up.
+            current.append("\\" * (backslashes // 2))
+            if backslashes % 2:
+                current.append('"')
+            else:
+                in_quotes = not in_quotes
+            backslashes = 0
+            started = True
+            continue
+        if backslashes:
+            current.append("\\" * backslashes)
+            backslashes = 0
+            started = True
+        if char in " \t" and not in_quotes:
+            if started:
+                args.append("".join(current))
+                current = []
+                started = False
+        else:
+            current.append(char)
+            started = True
+
+    if backslashes:
+        current.append("\\" * backslashes)
+        started = True
+    if started:
+        args.append("".join(current))
+
+    return args
+
+
+def _split_command(command: str) -> list[str]:
+    """Split a command the same way tox quoted it for the current platform."""
+    if sys.platform == "win32":  # pragma: no cover
+        return _split_windows_command(command)
+    return shlex.split(command)
+
+
 def fixname(envname: str) -> str:
     """
     Replace dashes with underscores. Tox 4+ requires valid identifiers for
@@ -111,7 +165,8 @@ def main() -> None:
         config[name]["set_env"] = set_env
 
         config[name]["commands"] = [
-            wrapjoin(shlex.split(c)) for c in section["commands"].strip().splitlines()
+            wrapjoin(_split_command(c))
+            for c in section["commands"].strip().splitlines()
         ]
 
         config[name]["deps"] = wrapjoin(

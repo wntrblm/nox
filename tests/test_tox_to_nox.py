@@ -17,6 +17,7 @@ from __future__ import annotations
 import ast
 import os
 import shutil
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -187,6 +188,23 @@ def test_commands_keep_quoted_path_with_spaces(
     )
 
     assert "session.run('python', '--path', '/tmp/foo bar')" in result
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["python", "-c", "print('hello')"],
+        ["python", "--path", r"C:\new\test"],
+        ["python", "--name", "O'Reilly"],
+        ["python", "--path", "C:\\ends\\with\\sep\\"],
+        ["python", "--text", 'a "quoted" word'],
+        ["python", "--empty", ""],
+        ["python", "--space", "two words"],
+    ],
+)
+def test_split_windows_command_roundtrip(args: list[str]) -> None:
+    """Windows tox quotes commands with list2cmdline, so we must invert it."""
+    assert tox_to_nox._split_windows_command(subprocess.list2cmdline(args)) == args
 
 
 @pytest.mark.parametrize(
