@@ -156,7 +156,7 @@ class TestOptions:
             verbose=False,
         )
         options.sessions = ["testytest"]
-        options.sessions = ("testytest",)  # type: ignore[assignment]
+        options.sessions = ("testytest",)
         with pytest.raises(ValueError):  # noqa: PT011
             options.sessions = "testytest"  # type: ignore[assignment]
 
@@ -167,6 +167,23 @@ class TestOptions:
             options.reuse_venv = None  # type: ignore[assignment]
         with pytest.raises(TypeError):
             options.default_venv_backend = None  # type: ignore[assignment]
+
+
+class TestAnalyzeType:
+    @pytest.mark.parametrize(
+        ("tp", "kind"),
+        [
+            (bool, "flag"),
+            (list[str], "list"),
+            (tuple[str, ...], "list"),
+            (str, "value"),
+            (list[str] | None, "list"),
+            (list[str] | tuple[str, ...] | None, "list"),
+            (list[str] | str, "value"),
+        ],
+    )
+    def test_kinds(self, tp: object, kind: str) -> None:
+        assert _option_set._analyze_type(tp)[0] == kind
 
 
 class TestMerge:
@@ -183,6 +200,17 @@ class TestMerge:
         config = self.parse_and_merge([], noxfile_config)
 
         assert config.sessions == ["lint"]
+
+    def test_noxfile_tuple_sessions(self) -> None:
+        """A tuple is accepted, not only a list (gh-1172)."""
+        noxfile_config = _options.NoxfileOptions()
+        noxfile_config.sessions = ("lint", "test")
+        noxfile_config.tags = ("fast",)
+        config = self.parse_and_merge([], noxfile_config)
+
+        assert config.sessions == ("lint", "test")
+        argv = to_argv(config)
+        assert argv[argv.index("--session") :][:3] == ["--session", "lint", "test"]
 
     def test_cli_beats_noxfile(self) -> None:
         noxfile_config = _options.NoxfileOptions()
