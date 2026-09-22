@@ -210,6 +210,19 @@ def test_split_windows_command_roundtrip(args: list[str]) -> None:
 @pytest.mark.parametrize(
     ("command", "expected"),
     [
+        ("", []),
+        ("   ", []),
+        ("  python  -c \tcode  ", ["python", "-c", "code"]),
+    ],
+)
+def test_split_windows_command_padding(command: str, expected: list[str]) -> None:
+    """Extra whitespace around and between arguments is dropped."""
+    assert tox_to_nox._split_windows_command(command) == expected
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    [
         ('''python -c "print('hello')"''', ["python", "-c", "print('hello')"]),
         (r"python --path 'C:\new\test'", ["python", "--path", r"C:\new\test"]),
         ('''python --name "O'Reilly"''', ["python", "--name", "O'Reilly"]),
