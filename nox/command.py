@@ -24,13 +24,18 @@ import sys
 from typing import TYPE_CHECKING, Literal, overload
 
 from nox.logger import logger
-from nox.popen import DEFAULT_INTERRUPT_TIMEOUT, DEFAULT_TERMINATE_TIMEOUT, popen
+from nox.popen import (
+    DEFAULT_INTERRUPT_TIMEOUT,
+    DEFAULT_TERMINATE_TIMEOUT,
+    popen,
+    tee_popen,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
     from typing import IO
 
-__all__ = ["CommandFailed", "ExternalType", "run", "which"]
+__all__ = ["CommandFailed", "ExternalType", "run", "run_capture", "which"]
 
 _PLATFORM = sys.platform
 
@@ -219,3 +224,98 @@ def run(
         raise
 
     return output if silent else True
+
+
+def run_capture(
+    args: Sequence[str | os.PathLike[str]],
+    *,
+    env: Mapping[str, str | None] | None = None,
+    silent: bool = False,
+    paths: Sequence[str | os.PathLike[str]] | None = None,
+    success_codes: Iterable[int] | None = None,
+    success_all: bool = False,
+    log: bool = True,
+    external: ExternalType = False,
+    interrupt_timeout: float | None = DEFAULT_INTERRUPT_TIMEOUT,
+    terminate_timeout: float | None = DEFAULT_TERMINATE_TIMEOUT,
+) -> tuple[str, str, int]:
+    """Run a command-line program."""
+
+    if success_all:
+        if success_codes is not None:
+            msg = "Cannot use success_all=True with success_codes."
+            raise ValueError(msg)
+        success_codes = None
+    elif success_codes is None:
+        success_codes = [0]
+
+    cmd, args = args[0], args[1:]
+    full_cmd = f"{cmd} {_shlex_join(args)}"
+
+    cmd_path = which(os.fspath(cmd), paths)
+    str_args = [os.fspath(arg) for arg in args]
+
+    if log:
+        logger.info(full_cmd)
+
+    is_external_tool = paths is not None and not any(
+        cmd_path.startswith(str(path)) for path in paths
+    )
+    if is_external_tool:
+        if external == "error":
+            logger.error(
+                f"Error: {cmd} is not installed into the virtualenv, it is located"
+                f" at {cmd_path}. Pass external=True into run() to explicitly allow"
+                " this."
+            )
+            msg = "External program disallowed."
+            raise CommandFailed(msg)
+        if external is False and log:
+            logger.warning(
+                f"Warning: {cmd} is not installed into the virtualenv, it is"
+                f" located at {cmd_path}. This might cause issues! Pass"
+                " external=True into run() to silence this message."
+            )
+
+    env = _clean_env(env)
+
+    try:
+        if silent:
+            return_code, stdout_res, stderr_res = popen(
+                [cmd_path, *str_args],
+                silent=False,
+                return_stderr=True,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                interrupt_timeout=interrupt_timeout,
+                terminate_timeout=terminate_timeout,
+            )
+        else:
+            return_code, stdout_res, stderr_res = tee_popen(
+                [cmd_path, *str_args],
+                env=env,
+                interrupt_timeout=interrupt_timeout,
+                terminate_timeout=terminate_timeout,
+            )
+
+        if success_codes is not None and return_code not in success_codes:
+            suffix = ":" if (silent and stderr_res) else ""
+            logger.error(
+                f"Command {full_cmd} failed with exit code {return_code}{suffix}"
+            )
+
+            if silent and stderr_res:
+                logger.error(stderr_res)
+
+            msg = f"Returned code {return_code}"
+            raise CommandFailed(msg)
+
+        if joined_out := "\n".join([out for out in (stderr_res, stdout_res) if out]):
+            logger.output(joined_out)
+
+    except KeyboardInterrupt:
+        logger.error("Interrupted...")
+        raise
+
+    return stdout_res, stderr_res, return_code
