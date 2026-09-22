@@ -127,8 +127,8 @@ Nox does not impose a separate supported-version range on the Python
 interpreters used by sessions. A target version works when Nox can discover or
 download its interpreter and the selected environment backend can create an
 environment with it. Backends and the packages they use may have their own
-Python support ranges; see the end-of-life Python guidance below when targeting
-older versions.
+Python support ranges. Any non end-of-life Python should work, and
+a few older Python versions usually work too depending on the backend.
 
 You can also tell Nox to run your session against multiple Python interpreters. Nox will create a separate virtualenv and run the session for each interpreter you specify. For example, this session will run twice - once for Python 3.13 and once for Python 3.14:
 
