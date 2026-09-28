@@ -657,8 +657,9 @@ in ``nox.options.sessions``:
     nox.alias("style", "tooling:lint")
 
 Aliases are expanded recursively at selection time (a cycle is an error)
-and don't appear as sessions themselves. An alias that shadows an existing
-task name takes precedence, with a warning.
+and don't appear as sessions themselves; ``nox --list`` shows them in a
+separate section with their targets. An alias that shadows an existing task
+name takes precedence, with a warning.
 
 Environment API reference
 ~~~~~~~~~~~~~~~~~~~~~~~~~
