@@ -326,6 +326,11 @@ def _produce_listing(manifest: Manifest, global_config: NoxConfig) -> None:
         f" with {skipped_color}-{reset} are skipped."
     )
 
+    if aliases := manifest.aliases:
+        print("\nAliases:\n")
+        for name, targets in aliases.items():
+            print(f"  {selected_color}{name}{reset} -> {', '.join(targets)}")
+
 
 def _produce_json_listing(manifest: Manifest, global_config: NoxConfig) -> None:  # noqa: ARG001
     report = []

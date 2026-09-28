@@ -103,6 +103,15 @@ class TestOptions:
         expected_sessions = ["testytest", "lintylint", "typeytype"]
         assert expected_sessions == list(actual_sessions_from_file)
 
+    def test_session_completer_aliases(self) -> None:
+        parsed_args = _options.options.namespace(
+            posargs=[],
+            noxfile=str(RESOURCES.joinpath("noxfile_aliases.py")),
+        )
+        assert list(
+            _completers.session_completer(prefix="", parsed_args=parsed_args)
+        ) == ["tooling:lint", "tooling:fmt", "check"]
+
     def test_session_completer_invalid_sessions(self) -> None:
         parsed_args = _options.options.namespace(
             sessions=("baz",), keywords=None, posargs=[]
