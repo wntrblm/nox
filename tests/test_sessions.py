@@ -366,6 +366,15 @@ class TestSession:
         assert "rich" in run.call_args_list[0][0][0]
         assert DIR / "resources/pep721example1.py" in run.call_args_list[1][0][0]
 
+    def test_run_install_script_no_dependencies(self) -> None:
+        session, _ = self.make_session_and_runner()
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.install_and_run_script(DIR / "resources/pep723nodeps.py")
+
+        assert len(run.call_args_list) == 1
+        assert DIR / "resources/pep723nodeps.py" in run.call_args_list[0][0][0]
+
     def test_run_overly_env(self) -> None:
         session, runner = self.make_session_and_runner()
         assert runner.venv

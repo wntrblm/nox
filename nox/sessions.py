@@ -288,7 +288,8 @@ class Session:
         Install dependencies and run a Python script.
         """
         deps = nox.project.load_toml(script).get("dependencies", [])
-        self.install(*deps)
+        if deps:
+            self.install(*deps)
 
         return self.run(
             "python",
