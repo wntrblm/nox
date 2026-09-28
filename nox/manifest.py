@@ -111,6 +111,11 @@ class Manifest:
                 for session in self.make_session(name, func):
                     self.add_session(session)
 
+    @property
+    def aliases(self) -> dict[str, tuple[str, ...]]:
+        """The registered aliases, mapped to their direct targets."""
+        return dict(self._aliases)
+
     def check_location_collisions(self) -> None:
         """Error if two selected environment instances share one location.
 

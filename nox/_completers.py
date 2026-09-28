@@ -97,8 +97,9 @@ def session_completer(
     filtered_manifest = filter_manifest(manifest, config)
     if isinstance(filtered_manifest, int):
         return []
-    return (
-        session.friendly_name for session, _ in filtered_manifest.list_all_sessions()
+    return itertools.chain(
+        (session.friendly_name for session, _ in filtered_manifest.list_all_sessions()),
+        filtered_manifest.aliases,
     )
 
 

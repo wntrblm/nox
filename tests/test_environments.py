@@ -469,6 +469,36 @@ def test_filter_by_keywords_env_name() -> None:
     assert len(manifest) == 2
 
 
+# Listing
+
+
+def test_list_shows_aliases(capsys: pytest.CaptureFixture[str]) -> None:
+    make_selection_envs()
+    nox.alias("check", "tooling:lint", "tooling:typecheck")
+    nox.alias("ci", "check", "docs")
+    config = nox._options.options.namespace(
+        posargs=[], list_sessions=True, noxfile="noxfile.py", color=False
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    assert nox.tasks.honor_list_request(manifest, global_config=config) == 0
+    out = capsys.readouterr().out
+    assert out.endswith(
+        "\nAliases:\n\n"
+        "  check -> tooling:lint, tooling:typecheck\n"
+        "  ci -> check, docs\n"
+    )
+
+
+def test_list_without_aliases(capsys: pytest.CaptureFixture[str]) -> None:
+    make_selection_envs()
+    config = nox._options.options.namespace(
+        posargs=[], list_sessions=True, noxfile="noxfile.py", color=False
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    assert nox.tasks.honor_list_request(manifest, global_config=config) == 0
+    assert "Aliases" not in capsys.readouterr().out
+
+
 # Dependencies
 
 
