@@ -1152,7 +1152,12 @@ def test_noxfile_script_mode(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
     dist_info.joinpath("METADATA").write_text(
         "Metadata-Version: 2.1\nName: nox\nVersion: 999\n", encoding="utf-8"
     )
-    monkeypatch.setenv("PYTHONPATH", str(outer_packages))
+    # Keep any existing PYTHONPATH so nox stays importable when it is only
+    # installed via PYTHONPATH (e.g. FreeBSD ports), with the fake nox first.
+    pythonpath = [str(outer_packages)]
+    if existing := os.environ.get("PYTHONPATH"):
+        pythonpath.append(existing)
+    monkeypatch.setenv("PYTHONPATH", os.pathsep.join(pythonpath))
     job = subprocess.run(
         [
             sys.executable,
