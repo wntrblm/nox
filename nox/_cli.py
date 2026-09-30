@@ -120,11 +120,17 @@ def get_dependencies(
 
         dist_list = info.get_all("requires-dist") or []
         extra_list = [packaging.requirements.Requirement(mk) for mk in dist_list]
-        for extra in req.extras:
-            for ireq in extra_list:
-                if ireq.marker and not ireq.marker.evaluate({"extra": extra}):
-                    continue
-                yield from expand(ireq)
+        # "" stands for the base install (no extra): a mandatory dependency
+        # has no marker at all and must always be walked, not just when some
+        # extra happens to be requested. An entry conditioned on a specific
+        # extra is only walked for that extra.
+        wanted_extras = {"", *req.extras}
+        for ireq in extra_list:
+            if ireq.marker and not any(
+                ireq.marker.evaluate({"extra": extra}) for extra in wanted_extras
+            ):
+                continue
+            yield from expand(ireq)
 
     yield from expand(req)
 
