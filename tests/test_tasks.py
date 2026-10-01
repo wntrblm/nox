@@ -18,6 +18,7 @@ import argparse
 import builtins
 import copy
 import json
+import logging
 import os
 import platform
 import typing
@@ -429,6 +430,21 @@ def test_merge_tags(generate_noxfile_options: Callable[..., str]) -> None:
     return_value = tasks.filter_manifest(manifest, config)
     assert return_value is manifest
     assert len(manifest) == 2
+
+
+@pytest.mark.usefixtures("reset_global_nox_options")
+def test_merge_noxfile_options_verbose_shows_output() -> None:
+    nox.options.verbose = True
+    config = _options.options.namespace(posargs=[])
+    root = logging.getLogger()
+    level = root.level
+    # Logging is set up from the command line, before the Noxfile runs.
+    root.setLevel(logging.DEBUG)
+    try:
+        tasks.merge_noxfile_options(mock.sentinel.module, config)
+        assert nox.logger.logger.isEnabledFor(nox.logger.OUTPUT)
+    finally:
+        root.setLevel(level)
 
 
 @pytest.mark.parametrize("selection", [None, ["qux"], ["quuz"], ["qux", "quuz"]])
