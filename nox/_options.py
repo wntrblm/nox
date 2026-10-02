@@ -556,6 +556,19 @@ class NoxConfig(NoxfileOptions):
             help="Skip session.run invocations in the Noxfile.",
         ),
     )
+    dry_run: bool = attrs.field(
+        default=False,
+        metadata=opt(
+            "--dry-run",
+            group="execution",
+            help=(
+                "Run the selected session functions without creating virtualenvs"
+                " or running commands; commands are only logged. Other code in the"
+                " Noxfile (e.g. shutil.rmtree) still runs; check session.dry_run"
+                " to guard it."
+            ),
+        ),
+    )
     no_install: bool = attrs.field(
         default=False,
         metadata=opt(

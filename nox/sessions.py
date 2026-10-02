@@ -270,6 +270,17 @@ class Session:
         """
         return self._runner.global_config.parallel_worker
 
+    @property
+    def dry_run(self) -> bool:
+        """Whether Nox was invoked with ``--dry-run``.
+
+        In a dry run, Nox does not create virtualenvs and only logs the
+        commands passed to :meth:`run`, :meth:`install` and friends. Any other
+        code in the session function still runs, so guard side effects such as
+        file deletion with this property.
+        """
+        return self._runner.global_config.dry_run
+
     def install_and_run_script(
         self,
         script: str | os.PathLike[str],
@@ -666,6 +677,11 @@ class Session:
         terminate_timeout: float | None,
     ) -> str | bool:
         """Like run(), except that it runs even if --install-only is provided."""
+        if self._runner.global_config.dry_run:
+            if log and not callable(args[0]):
+                logger.info(f"{args[0]} {nox.command._shlex_join(args[1:])}")
+            return "" if silent else True
+
         # Legacy support - run a function given.
         if callable(args[0]):
             return self._run_func(args[0], args[1:])  # type: ignore[unreachable]
@@ -1172,6 +1188,8 @@ class SessionRunner:
             venv_params=self.func.venv_params,
         )
 
+        if self.global_config.dry_run:
+            return
         self.venv.create()
 
     def reuse_existing_venv(self) -> bool:
@@ -1201,10 +1219,18 @@ class SessionRunner:
             cwd = os.path.realpath(os.path.dirname(self.global_config.noxfile))
 
             with _chdir(cwd):
+                if self.global_config.dry_run:
+                    logger.warning(
+                        "Dry run: no virtualenv will be created and no commands will run."
+                    )
                 self._create_venv()
                 session = Session(self)
                 session.env["NOX_CURRENT_SESSION"] = session.name
                 self.func(session)
+                if self.global_config.dry_run:
+                    logger.warning(
+                        f"Dry run of session {self.friendly_name} complete; nothing was executed."
+                    )
 
             # Nothing went wrong; return a success.
             self.result = Result(
