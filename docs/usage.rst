@@ -327,6 +327,21 @@ By default Nox will continue to run all sessions even if one fails. You can use 
 If the Noxfile sets ``nox.options.stop_on_first_error``, you can override the Noxfile setting from the command line by using ``--no-stop-on-first-error``.
 
 
+.. _opt-retries:
+
+Retrying failed sessions
+------------------------
+
+Sessions that declare ``retries=`` (see :ref:`retrying-sessions`) are re-run
+when one of their commands fails. ``--retries`` replaces that number for every
+session in this run, and ``--retry-delay`` replaces the number of seconds
+waited before the first retry::
+
+    nox --retries 2 --retry-delay 10
+
+Both must be zero or greater. ``--retries 0`` turns retrying off even for
+sessions that ask for it.
+
 .. _opt-parallel:
 
 Running sessions in parallel

@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
 
@@ -93,6 +93,50 @@ def test_session_decorator_allow_parallel() -> None:
     assert concurrent.allow_parallel is True
     # Copies (e.g. per-interpreter expansion) keep the flag.
     assert concurrent.copy("copied").allow_parallel is True
+
+
+def test_session_decorator_retries() -> None:
+    @registry.session_decorator
+    def default(session: nox.Session) -> None:
+        pass
+
+    @registry.session_decorator(
+        retries=3, retry_delay=0.5, retry_backoff=2, retry_on=[1, 137]
+    )
+    def flaky(session: nox.Session) -> None:
+        pass
+
+    assert default.retries == 0
+    assert default.retry_delay == 0
+    assert default.retry_backoff == 1
+    assert default.retry_on is None
+    assert flaky.retries == 3
+    assert flaky.retry_delay == 0.5
+    assert flaky.retry_backoff == 2
+    assert flaky.retry_on == [1, 137]
+
+    # Copies (e.g. per-interpreter expansion) keep the settings.
+    copied = flaky.copy("copied")
+    assert copied.retries == 3
+    assert copied.retry_delay == 0.5
+    assert copied.retry_backoff == 2
+    assert copied.retry_on == [1, 137]
+
+
+@pytest.mark.parametrize(
+    "option",
+    [{"retries": -1}, {"retry_delay": -0.5}, {"retry_backoff": 0.5}],
+)
+def test_session_decorator_invalid_retry_options(option: dict[str, Any]) -> None:
+    (name,) = option
+
+    def unit_tests(session: nox.Session) -> None:
+        pass
+
+    with pytest.raises(ValueError, match=name):
+        registry.session_decorator(**option)(unit_tests)
+
+    assert not registry.get()
 
 
 def test_session_decorator_py_alias() -> None:
