@@ -40,6 +40,9 @@ import nox.virtualenv
 from nox import _options
 from nox.logger import logger
 
+if typing.TYPE_CHECKING:
+    from collections.abc import Callable
+
 DIR = Path(__file__).parent.resolve()
 
 
@@ -1169,6 +1172,7 @@ class TestSessionRunner:
         func.venv_params = []
         func.reuse_venv = False
         func.requires = []
+        func.retries = 0
         return nox.sessions.SessionRunner(
             name="test",
             signatures=["test(1, 2)"],
@@ -1428,6 +1432,7 @@ class TestSessionRunner:
             session.error("meep")
 
         func.requires = []  # type: ignore[attr-defined]
+        func.retries = 0  # type: ignore[attr-defined]
         runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
@@ -1441,6 +1446,7 @@ class TestSessionRunner:
             session.skip("meep")
 
         func.requires = []  # type: ignore[attr-defined]
+        func.retries = 0  # type: ignore[attr-defined]
         runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
@@ -1507,6 +1513,7 @@ class TestSessionRunner:
             raise nox.command.CommandFailed()
 
         func.requires = []  # type: ignore[attr-defined]
+        func.retries = 0  # type: ignore[attr-defined]
         runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
@@ -1531,6 +1538,7 @@ class TestSessionRunner:
             raise KeyboardInterrupt()
 
         func.requires = []  # type: ignore[attr-defined]
+        func.retries = 0  # type: ignore[attr-defined]
         runner.func = func  # type: ignore[assignment]
 
         with pytest.raises(KeyboardInterrupt):
@@ -1544,6 +1552,7 @@ class TestSessionRunner:
             raise ValueError(msg)
 
         func.requires = []  # type: ignore[attr-defined]
+        func.retries = 0  # type: ignore[attr-defined]
         runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
@@ -1562,11 +1571,190 @@ class TestSessionRunner:
             )
 
         func.requires = []  # type: ignore[attr-defined]
+        func.retries = 0  # type: ignore[attr-defined]
         runner.func = func  # type: ignore[assignment]
 
         result = runner.execute()
 
         assert result
+
+    def make_retry_runner(
+        self,
+        func: Callable[[nox.Session], None],
+        *,
+        sleeps: list[float],
+        monkeypatch: pytest.MonkeyPatch,
+        **retry_options: Any,
+    ) -> nox.sessions.SessionRunner:
+        monkeypatch.setattr("time.sleep", sleeps.append)
+        runner = self.make_runner_with_mock_venv()
+        runner.func = nox._decorators.Func(func, **retry_options)
+        return runner
+
+    def test_execute_retries_until_success(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        attempts: list[int] = []
+        sleeps: list[float] = []
+
+        def func(session: nox.Session) -> None:
+            attempts.append(session.current_attempt)
+            if session.current_attempt < 2:
+                raise nox.command.CommandFailed(return_code=1)
+
+        runner = self.make_retry_runner(
+            func, sleeps=sleeps, monkeypatch=monkeypatch, retries=3
+        )
+
+        result = runner.execute()
+
+        assert result.status == nox.sessions.Status.SUCCESS
+        assert attempts == [0, 1, 2]
+        assert runner._create_venv.call_count == 3  # type: ignore[attr-defined]
+        assert sleeps == []
+        assert "retry 1 of 3" in caplog.text
+        assert "retry 2 of 3" in caplog.text
+
+    def test_execute_retries_exhausted(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        attempts: list[int] = []
+
+        def func(session: nox.Session) -> None:
+            attempts.append(session.current_attempt)
+            raise nox.command.CommandFailed(return_code=1)
+
+        runner = self.make_retry_runner(
+            func, sleeps=[], monkeypatch=monkeypatch, retries=2
+        )
+
+        result = runner.execute()
+
+        assert result.status == nox.sessions.Status.FAILED
+        assert attempts == [0, 1, 2]
+        assert runner.result is result
+
+    def test_execute_without_retries_runs_once(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        attempts: list[int] = []
+
+        def func(session: nox.Session) -> None:
+            attempts.append(session.current_attempt)
+            raise nox.command.CommandFailed(return_code=1)
+
+        runner = self.make_retry_runner(func, sleeps=[], monkeypatch=monkeypatch)
+
+        assert runner.execute().status == nox.sessions.Status.FAILED
+        assert attempts == [0]
+
+    def test_execute_retry_delay_and_backoff(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        sleeps: list[float] = []
+
+        def func(session: nox.Session) -> None:  # noqa: ARG001
+            raise nox.command.CommandFailed(return_code=1)
+
+        runner = self.make_retry_runner(
+            func,
+            sleeps=sleeps,
+            monkeypatch=monkeypatch,
+            retries=3,
+            retry_delay=1.0,
+            retry_backoff=2.0,
+        )
+
+        runner.execute()
+
+        assert sleeps == [1.0, 2.0, 4.0]
+
+    @pytest.mark.parametrize(
+        ("return_code", "retried"),
+        [(137, True), (1, False), (None, False)],
+    )
+    def test_execute_retry_on(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        return_code: int | None,
+        retried: bool,
+    ) -> None:
+        attempts: list[int] = []
+
+        def func(session: nox.Session) -> None:
+            attempts.append(session.current_attempt)
+            raise nox.command.CommandFailed(return_code=return_code)
+
+        runner = self.make_retry_runner(
+            func, sleeps=[], monkeypatch=monkeypatch, retries=1, retry_on=[137]
+        )
+
+        runner.execute()
+
+        assert attempts == ([0, 1] if retried else [0])
+
+    @pytest.mark.parametrize(
+        ("raises", "status"),
+        [
+            (nox.sessions._SessionSkip, nox.sessions.Status.SKIPPED),
+            (nox.sessions._SessionQuit, nox.sessions.Status.ABORTED),
+            (ValueError, nox.sessions.Status.FAILED),
+        ],
+    )
+    def test_execute_does_not_retry_other_outcomes(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        raises: type[Exception],
+        status: nox.sessions.Status,
+    ) -> None:
+        attempts: list[int] = []
+
+        def func(session: nox.Session) -> None:
+            attempts.append(session.current_attempt)
+            raise raises
+
+        runner = self.make_retry_runner(
+            func, sleeps=[], monkeypatch=monkeypatch, retries=3
+        )
+
+        assert runner.execute().status == status
+        assert attempts == [0]
+
+    def test_execute_retry_settings_from_config(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        attempts: list[int] = []
+        sleeps: list[float] = []
+
+        def func(session: nox.Session) -> None:
+            attempts.append(session.current_attempt)
+            raise nox.command.CommandFailed(return_code=1)
+
+        runner = self.make_retry_runner(
+            func, sleeps=sleeps, monkeypatch=monkeypatch, retries=0, retry_delay=10.0
+        )
+        runner.global_config.retries = 1
+        runner.global_config.retry_delay = 0.5
+
+        runner.execute()
+
+        assert attempts == [0, 1]
+        assert sleeps == [0.5]
+
+    def test_session_exposes_retry_state(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen: list[tuple[int, int, bool]] = []
+
+        def func(session: nox.Session) -> None:
+            seen.append(
+                (session.current_attempt, session.max_retries, session.is_final_attempt)
+            )
+            raise nox.command.CommandFailed(return_code=1)
+
+        runner = self.make_retry_runner(
+            func, sleeps=[], monkeypatch=monkeypatch, retries=2
+        )
+
+        runner.execute()
+
+        assert seen == [(0, 2, False), (1, 2, False), (2, 2, True)]
 
 
 class TestResult:

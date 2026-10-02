@@ -79,6 +79,10 @@ class Func:
         requires: Sequence[str] | None = None,
         download_python: Literal["auto", "never", "always"] | None = None,
         allow_parallel: bool | None = None,
+        retries: int = 0,
+        retry_delay: float = 0.0,
+        retry_backoff: float = 1.0,
+        retry_on: Sequence[int] | None = None,
     ) -> None:
         self.func = func
         self.python = python
@@ -92,6 +96,10 @@ class Func:
         self.requires = list(requires or [])
         self.download_python = download_python
         self.allow_parallel = allow_parallel
+        self.retries = retries
+        self.retry_delay = retry_delay
+        self.retry_backoff = retry_backoff
+        self.retry_on = retry_on
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r})"
@@ -115,6 +123,10 @@ class Func:
             requires=self._requires,
             download_python=self.download_python,
             allow_parallel=self.allow_parallel,
+            retries=self.retries,
+            retry_delay=self.retry_delay,
+            retry_backoff=self.retry_backoff,
+            retry_on=self.retry_on,
         )
 
     @property
@@ -172,6 +184,10 @@ class Call(Func):
             requires=func.requires,
             download_python=func.download_python,
             allow_parallel=func.allow_parallel,
+            retries=func.retries,
+            retry_delay=func.retry_delay,
+            retry_backoff=func.retry_backoff,
+            retry_on=func.retry_on,
         )
         self.call_spec = call_spec
         self.session_signature = session_signature
