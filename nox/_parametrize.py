@@ -111,10 +111,30 @@ def _apply_param_specs(param_specs: Iterable[Param], f: Any) -> Any:
 ArgValue = Param | Iterable[Any]
 
 
+def _generate_id(
+    id_func: Callable[[Any], str | None],
+    arg_names: Sequence[str],
+    arg_values: Iterable[Any],
+) -> str:
+    """Build a parameter ID by applying ``id_func`` to each argument value.
+
+    For each argument, ``id_func`` is called with its value. A string return
+    value is used as-is; any other return value (including ``None``) falls back
+    to the default ``name=value`` representation for that argument. The
+    per-argument pieces are then joined the same way automatically generated
+    IDs are.
+    """
+    parts = []
+    for name, value in zip(arg_names, arg_values, strict=True):
+        result = id_func(value)
+        parts.append(result if isinstance(result, str) else f"{name}={value!r}")
+    return ", ".join(parts)
+
+
 def parametrize_decorator(
     arg_names: str | Sequence[str],
     arg_values_list: Iterable[ArgValue] | ArgValue,
-    ids: Iterable[str | None] | None = None,
+    ids: Iterable[str | None] | Callable[[Any], str | None] | None = None,
     tags: Iterable[Sequence[str]] | None = None,
 ) -> Callable[[Any], Any]:
     """Parametrize a session.
@@ -133,8 +153,13 @@ def parametrize_decorator(
             argument names were specified, this must be a list of N-tuples,
             where each tuple-element specifies a value for its respective
             argument name, for example ``[(1, 'a'), (2, 'b')]``.
-        ids (Sequence[str]): Optional sequence of test IDs to use for the
-            parametrized arguments.
+        ids (Sequence[str] | Callable[[Any], str | None]): Optional IDs used to
+            name the parametrized arguments. Either a sequence of IDs aligned
+            with ``arg_values_list``, or, mirroring pytest, a callable that is
+            invoked with each argument value and returns the ID to use for that
+            value (return ``None`` to fall back to the automatically generated
+            ID). A callable is convenient for producing shell-friendly session
+            names, for example ``ids=lambda v: v.replace(" ", "-")``.
         tags (Iterable[Sequence[str]]): Optional iterable of tags to associate
             with the parametrized arguments.
     """
@@ -162,8 +187,14 @@ def parametrize_decorator(
     else:
         _arg_values_list = list(arg_values_list)
 
-    # if ids aren't specified at all, make them an empty list for zip.
-    if not ids:
+    # ``ids`` may be a callable that generates an ID from each parameter's
+    # value(s) (like pytest), or a sequence of IDs aligned with the values.
+    id_func: Callable[[Any], str | None] | None = None
+    if callable(ids):
+        id_func = ids
+        ids = []
+    elif not ids:
+        # if ids aren't specified at all, make them an empty list for zip.
         ids = []
 
     if tags is None:
@@ -181,6 +212,8 @@ def parametrize_decorator(
             param_spec = Param(
                 *param_arg_values, arg_names=arg_names, id=param_id, tags=param_tags
             )
+            if id_func is not None:
+                param_spec.id = _generate_id(id_func, arg_names, param_arg_values)
 
         param_specs.append(param_spec)
 

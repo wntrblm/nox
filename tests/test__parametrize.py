@@ -94,6 +94,74 @@ def test_parametrize_decorator_id_list() -> None:
     ]
 
 
+def test_parametrize_decorator_id_function() -> None:
+    def f() -> None:
+        pass
+
+    _parametrize.parametrize_decorator(
+        "abc", ["a b", "c d"], ids=lambda value: value.replace(" ", "-")
+    )(f)
+
+    arg_names = ("abc",)
+    assert f.parametrize == [  # type: ignore[attr-defined]
+        _parametrize.Param("a b", arg_names=arg_names, id="a-b"),
+        _parametrize.Param("c d", arg_names=arg_names, id="c-d"),
+    ]
+
+
+def test_parametrize_decorator_id_function_falls_back() -> None:
+    def f() -> None:
+        pass
+
+    # Returning a non-string (here ``None``) falls back to the default
+    # ``name=value`` representation for that value.
+    _parametrize.parametrize_decorator(
+        "abc", [1, 2], ids=lambda value: "one" if value == 1 else None
+    )(f)
+
+    arg_names = ("abc",)
+    assert f.parametrize == [  # type: ignore[attr-defined]
+        _parametrize.Param(1, arg_names=arg_names, id="one"),
+        _parametrize.Param(2, arg_names=arg_names, id="abc=2"),
+    ]
+
+
+def test_parametrize_decorator_id_function_multiple_args() -> None:
+    def f() -> None:
+        pass
+
+    _parametrize.parametrize_decorator(
+        "abc, def",
+        [("a", 1), ("b", 2)],
+        ids=lambda value: str(value) if isinstance(value, str) else None,
+    )(f)
+
+    arg_names = ("abc", "def")
+    assert f.parametrize == [  # type: ignore[attr-defined]
+        _parametrize.Param("a", 1, arg_names=arg_names, id="a, def=1"),
+        _parametrize.Param("b", 2, arg_names=arg_names, id="b, def=2"),
+    ]
+
+
+def test_parametrize_decorator_id_function_ignores_explicit_param_ids() -> None:
+    def f() -> None:
+        pass
+
+    # An explicit nox.param(..., id=...) keeps its own ID; the id callable only
+    # applies to bare values.
+    _parametrize.parametrize_decorator(
+        "abc",
+        [_parametrize.Param("a b", id="explicit"), "c d"],
+        ids=lambda value: value.replace(" ", "-"),
+    )(f)
+
+    arg_names = ("abc",)
+    assert f.parametrize == [  # type: ignore[attr-defined]
+        _parametrize.Param("a b", arg_names=arg_names, id="explicit"),
+        _parametrize.Param("c d", arg_names=arg_names, id="c-d"),
+    ]
+
+
 def test_parametrize_decorator_multiple_args_as_list() -> None:
     def f() -> None:
         pass
