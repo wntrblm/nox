@@ -727,3 +727,48 @@ def test_output_decoding_both_fail(monkeypatch: pytest.MonkeyPatch) -> None:
         nox.popen.decode_output(b"\x95")
 
     assert exc.value.encoding == "ascii"
+
+
+def test_run_background_and_stop() -> None:
+    command = nox.command.run_background([PYTHON, "-c", "import time; time.sleep(30)"])
+    try:
+        # The process keeps running until we stop it.
+        assert command.poll() is None
+        assert command.returncode is None
+    finally:
+        command.stop()
+
+    assert command.poll() is not None
+    assert command.returncode is not None
+
+
+def test_run_background_wait() -> None:
+    command = nox.command.run_background([PYTHON, "-c", "pass"])
+
+    assert command.wait() == 0
+    assert command.returncode == 0
+
+
+def test_background_command_context_manager() -> None:
+    with nox.command.run_background(
+        [PYTHON, "-c", "import time; time.sleep(30)"]
+    ) as command:
+        assert command.poll() is None
+
+    # Leaving the context stops the command.
+    assert command.poll() is not None
+
+
+def test_background_command_stop_after_exit() -> None:
+    command = nox.command.run_background([PYTHON, "-c", "pass"])
+    command.wait()
+
+    # Stopping a command that already exited just returns its exit code.
+    assert command.stop() == 0
+
+
+def test_run_background_external_error() -> None:
+    with pytest.raises(nox.command.CommandFailed, match="External"):
+        nox.command.run_background(
+            [PYTHON, "--version"], paths=["/no/such/path"], external="error"
+        )
