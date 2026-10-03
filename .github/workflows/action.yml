@@ -35,7 +35,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@v10.2.0
-      - uses: ./
+      - uses: $/
       - run: nox --session github_actions_default_tests
 
   action-all-tests:
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: 3.12
-      - uses: ./
+      - uses: $/
         with:
           python-versions: "pypy-2.7, pypy-3.8, pypy-3.9, pypy-3.10, pypy-3.11, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15, 3.13t, 3.14t, 3.15t"
       - run: nox --session github_actions_all_tests
