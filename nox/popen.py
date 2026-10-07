@@ -32,6 +32,7 @@ __all__ = [
     "DEFAULT_TERMINATE_TIMEOUT",
     "decode_output",
     "popen",
+    "popen_background",
 ]
 
 
@@ -165,6 +166,32 @@ def decode_output(output: bytes) -> str:
         return output.decode(second_encoding)
 
 
+def _popen_args(
+    args: Sequence[str], env: Mapping[str, str] | None
+) -> Sequence[str] | str:
+    if sys.platform.startswith("win") and args[0].casefold().endswith((".bat", ".cmd")):
+        return _windows_batch_command(args, env)
+    return args
+
+
+def popen_background(
+    args: Sequence[str],
+    *,
+    env: Mapping[str, str] | None = None,
+    stdout: int | IO[str] | None = None,
+    stderr: int | IO[str] | None = None,
+) -> subprocess.Popen[bytes]:
+    """Start a command in the background and return the process without waiting.
+
+    Unlike :func:`popen`, this does not block for the command to finish. The
+    caller is responsible for eventually stopping the process, for example with
+    :func:`shutdown_process`.
+    """
+    return subprocess.Popen(
+        _popen_args(args, env), env=env, stdout=stdout, stderr=stderr
+    )
+
+
 def popen(
     args: Sequence[str],
     *,
@@ -185,11 +212,9 @@ def popen(
     if silent:
         stdout = subprocess.PIPE
 
-    popen_args: Sequence[str] | str = args
-    if sys.platform.startswith("win") and args[0].casefold().endswith((".bat", ".cmd")):
-        popen_args = _windows_batch_command(args, env)
-
-    proc = subprocess.Popen(popen_args, env=env, stdout=stdout, stderr=stderr)
+    proc = subprocess.Popen(
+        _popen_args(args, env), env=env, stdout=stdout, stderr=stderr
+    )
 
     try:
         out, _err = proc.communicate()

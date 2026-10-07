@@ -533,6 +533,11 @@ scheduler and avoid enabling another layer of automatic parallelism:
     :members:
     :undoc-members:
 
+:meth:`Session.background` returns a handle to the running command:
+
+.. autoclass:: nox.command.BackgroundCommand
+    :members:
+
 The pyproject.toml helpers
 --------------------------
 
