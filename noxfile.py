@@ -78,7 +78,11 @@ def tests(session: nox.Session) -> None:
 @nox.session(venv_backend="uv", default=False)
 def minimums(session: nox.Session) -> None:
     """Run test suite with the lowest supported versions of everything. Requires uv."""
-    session.create_tmp()
+    tmpdir = session.create_tmp()
+    # Old virtualenv races newer ones in a shared app-data dir
+    session.env["VIRTUALENV_OVERRIDE_APP_DATA"] = os.path.abspath(
+        os.path.join(tmpdir, "virtualenv")
+    )
 
     session.install("-e.", "--group=test", "--resolution=lowest-direct")
     session.run("uv", "pip", "list")
