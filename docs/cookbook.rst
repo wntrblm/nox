@@ -39,6 +39,8 @@ Enter the ``dev`` nox session:
 
 .. code-block:: python
 
+    import os
+
     import nox
 
 
@@ -56,7 +58,8 @@ Enter the ``dev`` nox session:
 
         # Use the venv's interpreter to install the project along with
         # all its dev dependencies, this ensures it's installed in the right way
-        session.run(".venv/bin/pip", "install", "-e", ".[dev]", external=True)
+        python = ".venv/Scripts/python.exe" if os.name == "nt" else ".venv/bin/python"
+        session.run(python, "-m", "pip", "install", "-e", ".[dev]", external=True)
 
 With this, a user can simply run ``nox -s dev`` and have their entire environment set up automatically!
 
