@@ -1,5 +1,55 @@
 # Changelog
 
+## 2026.10.07
+
+Parallel mode no longer prints an "experimental" banner, and sessions can check
+`session.parallel` to see if they run in a parallel worker. A new `rattler`
+backend uses py-rattler (install with the `nox[rattler]` extra), so you can
+request fast conda-style environments in a `/// script` block. Python versions
+read from classifiers now include free-threaded builds when the free-threading
+classifier is present, and are deduplicated. This release also fixes several
+bugs in script mode, option handling, and `tox-to-nox`.
+
+We'd like to thank the following folks who contributed to this release:
+
+* @henryiii
+* @Himanshuagrawal4
+* @Arthur031221 (first contribution)
+* @devtechedge (first contribution)
+* @dylanpulver (first contribution)
+* @nickita-khylkouski (first contribution)
+* @r3wretrhy (first contribution)
+* @Rodrigo-Palma (first contribution)
+
+Features:
+
+* Remove the experimental banner from `--parallel` by @henryiii in https://github.com/wntrblm/nox/pull/1197
+* Expose parallel execution state on sessions by @nickita-khylkouski in https://github.com/wntrblm/nox/pull/1182
+* Add py-rattler support by @henryiii in https://github.com/wntrblm/nox/pull/1179
+* Add free-threaded versions from classifiers by @henryiii in https://github.com/wntrblm/nox/pull/1185
+
+Fixes:
+
+* Walk a dependency's mandatory requirements even without extras by @Arthur031221 in https://github.com/wntrblm/nox/pull/1192
+* Don't call `install()` when a script declares no dependencies by @Rodrigo-Palma in https://github.com/wntrblm/nox/pull/1188
+* Deduplicate the python list of a session by @henryiii in https://github.com/wntrblm/nox/pull/1187
+* Accept tuples for list-valued options by @henryiii in https://github.com/wntrblm/nox/pull/1176
+* Fall back to ASCII for the parallel banner and status header by @dylanpulver in https://github.com/wntrblm/nox/pull/1180
+* `tox-to-nox`: drop env vars that tox 4.64.8+ lists in `set_env` by @henryiii in https://github.com/wntrblm/nox/pull/1201
+* `tox-to-nox`: keep quoted paths when converting commands by @r3wretrhy in https://github.com/wntrblm/nox/pull/1181
+
+Documentation:
+
+* Clarify supported session Python versions by @Himanshuagrawal4 in https://github.com/wntrblm/nox/pull/1171
+
+Internal changes:
+
+* Run test sessions in parallel steps in CI by @henryiii in https://github.com/wntrblm/nox/pull/1200
+* Give `test_interrupt_handled` child more time to exit by @henryiii in https://github.com/wntrblm/nox/pull/1202
+* Keep existing `PYTHONPATH` in `test_noxfile_script_mode` by @devtechedge in https://github.com/wntrblm/nox/pull/1190
+* Accept unnormalized nox version in script mode test by @henryiii in https://github.com/wntrblm/nox/pull/1186
+* Bump pinned conda to 26.7.1 by @henryiii in https://github.com/wntrblm/nox/pull/1175
+
 ## 2026.08.17
 
 This is a small follow-up release to better support running the parallel mode
