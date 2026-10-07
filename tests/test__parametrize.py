@@ -195,6 +195,25 @@ def test_parametrize_decorator_stack_with_empty_outer() -> None:
     assert f.parametrize == []  # type: ignore[attr-defined]
 
 
+def test_generate_calls_keep_retry_options() -> None:
+    f = _decorators.Func(
+        lambda: None,
+        retries=2,
+        retry_delay=1.5,
+        retry_backoff=3.0,
+        retry_on=(1, 2),
+    )
+
+    (call,) = _decorators.Call.generate_calls(
+        f, [_parametrize.Param(1, arg_names=("x",))]
+    )
+
+    assert call.retries == 2
+    assert call.retry_delay == 1.5
+    assert call.retry_backoff == 3.0
+    assert call.retry_on == (1, 2)
+
+
 def test_generate_calls_simple() -> None:
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"

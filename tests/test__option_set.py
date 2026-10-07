@@ -285,6 +285,46 @@ class TestEnvVars:
         assert "'download_python' must be in" in capsys.readouterr().err
 
 
+class TestRetryOptions:
+    def test_defaults(self) -> None:
+        config = _options.options.parse_args([])
+
+        assert config.retries is None
+        assert config.retry_delay is None
+
+    def test_parse(self) -> None:
+        config = _options.options.parse_args(["--retries", "3", "--retry-delay", "1.5"])
+
+        assert config.retries == 3
+        assert config.retry_delay == 1.5
+
+    @pytest.mark.parametrize(
+        ("args", "message"),
+        [
+            (["--retries", "-1"], "'retries' must be >= 0"),
+            (["--retry-delay", "-1"], "'retry_delay' must be >= 0"),
+        ],
+    )
+    def test_negative_is_a_clean_error(
+        self,
+        capsys: pytest.CaptureFixture[str],
+        args: list[str],
+        message: str,
+    ) -> None:
+        with pytest.raises(SystemExit):
+            _options.options.parse_args(args)
+
+        assert message in capsys.readouterr().err
+
+    @pytest.mark.parametrize(
+        "option",
+        [{"retries": -1}, {"retry_delay": -0.5}],
+    )
+    def test_negative_noxfile_value(self, option: dict[str, float]) -> None:
+        with pytest.raises(ValueError, match="must be >= 0"):
+            _options.options.namespace(**option)
+
+
 class TestReuseAliasPrecedence:
     """An explicit --reuse-venv on the command line now wins over the -r/-N
     aliases given alongside it (the aliases used to win). -R still wins."""
@@ -358,6 +398,7 @@ class TestToArgv:
             ["--default-venv-backend", "uv", "--download-python", "never"],
             ["--force-python", "3.13", "--stop-on-first-error"],
             ["-j", "2", "--allow-parallel"],
+            ["--retries", "2", "--retry-delay", "0.5"],
             ["-s", "test", "--", "-k", "foo", "--flag"],
         ],
     )

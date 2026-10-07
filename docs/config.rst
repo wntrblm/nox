@@ -254,6 +254,48 @@ Finally, custom backend parameters are supported:
 If you need to check to see which backend was selected, you can access it via
 ``session.venv_backend``.
 
+.. _retrying-sessions:
+
+Retrying flaky sessions
+-----------------------
+
+A session whose commands fail for transient reasons, such as a dropped network
+connection during an install, can be re-run automatically with the ``retries``
+argument:
+
+.. code-block:: python
+
+    @nox.session(retries=2, retry_delay=5, retry_backoff=2)
+    def tests(session):
+        session.install("-e.", "--group=test")
+        session.run("pytest")
+
+If a command in the session fails (``session.run``, ``session.install`` and so
+on), Nox runs the whole session again, including creating its virtualenv, up to
+``retries`` more times. A session that is skipped (``session.skip()``), aborted
+(``session.error()``), or that fails with an exception other than a failed
+command is never retried.
+
+* ``retries`` is the number of extra attempts after the first one. It defaults
+  to ``0``, which disables retrying.
+* ``retry_delay`` is the number of seconds to wait before the first retry. It
+  defaults to ``0``.
+* ``retry_backoff`` multiplies the delay after every retry, so
+  ``retry_delay=5, retry_backoff=2`` waits 5, 10, 20 seconds and so on. It
+  must be at least ``1`` and defaults to ``1``.
+* ``retry_on`` is an optional list of exit codes. When given, only a command
+  that fails with one of those exit codes causes a retry (for example
+  ``retry_on=[137]`` to retry only when a process was killed). By default any
+  failed command does.
+
+Nox logs a warning each time it retries. Inside the session function,
+``session.current_attempt`` (starting at ``0``), ``session.max_retries`` and
+``session.is_final_attempt`` tell you which attempt is running.
+
+Use ``--retries`` and ``--retry-delay`` (or ``nox.options.retries`` and
+``nox.options.retry_delay``) to override these values for every session in one
+run, for example ``nox --retries 2 --retry-delay 10`` on a CI system.
+
 
 Passing arguments into sessions
 -------------------------------
@@ -583,6 +625,8 @@ The following options can be specified in the Noxfile:
 * ``nox.options.download_python`` is equivalent to specifying ``--download-python``.
 * ``nox.options.parallel`` is equivalent to specifying :ref:`-j or --parallel <opt-parallel>`.
 * ``nox.options.allow_parallel`` is equivalent to specifying :ref:`--allow-parallel <opt-allow-parallel>`. You can force this off by specifying ``--no-allow-parallel`` during invocation.
+* ``nox.options.retries`` is equivalent to specifying :ref:`--retries <opt-retries>`.
+* ``nox.options.retry_delay`` is equivalent to specifying :ref:`--retry-delay <opt-retries>`.
 * ``nox.options.report`` is equivalent to specifying :ref:`--report <opt-report>`.
 * ``nox.options.verbose`` is equivalent to specifying :ref:`-v or --verbose <opt-verbose>`. You can force this off by specifying ``--no-verbose`` during invocation.
 
