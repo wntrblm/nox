@@ -16,12 +16,13 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"importlib", "importlib.util", "pathlib"}
+__lazy_modules__ = {"importlib", "importlib.util", "pathlib", "platformdirs"}
 
-import functools
 import importlib.util
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+import platformdirs
 
 if TYPE_CHECKING:
     import os
@@ -50,17 +51,6 @@ def _rattler() -> Any:
         )
         raise RuntimeError(msg) from None
     return rattler
-
-
-@functools.cache
-def _gateway(*, offline: bool) -> Any:
-    """One Gateway per process so repodata is loaded once."""
-    rattler = _rattler()
-    return rattler.Gateway(
-        default_config=rattler.SourceConfig(
-            cache_action="use-cache-only" if offline else "cache-or-fetch"
-        )
-    )
 
 
 def read_spec_file(path: str | os.PathLike[str]) -> list[str]:
@@ -103,12 +93,27 @@ def sync(
         if ms.name.normalized not in new_names
     ]
     match_specs.extend(new_specs)
+    config = rattler.Config.load_from_default_locations("rattler")
+    client = rattler.Client.from_config(config)
+    fetch_options = rattler.networking.FetchRepoDataOptions(
+        bz2_enabled=not config.repodata_config.get("disable-bz2"),
+        cache_action="use-cache-only" if offline else "cache-or-fetch",
+        zstd_enabled=not config.repodata_config.get("disable-zstd"),
+    )
 
     async def run() -> None:
-        records = await rattler.solve(
-            list(channels),
+        sparse_repodata = await rattler.fetch_repo_data(
+            channels=[rattler.Channel(channel) for channel in channels],
+            platforms=[rattler.Subdir.current(), rattler.Subdir("noarch")],
+            # rattler uses this directory by default.
+            cache_path=platformdirs.user_cache_path("rattler") / "cache",
+            callback=None,
+            client=client,
+            fetch_options=fetch_options,
+        )
+        records = await rattler.solve_with_sparse_repodata(
             match_specs,
-            gateway=_gateway(offline=offline),
+            sparse_repodata,
             virtual_packages=rattler.VirtualPackage.detect(),
             locked_packages=installed,
         )
@@ -120,6 +125,7 @@ def sync(
             # py-rattler passes this to the FFI unchanged, which wants the
             # inner object rather than the wrapper.
             requested_specs=[ms._match_spec for ms in match_specs],
+            config=config,
         )
 
     asyncio.run(run())
