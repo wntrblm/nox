@@ -576,7 +576,10 @@ def test_interrupt_handled(command_with_keyboard_interrupt: None, marker: Any) -
 
     {MAIN}
     """
-    nox.command.run([PYTHON, "-c", format_program(program, marker)])
+    # The child can be slow to exit on loaded runners (e.g., writing coverage)
+    nox.command.run(
+        [PYTHON, "-c", format_program(program, marker)], interrupt_timeout=10
+    )
 
 
 @only_on_windows
