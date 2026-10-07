@@ -105,6 +105,12 @@ def main() -> None:
                 "PYTHONHASHSEED",
                 "PIP_DISABLE_PIP_VERSION_CHECK",
                 "PYTHONIOENCODING",
+                # Listed by tox 4.64.8+
+                "PIP_USER",
+                "TOX_ENV_DIR",
+                "TOX_ENV_NAME",
+                "TOX_WORK_DIR",
+                "VIRTUAL_ENV",
             }:
                 set_env[k] = v
 
