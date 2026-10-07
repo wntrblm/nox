@@ -472,6 +472,26 @@ Would run both ``install`` commands, but skip the ``run`` command:
     nox > Session tests was successful.
 
 
+Dry runs
+--------
+
+Use ``--dry-run`` to see what the selected sessions would do without doing it. Nox still calls each session function, but it does not create virtualenvs, and it logs the commands passed to ``session.run``, ``session.install`` and similar methods instead of running them. With the Noxfile above:
+
+.. code-block:: console
+
+    nox > Running session tests
+    nox > Dry run: no virtualenv will be created and no commands will run.
+    nox > python -m pip install pytest
+    nox > python -m pip install .
+    nox > pytest
+    nox > Dry run of session tests complete; nothing was executed.
+    nox > Session tests was successful.
+
+.. warning::
+
+    Nox only controls its own API. Any other code in a session function, such as ``shutil.rmtree(...)``, still runs during a dry run. Guard such code with ``session.dry_run``. A command run with ``silent=True`` returns an empty string during a dry run.
+
+
 Forcing non-interactive behavior
 --------------------------------
 
