@@ -53,13 +53,22 @@ def _rattler() -> Any:
 
 
 @functools.cache
+def _config() -> Any:
+    """Load configuration once per process."""
+    rattler = _rattler()
+    return rattler.Config.load_from_default_locations("rattler")
+
+
+@functools.cache
 def _gateway(*, offline: bool) -> Any:
     """One Gateway per process so repodata is loaded once."""
     rattler = _rattler()
-    return rattler.Gateway(
-        default_config=rattler.SourceConfig(
-            cache_action="use-cache-only" if offline else "cache-or-fetch"
+    return (
+        rattler.Gateway(
+            default_config=rattler.SourceConfig(cache_action="use-cache-only")
         )
+        if offline
+        else rattler.Gateway.from_config(_config())
     )
 
 
@@ -120,6 +129,7 @@ def sync(
             # py-rattler passes this to the FFI unchanged, which wants the
             # inner object rather than the wrapper.
             requested_specs=[ms._match_spec for ms in match_specs],
+            config=_config(),
         )
 
     asyncio.run(run())
