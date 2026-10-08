@@ -42,7 +42,6 @@ def is_available() -> bool:
 def _rattler() -> Any:
     try:
         import rattler  # noqa: PLC0415
-        import rattler.networking  # noqa: PLC0415
     except ImportError:
         msg = (
             "The rattler backend needs the py-rattler package. Install Nox with"
