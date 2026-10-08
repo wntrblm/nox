@@ -94,6 +94,7 @@ def sync(
         if ms.name.normalized not in new_names
     ]
     match_specs.extend(new_specs)
+    # rattler does not load any configuration by default.
     config = rattler.Config.load_from_default_locations("rattler")
     client = rattler.Client.from_config(config)
     fetch_options = rattler.networking.FetchRepoDataOptions(
@@ -106,7 +107,7 @@ def sync(
         sparse_repodata = await rattler.fetch_repo_data(
             channels=[rattler.Channel(channel) for channel in channels],
             platforms=[rattler.Subdir.current(), rattler.Subdir("noarch")],
-            # rattler uses this directory by default.
+            # rattler uses this cache directory by default.
             cache_path=platformdirs.user_cache_path("rattler") / "cache",
             callback=None,
             client=client,
