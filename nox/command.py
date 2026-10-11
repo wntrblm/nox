@@ -168,9 +168,9 @@ def run(
     if log:
         logger.info(full_cmd)
 
+    abs_cmd_path = Path(os.path.abspath(cmd_path))
     is_external_tool = paths is not None and not any(
-        Path(os.path.abspath(cmd_path)).is_relative_to(os.path.abspath(path))
-        for path in paths
+        abs_cmd_path.is_relative_to(os.path.abspath(path)) for path in paths
     )
     if is_external_tool:
         if external == "error":
