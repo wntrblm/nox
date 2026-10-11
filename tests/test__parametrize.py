@@ -14,12 +14,16 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
 
 import nox
 from nox import _decorators, _parametrize, parametrize, session
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 @pytest.mark.parametrize(
@@ -380,3 +384,13 @@ def test_generate_calls_python_compatibility() -> None:
     assert called_with[0] == (session_, "3.8", "0.9")  # type: ignore[comparison-overlap]
     assert called_with[1] == (session_, "3.9", "0.9")  # type: ignore[unreachable]
     assert called_with[2] == (session_, "3.9", "1.0")
+
+
+@pytest.mark.parametrize("values", [range(3), iter([0, 1, 2]), (n for n in range(3))])
+def test_parametrize_single_argument_iterable(values: Iterable[int]) -> None:
+    def f() -> None:
+        pass
+
+    _parametrize.parametrize_decorator("abc", values)(f)
+
+    assert f.parametrize == [{"abc": 0}, {"abc": 1}, {"abc": 2}]  # type: ignore[attr-defined]

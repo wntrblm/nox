@@ -149,7 +149,9 @@ def parametrize_decorator(
     if len(arg_names) == 1:
         # In this case, the arg_values_list can also just be a single item.
         # Must be mutable for the transformation steps
-        if isinstance(arg_values_list, (tuple, list)):
+        if isinstance(arg_values_list, Iterable) and not isinstance(
+            arg_values_list, (str, bytes)
+        ):
             _arg_values_list = list(arg_values_list)
         else:
             _arg_values_list = [arg_values_list]
