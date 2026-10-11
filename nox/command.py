@@ -14,13 +14,14 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"nox.logger", "shlex", "shutil"}
+__lazy_modules__ = {"nox.logger", "pathlib", "shlex", "shutil"}
 
 import os
 import shlex
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal, overload
 
 from nox.logger import logger
@@ -168,7 +169,8 @@ def run(
         logger.info(full_cmd)
 
     is_external_tool = paths is not None and not any(
-        cmd_path.startswith(str(path)) for path in paths
+        Path(os.path.abspath(cmd_path)).is_relative_to(os.path.abspath(path))
+        for path in paths
     )
     if is_external_tool:
         if external == "error":

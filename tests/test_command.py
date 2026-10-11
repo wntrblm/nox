@@ -730,3 +730,41 @@ def test_output_decoding_both_fail(monkeypatch: pytest.MonkeyPatch) -> None:
         nox.popen.decode_output(b"\x95")
 
     assert exc.value.encoding == "ascii"
+
+
+@pytest.mark.parametrize("external", [False, "error"])
+def test_run_external_directory_prefix(
+    external: nox.command.ExternalType, caplog: pytest.LogCaptureFixture
+) -> None:
+    binary_dir = Path(PYTHON).parent
+    prefix_dir = binary_dir.with_name(binary_dir.name[:-1])
+    caplog.set_level(logging.WARNING)
+
+    if external == "error":
+        with pytest.raises(
+            nox.command.CommandFailed, match="External program disallowed"
+        ):
+            nox.command.run(
+                [PYTHON, "--version"],
+                silent=True,
+                paths=[prefix_dir],
+                external=external,
+            )
+    else:
+        nox.command.run(
+            [PYTHON, "--version"], silent=True, paths=[prefix_dir], external=external
+        )
+
+    assert "external=True" in caplog.text
+
+
+@pytest.mark.parametrize("normalized", [False, True])
+def test_run_internal_directory(normalized: bool) -> None:
+    binary_dir = Path(PYTHON).parent
+    path = binary_dir / ".." / binary_dir.name if normalized else binary_dir
+
+    result = nox.command.run(
+        [PYTHON, "--version"], silent=True, paths=[path], external="error"
+    )
+
+    assert "Python" in result

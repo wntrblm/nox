@@ -412,6 +412,8 @@ By default Nox will warn but ultimately allow you to run programs not installed 
 
     nox --error-on-external-run
 
+Programs in sibling directories are still external, even when the directory names share a prefix with the virtualenv's binary directory.
+
 If the Noxfile sets ``nox.options.error_on_external_run``, you can override the Noxfile setting from the command line by using ``--no-error-on-external-run``.
 
 Specifying a different configuration file
