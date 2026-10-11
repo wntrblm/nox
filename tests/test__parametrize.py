@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
@@ -394,3 +394,16 @@ def test_parametrize_single_argument_iterable(values: Iterable[int]) -> None:
     _parametrize.parametrize_decorator("abc", values)(f)
 
     assert f.parametrize == [{"abc": 0}, {"abc": 1}, {"abc": 2}]  # type: ignore[attr-defined]
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["3.12", b"ab", bytearray(b"ab"), {"FOO": "1", "BAR": "2"}, {"a", "b"}, 7],
+)
+def test_parametrize_single_argument_single_value(value: Any) -> None:
+    def f() -> None:
+        pass
+
+    _parametrize.parametrize_decorator("abc", value)(f)
+
+    assert f.parametrize == [{"abc": value}]  # type: ignore[attr-defined]

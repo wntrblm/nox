@@ -18,7 +18,7 @@ __lazy_modules__ = {"functools", "itertools"}
 
 import functools
 import itertools
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -129,7 +129,9 @@ def parametrize_decorator(
         arg_values_list (Sequence[Union[Any, Tuple]]): The list of argument
             values determines how often a session is invoked with different
             argument values. If only one argument name was specified then
-            this is a simple list of values, for example ``[1, 2, 3]``. If N
+            this is a simple list of values, for example ``[1, 2, 3]``. A
+            list, tuple, range, or iterator (such as a generator) is expanded;
+            any other value is used as a single value. If N
             argument names were specified, this must be a list of N-tuples,
             where each tuple-element specifies a value for its respective
             argument name, for example ``[(1, 'a'), (2, 'b')]``.
@@ -149,10 +151,8 @@ def parametrize_decorator(
     if len(arg_names) == 1:
         # In this case, the arg_values_list can also just be a single item.
         # Must be mutable for the transformation steps
-        if isinstance(arg_values_list, Iterable) and not isinstance(
-            arg_values_list, (str, bytes)
-        ):
-            _arg_values_list = list(arg_values_list)
+        if isinstance(arg_values_list, (list, tuple, range, Iterator)):
+            _arg_values_list = list[Any](arg_values_list)
         else:
             _arg_values_list = [arg_values_list]
 
