@@ -23,14 +23,103 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+import nox._rattler
 import nox.virtualenv
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
+    from typing import Any
 
-pytest.importorskip("rattler")
+rattler = pytest.importorskip("rattler")
 
 pytestmark = pytest.mark.rattler
+
+
+@pytest.fixture
+def clear_caches() -> Iterator[None]:
+    funcs = (nox._rattler._config, nox._rattler._client, nox._rattler._gateway)
+    for func in funcs:
+        func.cache_clear()
+    yield
+    for func in funcs:
+        func.cache_clear()
+
+
+def _use_config(monkeypatch: pytest.MonkeyPatch, toml: str) -> None:
+    monkeypatch.setattr(
+        rattler.Config,
+        "load_from_default_locations",
+        staticmethod(lambda _tool: rattler.Config.from_toml(toml)),
+    )
+
+
+@pytest.mark.usefixtures("clear_caches")
+@pytest.mark.parametrize("offline", [False, True])
+def test_gateway_uses_config(monkeypatch: pytest.MonkeyPatch, *, offline: bool) -> None:
+    _use_config(
+        monkeypatch,
+        """
+        [repodata-config]
+        disable-sharded = true
+        [repodata-config."https://example.com/"]
+        disable-zstd = true
+        """,
+    )
+    calls: list[dict[str, Any]] = []
+    monkeypatch.setattr(rattler, "Gateway", lambda **kwargs: calls.append(kwargs))
+
+    nox._rattler._gateway(offline=offline)
+
+    (kwargs,) = calls
+    cache_action = "use-cache-only" if offline else "cache-or-fetch"
+    assert kwargs["client"] is nox._rattler._client()
+    assert kwargs["default_config"] == rattler.SourceConfig(
+        sharded_enabled=False, cache_action=cache_action
+    )
+    assert kwargs["per_channel_config"] == {
+        "https://example.com/": rattler.SourceConfig(
+            zstd_enabled=False, sharded_enabled=False, cache_action=cache_action
+        )
+    }
+
+
+@pytest.mark.usefixtures("clear_caches")
+def test_install_never_runs_link_scripts(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _use_config(monkeypatch, 'run-post-link-scripts = "insecure"')
+    calls: list[dict[str, Any]] = []
+
+    async def solve(*_args: object, **_kwargs: object) -> list[object]:
+        return []
+
+    async def install(*_args: object, **kwargs: object) -> None:
+        calls.append(kwargs)
+
+    monkeypatch.setattr(rattler, "solve", solve)
+    monkeypatch.setattr(rattler, "install", install)
+
+    nox._rattler.sync(str(tmp_path), ["python"], ["conda-forge"])
+
+    (kwargs,) = calls
+    assert kwargs["execute_link_scripts"] is False
+    assert kwargs["client"] is nox._rattler._client()
+
+
+@pytest.mark.usefixtures("clear_caches")
+def test_invalid_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    config = tmp_path / "config.toml"
+    config.write_text('tls-no-verify = "x"\n', encoding="utf-8")
+    monkeypatch.setattr(
+        rattler.Config,
+        "load_from_default_locations",
+        staticmethod(lambda _tool: rattler.Config.load_from_files([config])),
+    )
+
+    with pytest.raises(RuntimeError, match="rattler config") as excinfo:
+        nox._rattler._config()
+    assert "tls-no-verify" in str(excinfo.value)
 
 
 def test_rattler_create_and_install(tmp_path: Path) -> None:
