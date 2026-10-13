@@ -147,7 +147,7 @@ def test_main_no_venv(
             "Session snack is set to run with venv_backend='none', IGNORING its python"
             in stderr
         )
-        assert "Session snack(cheese='cheddar') was successful." in stderr
+        assert "Session snack(cheese='cheddar') was successful" in stderr
         sys_exit.assert_called_once_with(0)
 
 
@@ -165,7 +165,9 @@ def test_main_no_venv_error() -> None:
         nox.main()
 
 
-def test_main_param_force_python(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_param_force_python(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     """
     Check that Python can be forced if something is parametrized over other things.
     """
@@ -182,6 +184,8 @@ def test_main_param_force_python(monkeypatch: pytest.MonkeyPatch) -> None:
             "check_package_files(7.5.0)",
             "--force-python",
             ".".join(str(v) for v in sys.version_info[:2]),
+            "--envdir",
+            str(tmp_path),
         ],
     )
 
@@ -464,7 +468,7 @@ def test_main_nested_config(
         nox.main()
         stdout, stderr = capsys.readouterr()
         assert stdout == "Noms, cheddar so good!\n"
-        assert "Session snack(cheese='cheddar') was successful." in stderr
+        assert "Session snack(cheese='cheddar') was successful" in stderr
         sys_exit.assert_called_once_with(0)
 
 
@@ -487,7 +491,7 @@ def test_main_session_with_names(
         nox.main()
         stdout, stderr = capsys.readouterr()
         assert stdout == "Noms, cheddar so good!\n"
-        assert "Session cheese list(cheese='cheddar') was successful." in stderr
+        assert "Session cheese list(cheese='cheddar') was successful" in stderr
         sys_exit.assert_called_once_with(0)
 
 
@@ -668,7 +672,7 @@ def test_main_run_with_empty_parametrize(
     returncode, stdout, stderr = run_nox(f"--noxfile={noxfile}")
     assert returncode == 0
     assert stdout == "regular\n"
-    assert "Session regular was successful." in stderr
+    assert "Session regular was successful" in stderr
     assert "This session had no parameters available." in stderr
 
 
@@ -1185,7 +1189,9 @@ def test_noxfile_script_mode(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
     assert "hello_world" in job.stdout
 
 
-def test_noxfile_no_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_noxfile_no_script_mode(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("NOX_SCRIPT_MODE", "none")
     job = subprocess.run(
         [
@@ -1196,6 +1202,8 @@ def test_noxfile_no_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
             Path(RESOURCES) / "noxfile_script_mode.py",
             "-s",
             "example",
+            "--envdir",
+            tmp_path,
         ],
         check=False,
         capture_output=True,
@@ -1207,7 +1215,9 @@ def test_noxfile_no_script_mode(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @xfail_mingw_uv
-def test_noxfile_script_mode_exec(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_noxfile_script_mode_exec(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.delenv("NOX_SCRIPT_MODE", raising=False)
     job = subprocess.run(
         [
@@ -1215,6 +1225,8 @@ def test_noxfile_script_mode_exec(monkeypatch: pytest.MonkeyPatch) -> None:
             Path(RESOURCES) / "noxfile_script_mode_exec.py",
             "-s",
             "exec_example",
+            "--envdir",
+            tmp_path,
         ],
         check=False,
         capture_output=True,
@@ -1228,7 +1240,7 @@ def test_noxfile_script_mode_exec(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @xfail_mingw_uv
-def test_noxfile_script_mode_url_req() -> None:
+def test_noxfile_script_mode_url_req(tmp_path: Path) -> None:
     job = subprocess.run(
         [
             sys.executable,
@@ -1238,6 +1250,8 @@ def test_noxfile_script_mode_url_req() -> None:
             Path(RESOURCES) / "noxfile_script_mode_url_req.py",
             "-s",
             "example",
+            "--envdir",
+            tmp_path,
         ],
         check=False,
         capture_output=True,
