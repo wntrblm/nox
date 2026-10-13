@@ -270,6 +270,23 @@ class Session:
         """
         return self._runner.global_config.parallel_worker
 
+    @property
+    def install_skipped(self) -> bool:
+        """Whether install commands are skipped in this session.
+
+        This is ``True`` when ``--no-install`` (or ``-R``) is in effect and
+        the environment is being reused, or the session has no environment of
+        its own (``venv_backend="none"``). In that case :meth:`install`,
+        :meth:`conda_install`, and :meth:`run_install` return without doing
+        anything. It is ``False`` when the environment was just created, even
+        if ``--no-install`` was passed, since Nox still installs into a new
+        environment.
+        """
+        venv = self._runner.venv
+        return self._runner.global_config.no_install and (
+            isinstance(venv, PassthroughEnv) or (venv is not None and venv._reused)
+        )
+
     def install_and_run_script(
         self,
         script: str | os.PathLike[str],
@@ -593,11 +610,7 @@ class Session:
             Default: ``0.2``
         :type terminate_timeout: float or None
         """
-        if (
-            self._runner.global_config.no_install
-            and self._runner.venv is not None
-            and self._runner.venv._reused
-        ):
+        if self.install_skipped:
             return None
 
         if not args:
@@ -784,9 +797,7 @@ class Session:
             msg = "At least one argument required to install()."
             raise ValueError(msg)
 
-        if self._runner.global_config.no_install and (
-            isinstance(venv, PassthroughEnv) or venv._reused
-        ):
+        if self.install_skipped:
             return
 
         if silent is None:
@@ -889,7 +900,7 @@ class Session:
             msg = f"A session without a virtualenv (got {venv!r}) can not install dependencies."
             raise TypeError(msg)
         if isinstance(venv, PassthroughEnv):
-            if self._runner.global_config.no_install:
+            if self.install_skipped:
                 return
             msg = (
                 f"Session {self.name} does not have a virtual environment, so use of"
@@ -902,7 +913,7 @@ class Session:
             msg = "At least one argument required to install()."
             raise ValueError(msg)
 
-        if self._runner.global_config.no_install and venv._reused:
+        if self.install_skipped:
             return
 
         if silent is None:
