@@ -29,6 +29,7 @@ import pytest
 
 import nox
 import nox._decorators
+import nox.logger
 from nox import _options, sessions, tasks
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 
@@ -768,7 +769,8 @@ def test_run_manifest_abort_on_first_failure() -> None:
 
 def test_print_summary_one_result() -> None:
     results = [mock.sentinel.RESULT]
-    with mock.patch("nox.tasks.logger", autospec=True) as logger:
+    # Spec from the resolved object: python/cpython#153888 (lazy imports, 3.15.0)
+    with mock.patch("nox.tasks.logger", autospec=nox.logger.logger) as logger:
         answer = tasks.print_summary(results, _options.options.namespace())
         assert not logger.warning.called
         assert not logger.success.called
