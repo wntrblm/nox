@@ -56,7 +56,7 @@ optional-dependencies.pbs = [
   "pbs-installer[all]>=2025.1.6",
 ]
 optional-dependencies.rattler = [
-  "py-rattler>=0.16",
+  "py-rattler>=0.26",
 ]
 optional-dependencies.tox-to-nox = [
   "jinja2",

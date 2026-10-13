@@ -53,13 +53,55 @@ def _rattler() -> Any:
 
 
 @functools.cache
-def _gateway(*, offline: bool) -> Any:
-    """One Gateway per process so repodata is loaded once."""
+def _config() -> Any:
+    """Load configuration once per process."""
     rattler = _rattler()
-    return rattler.Gateway(
-        default_config=rattler.SourceConfig(
-            cache_action="use-cache-only" if offline else "cache-or-fetch"
+    from rattler.exceptions import ConfigError  # noqa: PLC0415
+
+    try:
+        return rattler.Config.load_from_default_locations("rattler")
+    except ConfigError as err:
+        paths = ", ".join(
+            str(path) for path, _ in rattler.Config.config_search_paths("rattler")
         )
+        msg = f"Could not load rattler config (searched {paths}): {err}"
+        raise RuntimeError(msg) from None
+
+
+@functools.cache
+def _client() -> Any:
+    """One config-aware client shared by the gateway and the installer."""
+    return _rattler().Client.from_config(_config())
+
+
+def _source_config(options: dict[str, Any], cache_action: str) -> Any:
+    return _rattler().SourceConfig(
+        zstd_enabled=not options.get("disable-zstd", False),
+        bz2_enabled=not options.get("disable-bzip2", False),
+        sharded_enabled=not options.get("disable-sharded", False),
+        cache_action=cache_action,
+    )
+
+
+@functools.cache
+def _gateway(*, offline: bool) -> Any:
+    """One Gateway per process so repodata is loaded once.
+
+    This is ``Gateway.from_config``, which cannot select the cache action.
+    """
+    config = _config()
+    cache_action = "use-cache-only" if offline else "cache-or-fetch"
+    defaults = {k: v for k, v in config.repodata_config.items() if "/" not in k}
+    per_channel = {
+        url: _source_config({**defaults, **options}, cache_action)
+        for url, options in config.repodata_config.items()
+        if "/" in url
+    }
+    return _rattler().Gateway(
+        default_config=_source_config(defaults, cache_action),
+        per_channel_config=per_channel,
+        max_concurrent_requests=config.concurrency_downloads,
+        client=_client(),
     )
 
 
@@ -120,6 +162,10 @@ def sync(
             # py-rattler passes this to the FFI unchanged, which wants the
             # inner object rather than the wrapper.
             requested_specs=[ms._match_spec for ms in match_specs],
+            # Link scripts run unsandboxed; a user config must not enable them.
+            execute_link_scripts=False,
+            client=_client(),
+            config=_config(),
         )
 
     asyncio.run(run())
