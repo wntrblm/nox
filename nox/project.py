@@ -100,7 +100,8 @@ def _load_toml_file(filepath: Path) -> dict[str, Any]:
 def _load_script_block(filepath: Path, *, missing_ok: bool) -> dict[str, Any]:
     name = "script"
     try:
-        script = filepath.read_text(encoding="utf-8")
+        # Decode like Python does, skipping a UTF-8 BOM that would hide a block on the first line.
+        script = filepath.read_text(encoding="utf-8-sig")
     except FileNotFoundError:
         if missing_ok:
             return {}
