@@ -1691,6 +1691,36 @@ class TestSessionRunner:
 
         assert attempts == ([0, 1] if retried else [0])
 
+    @pytest.mark.skipif(sys.platform.startswith("win"), reason="Needs POSIX signals")
+    @pytest.mark.parametrize(
+        ("retry_on", "retried"),
+        [([-9], True), ([137], False)],
+    )
+    def test_execute_retry_on_killed_command(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        retry_on: list[int],
+        retried: bool,
+    ) -> None:
+        attempts: list[int] = []
+
+        def func(session: nox.Session) -> None:
+            attempts.append(session.current_attempt)
+            session.run(
+                sys.executable,
+                "-c",
+                "import os, signal; os.kill(os.getpid(), signal.SIGKILL)",
+                external=True,
+            )
+
+        runner = self.make_retry_runner(
+            func, sleeps=[], monkeypatch=monkeypatch, retries=1, retry_on=retry_on
+        )
+        runner.venv = make_fake_env(bin_paths=["/no/bin/for/you"])
+
+        assert runner.execute().status == nox.sessions.Status.FAILED
+        assert attempts == ([0, 1] if retried else [0])
+
     @pytest.mark.parametrize(
         ("raises", "status"),
         [

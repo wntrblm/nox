@@ -284,9 +284,12 @@ command is never retried.
   ``retry_delay=5, retry_backoff=2`` waits 5, 10, 20 seconds and so on. It
   must be at least ``1`` and defaults to ``1``.
 * ``retry_on`` is an optional list of exit codes. When given, only a command
-  that fails with one of those exit codes causes a retry (for example
-  ``retry_on=[137]`` to retry only when a process was killed). By default any
-  failed command does.
+  that fails with one of those exit codes causes a retry. By default any
+  failed command does. On POSIX, a command killed by a signal fails with the
+  negative signal number, so ``retry_on=[-9]`` retries only when a command
+  was killed with ``SIGKILL`` (for example by the out-of-memory killer). If
+  the command is a shell script, the shell reports a killed child as ``128``
+  plus the signal number instead, such as ``137``.
 
 Nox logs a warning each time it retries. Inside the session function,
 ``session.current_attempt`` (starting at ``0``), ``session.max_retries`` and
