@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026.10.13
+## 2026.10.20
 
 Parallel mode no longer prints an "experimental" banner, and sessions can check
 `session.parallel` to see if they run in a parallel worker. A new `rattler`
