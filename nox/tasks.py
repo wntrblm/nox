@@ -21,6 +21,7 @@ __lazy_modules__ = {
     "importlib",
     "importlib.util",
     "json",
+    "logging",
     "nox._resolver",
     "nox._version",
     "nox.logger",
@@ -30,6 +31,7 @@ __lazy_modules__ = {
 import ast
 import importlib.util
 import json
+import logging
 import os
 import sys
 from collections.abc import Sequence
@@ -41,7 +43,7 @@ import nox
 from nox import _merge, registry
 from nox._resolver import CycleError
 from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
-from nox.logger import logger
+from nox.logger import OUTPUT, logger
 from nox.manifest import WARN_PYTHONS_IGNORED, Manifest
 from nox.sessions import Result, Status, _duration_str, resolve_allow_parallel
 
@@ -163,6 +165,9 @@ def merge_noxfile_options(
         global_config (~nox.main.GlobalConfig): The global configuration.
     """
     _merge.merge_noxfile_options(global_config, nox.options)
+    # Logging was set up before the Noxfile ran, so apply a verbose set there.
+    if global_config.verbose:
+        logging.getLogger().setLevel(OUTPUT)
     return module
 
 
