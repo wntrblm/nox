@@ -329,6 +329,23 @@ class TestSession:
 
         assert "install-only" in caplog.text
 
+    def test_run_dry_run(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.set_level(logging.INFO)
+        session, runner = self.make_session_and_runner()
+        runner.global_config.dry_run = True
+        assert session.dry_run
+
+        with mock.patch.object(nox.command, "run") as run:
+            assert session.run("spam", "eggs and ham") is True
+            assert session.run("spam", silent=True) == ""
+            session.install("eggs")
+            session.run_install("pip", "install", "spam", log=False)
+
+        run.assert_not_called()
+        assert "spam 'eggs and ham'" in caplog.text
+        assert "pip install eggs" in caplog.text
+        assert "pip install spam" not in caplog.text
+
     def test_run_install_only_should_install(self) -> None:
         session, runner = self.make_session_and_runner()
         runner.global_config.install_only = True
@@ -1280,6 +1297,16 @@ class TestSessionRunner:
         assert runner.venv.interpreter is None
         assert runner.venv.reuse_existing is False
 
+    @mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True)
+    def test__create_venv_dry_run(self, create: mock.Mock) -> None:
+        runner = self.make_runner()
+        runner.global_config.dry_run = True
+
+        runner._create_venv()
+
+        create.assert_not_called()
+        assert isinstance(runner.venv, nox.virtualenv.VirtualEnv)
+
     @pytest.mark.parametrize(
         ("create_method", "venv_backend", "expected_backend"),
         [
@@ -1420,6 +1447,17 @@ class TestSessionRunner:
         assert result
         runner.func.assert_called_once_with(mock.ANY)  # type: ignore[attr-defined]
         assert "Running session test(1, 2)" in caplog.text
+
+    def test_execute_dry_run(self, caplog: pytest.LogCaptureFixture) -> None:
+        runner = self.make_runner_with_mock_venv()
+        runner.global_config.dry_run = True
+
+        result = runner.execute()
+
+        assert result
+        runner.func.assert_called_once_with(mock.ANY)  # type: ignore[attr-defined]
+        assert "Dry run: no virtualenv will be created" in caplog.text
+        assert "Dry run of session test(1, 2) complete" in caplog.text
 
     def test_execute_quit(self) -> None:
         runner = self.make_runner_with_mock_venv()
