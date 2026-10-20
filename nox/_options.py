@@ -64,6 +64,12 @@ av_opt_list_str: Validator = av.optional(
 )
 av_opt_bool: Validator = av.optional(av.instance_of(bool))
 av_bool: Validator = av.instance_of(bool)
+av_opt_retries: Validator = av.optional(
+    av.and_(av.instance_of(int), av.ge(0)),
+)
+av_opt_retry_delay: Validator = av.optional(
+    av.and_(av.instance_of((int, float)), av.ge(0)),
+)
 
 GROUPS: dict[str, tuple[str, str]] = {
     "general": (
@@ -316,6 +322,32 @@ class NoxfileOptions(_option_set.OptionsBase):
             group="reporting",
             completer=_completers.json_file_completer,
             help="Output a report of all sessions to the given filename.",
+        ),
+    )
+    retries: int | None = attrs.field(
+        default=None,
+        validator=av_opt_retries,
+        metadata=opt(
+            "--retries",
+            group="execution",
+            argparse_kwargs={"type": int, "metavar": "N"},
+            help=(
+                "Re-run a session up to N more times when one of its commands"
+                " fails, overriding the ``retries=`` argument of every session."
+            ),
+        ),
+    )
+    retry_delay: float | None = attrs.field(
+        default=None,
+        validator=av_opt_retry_delay,
+        metadata=opt(
+            "--retry-delay",
+            group="execution",
+            argparse_kwargs={"type": float, "metavar": "SECONDS"},
+            help=(
+                "Seconds to wait before the first retry of a failed session,"
+                " overriding the ``retry_delay=`` argument of every session."
+            ),
         ),
     )
     reuse_existing_virtualenvs: bool | None = attrs.field(
