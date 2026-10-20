@@ -14,8 +14,10 @@
 
 from __future__ import annotations
 
+import ast
 import os
 import shutil
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -186,6 +188,71 @@ def test_commands_keep_quoted_path_with_spaces(
     )
 
     assert "session.run('python', '--path', '/tmp/foo bar')" in result
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["python", "-c", "print('hello')"],
+        ["python", "--path", r"C:\new\test"],
+        ["python", "--name", "O'Reilly"],
+        ["python", "--path", "C:\\ends\\with\\sep\\"],
+        ["python", "--text", 'a "quoted" word'],
+        ["python", "--empty", ""],
+        ["python", "--space", "two words"],
+    ],
+)
+def test_split_windows_command_roundtrip(args: list[str]) -> None:
+    """Windows tox quotes commands with list2cmdline, so we must invert it."""
+    assert tox_to_nox._split_windows_command(subprocess.list2cmdline(args)) == args
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    [
+        ("", []),
+        ("   ", []),
+        ("  python  -c \tcode  ", ["python", "-c", "code"]),
+    ],
+)
+def test_split_windows_command_padding(command: str, expected: list[str]) -> None:
+    """Extra whitespace around and between arguments is dropped."""
+    assert tox_to_nox._split_windows_command(command) == expected
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    [
+        ('''python -c "print('hello')"''', ["python", "-c", "print('hello')"]),
+        (r"python --path 'C:\new\test'", ["python", "--path", r"C:\new\test"]),
+        ('''python --name "O'Reilly"''', ["python", "--name", "O'Reilly"]),
+    ],
+)
+def test_commands_preserve_python_literal_characters(
+    makeconfig: Callable[[str], str], command: str, expected: list[str]
+) -> None:
+    result = makeconfig(
+        textwrap.dedent(
+            f"""
+    [tox]
+    envlist = lint
+
+    [testenv:lint]
+    basepython = python{PYTHON_VERSION}
+    commands = {command}
+    """
+        )
+    )
+
+    calls = [
+        node
+        for node in ast.walk(ast.parse(result))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "run"
+    ]
+    assert len(calls) == 1
+    assert [ast.literal_eval(arg) for arg in calls[0].args] == expected
 
 
 def test_deps(makeconfig: Callable[[str], str]) -> None:
