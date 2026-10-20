@@ -283,8 +283,8 @@ class Session:
         environment.
         """
         venv = self._runner.venv
-        return self._runner.global_config.no_install and (
-            isinstance(venv, PassthroughEnv) or (venv is not None and venv._reused)
+        return (
+            self._runner.global_config.no_install and venv is not None and venv._reused
         )
 
     def install_and_run_script(
@@ -570,7 +570,8 @@ class Session:
 
         This is a variant of :meth:`run` that runs even in the presence of
         ``--install-only``. This method returns early if ``--no-install`` is
-        specified and the virtualenv is being reused. (In nox 2023.04.22 and
+        specified and the virtualenv is being reused, or the session has no
+        virtualenv (``venv_backend="none"``). (In nox 2023.04.22 and
         earlier, this was called ``run_always``, and that continues to be
         available as an alias.)
 
@@ -610,12 +611,12 @@ class Session:
             Default: ``0.2``
         :type terminate_timeout: float or None
         """
-        if self.install_skipped:
-            return None
-
         if not args:
             msg = "At least one argument required to run_install()"
             raise ValueError(msg)
+
+        if self.install_skipped:
+            return None
 
         return self._run(
             *args,
@@ -899,22 +900,21 @@ class Session:
         ):  # pragma: no cover
             msg = f"A session without a virtualenv (got {venv!r}) can not install dependencies."
             raise TypeError(msg)
-        if isinstance(venv, PassthroughEnv):
-            if self.install_skipped:
-                return
-            msg = (
-                f"Session {self.name} does not have a virtual environment, so use of"
-                " session.install() is no longer allowed since it would modify the"
-                " global Python environment. If you're really sure that is what you"
-                ' want to do, use session.run("pip", "install", ...) instead.'
-            )
-            raise ValueError(msg)
         if not args:
             msg = "At least one argument required to install()."
             raise ValueError(msg)
 
         if self.install_skipped:
             return
+
+        if isinstance(venv, PassthroughEnv):
+            msg = (
+                f"Session {self.name} does not have a virtual environment, so use of"
+                " session.install() is no longer allowed since it would modify the"
+                " global Python environment. If you're really sure that is what you"
+                ' want to do, use session.run("pip", "install", ...) instead.'
+            )
+            raise ValueError(msg)  # noqa: TRY004
 
         if silent is None:
             silent = not self._runner.global_config.verbose

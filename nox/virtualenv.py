@@ -543,6 +543,14 @@ class PassthroughEnv(ProcessEnv):
 
     conda_cmd = "conda"
 
+    def __init__(
+        self,
+        bin_paths: Sequence[str] | None = None,
+        env: Mapping[str, str | None] | None = None,
+    ) -> None:
+        super().__init__(bin_paths, env)
+        self._reused = True
+
     @staticmethod
     def is_offline() -> bool:
         """As of now this is only used in conda_install"""

@@ -555,6 +555,25 @@ class TestSession:
 
         assert not run.called
 
+    def test_run_install_passthrough(self) -> None:
+        session, runner = self.make_session_and_runner()
+        runner.venv = nox.virtualenv.PassthroughEnv()
+        runner.global_config.no_install = False
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.run_install("pip", "install", "numpy")
+
+        assert run.called
+
+    @pytest.mark.parametrize("no_install", [True, False])
+    def test_run_install_no_args(self, no_install: bool) -> None:
+        session, runner = self.make_session_and_runner()
+        runner.venv = nox.virtualenv.PassthroughEnv()
+        runner.global_config.no_install = no_install
+
+        with pytest.raises(ValueError, match="At least one argument"):
+            session.run_install()
+
     def test_run_no_conda_install(self) -> None:
         session, _runner = self.make_session_and_runner()
 
