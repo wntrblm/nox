@@ -169,7 +169,9 @@ class Call(Func):
             func.should_warn,
             func.tags + param_spec.tags,
             default=func.default,
-            requires=func.requires,
+            # Format ``{python}`` with this call's Python, which may come from
+            # ``@nox.parametrize``.
+            requires=func._requires,
             download_python=func.download_python,
             allow_parallel=func.allow_parallel,
         )
