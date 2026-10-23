@@ -444,6 +444,34 @@ def test_add_dependencies_with_empty_parametrize_and_multiple_pythons() -> None:
     assert [session.name for session in manifest._queue] == ["empty", "empty"]
 
 
+def test_add_dependencies_with_python_from_parametrize() -> None:
+    manifest = Manifest({}, create_mock_config())
+
+    def build(session: nox.Session) -> None:
+        pass
+
+    # The Python is selected by ``@nox.parametrize``, so ``{python}`` in
+    # ``requires`` must be formatted with each parametrized Python.
+    @nox.parametrize("python", ["3.10", "3.11"])
+    def tests(session: nox.Session) -> None:
+        pass
+
+    for session in manifest.make_session("build", Func(build, python=["3.10", "3.11"])):
+        manifest.add_session(session)
+    for session in manifest.make_session(
+        "tests", Func(tests, requires=["build-{python}"])
+    ):
+        manifest.add_session(session)
+
+    manifest.filter_by_name(["tests(python='3.11')"])
+    manifest.add_dependencies()
+
+    assert [session.friendly_name for session in manifest._queue] == [
+        "build-3.11",
+        "tests(python='3.11')",
+    ]
+
+
 def test_notify() -> None:
     manifest = Manifest({}, create_mock_config())
 
