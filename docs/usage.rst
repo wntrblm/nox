@@ -216,7 +216,7 @@ advantageous to reuse the virtualenvs between runs.  Use ``-r`` or
     nox --reuse-venv=yes # preferred
 
 If the Noxfile sets ``nox.options.reuse_existing_virtualenvs``, you can override the Noxfile setting from the command line by using ``--no-reuse-existing-virtualenvs``.
-Similarly you can override ``nox.options.reuse_venvs`` from the Noxfile via the command line by using ``--reuse-venv=yes|no|always|never``.
+Similarly you can override ``nox.options.reuse_venv`` from the Noxfile via the command line by using ``--reuse-venv=yes|no|always|never``.
 
 .. note::
 
