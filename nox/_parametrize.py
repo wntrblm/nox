@@ -177,7 +177,7 @@ def parametrize_decorator(
         _arg_values_list, ids, tags
     ):
         if isinstance(param_arg_values, Param):
-            param_spec = param_arg_values
+            param_spec = param_arg_values.copy()
             param_spec.arg_names = tuple(arg_names)
         else:
             param_spec = Param(

@@ -66,6 +66,85 @@ def test_parametrize_decorator_one_param() -> None:
     assert f.parametrize == [_parametrize.Param(1, arg_names=("abc",))]  # type: ignore[attr-defined]
 
 
+@pytest.mark.parametrize("as_list", [False, True])
+def test_parametrize_reuses_param_between_sessions(as_list: bool) -> None:
+    value = object()
+    param = nox.param(value, id="shared", tags=["sample"])
+    values = [param] if as_list else param
+    received: list[tuple[nox.Session, object]] = []
+
+    @session
+    @parametrize("left", values, ids=["outer"], tags=[["outer"]])
+    def first(session: nox.Session, left: object) -> None:
+        received.append((session, left))
+
+    @session
+    @parametrize("right", values)
+    def second(session: nox.Session, right: object) -> None:
+        received.append((session, right))
+
+    for function in (first, second):
+        calls = _decorators.Call.generate_calls(function, function.parametrize)
+        assert len(calls) == 1
+        assert calls[0].session_signature == "(shared)"
+        assert calls[0].tags == ["sample"]
+        calls[0](mock.sentinel.session)
+
+    assert received == [(mock.sentinel.session, value)] * 2
+    assert param.arg_names == ()
+    assert param.id == "shared"
+    assert param.tags == ["sample"]
+
+
+@pytest.mark.parametrize("as_list", [False, True])
+def test_parametrize_reuses_param_in_stacked_decorators(as_list: bool) -> None:
+    value = object()
+    param = nox.param(value, tags=["sample"])
+    values = [param] if as_list else param
+    received: list[tuple[nox.Session, object, object]] = []
+
+    @session
+    @parametrize("left", values)
+    @parametrize("right", values)
+    def f(session: nox.Session, left: object, right: object) -> None:
+        received.append((session, left, right))
+
+    calls = _decorators.Call.generate_calls(f, f.parametrize)
+    assert len(calls) == 1
+    assert calls[0].call_spec == {"right": value, "left": value}
+    assert calls[0].tags == ["sample", "sample"]
+    calls[0](mock.sentinel.session)
+    assert received == [(mock.sentinel.session, value, value)]
+    assert param.arg_names == ()
+    assert param.id is None
+    assert param.tags == ["sample"]
+
+
+@pytest.mark.parametrize("as_list", [False, True])
+def test_parametrize_reuses_multi_argument_param(as_list: bool) -> None:
+    param = nox.param("value", 42)
+    values = [param] if as_list else param
+    received: list[tuple[nox.Session, str, int]] = []
+
+    @session
+    @parametrize("left, count", values)
+    def first(session: nox.Session, left: str, count: int) -> None:
+        received.append((session, left, count))
+
+    @session
+    @parametrize("right, number", values)
+    def second(session: nox.Session, right: str, number: int) -> None:
+        received.append((session, right, number))
+
+    for function in (first, second):
+        calls = _decorators.Call.generate_calls(function, function.parametrize)
+        assert len(calls) == 1
+        calls[0](mock.sentinel.session)
+
+    assert received == [(mock.sentinel.session, "value", 42)] * 2
+    assert param.arg_names == ()
+
+
 def test_parametrize_decorator_one_with_args() -> None:
     def f() -> None:
         pass
