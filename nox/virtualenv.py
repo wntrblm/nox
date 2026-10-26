@@ -820,7 +820,8 @@ class VirtualEnv(ProcessEnv):
     def allowed_globals(self) -> tuple[str, ...]:
         """uv/uvx are allowed, even if not in the environment."""
         _, uv, _ = _uv_state()
-        return (uv, f"{uv}x")
+        root, ext = os.path.splitext(uv)
+        return (uv, f"{root}x{ext}")
 
     def __init__(
         self,

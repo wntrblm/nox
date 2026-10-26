@@ -1232,6 +1232,10 @@ def test_allowed_globals(
     monkeypatch.setattr(nox.virtualenv, "UV", "/some/uv")
     assert venv.allowed_globals == ("/some/uv", "/some/uvx")
 
+    # nox[uv] on Windows finds the bundled uv.exe
+    monkeypatch.setattr(nox.virtualenv, "UV", "/some/uv.exe")
+    assert venv.allowed_globals == ("/some/uv.exe", "/some/uvx.exe")
+
 
 def test_discover_interpreter(monkeypatch: pytest.MonkeyPatch) -> None:
     """``_discover_interpreter`` forwards the spec to python-discovery."""
