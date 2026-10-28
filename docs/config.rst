@@ -123,6 +123,13 @@ You can tell Nox to use a different Python interpreter/version by specifying the
     .. _python-discovery: https://pypi.org/project/python-discovery/
     .. _PEP 514: https://peps.python.org/pep-0514/
 
+Nox does not impose a separate supported-version range on the Python
+interpreters used by sessions. A target version works when Nox can discover or
+download its interpreter and the selected environment backend can create an
+environment with it. Backends and the packages they use may have their own
+Python support ranges. Any non end-of-life Python should work, and
+a few older Python versions usually work too depending on the backend.
+
 You can also tell Nox to run your session against multiple Python interpreters. Nox will create a separate virtualenv and run the session for each interpreter you specify. For example, this session will run twice - once for Python 3.13 and once for Python 3.14:
 
 .. code-block:: python
@@ -207,7 +214,7 @@ You can also specify that the virtualenv should *always* be reused instead of re
     def tests(session):
         pass
 
-You are not limited to virtualenv, there is a selection of backends you can choose from as venv, uv, conda, mamba, micromamba, or virtualenv (default):
+You are not limited to virtualenv, there is a selection of backends you can choose from as venv, uv, conda, mamba, micromamba, rattler, or virtualenv (default):
 
 .. code-block:: python
 
@@ -216,10 +223,11 @@ You are not limited to virtualenv, there is a selection of backends you can choo
         pass
 
 You can chain together optional backends with ``|``, such as ``uv|virtualenv``
-or ``micromamba|mamba|conda``, and the first available backend will be selected.
-A backend that is known to reject the session's Python is skipped too, so
-``uv|virtualenv`` falls back to ``virtualenv`` for Python older than 3.8, which
-``uv`` cannot create.
+or ``rattler|micromamba|mamba|conda``, and the first available backend will be selected.
+An available backend that is known to reject the session's Python is skipped
+when a later backend is available, so ``uv|virtualenv`` falls back to
+``virtualenv`` for Python older than 3.6 (3.8 before uv 0.10.12), which ``uv``
+cannot create.
 You cannot put anything after a backend that can't be missing like ``venv`` or
 ``virtualenv``.
 
@@ -514,6 +522,16 @@ The session object
 
 Nox will call your session functions with an instance of the :class:`Session`
 class.
+
+Use :attr:`Session.parallel` to detect execution under Nox's parallel
+scheduler and avoid enabling another layer of automatic parallelism:
+
+.. code-block:: python
+
+    @nox.session(allow_parallel=True)
+    def tests(session):
+        session.install("pytest", "pytest-xdist")
+        session.run("pytest", "-n", "0" if session.parallel else "auto")
 
 .. autoclass:: Session
     :members:

@@ -52,6 +52,24 @@ def test_load_script_block(tmp_path: Path, example: str) -> None:
     assert toml["dependencies"] == ["requests<3", "rich"]
 
 
+def test_load_script_block_after_bom(tmp_path: Path) -> None:
+    filepath = tmp_path / "example.py"
+    filepath.write_text(
+        textwrap.dedent(
+            """\
+            # /// script
+            # dependencies = ["rich"]
+            # ///
+            import rich
+            """
+        ),
+        encoding="utf-8-sig",
+    )
+
+    toml = nox.project.load_toml(filepath)
+    assert toml["dependencies"] == ["rich"]
+
+
 def test_load_no_script_block(tmp_path: Path) -> None:
     filepath = tmp_path / "example.py"
     filepath.write_text(

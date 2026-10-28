@@ -44,6 +44,7 @@ from packaging import specifiers, version
 
 import nox
 import nox.command
+from nox import _rattler
 from nox.logger import logger
 
 if TYPE_CHECKING:
@@ -70,6 +71,7 @@ __all__ = [
     "InterpreterNotFound",
     "PassthroughEnv",
     "ProcessEnv",
+    "RattlerEnv",
     "VirtualEnv",
     "find_uv",
     "get_virtualenv",
@@ -414,6 +416,7 @@ def __getattr__(name: str) -> Any:
             "conda": shutil.which("conda") is not None,
             "mamba": shutil.which("mamba") is not None,
             "micromamba": shutil.which("micromamba") is not None,
+            "rattler": _rattler.is_available(),
             "uv": _uv_state()[0],
         }
     msg = f"module {__name__!r} has no attribute {name!r}"
@@ -609,22 +612,16 @@ class CondaEnv(ProcessEnv):
         if os.path.exists(self.location):
             if self.reuse_existing and is_conda:
                 return False
-            if not is_conda:
-                shutil.rmtree(self.location, ignore_errors=True)
-            else:
-                cmd = [
-                    self.conda_cmd,
-                    "remove",
-                    "--yes",
-                    "--prefix",
-                    self.location,
-                    "--all",
-                ]
-                nox.command.run(cmd, silent=True, log=False)
+            if is_conda:
+                self._remove_env()
             # Make sure that location is clean
             shutil.rmtree(self.location, ignore_errors=True)
 
         return True
+
+    def _remove_env(self) -> None:
+        cmd = [self.conda_cmd, "remove", "--yes", "--prefix", self.location, "--all"]
+        nox.command.run(cmd, silent=True, log=False)
 
     @property
     def bin_paths(self) -> list[str]:
@@ -655,6 +652,14 @@ class CondaEnv(ProcessEnv):
 
             return False
 
+        python_dep = self._python_spec()
+        logger.info(
+            f"Creating {self.venv_backend} env in {self.location_name} with {python_dep}"
+        )
+        self._create_env(python_dep)
+        return True
+
+    def _create_env(self, python_dep: str) -> None:
         cmd = [self.conda_cmd, "create", "--yes", "--prefix", self.location]
         if self.conda_cmd == "micromamba" and not any(
             v.startswith(("--channel=", "-c")) or v == "--channel"
@@ -666,24 +671,20 @@ class CondaEnv(ProcessEnv):
         cmd.extend(self.venv_params)
 
         # Ensure the pip package is installed.
-        cmd.append("pip")
-
-        if self.interpreter:
-            # Conda understands PEP 440 range operators (e.g. ">=3.10,<4")
-            # directly; only a bare version needs "=".
-            spec = self.interpreter.replace(" ", "")
-            prefix = "" if spec[0] in "<>!~=" else "="
-            python_dep = f"python{prefix}{spec}"
-        else:
-            python_dep = "python"
-        cmd.append(python_dep)
-
-        logger.info(
-            f"Creating {self.conda_cmd} env in {self.location_name} with {python_dep}"
-        )
+        cmd.extend(["pip", python_dep])
         nox.command.run(cmd, silent=True, log=nox.options.verbose or False)
 
-        return True
+    def _python_spec(self) -> str:
+        """Conda spec for the requested interpreter.
+
+        Conda understands PEP 440 range operators (e.g. ">=3.10,<4") directly;
+        only a bare version needs "=".
+        """
+        if not self.interpreter:
+            return "python"
+        spec = self.interpreter.replace(" ", "")
+        prefix = "" if spec[0] in "<>!~=" else "="
+        return f"python{prefix}{spec}"
 
     @staticmethod
     def is_offline() -> bool:
@@ -705,6 +706,70 @@ class CondaEnv(ProcessEnv):
     @property
     def venv_backend(self) -> str:
         return self.conda_cmd
+
+
+def _parse_conda_args(args: Sequence[str]) -> tuple[list[str], list[str]]:
+    """Split conda-style args into channels and specs, expanding ``--file``.
+
+    Only ``-c``/``--channel`` and ``--file`` are accepted; any other option
+    raises ``ValueError``.
+    """
+    channels: list[str] = []
+    specs: list[str] = []
+    params = iter(args)
+    for param in params:
+        opt, _, value = param.partition("=")
+        if opt in {"-c", "--channel", "--file"} and not value:
+            value = next(params)
+        if opt in {"-c", "--channel"}:
+            channels.append(value)
+        elif opt == "--file":
+            specs.extend(_rattler.read_spec_file(value))
+        elif param.startswith("-"):
+            msg = f"The rattler backend does not support the {param!r} option."
+            raise ValueError(msg)
+        else:
+            specs.append(param)
+    return channels, specs
+
+
+class RattlerEnv(CondaEnv):
+    """Conda environment created in-process with py-rattler.
+
+    Needs the ``[rattler]`` extra. Only ``--channel``/``-c`` and package specs
+    are accepted in ``venv_params``; the channels default to ``conda-forge``.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        channels, self._extra_specs = _parse_conda_args(self.venv_params)
+        self.channels = channels or ["conda-forge"]
+
+    @property
+    def allowed_globals(self) -> tuple[str, ...]:
+        return ()
+
+    @property
+    def venv_backend(self) -> str:
+        return "rattler"
+
+    def _remove_env(self) -> None:
+        """Nothing to do: the caller removes the prefix."""
+
+    def _create_env(self, python_dep: str) -> None:
+        self.install("pip", python_dep, *self._extra_specs)
+
+    def install(
+        self, *args: str, channel: Sequence[str] = (), offline: bool = False
+    ) -> None:
+        """Install conda specs into the environment.
+
+        Accepts specs, ``--channel`` and ``--file <path>`` like ``conda
+        install``. Channels given here take priority over the environment's.
+        """
+        arg_channels, specs = _parse_conda_args(args)
+        channels = list(dict.fromkeys([*channel, *arg_channels, *self.channels]))
+        _rattler.sync(self.location, specs, channels, offline=offline)
 
 
 class VirtualEnv(ProcessEnv):
@@ -1017,6 +1082,7 @@ ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {
     "conda": functools.partial(CondaEnv, conda_cmd="conda"),
     "mamba": functools.partial(CondaEnv, conda_cmd="mamba"),
     "micromamba": functools.partial(CondaEnv, conda_cmd="micromamba"),
+    "rattler": RattlerEnv,
     "virtualenv": functools.partial(VirtualEnv, venv_backend="virtualenv"),
     "venv": functools.partial(VirtualEnv, venv_backend="venv"),
     "uv": functools.partial(VirtualEnv, venv_backend="uv"),

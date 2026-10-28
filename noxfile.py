@@ -67,7 +67,7 @@ def tests(session: nox.Session) -> None:
         "pytest",
         *parallel,
         "-m",
-        "not conda",
+        "not conda and not rattler",
         *session.posargs,
         env=env,
     )
@@ -78,11 +78,15 @@ def tests(session: nox.Session) -> None:
 @nox.session(venv_backend="uv", default=False)
 def minimums(session: nox.Session) -> None:
     """Run test suite with the lowest supported versions of everything. Requires uv."""
-    session.create_tmp()
+    tmpdir = session.create_tmp()
+    # Old virtualenv races newer ones in a shared app-data dir
+    session.env["VIRTUALENV_OVERRIDE_APP_DATA"] = os.path.abspath(
+        os.path.join(tmpdir, "virtualenv")
+    )
 
     session.install("-e.", "--group=test", "--resolution=lowest-direct")
     session.run("uv", "pip", "list")
-    session.run("pytest", "-m", "not conda", *session.posargs)
+    session.run("pytest", "-m", "not conda and not rattler", *session.posargs)
 
 
 def xonda_tests(session: nox.Session, xonda: str) -> None:
@@ -132,6 +136,23 @@ def mamba_tests(session: nox.Session) -> None:
 def micromamba_tests(session: nox.Session) -> None:
     """Run test suite set up with micromamba."""
     xonda_tests(session, "micromamba")
+
+
+@nox.session(venv_backend="rattler", default=False)
+def rattler_tests(session: nox.Session) -> None:
+    """Run the rattler backend tests. Requires nox[rattler]."""
+    coverage_file = f".coverage.rattler.{sys.platform}.{platform.machine()}"
+    env = {"COVERAGE_FILE": coverage_file}
+
+    session.conda_install("--file", "requirements-conda-test.txt", "py-rattler")
+    session.install("-e.", "--no-deps")
+
+    session.run("coverage", "erase", env=env)
+    session.run(
+        "coverage", "run", "-m", "pytest", "-m", "rattler", *session.posargs, env=env
+    )
+    session.run("coverage", "combine", env=env)
+    session.run("coverage", "report", env=env)
 
 
 @nox.session(default=False)

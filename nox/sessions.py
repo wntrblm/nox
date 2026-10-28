@@ -52,6 +52,7 @@ from nox.virtualenv import (
     CondaEnv,
     PassthroughEnv,
     ProcessEnv,
+    RattlerEnv,
     VirtualEnv,
     get_virtualenv,
 )
@@ -259,6 +260,16 @@ class Session:
         """Returns True if Nox is being run in an interactive session or False otherwise."""
         return not self._runner.global_config.non_interactive and sys.stdin.isatty()
 
+    @property
+    def parallel(self) -> bool:
+        """Whether this session is running under Nox's parallel scheduler.
+
+        This describes the execution mode, not the number of sessions
+        currently running. It remains true for a session that runs alone
+        because of dependencies or ``allow_parallel=False``.
+        """
+        return self._runner.global_config.parallel_worker
+
     def install_and_run_script(
         self,
         script: str | os.PathLike[str],
@@ -277,7 +288,8 @@ class Session:
         Install dependencies and run a Python script.
         """
         deps = nox.project.load_toml(script).get("dependencies", [])
-        self.install(*deps)
+        if deps:
+            self.install(*deps)
 
         return self.run(
             "python",
@@ -748,6 +760,10 @@ class Session:
         set default channels, and default channels vary for conda. Note that
         "defaults" is also not permissively licensed like "conda-forge" is.
 
+        The ``rattler`` backend runs in-process and accepts specs,
+        ``--channel`` and ``--file`` only; other ``conda install`` options
+        raise ``ValueError``.
+
         Additional keyword args are the same as for :meth:`run`.
 
         .. _conda install:
@@ -776,19 +792,25 @@ class Session:
         if silent is None:
             silent = not self._runner.global_config.verbose
 
-        extraopts: list[str] = []
-        if auto_offline and venv.is_offline():
+        offline = auto_offline and venv.is_offline()
+        if offline:
             logger.warning(
                 "Automatically setting the `--offline` flag as conda repo seems"
                 " unreachable."
             )
-            extraopts.append("--offline")
+        channels = [channel] if isinstance(channel, str) else list(channel)
+        channels = [c for c in channels if c]
 
-        if channel:
-            if isinstance(channel, str):
-                extraopts.append(f"--channel={channel}")
-            else:
-                extraopts += [f"--channel={c}" for c in channel]
+        if isinstance(venv, RattlerEnv):
+            if log:
+                logger.info(f"rattler install {' '.join(args)}")
+            venv.install(*args, channel=channels, offline=offline)
+            return
+
+        extraopts: list[str] = []
+        if offline:
+            extraopts.append("--offline")
+        extraopts += [f"--channel={c}" for c in channels]
 
         self._run(
             venv.conda_cmd,
@@ -1060,7 +1082,7 @@ class SessionRunner:
         self.global_config = global_config
         self.manifest = manifest
         self.venv: ProcessEnv | None = None
-        self.posargs: list[str] = global_config.posargs[:]
+        self.posargs: list[str] = list(global_config.posargs)
         self.result: Result | None = None
         self.multi = multi
 

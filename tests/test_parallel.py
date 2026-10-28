@@ -34,6 +34,7 @@ from nox.sessions import Result, Session, SessionRunner, Status
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
 
     from nox.manifest import Manifest
 
@@ -316,6 +317,89 @@ def test_parallel_exclusive_session_runs_alone(
     assert not overlaps
 
 
+@pytest.mark.parametrize("parallel_worker", [False, True])
+def test_session_parallel(parallel_worker: bool) -> None:
+    config = _config(parallel=1, parallel_worker=parallel_worker)
+    runner = types.SimpleNamespace(global_config=config)
+    session = Session(typing.cast("SessionRunner", runner))
+
+    assert session.parallel is parallel_worker
+
+
+def test_child_argv_marks_parallel_worker() -> None:
+    config = _config(parallel=4)
+    argv = _parallel._child_argv(config, _fake_runner(FakeSession("tests")), "r.json")
+    child_config = _options.options.parse_args(argv[3:])
+
+    assert child_config.parallel_worker is True
+    assert child_config.parallel == 1
+    assert config.parallel_worker is False
+    assert config.parallel == 4
+
+
+def test_parallel_worker_is_internal() -> None:
+    assert not hasattr(_options.NoxfileOptions(), "parallel_worker")
+    assert "--parallel-worker" not in _options.options.parser().format_help()
+
+
+@pytest.mark.parametrize(
+    ("args", "allow_parallel", "expected"),
+    [
+        ([], True, False),
+        (["-j", "1"], True, False),
+        (["-j", "2"], True, True),
+        (["-j", "2"], False, False),
+        (["-j", "2", "--allow-parallel"], None, True),
+    ],
+)
+def test_session_parallel_subprocess(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    args: list[str],
+    allow_parallel: bool | None,
+    expected: bool,
+) -> None:
+    monkeypatch.setenv("NOX_PARALLEL", "1")
+    monkeypatch.setenv("PYTHONIOENCODING", "utf-8")
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(
+        f"""import nox
+
+@nox.session(venv_backend="none", allow_parallel={allow_parallel!r})
+@nox.parametrize("index", [1, 2])
+def probe(session, index):
+    session.log(f"parallel={{session.parallel}}")
+
+@nox.session(venv_backend="none", allow_parallel=False)
+def exclusive(session):
+    session.log(f"parallel={{session.parallel}}")
+""",
+        encoding="utf-8",
+    )
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "nox",
+            "--noxfile",
+            str(noxfile),
+            "--session",
+            "probe",
+            "exclusive",
+            "--nocolor",
+            *args,
+        ],
+        capture_output=True,
+        check=False,
+        encoding="utf-8",
+        timeout=30,
+    )
+    output = completed.stdout + completed.stderr
+
+    assert completed.returncode == 0, output
+    assert output.count(f"parallel={expected}") == 3
+
+
 def test_child_argv_full() -> None:
     config = _options.options.namespace(
         noxfile="nf.py",
@@ -569,10 +653,8 @@ def test_reporter_render() -> None:
     reporter._active = {"a": 100.0, "b": 100.0}
     reporter._preview = {"a": "compiling module x"}
     lines = reporter._render(105.0, width=0)
-    # An experimental banner, a summary header, then a line per running
-    # session (``a`` has a preview).
+    # A summary header, then a line per running session (``a`` has a preview).
     assert lines == [
-        " --parallel is experimental — looking for feedback! ",
         "nox > --parallel: running 2 · passed 0 · failed 0 · queued 0",
         "⠋ a (5s)  compiling module x",
         "⠋ b (5s)",
@@ -585,16 +667,15 @@ def test_reporter_render_header_counts() -> None:
     reporter._passed = 2
     reporter._failed = 1
     # queued = total - (passed + failed) - running = 6 - 3 - 2 = 1
-    assert reporter._render(105.0, width=0)[1] == (
+    assert reporter._render(105.0, width=0)[0] == (
         "nox > --parallel: running 2 · passed 2 · failed 1 · queued 1"
     )
     # No running sessions -> nothing is drawn.
     reporter._active = {}
     assert reporter._render(105.0, width=0) == []
-    # Narrow width hard-truncates the (plain) banner and header.
+    # Narrow width hard-truncates the (plain) header.
     reporter._active = {"a": 100.0}
-    banner, header = reporter._render(105.0, width=8)[:2]
-    assert len(banner) == 7
+    header = reporter._render(105.0, width=8)[0]
     assert len(header) == 7
     assert "\x1b" not in header
 
@@ -604,11 +685,11 @@ def test_reporter_render_truncates_to_width() -> None:
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "x" * 200}
     # Wide enough for the header plus a trimmed preview: fills width - 1.
-    assert len(reporter._render(105.0, width=20)[2]) == 19
+    assert len(reporter._render(105.0, width=20)[1]) == 19
     # No room for a preview after the header: session line only, no trailing spaces.
-    assert reporter._render(105.0, width=11)[2] == "⠋ a (5s)"
+    assert reporter._render(105.0, width=11)[1] == "⠋ a (5s)"
     # Too narrow even for the header: hard truncation to width - 1.
-    line = reporter._render(105.0, width=5)[2]
+    line = reporter._render(105.0, width=5)[1]
     assert len(line) == 4
     assert "\x1b" not in line
 
@@ -619,7 +700,56 @@ def test_reporter_render_uses_ascii_spinner_for_legacy_encoding() -> None:
         reporter = _parallel._Reporter(color=False, tty=True, total=1)
         reporter.stream = stream
         reporter._active = {"a": 100.0}
-        assert reporter._render(105.0, width=0)[2] == "| a (5s)"
+        assert reporter._render(105.0, width=0)[1] == "| a (5s)"
+
+
+@pytest.mark.parametrize("encoding", ["cp932", "ascii"])
+def test_reporter_header_uses_ascii_for_legacy_encoding(encoding: str) -> None:
+    # Neither can encode the middle dot separating the counters.
+    buffer = io.BytesIO()
+    with io.TextIOWrapper(buffer, encoding=encoding) as stream:
+        reporter = _parallel._Reporter(color=False, tty=True, total=1)
+        reporter.stream = stream
+        reporter._active = {"a": 100.0}
+        reporter._skipped = 1
+        header = reporter._render(105.0, width=0)[0]
+        assert "\u00b7" not in header
+        header.encode(encoding)
+
+
+def test_reporter_escapes_unencodable_output() -> None:
+    # Session names and child output are arbitrary text; a strict legacy
+    # console must not abort the run.
+    buffer = io.BytesIO()
+    with io.TextIOWrapper(buffer, encoding="ascii") as stream:
+        with _parallel._Reporter(color=False, tty=False) as reporter:
+            reporter.stream = stream
+            reporter.started("tést")
+            reporter.finished(
+                "tést",
+                Result(_fake_runner(FakeSession("tést")), Status.SUCCESS, duration=0.0),
+                "───\n",
+            )
+        stream.flush()
+        out = buffer.getvalue().decode("ascii")
+    assert "Starting session t\\xe9st..." in out
+    assert "+ t\\xe9st: success" in out
+    assert "\\u2500\\u2500\\u2500" in out
+
+
+def test_reporter_render_escapes_before_truncating() -> None:
+    # Escaping after truncation would let the written line outgrow the width
+    # the board accounts for, so redraws leave stale rows behind.
+    buffer = io.BytesIO()
+    with io.TextIOWrapper(buffer, encoding="cp1252") as stream:
+        reporter = _parallel._Reporter(color=False, tty=True, total=1)
+        reporter.stream = stream
+        reporter._active = {"tést": 100.0}
+        reporter._preview = {"tést": "─" * 100}
+        line = reporter._render(105.0, width=40)[1]
+        assert line.startswith("| tést (5s)  \\u2500\\u2500")
+        assert len(line) == 39
+        assert len(line.encode("cp1252")) == 39
 
 
 def test_reporter_render_color() -> None:
@@ -627,11 +757,8 @@ def test_reporter_render_color() -> None:
     reporter._active = {"a": 100.0}
     reporter._preview = {"a": "installing"}
     reporter._skipped = 1
-    banner, header, line = reporter._render(105.0, width=0)
+    header, line = reporter._render(105.0, width=0)
     bold, dim, reset = (parse_colors(c) for c in ("bold", "thin", "reset"))
-    assert "\x1b[43m" in banner  # yellow background
-    assert "\x1b[30m" in banner  # black text
-    assert "experimental" in banner
     assert f"{bold}\x1b[35mnox > --parallel:{reset}" in header  # bold purple prefix
     assert "\x1b[34m" in header  # blue "running"
     assert "\x1b[32m" in header  # green "passed"
@@ -667,8 +794,7 @@ def test_reporter_started_and_finished(capsys: pytest.CaptureFixture[str]) -> No
             "session output\n",
         )
     out = capsys.readouterr().out
-    # Without a TTY the banner is printed once, when the reporter starts.
-    assert "--parallel is experimental" in out
+    assert "experimental" not in out
     assert "Starting session a..." in out
     assert "✓ a: success" in out
     assert "session output" in out
@@ -702,7 +828,7 @@ def test_reporter_counts_skipped_separately() -> None:
     assert reporter._passed == 0
     assert reporter._skipped == 1
     reporter._active = {"a": 100.0}
-    header = reporter._render(105.0, width=0)[1]
+    header = reporter._render(105.0, width=0)[0]
     assert "skipped 1" in header
     # queued = total - done - running = 3 - 1 - 1 = 1
     assert "queued 1" in header

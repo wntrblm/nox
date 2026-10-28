@@ -168,6 +168,26 @@ def test_commands(makeconfig: Callable[[str], str]) -> None:
     )
 
 
+def test_commands_keep_quoted_path_with_spaces(
+    makeconfig: Callable[[str], str],
+) -> None:
+    result = makeconfig(
+        textwrap.dedent(
+            f"""
+    [tox]
+    envlist = lint
+
+    [testenv:lint]
+    basepython = python{PYTHON_VERSION}
+    commands =
+        python --path '/tmp/foo bar'
+    """
+        )
+    )
+
+    assert "session.run('python', '--path', '/tmp/foo bar')" in result
+
+
 def test_deps(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(

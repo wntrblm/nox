@@ -37,20 +37,29 @@ def test_get_dependencies() -> None:
         dep_list = {
             "argcomplete",
             "attrs",
+            "cachetools",
+            "colorama",
             "colorlog",
             "dependency-groups",
+            "distlib",
+            "filelock",
             "humanize",
             "jinja2",
+            "MarkupSafe",
             "nox",
             "packaging",
             "platformdirs",
+            "pluggy",
+            "pyproject-api",
             "python-discovery",
+            "tomli-w",
             "tox",
             "virtualenv",
         }
         if sys.version_info < (3, 11):
             dep_list.add("tomli")
-        assert {d.name for d in deps} == dep_list
+        # tox's typing-extensions marker varies by version
+        assert {d.name for d in deps} - {"typing-extensions"} == dep_list
 
 
 def test_get_dependencies_memoized(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -94,6 +103,25 @@ def test_version_check() -> None:
         f"{current_version.major}.{current_version.minor}.{current_version.micro + 1}"
     )
     assert not nox._cli.check_dependencies([f"nox>={plus_one}"])
+
+
+def test_version_check_mandatory_dependency_without_extras(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A dependency's own mandatory (markerless) requirements must be
+    checked even when nothing requests an extra on it. ``nox`` unconditionally
+    requires ``packaging>=22``; pretend a too-old ``packaging`` is installed
+    and confirm that is caught with no extras involved anywhere."""
+    real_version = importlib.metadata.version
+
+    def fake_version(name: str) -> str:
+        if name == "packaging":
+            return "1.0"
+        return real_version(name)
+
+    monkeypatch.setattr(importlib.metadata, "version", fake_version)
+
+    assert not nox._cli.check_dependencies(["nox"])
 
 
 def test_nox_check() -> None:

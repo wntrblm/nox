@@ -22,6 +22,7 @@ __lazy_modules__ = {
     "functools",
     "pathlib",
     "re",
+    "shlex",
     "subprocess",
 }
 
@@ -29,6 +30,7 @@ import argparse
 import functools
 import os
 import re
+import shlex
 import sys
 from configparser import ConfigParser
 from pathlib import Path
@@ -103,13 +105,19 @@ def main() -> None:
                 "PYTHONHASHSEED",
                 "PIP_DISABLE_PIP_VERSION_CHECK",
                 "PYTHONIOENCODING",
+                # Listed by tox 4.64.8+
+                "PIP_USER",
+                "TOX_ENV_DIR",
+                "TOX_ENV_NAME",
+                "TOX_WORK_DIR",
+                "VIRTUAL_ENV",
             }:
                 set_env[k] = v
 
         config[name]["set_env"] = set_env
 
         config[name]["commands"] = [
-            wrapjoin(c.split()) for c in section["commands"].strip().splitlines()
+            wrapjoin(shlex.split(c)) for c in section["commands"].strip().splitlines()
         ]
 
         config[name]["deps"] = wrapjoin(
