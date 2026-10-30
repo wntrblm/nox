@@ -680,8 +680,7 @@ class Session:
             ):
                 args = (nox.virtualenv.UV, *args[1:])
             elif args[0] == "uvx" and shutil.which("uvx", path=self.bin) is None:
-                root, ext = os.path.splitext(nox.virtualenv.UV)
-                args = (f"{root}x{ext}", *args[1:])
+                args = (nox.virtualenv.uvx_path(nox.virtualenv.UV), *args[1:])
 
         # Combine the env argument with our virtualenv's env vars.
         env = self.virtualenv._get_env(env or {}, include_outer_env=include_outer_env)

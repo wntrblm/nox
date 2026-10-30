@@ -1236,6 +1236,13 @@ def test_allowed_globals(
     monkeypatch.setattr(nox.virtualenv, "UV", "/some/uv.exe")
     assert venv.allowed_globals == ("/some/uv.exe", "/some/uvx.exe")
 
+    monkeypatch.setattr(nox.virtualenv, "UV", "/some/UV.EXE")
+    assert venv.allowed_globals == ("/some/UV.EXE", "/some/UVx.EXE")
+
+    # Only a .exe suffix is split off
+    monkeypatch.setattr(nox.virtualenv, "UV", "/some/uv-0.4.30")
+    assert venv.allowed_globals == ("/some/uv-0.4.30", "/some/uv-0.4.30x")
+
 
 def test_discover_interpreter(monkeypatch: pytest.MonkeyPatch) -> None:
     """``_discover_interpreter`` forwards the spec to python-discovery."""
