@@ -229,7 +229,7 @@ def _highest_under_upper_bound(
         return None
     try:
         release = version.Version(version_str).release
-    except version.InvalidVersion:
+    except version.InvalidVersion:  # pragma: no cover (python-discovery<1.6.6)
         return None
     if len(release) < 2:
         return None
@@ -276,7 +276,7 @@ def _concrete_install_target(interpreter: str) -> str | None:
         return None
     try:
         allowed = specifiers.SpecifierSet(",".join(f"{op}{ver}" for op, ver in clauses))
-    except specifiers.InvalidSpecifier:
+    except specifiers.InvalidSpecifier:  # pragma: no cover (python-discovery<1.6.6)
         return None
     # The tightest upper bound wins, but another clause (an "!=") can exclude
     # the pick, so step down through the minors until one clears the whole set.
