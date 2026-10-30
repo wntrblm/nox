@@ -1111,6 +1111,61 @@ ALL_VENVS: dict[str, Callable[..., ProcessEnv]] = {
 }
 
 
+def _uv_min_python(uv_ver: version.Version) -> tuple[int, int]:
+    """Return the oldest Python ``uv venv`` accepts for this uv version.
+
+    Older targets fail with "Python <version> is not supported. Please use
+    Python <floor> or newer." uv lowered that floor from 3.8 to 3.6 in 0.10.12.
+    """
+    if version.Version("0.10.12") <= uv_ver:
+        return (3, 6)
+    return (3, 8)
+
+
+def _uv_rejects_interpreter(interpreter: Python) -> bool:
+    """Return ``True`` only when uv is known to reject ``interpreter``.
+
+    A concrete ``major.minor`` is compared with uv's floor. A PEP 440 range is
+    rejected only when it allows no version at or above the floor, since a
+    range like ``>=3.6`` may still discover a newer interpreter. Bare names and
+    paths carry no version, so uv is left to decide for itself.
+    """
+    if not isinstance(interpreter, str):
+        return False
+
+    from python_discovery import PythonSpec  # noqa: PLC0415
+
+    # Match VirtualEnv, which accepts "pypy-3.10" as a spelling of "pypy3.10".
+    if interpreter.startswith("pypy-"):
+        interpreter = interpreter[:4] + interpreter[5:]
+
+    floor = _uv_min_python(_uv_state()[2])
+    spec = PythonSpec.from_string_spec(interpreter)
+    if spec.version_specifier is None:
+        if spec.major is None or spec.minor is None:
+            return False
+        return (spec.major, spec.minor) < floor
+
+    # python-discovery's specifiers don't understand the free-threaded "t"
+    # suffix, so check the bare versions with packaging instead.
+    try:
+        allowed = specifiers.SpecifierSet(
+            ",".join(
+                f"{s.operator}{s.version_str.removesuffix('t')}"
+                for s in spec.version_specifier.specifiers
+            )
+        )
+    except specifiers.InvalidSpecifier:
+        return False
+    major, floor_minor = floor
+    # Any minor up to well past today's releases is enough to find an allowed
+    # version at or above the floor.
+    return not any(
+        allowed.contains(f"{major}.{minor}", prereleases=True)
+        for minor in range(floor_minor, floor_minor + 50)
+    )
+
+
 def get_virtualenv(
     *backends: str,
     download_python: Literal["auto", "never", "always"],
@@ -1132,13 +1187,21 @@ def get_virtualenv(
             msg = f"Only optional backends ({sorted(optional_venvs)!r}) may have a fallback, {bk!r} is not optional."
             raise ValueError(msg)
 
-    for bk in backends:
-        if optional_venvs.get(bk, True):
-            backend = bk
-            break
-    else:
+    available = [bk for bk in backends if optional_venvs.get(bk, True)]
+    if not available:
         msg = f"No backends present, looked for {backends!r}."
         raise ValueError(msg)
+
+    backend = available[0]
+    # uv rejects old Pythons outright instead of leaving them to another
+    # backend. Skip it only when another available backend can take over;
+    # otherwise use it, so that uv's own error is what the user sees.
+    if backend == "uv" and len(available) > 1 and _uv_rejects_interpreter(interpreter):
+        backend = available[1]
+        logger.info(
+            f"uv cannot create an environment for Python {interpreter!r},"
+            f" using the {backend!r} backend instead."
+        )
 
     if backend == "none" or interpreter is False:
         return ALL_VENVS["none"]()
