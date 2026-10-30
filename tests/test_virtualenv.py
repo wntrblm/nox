@@ -1307,6 +1307,30 @@ def test_find_python_cached(
     assert specs == ["python3.99"]
 
 
+def test_find_python_invalid_range(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Newer python-discovery raises ``ValueError`` on a range it can't parse."""
+
+    def discover(spec: str) -> NoReturn:
+        raise ValueError(spec)
+
+    monkeypatch.setattr(nox.virtualenv, "_discover_interpreter", discover)
+    assert nox.virtualenv._find_python("<3.99.") is None
+
+
+def test_concrete_install_target_invalid_range(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Newer python-discovery raises ``ValueError`` on a range it can't parse."""
+
+    def from_string_spec(spec: str) -> NoReturn:
+        raise ValueError(spec)
+
+    monkeypatch.setattr(
+        python_discovery.PythonSpec, "from_string_spec", from_string_spec
+    )
+    assert nox.virtualenv._concrete_install_target("<3.12.") is None
+
+
 def test_get_python_discovery_cache(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

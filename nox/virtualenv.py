@@ -209,7 +209,11 @@ def _find_python(interpreter: str) -> str | None:
     Cached because discovery is pure (read-only) and would otherwise repeat for
     every session using the same spec.
     """
-    info = _discover_interpreter(interpreter)
+    try:
+        info = _discover_interpreter(interpreter)
+    except ValueError:
+        # python-discovery after 1.6.7 raises on a range it can't parse (``<3.12.``).
+        return None
     return info.executable if info is not None else None
 
 
@@ -255,9 +259,13 @@ def _concrete_install_target(interpreter: str) -> str | None:
     from python_discovery import PythonSpec  # noqa: PLC0415
 
     stripped, free_threaded = _split_free_threaded(interpreter)
-    spec = PythonSpec.from_string_spec(stripped)
+    try:
+        spec = PythonSpec.from_string_spec(stripped)
+    except ValueError:
+        # python-discovery after 1.6.7 raises on a range it can't parse (``<3.12.``).
+        return None
     if spec.version_specifier is None:
-        # A range python-discovery can't parse (``<3.12.``) is read as a path.
+        # 1.6.6 and 1.6.7 read a range they can't parse as a path instead.
         return None if _RANGE_SPEC.match(interpreter) else interpreter
     impl = spec.implementation
     prefix = impl if impl and impl != "cpython" else ""
