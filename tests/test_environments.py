@@ -1113,6 +1113,24 @@ def test_location_ownership_guard(tmp_path: Path) -> None:
     assert (tmp_path / ".venv" / "precious.txt").exists()
 
 
+def test_location_ownership_redirect_file(tmp_path: Path) -> None:
+    # PEP 832 allows .venv to be a one-line redirect file
+    (tmp_path / ".venv").write_text("other/env\n", encoding="utf-8")
+    env = nox.env("dev", location=".venv")
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    with pytest.raises(OSError, match="is a file"):
+        manifest["dev:sync"].env_runner._check_location_ownership()
+    assert (tmp_path / ".venv").read_text(encoding="utf-8") == "other/env\n"
+
+
 def test_location_ownership_venv_ok(tmp_path: Path) -> None:
     (tmp_path / ".venv").mkdir()
     (tmp_path / ".venv" / "pyvenv.cfg").write_text(
