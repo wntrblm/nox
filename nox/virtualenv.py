@@ -20,7 +20,6 @@ __lazy_modules__ = {
     "nox.command",
     "nox.logger",
     "packaging",
-    "re",
     "shutil",
     "socket",
     "subprocess",
@@ -169,17 +168,38 @@ def _discover_interpreter(spec: str) -> PythonInfo | None:
     """
     from python_discovery import get_interpreter  # noqa: PLC0415
 
+    spec, free_threaded = _split_free_threaded(spec)
+    kwargs: dict[str, Any] = {}
+    if free_threaded:
+        kwargs["predicate"] = lambda info: info.free_threaded
+
     cache = _get_python_discovery_cache()
     if cache is None:
-        return get_interpreter(spec)
+        return get_interpreter(spec, **kwargs)
     try:
-        return get_interpreter(spec, cache=cache)
+        return get_interpreter(spec, cache=cache, **kwargs)
     except OSError:
         # The cache dir exists but isn't writable (e.g. a read-only home):
         # DiskCache touches the filesystem only lazily, so the failure surfaces
         # here. Degrade to uncached discovery instead of aborting resolution.
         logger.debug("python-discovery cache is not writable; discovering without it.")
-        return get_interpreter(spec)
+        return get_interpreter(spec, **kwargs)
+
+
+_RANGE_SPEC = re.compile(r"^[A-Za-z]*\s*[<>=!~]")
+_RANGE_FREE_THREADED = re.compile(r"(?<=\d)t(?=\s*(?:,|$))")
+
+
+def _split_free_threaded(spec: str) -> tuple[str, bool]:
+    """Strip the free-threaded ``t`` suffix from a range spec.
+
+    python-discovery reads a range like ``>=3.13t`` as a path, so the suffix is
+    removed (``>=3.13``) and returned as a flag for the caller to apply.
+    """
+    if not _RANGE_SPEC.match(spec):
+        return spec, False
+    stripped, count = _RANGE_FREE_THREADED.subn("", spec)
+    return stripped, count > 0
 
 
 @functools.cache
@@ -189,7 +209,11 @@ def _find_python(interpreter: str) -> str | None:
     Cached because discovery is pure (read-only) and would otherwise repeat for
     every session using the same spec.
     """
-    info = _discover_interpreter(interpreter)
+    try:
+        info = _discover_interpreter(interpreter)
+    except ValueError:
+        # python-discovery after 1.6.7 raises on a range it can't parse (``<3.12.``).
+        return None
     return info.executable if info is not None else None
 
 
@@ -209,7 +233,7 @@ def _highest_under_upper_bound(
         return None
     try:
         release = version.Version(version_str).release
-    except version.InvalidVersion:
+    except version.InvalidVersion:  # pragma: no cover (python-discovery<1.6.6)
         return None
     if len(release) < 2:
         return None
@@ -228,32 +252,29 @@ def _concrete_install_target(interpreter: str) -> str | None:
     a lower bound, the highest version under the tightest upper bound that the
     other clauses allow is used instead (``<3.12`` -> ``3.11``,
     ``<3.14,!=3.13.*`` -> ``3.12``). A non-CPython implementation prefix is
-    preserved (``pypy>=3.10`` -> ``pypy3.10``) so the right flavor is installed;
-    the version already carries any free-threaded ``t`` suffix. Ranges with no
-    usable bound (``!=3.12``, ``<4``) return ``None``.
+    preserved (``pypy>=3.10`` -> ``pypy3.10``) so the right flavor is installed,
+    and so is a free-threaded ``t`` suffix (``>=3.13t`` -> ``3.13t``). Ranges
+    with no usable bound (``!=3.12``, ``<4``, ``<3.12.``) return ``None``.
     """
     from python_discovery import PythonSpec  # noqa: PLC0415
 
-    spec = PythonSpec.from_string_spec(interpreter)
+    stripped, free_threaded = _split_free_threaded(interpreter)
+    try:
+        spec = PythonSpec.from_string_spec(stripped)
+    except ValueError:
+        # python-discovery after 1.6.7 raises on a range it can't parse (``<3.12.``).
+        return None
     if spec.version_specifier is None:
-        return interpreter
+        # 1.6.6 and 1.6.7 read a range they can't parse as a path instead.
+        return None if _RANGE_SPEC.match(interpreter) else interpreter
     impl = spec.implementation
     prefix = impl if impl and impl != "cpython" else ""
+    suffix = "t" if free_threaded else ""
     for specifier in spec.version_specifier.specifiers:
         if specifier.operator in {">=", "==", "~=", ">"}:
-            return f"{prefix}{specifier.version_str}"
+            return f"{prefix}{specifier.version_str}{suffix}"
 
-    # python-discovery's specifiers don't understand the free-threaded "t"
-    # suffix, so strip it up front and do the version arithmetic with packaging.
-    suffix = (
-        "t"
-        if any(s.version_str.endswith("t") for s in spec.version_specifier.specifiers)
-        else ""
-    )
-    clauses = [
-        (s.operator, s.version_str.removesuffix("t"))
-        for s in spec.version_specifier.specifiers
-    ]
+    clauses = [(s.operator, s.version_str) for s in spec.version_specifier.specifiers]
     candidates = [
         candidate
         for op, ver in clauses
@@ -263,7 +284,7 @@ def _concrete_install_target(interpreter: str) -> str | None:
         return None
     try:
         allowed = specifiers.SpecifierSet(",".join(f"{op}{ver}" for op, ver in clauses))
-    except specifiers.InvalidSpecifier:
+    except specifiers.InvalidSpecifier:  # pragma: no cover (python-discovery<1.6.6)
         return None
     # The tightest upper bound wins, but another clause (an "!=") can exclude
     # the pick, so step down through the minors until one clears the whole set.
