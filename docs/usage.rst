@@ -240,7 +240,23 @@ The ``--no-install`` option causes the following session methods to return early
 The ``never`` and ``always`` options in ``--reuse-venv`` gives you more fine-grained control
 as it ignores when a ``@nox.session`` has ``reuse_venv=True|False`` defined.
 
-These options have no effect if the virtualenv is not being reused.
+These options have no effect if the virtualenv is not being reused. A session
+with ``venv_backend="none"`` has no virtualenv of its own, so Nox always treats
+it as reused.
+
+To check from a session whether installs are being skipped, use
+:attr:`session.install_skipped <nox.sessions.Session.install_skipped>`. It is
+``False`` for a newly created virtualenv, even if ``--no-install`` was passed:
+
+.. code-block:: python
+
+    @nox.session
+    def mypy(session):
+        session.install("mypy")
+        if session.install_skipped:
+            session.run("mypy", "src")
+        else:
+            session.run("mypy", "--install-types", "--non-interactive", "src")
 
 .. _opt-running-extra-pythons:
 
