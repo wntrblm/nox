@@ -18,6 +18,7 @@ __lazy_modules__ = {
     "nox._cli",
     "nox._options",
     "nox._parametrize",
+    "nox.environments",
     "nox.registry",
     "nox.sessions",
     "types",
@@ -30,13 +31,18 @@ from nox._cli import main
 from nox._options import noxfile_options as options
 from nox._parametrize import Param as param  # noqa: N813
 from nox._parametrize import parametrize_decorator as parametrize
+from nox.environments import Environment, env
+from nox.registry import alias
 from nox.registry import session_decorator as session
 from nox.sessions import Session
 
 needs_version: str | None = None
 
 __all__ = [
+    "Environment",
     "Session",
+    "alias",
+    "env",
     "main",
     "needs_version",
     "options",
