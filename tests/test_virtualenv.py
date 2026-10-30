@@ -1247,6 +1247,33 @@ def test_discover_interpreter(monkeypatch: pytest.MonkeyPatch) -> None:
     assert nox.virtualenv._discover_interpreter("3.12") is sentinel
 
 
+@pytest.mark.parametrize(
+    ("spec", "expected_spec"),
+    [(">=3.13t", ">=3.13"), ("<3.14t,!=3.13.*", "<3.14,!=3.13.*")],
+)
+def test_discover_interpreter_free_threaded_range(
+    monkeypatch: pytest.MonkeyPatch, spec: str, expected_spec: str
+) -> None:
+    """python-discovery reads a range with a ``t`` suffix as a path."""
+    sentinel = object()
+
+    def fake_get(
+        spec: str,
+        cache: object = None,  # noqa: ARG001
+        predicate: Callable[[object], bool] | None = None,
+    ) -> object:
+        assert spec == expected_spec
+        assert predicate is not None
+        assert predicate(types.SimpleNamespace(free_threaded=True))
+        assert not predicate(types.SimpleNamespace(free_threaded=False))
+        return sentinel
+
+    monkeypatch.setattr(python_discovery, "get_interpreter", fake_get)
+    monkeypatch.setattr(nox.virtualenv, "_get_python_discovery_cache", lambda: None)
+
+    assert nox.virtualenv._discover_interpreter(spec) is sentinel
+
+
 def test_discover_interpreter_cache_unwritable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1328,7 +1355,7 @@ def test_get_python_discovery_cache_oserror(monkeypatch: pytest.MonkeyPatch) -> 
         ("<3.14t,!=3.13.*", "3.12t"),
         ("<3.13,<3.14t", "3.12t"),
         ("<3.1,!=3.0.*", None),
-        # python-discovery's permissive grammar accepts these; packaging can't.
+        ("pypy>=3.10t", "pypy3.10t"),
         ("<3.12.", None),
         ("<3.14,<3.12.", None),
         ("<4", None),
