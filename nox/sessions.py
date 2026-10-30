@@ -1178,6 +1178,13 @@ class EnvRunner:
     def _check_location_ownership(self) -> None:
         """Never delete or reuse a user path that isn't a virtual environment."""
         location = self.envdir
+        if os.path.isfile(location):
+            msg = (
+                f"Refusing to use {location!r} for environment "
+                f"{self.friendly_name!r}: it is a file (such as a PEP 832 "
+                "'.venv' redirect file), not a directory."
+            )
+            raise OSError(msg)
         if not os.path.isdir(location) or not os.listdir(location):
             return
         if os.path.isfile(os.path.join(location, "pyvenv.cfg")):
