@@ -202,7 +202,7 @@ def test_parametrize_decorator_stack_with_empty_outer() -> None:
 def test_generate_calls_simple() -> None:
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"
-    f.requires = None
+    f._requires = None
     f.some_prop = 42
 
     arg_names = ("abc",)
@@ -235,7 +235,7 @@ def test_generate_calls_simple() -> None:
 def test_generate_calls_multiple_args() -> None:
     f = mock.Mock(should_warn=None, tags=[])
     f.__name__ = "f"
-    f.requires = None
+    f._requires = None
 
     arg_names = ("foo", "abc")
     call_specs = [
@@ -262,7 +262,7 @@ def test_generate_calls_multiple_args() -> None:
 def test_generate_calls_ids() -> None:
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"
-    f.requires = None
+    f._requires = None
 
     arg_names = ("foo",)
     call_specs = [
@@ -283,7 +283,7 @@ def test_generate_calls_ids() -> None:
 
 
 def test_generate_calls_tags() -> None:
-    f = mock.Mock(should_warn={}, tags=[], requires=[])
+    f = mock.Mock(should_warn={}, tags=[], _requires=[])
     f.__name__ = "f"
 
     arg_names = ("foo",)
@@ -302,7 +302,7 @@ def test_generate_calls_tags() -> None:
 
 
 def test_generate_calls_merge_tags() -> None:
-    f = mock.Mock(should_warn={}, tags=["tag1", "tag2"], requires=[])
+    f = mock.Mock(should_warn={}, tags=["tag1", "tag2"], _requires=[])
     f.__name__ = "f"
 
     arg_names = ("foo",)
