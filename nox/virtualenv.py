@@ -417,6 +417,13 @@ def _uv_state() -> tuple[bool, str, version.Version]:
     return has_uv, uv, uv_ver
 
 
+def uvx_path(uv: str) -> str:
+    """Return the uvx path next to ``uv``, keeping a ``.exe`` suffix last."""
+    if uv[-4:].lower() == ".exe":
+        return f"{uv[:-4]}x{uv[-4:]}"
+    return f"{uv}x"
+
+
 def _optional_venvs() -> dict[str, bool]:
     """Read ``OPTIONAL_VENVS``, respecting monkeypatched values."""
     optional_venvs: dict[str, bool] = sys.modules[__name__].OPTIONAL_VENVS
@@ -820,7 +827,7 @@ class VirtualEnv(ProcessEnv):
     def allowed_globals(self) -> tuple[str, ...]:
         """uv/uvx are allowed, even if not in the environment."""
         _, uv, _ = _uv_state()
-        return (uv, f"{uv}x")
+        return (uv, uvx_path(uv))
 
     def __init__(
         self,

@@ -1121,6 +1121,18 @@ class TestSession:
                 "cowsay",
             )
 
+        # nox[uv] on Windows finds the bundled uv.exe
+        monkeypatch.setattr(nox.virtualenv, "UV", "/some/uv.exe")
+        with mock.patch.object(nox.command, "run", autospec=True) as run:
+            session.run("uvx", "cowsay")
+            run.assert_called_once()
+
+            ((call_args,), _) = run.call_args
+            assert call_args == (
+                "/some/uvx.exe",
+                "cowsay",
+            )
+
         # user installs uv in the session venv
         monkeypatch.setattr(
             shutil, "which", lambda x, path="": path + "/uv" if x == "uv" else None
