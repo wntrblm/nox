@@ -270,6 +270,26 @@ class Session:
         """
         return self._runner.global_config.parallel_worker
 
+    @property
+    def current_attempt(self) -> int:
+        """Zero-based number of the current attempt: ``0`` on the first run,
+        ``1`` on the first retry, and so on."""
+        return self._runner.current_attempt
+
+    @property
+    def max_retries(self) -> int:
+        """How many times Nox re-runs this session after a failed command.
+
+        This comes from ``retries=`` in ``@nox.session``, unless ``--retries``
+        or ``nox.options.retries`` overrides it.
+        """
+        return self._runner.max_retries
+
+    @property
+    def is_final_attempt(self) -> bool:
+        """Whether this is the last attempt, so a failure now is final."""
+        return self._runner.current_attempt >= self._runner.max_retries
+
     def install_and_run_script(
         self,
         script: str | os.PathLike[str],
@@ -1026,6 +1046,28 @@ def resolve_download_python(
     return global_config.download_python or func.download_python or "auto"
 
 
+def resolve_retries(global_config: NoxConfig, func: Func) -> int:
+    """How many times to re-run a session after a failed command.
+
+    ``--retries`` (or ``nox.options.retries``) wins over the session's own
+    ``retries=``.
+    """
+    if global_config.retries is not None:
+        return global_config.retries
+    return func.retries
+
+
+def resolve_retry_delay(global_config: NoxConfig, func: Func) -> float:
+    """Seconds to wait before the first retry of a session.
+
+    ``--retry-delay`` (or ``nox.options.retry_delay``) wins over the session's
+    own ``retry_delay=``.
+    """
+    if global_config.retry_delay is not None:
+        return global_config.retry_delay
+    return func.retry_delay
+
+
 def resolve_reuse_existing_venv(global_config: NoxConfig, func: Func) -> bool:
     """Determines whether to reuse an existing virtual environment.
 
@@ -1085,6 +1127,7 @@ class SessionRunner:
         self.posargs: list[str] = list(global_config.posargs)
         self.result: Result | None = None
         self.multi = multi
+        self.current_attempt = 0
 
         if getattr(func, "parametrize", None):
             self.multi = True
@@ -1174,6 +1217,16 @@ class SessionRunner:
 
         self.venv.create()
 
+    @property
+    def max_retries(self) -> int:
+        """How many times to re-run the session after a failed command."""
+        return resolve_retries(self.global_config, self.func)
+
+    @property
+    def retry_delay(self) -> float:
+        """Seconds to wait before the first retry."""
+        return resolve_retry_delay(self.global_config, self.func)
+
     def reuse_existing_venv(self) -> bool:
         """
         Determines whether to reuse an existing virtual environment.
@@ -1196,6 +1249,31 @@ class SessionRunner:
                     self.result = Result.aborted_prerequisite(self, dependency)
                     return self.result
 
+        self.current_attempt = 0
+        while True:
+            self.result, failure = self._execute_once()
+            if failure is None or self.current_attempt >= self.max_retries:
+                return self.result
+            retry_on = self.func.retry_on
+            if retry_on is not None and failure.return_code not in retry_on:
+                return self.result
+            delay = self.retry_delay * self.func.retry_backoff**self.current_attempt
+            logger.warning(
+                f"Session {self.friendly_name} failed; retrying in {delay:g}s"
+                f" (retry {self.current_attempt + 1} of {self.max_retries})."
+            )
+            if delay:
+                time.sleep(delay)
+            self.current_attempt += 1
+
+    def _execute_once(
+        self,
+    ) -> tuple[Result, nox.command.CommandFailed | None]:
+        """Run the session function once.
+
+        Returns the result and, if a command failure ended the run, that failure.
+        """
+        failure: nox.command.CommandFailed | None = None
         start = time.perf_counter()
         try:
             cwd = os.path.realpath(os.path.dirname(self.global_config.noxfile))
@@ -1207,13 +1285,11 @@ class SessionRunner:
                 self.func(session)
 
             # Nothing went wrong; return a success.
-            self.result = Result(
-                self, Status.SUCCESS, duration=time.perf_counter() - start
-            )
+            result = Result(self, Status.SUCCESS, duration=time.perf_counter() - start)
 
         except nox.virtualenv.InterpreterNotFound as exc:
             if self.global_config.error_on_missing_interpreters:
-                self.result = Result(
+                result = Result(
                     self,
                     Status.FAILED,
                     reason=str(exc),
@@ -1223,7 +1299,7 @@ class SessionRunner:
                 logger.warning(
                     "Missing interpreters will error by default on CI systems."
                 )
-                self.result = Result(
+                result = Result(
                     self,
                     Status.SKIPPED,
                     reason=str(exc),
@@ -1231,7 +1307,7 @@ class SessionRunner:
                 )
 
         except _SessionQuit as exc:
-            self.result = Result(
+            result = Result(
                 self,
                 Status.ABORTED,
                 reason=str(exc),
@@ -1239,17 +1315,16 @@ class SessionRunner:
             )
 
         except _SessionSkip as exc:
-            self.result = Result(
+            result = Result(
                 self,
                 Status.SKIPPED,
                 reason=str(exc),
                 duration=time.perf_counter() - start,
             )
 
-        except nox.command.CommandFailed:
-            self.result = Result(
-                self, Status.FAILED, duration=time.perf_counter() - start
-            )
+        except nox.command.CommandFailed as exc:
+            failure = exc
+            result = Result(self, Status.FAILED, duration=time.perf_counter() - start)
 
         except KeyboardInterrupt:
             logger.error(f"Session {self.friendly_name} interrupted.")
@@ -1257,11 +1332,9 @@ class SessionRunner:
 
         except Exception as exc:  # noqa: BLE001
             logger.exception(f"Session {self.friendly_name} raised exception {exc!r}")
-            self.result = Result(
-                self, Status.FAILED, duration=time.perf_counter() - start
-            )
+            result = Result(self, Status.FAILED, duration=time.perf_counter() - start)
 
-        return self.result
+        return result, failure
 
 
 def _duration_str(seconds: float, text: str) -> str:
