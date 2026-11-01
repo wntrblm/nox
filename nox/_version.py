@@ -72,7 +72,8 @@ def _parse_needs_version(source: str, filename: str = "<unknown>") -> str | None
 
 def _read_needs_version(filename: str) -> str | None:
     """Read ``nox.needs_version`` from the user's Noxfile."""
-    with open(filename, encoding="utf-8") as io:
+    # Decode like Python does, skipping a UTF-8 BOM that ast.parse would reject.
+    with open(filename, encoding="utf-8-sig") as io:
         source = io.read()
 
     return _parse_needs_version(source, filename=filename)

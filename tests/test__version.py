@@ -132,6 +132,22 @@ def test_check_nox_version_fails(
         check_nox_version(temp_noxfile(text))
 
 
+def test_check_nox_version_after_bom(tmp_path: Path) -> None:
+    """It reads a Noxfile saved with a UTF-8 BOM, which Python runs normally."""
+    path = tmp_path / "noxfile.py"
+    path.write_text(
+        dedent(
+            """
+            import nox
+            nox.needs_version = ">=9999.99.99"
+            """
+        ),
+        encoding="utf-8-sig",
+    )
+    with pytest.raises(VersionCheckFailed):
+        check_nox_version(str(path))
+
+
 @pytest.mark.parametrize("specifiers", ["invalid", "2020.12.31"])
 def test_check_nox_version_invalid(
     temp_noxfile: Callable[[str], str], specifiers: str
