@@ -520,6 +520,78 @@ def run_nox(
 
 
 @pytest.mark.parametrize(
+    ("settings", "session_options", "selection"),
+    [
+        pytest.param("", ", default=False", (), id="nondefault"),
+        pytest.param("nox.options.sessions = []", "", (), id="empty-defaults"),
+        pytest.param("", "", ("--python", "not-a-python"), id="python"),
+        pytest.param("", "", ("--tags", "not-a-tag"), id="tags"),
+        pytest.param("", "", ("--keywords", "not_a_session"), id="keywords"),
+        pytest.param("", "", (), id="default-control"),
+        pytest.param("", ", default=False", ("-s", "optional"), id="explicit-control"),
+    ],
+)
+def test_main_usage_filtered_sessions(
+    run_nox: Callable[..., tuple[int, str, str]],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    settings: str,
+    session_options: str,
+    selection: tuple[str, ...],
+) -> None:
+    monkeypatch.setattr(nox, "options", nox._options.NoxfileOptions())
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(
+        f'''import nox
+{settings}
+
+@nox.session(venv_backend="none"{session_options})
+def optional(session):
+    """Short summary.
+
+    Detailed session instructions.
+    """
+    raise AssertionError("Usage must not execute the session")
+''',
+        encoding="utf-8",
+    )
+
+    returncode, stdout, stderr = run_nox(
+        "-f", str(noxfile), "--usage", "optional", *selection
+    )
+
+    assert returncode == 0
+    assert stdout == "Short summary.\n\nDetailed session instructions.\n"
+    assert stderr == ""
+
+
+@pytest.mark.parametrize(
+    ("session_name", "message"),
+    [("missing", "not found"), ("undocumented", "has no docstring")],
+)
+def test_main_usage_errors_with_empty_defaults(
+    run_nox: Callable[..., tuple[int, str, str]],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    session_name: str,
+    message: str,
+) -> None:
+    monkeypatch.setattr(nox, "options", nox._options.NoxfileOptions())
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(
+        'import nox\n@nox.session(default=False, venv_backend="none")\n'
+        'def undocumented(session):\n    raise AssertionError("Must not execute")\n',
+        encoding="utf-8",
+    )
+
+    returncode, stdout, stderr = run_nox("-f", str(noxfile), "--usage", session_name)
+
+    assert returncode == 1
+    assert stdout == ""
+    assert f"Session {session_name} {message}." in stderr
+
+
+@pytest.mark.parametrize(
     ("normalized_name", "session"),
     [
         ("test(arg='Jane')", "test(arg='Jane')"),
