@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"importlib", "importlib.util", "pathlib"}
+__lazy_modules__ = {"importlib.util", "pathlib"}
 
 import functools
 import importlib.util

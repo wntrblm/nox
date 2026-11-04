@@ -23,11 +23,12 @@ their ``requires=`` dependency graph and never executes a session itself.
 from __future__ import annotations
 
 __lazy_modules__ = {
-    "colorlog",
     "colorlog.escape_codes",
+    "concurrent.futures",
     "copy",
     "io",
     "json",
+    "nox",
     "shutil",
     "signal",
     "subprocess",
