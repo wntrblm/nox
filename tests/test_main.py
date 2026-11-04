@@ -527,6 +527,17 @@ def run_nox(
         pytest.param("", "", ("--python", "not-a-python"), id="python"),
         pytest.param("", "", ("--tags", "not-a-tag"), id="tags"),
         pytest.param("", "", ("--keywords", "not_a_session"), id="keywords"),
+        pytest.param("", "", ("--keywords", "foo ("), id="bad-keywords"),
+        pytest.param("", "", ("-s", "typo"), id="unknown-session"),
+        pytest.param(
+            'nox.options.sessions = ["typo"]', "", (), id="unknown-default-session"
+        ),
+        pytest.param(
+            '@nox.session(requires=["missing"])\ndef lint(session): ...',
+            "",
+            (),
+            id="broken-requires",
+        ),
         pytest.param("", "", (), id="default-control"),
         pytest.param("", ", default=False", ("-s", "optional"), id="explicit-control"),
     ],

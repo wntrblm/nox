@@ -56,6 +56,7 @@ __all__ = [
     "filter_manifest",
     "final_reduce",
     "honor_list_request",
+    "honor_usage_request",
     "load_nox_module",
     "merge_noxfile_options",
     "print_summary",
@@ -222,7 +223,7 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
                 logger.error(exc.args[0])
                 return 3
 
-    if not manifest and not (global_config.list_sessions or global_config.usage):
+    if not manifest and not global_config.list_sessions:
         print("No sessions selected. Please select a session with -s <session name>.\n")
         _produce_listing(manifest, global_config)
         return 0
@@ -230,14 +231,14 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
     # Filter by python interpreter versions.
     if global_config.pythons:
         manifest.filter_by_python_interpreter(global_config.pythons)
-        if not manifest and not (global_config.list_sessions or global_config.usage):
+        if not manifest and not global_config.list_sessions:
             logger.error("Python version selection caused no sessions to be selected.")
             return 3
 
     # Filter by tags.
     if global_config.tags is not None:
         manifest.filter_by_tags(global_config.tags)
-        if not manifest and not (global_config.list_sessions or global_config.usage):
+        if not manifest and not global_config.list_sessions:
             logger.error("Tag selection caused no sessions to be selected.")
             return 3
 
@@ -256,7 +257,7 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
         # (which is an error condition later).
         manifest.filter_by_keywords(global_config.keywords)
 
-    if not manifest and not (global_config.list_sessions or global_config.usage):
+    if not manifest and not global_config.list_sessions:
         logger.error("No sessions selected after filtering by keyword.")
         return 3
 
