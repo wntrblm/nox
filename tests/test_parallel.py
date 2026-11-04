@@ -976,6 +976,23 @@ def test_parse_parallel_invalid(value: object) -> None:
         _options.parse_parallel(typing.cast("typing.Any", value))
 
 
+def test_parallel_auto_uses_process_cpu_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(os, "process_cpu_count", lambda: 3, raising=False)
+    monkeypatch.setattr(os, "cpu_count", lambda: 8)
+    assert _options.parse_parallel("auto") == 3
+
+
+@pytest.mark.parametrize(("count", "expected"), [(8, 8), (None, 1)])
+def test_parallel_auto_falls_back_to_cpu_count(
+    monkeypatch: pytest.MonkeyPatch, count: int | None, expected: int
+) -> None:
+    monkeypatch.delattr(os, "process_cpu_count", raising=False)
+    monkeypatch.setattr(os, "cpu_count", lambda: count)
+    assert _options.parse_parallel("auto") == expected
+
+
 def test_parallel_cli_option() -> None:
     parser = _options.options.parser()
     assert isinstance(parser.parse_args(["-j", "auto"]).parallel, int)
