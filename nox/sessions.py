@@ -19,6 +19,7 @@ __lazy_modules__ = {
     "hashlib",
     "humanize",
     "inspect",
+    "nox.command",
     "nox.logger",
     "nox.virtualenv",
     "pathlib",
@@ -28,7 +29,7 @@ __lazy_modules__ = {
 }
 
 import contextlib
-import datetime
+import datetime as dt
 import enum
 import hashlib
 import inspect
@@ -1265,7 +1266,7 @@ class SessionRunner:
 
 
 def _duration_str(seconds: float, text: str) -> str:
-    time_str = humanize.naturaldelta(datetime.timedelta(seconds=seconds))
+    time_str = humanize.naturaldelta(dt.timedelta(seconds=seconds))
 
     # Might be "a moment" if short, return empty string in that case
     if time_str == "a moment":

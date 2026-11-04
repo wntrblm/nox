@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 __lazy_modules__ = {
+    "nox",
     "nox._cli",
     "nox._options",
     "nox._parametrize",

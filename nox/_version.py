@@ -18,7 +18,6 @@ __lazy_modules__ = {
     "ast",
     "contextlib",
     "importlib",
-    "packaging",
     "packaging.specifiers",
     "packaging.version",
 }

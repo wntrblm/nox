@@ -16,11 +16,10 @@ from __future__ import annotations
 
 __lazy_modules__ = {
     "ast",
-    "colorlog",
     "colorlog.escape_codes",
-    "importlib",
     "importlib.util",
     "json",
+    "nox",
     "nox._resolver",
     "nox._version",
     "nox.logger",
