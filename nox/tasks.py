@@ -56,6 +56,7 @@ __all__ = [
     "filter_manifest",
     "final_reduce",
     "honor_list_request",
+    "honor_usage_request",
     "load_nox_module",
     "merge_noxfile_options",
     "print_summary",
