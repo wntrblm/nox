@@ -610,10 +610,11 @@ and ``extras``.
 
 ``nox.env.uv()`` accepts ``lockfile`` (default ``uv.lock``; its directory is
 the project), ``groups``, ``extras``, ``all_extras``, ``no_default_groups``,
-``no_install_project``, and ``sync_args``. It requires the ``uv`` backend, the
-default here, and refuses to sync with ``--force-venv-backend`` or
-``--no-venv``. The stamp includes the lock file and the project's
-``pyproject.toml``.
+``no_install_project``, ``frozen``, and ``sync_args``. Set ``frozen=True`` to
+use ``uv sync --frozen`` instead of ``--locked``, which does not check that the
+lock file is up to date. It requires the ``uv`` backend, the default here, and
+refuses to sync with ``--force-venv-backend`` or ``--no-venv``. The stamp
+includes the lock file and the project's ``pyproject.toml``.
 
 To support another format, subclass :class:`nox.Environment` and override
 ``stamp_data()`` and ``sync(session)``.

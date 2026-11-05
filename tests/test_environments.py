@@ -1575,6 +1575,11 @@ def test_uv_env_sync_command_flags(tmp_path: Path) -> None:
     ]
 
 
+def test_uv_env_frozen(tmp_path: Path) -> None:
+    env = nox.env.uv("dev", lockfile=tmp_path / "uv.lock", frozen=True)
+    assert env._sync_command() == ["sync", "--frozen", f"--project={tmp_path}"]
+
+
 def test_uv_env_unstampable_setup(tmp_path: Path) -> None:
     env = nox.env.uv("dev", lockfile=tmp_path / "uv.lock")
 

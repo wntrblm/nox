@@ -381,7 +381,9 @@ class UvProjectEnvironment(Environment):
     """An environment synced from a uv project's ``uv.lock``.
 
     Runs ``uv sync --locked`` against the project owning the lock file,
-    targeting this environment. Available as ``nox.env.uv``.
+    targeting this environment. With ``frozen=True``, it runs
+    ``uv sync --frozen``, which does not check that the lock file is up to
+    date. Available as ``nox.env.uv``.
     """
 
     def __init__(
@@ -394,6 +396,7 @@ class UvProjectEnvironment(Environment):
         all_extras: bool = False,
         no_default_groups: bool = False,
         no_install_project: bool = False,
+        frozen: bool = False,
         sync_args: Sequence[str] = (),
         venv_backend: str = "uv",
         **kwargs: Any,
@@ -408,11 +411,13 @@ class UvProjectEnvironment(Environment):
         self.all_extras = all_extras
         self.no_default_groups = no_default_groups
         self.no_install_project = no_install_project
+        self.frozen = frozen
         self.sync_args = list(sync_args)
 
     def _sync_command(self) -> list[str]:
         project_dir = os.path.dirname(os.path.abspath(self.lockfile))
-        command = ["sync", "--locked", f"--project={project_dir}"]
+        lock_flag = "--frozen" if self.frozen else "--locked"
+        command = ["sync", lock_flag, f"--project={project_dir}"]
         command.extend(f"--group={group}" for group in self.groups)
         command.extend(f"--extra={extra}" for extra in self.extras)
         if self.all_extras:
