@@ -8,6 +8,13 @@ on:
 
 env:
   FORCE_COLOR: "1"
+  # conda.anaconda.org rate-limits shared CI IPs (HTTP 429), and its sharded
+  # repodata fetch bypasses conda's retry settings, so a single 429 kills the
+  # solve. Resolve conda-forge via the prefix.dev mirror, which isn't throttled.
+  CONDA_CHANNEL_ALIAS: "https://prefix.dev"
+  # Defense in depth: retry the non-sharded repodata fetches with backoff too.
+  CONDA_REMOTE_MAX_RETRIES: "8"
+  CONDA_REMOTE_BACKOFF_FACTOR: "4"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -55,9 +62,9 @@ jobs:
         uses: conda-incubator/setup-miniconda@v4
         if: matrix.python-version == '3.14'
         with:
+          miniforge-version: latest
           channels: conda-forge
           conda-remove-defaults: true
-          conda-version: '26.7.1'
           activate-environment:
       - name: Install Nox-under-test (uv)
         run:  uv pip install --system .
