@@ -49,7 +49,7 @@ def signatures(manifest: Manifest) -> list[Sequence[str]]:
 
 
 def test_env_returns_environment() -> None:
-    tooling = nox.env("tooling", python="3.12")
+    tooling = nox.env.standard("tooling", python="3.12")
     assert isinstance(tooling, Environment)
     assert tooling.name == "tooling"
     assert tooling.python == "3.12"
@@ -57,7 +57,7 @@ def test_env_returns_environment() -> None:
 
 
 def test_env_task_decorator_plain() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -69,7 +69,7 @@ def test_env_task_decorator_plain() -> None:
 
 
 def test_env_task_decorator_options() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task(name="check", tags=["a"], default=False, requires=["other"])
     def lint(session: nox.Session) -> None:
@@ -82,13 +82,13 @@ def test_env_task_decorator_options() -> None:
 
 
 def test_duplicate_env_error() -> None:
-    nox.env("tooling")
+    nox.env.standard("tooling")
     with pytest.raises(ValueError, match="already registered"):
-        nox.env("tooling")
+        nox.env.standard("tooling")
 
 
 def test_duplicate_task_error() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -104,11 +104,11 @@ def test_duplicate_task_error() -> None:
 @pytest.mark.parametrize("name", ["", "a:b", "a(b"])
 def test_invalid_names(name: str) -> None:
     with pytest.raises(ValueError, match="name"):
-        nox.env(name)
+        nox.env.standard(name)
 
 
 def test_invalid_task_name() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
     with pytest.raises(ValueError, match="task name"):
 
         @tooling.task(name="a:b")
@@ -117,8 +117,8 @@ def test_invalid_task_name() -> None:
 
 
 def test_task_shared_across_envs() -> None:
-    env_a = nox.env("a")
-    env_b = nox.env("b")
+    env_a = nox.env.standard("a")
+    env_b = nox.env.standard("b")
 
     @env_b.task
     @env_a.task
@@ -154,16 +154,16 @@ def test_alias_requires_targets() -> None:
 
 
 def test_alias_env_collision() -> None:
-    nox.env("tooling")
+    nox.env.standard("tooling")
     with pytest.raises(ValueError, match="already registered"):
         nox.alias("tooling", "a:b")
     nox.alias("check", "a:b")
     with pytest.raises(ValueError, match="already registered"):
-        nox.env("check")
+        nox.env.standard("check")
 
 
 def test_session_env_collision() -> None:
-    nox.env("tooling")
+    nox.env.standard("tooling")
     with pytest.raises(ValueError, match="share one namespace"):
 
         @nox.session(name="tooling")
@@ -184,7 +184,7 @@ def test_session_alias_collision() -> None:
 
 
 def test_task_signatures_no_python() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -201,7 +201,7 @@ def test_task_signatures_no_python() -> None:
 
 
 def test_task_signatures_single_python() -> None:
-    tooling = nox.env("tooling", python="3.12")
+    tooling = nox.env.standard("tooling", python="3.12")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -214,7 +214,7 @@ def test_task_signatures_single_python() -> None:
 
 
 def test_task_signatures_python_matrix() -> None:
-    tests = nox.env("tests", python=["3.11", "3.12"])
+    tests = nox.env.standard("tests", python=["3.11", "3.12"])
 
     @tests.task
     def run(session: nox.Session) -> None:
@@ -234,7 +234,7 @@ def test_task_signatures_python_matrix() -> None:
 
 
 def test_task_parametrize() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     @nox.parametrize("x", [1, 2])
@@ -250,7 +250,7 @@ def test_task_parametrize() -> None:
 
 
 def test_matrix_parametrized_task() -> None:
-    env = nox.env("tests", python=["3.11", "3.12"])
+    env = nox.env.standard("tests", python=["3.11", "3.12"])
 
     @env.task
     @nox.parametrize("x", [1, 2])
@@ -275,7 +275,7 @@ def test_matrix_parametrized_task() -> None:
 
 
 def test_env_python_list_no_venv_warns() -> None:
-    env = nox.env("tests", python=["3.11", "3.12"], venv_backend="none")
+    env = nox.env.standard("tests", python=["3.11", "3.12"], venv_backend="none")
 
     @env.task
     def run(session: nox.Session) -> None:
@@ -288,13 +288,13 @@ def test_env_python_list_no_venv_warns() -> None:
 
 
 def test_env_extra_pythons() -> None:
-    tests = nox.env("tests", python=["3.11"])
+    tests = nox.env.standard("tests", python=["3.11"])
 
     @tests.task
     def run(session: nox.Session) -> None:
         pass
 
-    tools = nox.env("tools")
+    tools = nox.env.standard("tools")
 
     @tools.task
     def lint(session: nox.Session) -> None:
@@ -313,7 +313,7 @@ def test_env_extra_pythons() -> None:
 
 
 def test_task_parametrize_python_forbidden() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     @nox.parametrize("python", ["3.11", "3.12"])
@@ -325,7 +325,7 @@ def test_task_parametrize_python_forbidden() -> None:
 
 
 def test_tasks_share_env_runner_and_envdir() -> None:
-    tooling = nox.env("tooling", python="3.12", tags=["env-tag"])
+    tooling = nox.env.standard("tooling", python="3.12", tags=["env-tag"])
 
     @tooling.task(tags=["task-tag"])
     def lint(session: nox.Session) -> None:
@@ -345,7 +345,7 @@ def test_tasks_share_env_runner_and_envdir() -> None:
 
 
 def test_python_matrix_envdir_per_instance() -> None:
-    tests = nox.env("tests", python=["3.11", "3.12"])
+    tests = nox.env.standard("tests", python=["3.11", "3.12"])
 
     @tests.task
     def run(session: nox.Session) -> None:
@@ -371,7 +371,7 @@ def test_session_and_env_coexist() -> None:
     def lint(session: nox.Session) -> None:
         pass
 
-    tests = nox.env("tests")
+    tests = nox.env.standard("tests")
 
     @tests.task
     def run(session: nox.Session) -> None:
@@ -385,7 +385,7 @@ def test_session_and_env_coexist() -> None:
 
 
 def make_selection_envs() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -399,7 +399,7 @@ def make_selection_envs() -> None:
     def slow(session: nox.Session) -> None:
         pass
 
-    docs = nox.env("docs")
+    docs = nox.env.standard("docs")
 
     @docs.task
     def build(session: nox.Session) -> None:
@@ -461,7 +461,7 @@ def test_filter_by_alias() -> None:
 
 
 def test_filter_by_env_instance_name() -> None:
-    tests = nox.env("tests", python=["3.11", "3.12"])
+    tests = nox.env.standard("tests", python=["3.11", "3.12"])
 
     @tests.task
     def run(session: nox.Session) -> None:
@@ -473,7 +473,7 @@ def test_filter_by_env_instance_name() -> None:
 
 
 def test_filter_by_normalized_matrix_id() -> None:
-    env = nox.env("tests", python=["3.11", "3.12"])
+    env = nox.env.standard("tests", python=["3.11", "3.12"])
 
     @env.task
     def run(session: nox.Session) -> None:
@@ -526,7 +526,7 @@ def test_list_hides_env_only_unless_selected(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     make_selection_envs()
-    only = nox.env("only")
+    only = nox.env.standard("only")
 
     @only.task(explicit=True)
     def setup(session: nox.Session) -> None:
@@ -559,13 +559,13 @@ def test_list_without_aliases(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_requires_canonical_id() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
         pass
 
-    other = nox.env("other")
+    other = nox.env.standard("other")
 
     @other.task(requires=["tooling:lint"])
     def check(session: nox.Session) -> None:
@@ -581,7 +581,7 @@ def test_requires_canonical_id() -> None:
 
 
 def test_requires_alias() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -593,7 +593,7 @@ def test_requires_alias() -> None:
 
     nox.alias("check", "tooling:lint", "tooling:typecheck")
 
-    other = nox.env("other")
+    other = nox.env.standard("other")
 
     @other.task(requires=["check"])
     def via_alias(session: nox.Session) -> None:
@@ -610,13 +610,13 @@ def test_requires_alias() -> None:
 
 
 def test_requires_env_name_single_task() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
         pass
 
-    other = nox.env("other")
+    other = nox.env.standard("other")
 
     @other.task(requires=["tooling"])
     def check(session: nox.Session) -> None:
@@ -634,7 +634,7 @@ def test_requires_env_name_single_task() -> None:
 def test_requires_env_name_multiple_tasks_selects_defaults() -> None:
     make_selection_envs()
 
-    other = nox.env("other")
+    other = nox.env.standard("other")
 
     @other.task(requires=["tooling"])
     def check(session: nox.Session) -> None:
@@ -652,13 +652,13 @@ def test_requires_env_name_multiple_tasks_selects_defaults() -> None:
 
 
 def test_requires_matrix_task() -> None:
-    tests = nox.env("tests", python=["3.11", "3.12"])
+    tests = nox.env.standard("tests", python=["3.11", "3.12"])
 
     @tests.task
     def run(session: nox.Session) -> None:
         pass
 
-    other = nox.env("other")
+    other = nox.env.standard("other")
 
     @other.task(requires=["tests:run"])
     def check(session: nox.Session) -> None:
@@ -675,7 +675,7 @@ def test_requires_matrix_task() -> None:
 
 
 def test_requires_prefers_real_session_over_selector() -> None:
-    tooling = nox.env("tooling", python="3.12")
+    tooling = nox.env.standard("tooling", python="3.12")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -685,7 +685,7 @@ def test_requires_prefers_real_session_over_selector() -> None:
     def legacy(session: nox.Session) -> None:
         pass
 
-    other = nox.env("other")
+    other = nox.env.standard("other")
 
     @other.task(requires=["tooling-3.12"])
     def check(session: nox.Session) -> None:
@@ -702,7 +702,7 @@ def test_requires_prefers_real_session_over_selector() -> None:
 
 
 def test_extra_requirements_explicit_only_envs() -> None:
-    env = nox.env("tests", python=["3.11", "3.12"])
+    env = nox.env.standard("tests", python=["3.11", "3.12"])
 
     @env.task(explicit=True)
     def run(session: nox.Session) -> None:
@@ -756,7 +756,7 @@ def run_manifest_sessions(manifest: Manifest) -> list[nox.sessions.Result]:
 
 
 def test_shared_env_created_once() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -782,7 +782,7 @@ def test_shared_env_created_once() -> None:
 
 
 def test_shared_env_failure_propagates() -> None:
-    tooling = nox.env("tooling", python="9.99")
+    tooling = nox.env.standard("tooling", python="9.99")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -808,7 +808,7 @@ def test_shared_env_failure_propagates() -> None:
 
 
 def test_shared_env_keyboard_interrupt_not_cached() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -825,13 +825,13 @@ def test_shared_env_keyboard_interrupt_not_cached() -> None:
 
 
 def test_requires_failure_aborts_dependent() -> None:
-    tooling = nox.env("tooling", venv_backend="none")
+    tooling = nox.env.standard("tooling", venv_backend="none")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
         session.error("boom")
 
-    other = nox.env("other", venv_backend="none")
+    other = nox.env.standard("other", venv_backend="none")
 
     @other.task(requires=["tooling:lint"])
     def check(session: nox.Session) -> None:
@@ -852,7 +852,7 @@ def test_requires_failure_aborts_dependent() -> None:
 
 
 def test_base_sync_installs_dependencies() -> None:
-    env = nox.env("dev", dependencies=["requests", "rich"])
+    env = nox.env.standard("dev", dependencies=["requests", "rich"])
     session = mock.MagicMock()
     env.sync(session)
     session.install.assert_called_once_with("requests", "rich")
@@ -1041,7 +1041,7 @@ def test_setup_stamp_makes_stampable(tmp_path: Path) -> None:
 
 
 def test_setup_hook_only_once() -> None:
-    env = nox.env("dev")
+    env = nox.env.standard("dev")
 
     @env.setup
     def _(session: nox.Session) -> None:
@@ -1058,7 +1058,7 @@ def test_setup_hook_only_once() -> None:
 
 
 def test_location_envdir(tmp_path: Path) -> None:
-    env = nox.env("dev", location=".venv")
+    env = nox.env.standard("dev", location=".venv")
 
     @env.task
     def sync(session: nox.Session) -> None:
@@ -1074,7 +1074,7 @@ def test_location_envdir(tmp_path: Path) -> None:
 
 
 def test_location_matrix_requires_placeholder() -> None:
-    env = nox.env("tests", python=["3.11", "3.12"], location=".venv")
+    env = nox.env.standard("tests", python=["3.11", "3.12"], location=".venv")
 
     @env.task
     def run(session: nox.Session) -> None:
@@ -1086,7 +1086,7 @@ def test_location_matrix_requires_placeholder() -> None:
 
 
 def test_location_matrix_placeholder(tmp_path: Path) -> None:
-    env = nox.env("tests", python=["3.11", "3.12"], location=".venvs/{name}")
+    env = nox.env.standard("tests", python=["3.11", "3.12"], location=".venvs/{name}")
 
     @env.task
     def run(session: nox.Session) -> None:
@@ -1102,8 +1102,8 @@ def test_location_matrix_placeholder(tmp_path: Path) -> None:
 
 
 def test_location_duplicate_error() -> None:
-    env_a = nox.env("a", location=".venv")
-    env_b = nox.env("b", location=".venv")
+    env_a = nox.env.standard("a", location=".venv")
+    env_b = nox.env.standard("b", location=".venv")
 
     @env_a.task
     def sync(session: nox.Session) -> None:
@@ -1119,8 +1119,8 @@ def test_location_duplicate_error() -> None:
 
 
 def test_location_collides_with_default_location() -> None:
-    env_a = nox.env("a", location=".nox/b")
-    env_b = nox.env("b")
+    env_a = nox.env.standard("a", location=".nox/b")
+    env_b = nox.env.standard("b")
 
     @env_a.task
     def run(session: nox.Session) -> None:
@@ -1138,8 +1138,8 @@ def test_location_collides_with_default_location() -> None:
 def test_location_collision_through_symlink(tmp_path: Path) -> None:
     (tmp_path / "real").mkdir()
     (tmp_path / "link").symlink_to(tmp_path / "real", target_is_directory=True)
-    env_a = nox.env("a", location="real/venv")
-    env_b = nox.env("b", location="link/venv")
+    env_a = nox.env.standard("a", location="real/venv")
+    env_b = nox.env.standard("b", location="link/venv")
 
     @env_a.task
     def run(session: nox.Session) -> None:
@@ -1158,8 +1158,8 @@ def test_location_collision_through_symlink(tmp_path: Path) -> None:
 
 
 def test_location_shared_template_ok(tmp_path: Path) -> None:
-    env_a = nox.env("a", python=["3.11", "3.12"], location=".venvs/{name}")
-    env_b = nox.env("b", python=["3.11", "3.12"], location=".venvs/{name}")
+    env_a = nox.env.standard("a", python=["3.11", "3.12"], location=".venvs/{name}")
+    env_b = nox.env.standard("b", python=["3.11", "3.12"], location=".venvs/{name}")
 
     @env_a.task
     def run(session: nox.Session) -> None:
@@ -1177,8 +1177,8 @@ def test_location_shared_template_ok(tmp_path: Path) -> None:
 
 
 def test_location_template_collision_error(tmp_path: Path) -> None:
-    env_a = nox.env("a", python="3.12", location=".venvs/{python}")
-    env_b = nox.env("b", python="3.12", location=".venvs/{python}")
+    env_a = nox.env.standard("a", python="3.12", location=".venvs/{python}")
+    env_b = nox.env.standard("b", python="3.12", location=".venvs/{python}")
 
     @env_a.task
     def run(session: nox.Session) -> None:
@@ -1199,7 +1199,7 @@ def test_location_template_collision_error(tmp_path: Path) -> None:
 def test_location_ownership_guard(tmp_path: Path) -> None:
     (tmp_path / ".venv").mkdir()
     (tmp_path / ".venv" / "precious.txt").write_text("data", encoding="utf-8")
-    env = nox.env("dev", location=".venv")
+    env = nox.env.standard("dev", location=".venv")
 
     @env.task
     def sync(session: nox.Session) -> None:
@@ -1217,7 +1217,7 @@ def test_location_ownership_guard(tmp_path: Path) -> None:
 def test_location_ownership_redirect_file(tmp_path: Path) -> None:
     # PEP 832 allows .venv to be a one-line redirect file
     (tmp_path / ".venv").write_text("other/env\n", encoding="utf-8")
-    env = nox.env("dev", location=".venv")
+    env = nox.env.standard("dev", location=".venv")
 
     @env.task
     def sync(session: nox.Session) -> None:
@@ -1237,7 +1237,7 @@ def test_location_ownership_venv_ok(tmp_path: Path) -> None:
     (tmp_path / ".venv" / "pyvenv.cfg").write_text(
         "home = /usr/bin\n", encoding="utf-8"
     )
-    env = nox.env("dev", location=".venv")
+    env = nox.env.standard("dev", location=".venv")
 
     @env.task
     def sync(session: nox.Session) -> None:
@@ -1251,7 +1251,7 @@ def test_location_ownership_venv_ok(tmp_path: Path) -> None:
 
 
 def test_located_env_create_checks_ownership(tmp_path: Path) -> None:
-    env = nox.env("dev", location=".venv")
+    env = nox.env.standard("dev", location=".venv")
 
     @env.task
     def sync(session: nox.Session) -> None:
@@ -1274,7 +1274,7 @@ def test_located_env_create_checks_ownership(tmp_path: Path) -> None:
 
 def test_location_ownership_conda_ok(tmp_path: Path) -> None:
     (tmp_path / ".venv" / "conda-meta").mkdir(parents=True)
-    env = nox.env("dev", location=".venv")
+    env = nox.env.standard("dev", location=".venv")
 
     @env.task
     def sync(session: nox.Session) -> None:
@@ -1288,13 +1288,13 @@ def test_location_ownership_conda_ok(tmp_path: Path) -> None:
 
 
 def test_filter_manifest_location_collision(tmp_path: Path) -> None:
-    env_a = nox.env("a", location=".venv")
+    env_a = nox.env.standard("a", location=".venv")
 
     @env_a.task
     def sync_a(session: nox.Session) -> None:
         pass
 
-    env_b = nox.env("b", location=".venv")
+    env_b = nox.env.standard("b", location=".venv")
 
     @env_b.task
     def sync_b(session: nox.Session) -> None:
@@ -1342,7 +1342,7 @@ def test_stamp_hashes_requirements_files(
     monkeypatch.chdir(tmp_path)
     (tmp_path / "requirements.txt").write_text("six\n", encoding="utf-8")
     (tmp_path / "constraints.txt").write_text("six==1\n", encoding="utf-8")
-    env = nox.env(
+    env = nox.env.standard(
         "dev",
         dependencies=["-r", "requirements.txt", "--constraint=constraints.txt"],
     )
@@ -1359,7 +1359,7 @@ def test_stamp_hashes_local_project_metadata(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
-    env = nox.env("dev", dependencies=["-e", "."])
+    env = nox.env.standard("dev", dependencies=["-e", "."])
     data = env.stamp_data()
     assert data is not None
     assert set(data["inputs"]) == {os.path.join(".", "pyproject.toml")}
@@ -1375,7 +1375,7 @@ def test_stamp_hashes_local_project_metadata(
 def test_stamp_explicit_inputs(tmp_path: Path) -> None:
     extra = tmp_path / "extra.txt"
     extra.write_text("a\n", encoding="utf-8")
-    env = nox.env("dev", inputs=[extra])
+    env = nox.env.standard("dev", inputs=[extra])
     data = env.stamp_data()
     assert data is not None
     assert list(data["inputs"]) == [str(extra)]
@@ -1384,7 +1384,7 @@ def test_stamp_explicit_inputs(tmp_path: Path) -> None:
     assert env.stamp_data() != data
 
     with pytest.raises(FileNotFoundError, match="does not exist"):
-        nox.env("dev2", inputs=[tmp_path / "missing.txt"]).stamp_data()
+        nox.env.standard("dev2", inputs=[tmp_path / "missing.txt"]).stamp_data()
 
 
 def test_uv_env_stamp_hashes_pyproject(tmp_path: Path) -> None:
@@ -1608,7 +1608,7 @@ def test_uv_env_missing_lockfile(tmp_path: Path) -> None:
 
 
 def test_declarative_env_reuse_default() -> None:
-    env = nox.env("dev")
+    env = nox.env.standard("dev")
 
     @env.task
     def sync(session: nox.Session) -> None:
@@ -1621,7 +1621,7 @@ def test_declarative_env_reuse_default() -> None:
 
 
 def test_declarative_env_reuse_opt_out() -> None:
-    env = nox.env("dev", reuse_venv=False)
+    env = nox.env.standard("dev", reuse_venv=False)
 
     @env.task
     def sync(session: nox.Session) -> None:
@@ -1644,7 +1644,7 @@ def test_legacy_session_reuse_unchanged() -> None:
 
 
 def test_shared_env_install_warns_once(caplog: pytest.LogCaptureFixture) -> None:
-    env = nox.env("tooling")
+    env = nox.env.standard("tooling")
 
     @env.task
     def lint(session: nox.Session) -> None:
@@ -1668,7 +1668,7 @@ def test_shared_env_install_warns_once(caplog: pytest.LogCaptureFixture) -> None
 
 
 def test_own_env_install_no_warning(caplog: pytest.LogCaptureFixture) -> None:
-    env = nox.env("solo")
+    env = nox.env.standard("solo")
 
     @env.task
     def lint(session: nox.Session) -> None:
@@ -1725,7 +1725,7 @@ def test_legacy_session_name_with_colon_still_works() -> None:
 
 
 def test_env_selector_only_explicit_tasks_sets_up_env() -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task(explicit=True)
     def lint(session: nox.Session) -> None:
@@ -1747,7 +1747,7 @@ def test_env_selector_only_explicit_tasks_sets_up_env() -> None:
 
 
 def test_env_only_session_per_instance() -> None:
-    tests = nox.env("tests", python=["3.11", "3.12"])
+    tests = nox.env.standard("tests", python=["3.11", "3.12"])
 
     @tests.task(explicit=True)
     def run(session: nox.Session) -> None:
@@ -1794,13 +1794,13 @@ def test_env_colon_provisions_only() -> None:
 
 
 def test_env_colon_instance_and_requires() -> None:
-    tests = nox.env("tests", python=["3.11", "3.12"])
+    tests = nox.env.standard("tests", python=["3.11", "3.12"])
 
     @tests.task
     def run(session: nox.Session) -> None:
         pass
 
-    other = nox.env("other")
+    other = nox.env.standard("other")
 
     @other.task(requires=["tests-3.12:"])
     def check(session: nox.Session) -> None:
@@ -1820,7 +1820,7 @@ def test_env_colon_instance_and_requires() -> None:
 
 
 def test_env_only_session_logs(caplog: pytest.LogCaptureFixture) -> None:
-    dev = nox.env("dev", venv_backend="none")
+    dev = nox.env.standard("dev", venv_backend="none")
 
     @dev.task(explicit=True)
     def create(session: nox.Session) -> None:
@@ -1838,7 +1838,7 @@ def test_env_only_session_logs(caplog: pytest.LogCaptureFixture) -> None:
 def test_alias_same_as_task_name_no_warning(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
@@ -1850,7 +1850,7 @@ def test_alias_same_as_task_name_no_warning(
 
 
 def test_empty_parametrize_does_not_poison_env() -> None:
-    tooling = nox.env("tooling", python="3.12")
+    tooling = nox.env.standard("tooling", python="3.12")
 
     @tooling.task
     @nox.parametrize("x", [])
@@ -1910,13 +1910,13 @@ def test_notify_new_identifier_forms() -> None:
 
 
 def test_single_python_env_instance_selector() -> None:
-    tooling = nox.env("tooling", python="3.12")
+    tooling = nox.env.standard("tooling", python="3.12")
 
     @tooling.task
     def lint(session: nox.Session) -> None:
         pass
 
-    other = nox.env("other", venv_backend="none")
+    other = nox.env.standard("other", venv_backend="none")
 
     @other.task(requires=["tooling-3.12"])
     def check(session: nox.Session) -> None:
@@ -1941,7 +1941,7 @@ def test_single_python_env_instance_selector() -> None:
 def test_discover_manifest_reports_construction_errors(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    tooling = nox.env("tooling")
+    tooling = nox.env.standard("tooling")
 
     @tooling.task
     @nox.parametrize("python", ["3.11", "3.12"])
@@ -1969,13 +1969,13 @@ def test_uv_env_sync_refuses_other_backends(
 def test_forced_python_on_located_env_does_not_break_others(
     tmp_path: Path,
 ) -> None:
-    dev = nox.env("dev", python="3.12", location=".devenv")
+    dev = nox.env.standard("dev", python="3.12", location=".devenv")
 
     @dev.task
     def sync(session: nox.Session) -> None:
         pass
 
-    lint = nox.env("lint", venv_backend="none")
+    lint = nox.env.standard("lint", venv_backend="none")
 
     @lint.task
     def run(session: nox.Session) -> None:
@@ -2071,7 +2071,7 @@ def test_exact_env_synced_in_place_on_change(tmp_path: Path) -> None:
 def test_backend_none_with_dependencies_clean_error(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    env = nox.env("dev", venv_backend="none", dependencies=["six"])
+    env = nox.env.standard("dev", venv_backend="none", dependencies=["six"])
 
     @env.task
     def sync(session: nox.Session) -> None:

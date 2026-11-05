@@ -524,7 +524,7 @@ name. To share an environment between tasks, declare them separately:
 
     import nox
 
-    tooling = nox.env(
+    tooling = nox.env.standard(
         "tooling",
         python="3.12",
         dependencies=["prek", "mypy"],
@@ -548,7 +548,7 @@ classic session names. Task names must be unique only within their
 environment. New session names that contain ``:`` or parentheses are
 deprecated.
 
-``nox.env()`` accepts ``python``, ``venv_backend``, ``venv_params``,
+``nox.env.standard()`` accepts ``python``, ``venv_backend``, ``venv_params``,
 ``reuse_venv``, ``download_python``, and ``tags`` (which tasks inherit) from
 ``@nox.session``, plus the options below. Multiple Pythons create one instance
 per interpreter: ``tests-3.11:run``, ``tests-3.12:run``, and so on.
@@ -585,7 +585,7 @@ stale:
 
 Nox cannot detect a change in what a hook does, so it re-syncs an environment
 with a hook on every run. To prevent this, pass a ``setup_stamp`` string to
-``nox.env()`` and change it when the hook changes.
+``nox.env.standard()`` and change it when the hook changes.
 
 ``session.install()`` in a task warns if the environment has more than one
 task, because the staleness check does not see these installs.

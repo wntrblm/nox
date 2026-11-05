@@ -127,7 +127,8 @@ class Environment:
 
     Tasks are attached with the :meth:`task` decorator and run inside this
     environment, sharing a single virtualenv. Instantiating an ``Environment``
-    registers it globally; subclasses can customize provisioning.
+    registers it globally; subclasses can customize provisioning. Available
+    as ``nox.env.standard``.
     """
 
     def __init__(
@@ -460,44 +461,11 @@ class UvProjectEnvironment(Environment):
 
 
 class _EnvAPI:
-    """The ``nox.env`` callable namespace.
+    """The ``nox.env`` namespace of environment types."""
 
-    Calling it creates a plain declarative :class:`Environment`; specialized
-    environment types (lock file support, etc.) hang off it as attributes.
-    """
-
+    standard = Environment
     pylock = PylockEnvironment
     uv = UvProjectEnvironment
-
-    def __call__(
-        self,
-        name: str,
-        /,
-        *,
-        python: Python = None,
-        venv_backend: str | None = None,
-        venv_params: Sequence[str] = (),
-        reuse_venv: bool | None = None,
-        download_python: Literal["auto", "never", "always"] | None = None,
-        tags: Sequence[str] | None = None,
-        dependencies: Sequence[str] = (),
-        inputs: Sequence[str | os.PathLike[str]] = (),
-        location: str | os.PathLike[str] | None = None,
-        setup_stamp: str | None = None,
-    ) -> Environment:
-        return Environment(
-            name,
-            python=python,
-            venv_backend=venv_backend,
-            venv_params=venv_params,
-            reuse_venv=reuse_venv,
-            download_python=download_python,
-            tags=tags,
-            dependencies=dependencies,
-            inputs=inputs,
-            location=location,
-            setup_stamp=setup_stamp,
-        )
 
 
 env = _EnvAPI()

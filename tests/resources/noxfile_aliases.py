@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import nox
 
-tooling = nox.env("tooling", venv_backend="none")
+tooling = nox.env.standard("tooling", venv_backend="none")
 
 
 @tooling.task

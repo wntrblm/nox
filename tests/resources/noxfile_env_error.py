@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import nox
 
-env = nox.env("tests")
+env = nox.env.standard("tests")
 
 
 # Tasks cannot parametrize python; building the manifest for this noxfile

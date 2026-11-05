@@ -42,7 +42,7 @@ Enter the ``dev`` nox environment:
     import nox
 
     # The location puts the environment where your editor expects to find it.
-    dev = nox.env("dev", dependencies=["-e.[dev]"], location=".venv")
+    dev = nox.env.standard("dev", dependencies=["-e.[dev]"], location=".venv")
 
 
 With this, a user can run ``nox -s dev`` to set up their entire environment. The environment has no tasks, so Nox only provisions it, and a bare ``nox`` run skips it.
@@ -63,7 +63,7 @@ Put tools that can share packages in one :ref:`environment <environments>` and a
 
     import nox
 
-    tooling = nox.env("tooling", dependencies=["ruff", "mypy"])
+    tooling = nox.env.standard("tooling", dependencies=["ruff", "mypy"])
 
 
     @tooling.task
@@ -267,8 +267,8 @@ data file, and combine the files only after every test session finishes:
     PYPROJECT = nox.project.load_toml("pyproject.toml")
     PYTHON_VERSIONS = nox.project.python_versions(PYPROJECT)
 
-    coverage = nox.env("coverage", dependencies=["coverage[toml]"])
-    tests = nox.env(
+    coverage = nox.env.standard("coverage", dependencies=["coverage[toml]"])
+    tests = nox.env.standard(
         "tests",
         python=PYTHON_VERSIONS,
         dependencies=["coverage[toml]", "--group=test", "-e."],
