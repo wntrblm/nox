@@ -472,6 +472,33 @@ def test_add_dependencies_with_python_from_parametrize() -> None:
     ]
 
 
+def test_add_dependencies_with_parametrize_fields() -> None:
+    manifest = Manifest({}, create_mock_config())
+
+    @nox.parametrize("django", ["1.9", "2.0"])
+    def build(session: nox.Session, django: str) -> None:
+        pass
+
+    @nox.parametrize("django", ["1.9", "2.0"])
+    def tests(session: nox.Session, django: str) -> None:
+        pass
+
+    for session in manifest.make_session("build", Func(build)):
+        manifest.add_session(session)
+    for session in manifest.make_session(
+        "tests", Func(tests, requires=["build(django={django!r})"])
+    ):
+        manifest.add_session(session)
+
+    manifest.filter_by_name(["tests(django='2.0')"])
+    manifest.add_dependencies()
+
+    assert [session.friendly_name for session in manifest._queue] == [
+        "build(django='2.0')",
+        "tests(django='2.0')",
+    ]
+
+
 def test_notify() -> None:
     manifest = Manifest({}, create_mock_config())
 
