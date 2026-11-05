@@ -522,6 +522,29 @@ def test_list_shows_aliases(capsys: pytest.CaptureFixture[str]) -> None:
     )
 
 
+def test_list_hides_env_only_unless_selected(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    make_selection_envs()
+    only = nox.env("only")
+
+    @only.task(explicit=True)
+    def setup(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], list_sessions=True, noxfile="noxfile.py", color=False
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    manifest.filter_by_name(["docs:"])
+    assert nox.tasks.honor_list_request(manifest, global_config=config) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert not any(line.startswith("- tooling: ") for line in lines)
+    assert any(line.startswith("* docs:") for line in lines)
+    # The bare name of an environment with no selectable task is listed.
+    assert any(line.startswith("- only ") for line in lines)
+
+
 def test_list_without_aliases(capsys: pytest.CaptureFixture[str]) -> None:
     make_selection_envs()
     config = nox._options.options.namespace(

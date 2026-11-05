@@ -36,7 +36,7 @@ from nox._decorators import Call, Func
 from nox._resolver import CycleError, lazy_stable_topo_sort
 from nox.logger import logger
 from nox.registry import RegistryData
-from nox.sessions import Session, SessionRunner
+from nox.sessions import EnvRunner, Session, SessionRunner
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
@@ -458,12 +458,9 @@ class Manifest:
             if session.env_base_name is None:
                 continue
             if session.task_name is None:
-                # Environment-only sessions back the bare selectors of
-                # environments with no selectable tasks.
-                assert session.env_instance_name is not None
-                target = f"{session.env_instance_name}:"
-                for key in (session.env_base_name, f"{session.env_base_name}:"):
-                    env_only.setdefault(key, []).append(target)
+                env_only.setdefault(f"{session.env_base_name}:", []).append(
+                    f"{session.env_instance_name}:"
+                )
                 continue
             env_selectable = env_tasks.setdefault(session.env_base_name, {})
             env_selectable[session.name] = (
@@ -483,13 +480,10 @@ class Manifest:
             names = [name for name, selectable in signature_names.items() if selectable]
             if names:
                 extra.setdefault(instance_name, names)
-        known = (
-            self.all_sessions_by_signature.keys()
-            | self.parametrized_sessions_by_name.keys()
-        )
-        for name, targets in env_only.items():
-            if name not in extra and name not in known:
-                extra[name] = list(dict.fromkeys(targets))
+        # ``env:`` is a session name or signature except for a python list
+        # with no selectable task, where the instances are named ``env-py``.
+        by_name = self.parametrized_sessions_by_name
+        extra.update({k: v for k, v in env_only.items() if k not in by_name})
 
         self._extra_requirements_cache = extra
         return extra
@@ -558,23 +552,17 @@ class Manifest:
             # `-s tooling-3.12` works for pinned environments too.
             dir_name = f"{env.name}-{py}" if multi and py else env.name
             selector_name = f"{env.name}-{py}" if py else env.name
-            env_runner = None
+            env_runner: EnvRunner | None = None
             for task_name, task_func in tasks.items():
                 func = self._bind_task_func(task_func, env, py, env_should_warn)
                 for runner in self._make_task_runners(
                     env.name, task_name, func, multi=multi
                 ):
                     runner.task_name = task_name
-                    runner.env_base_name = env.name
-                    runner.env_instance_name = selector_name
-                    if env_runner is None:
-                        env_runner = runner.env_runner
-                        env_runner._name = dir_name
-                        env_runner._func = func
-                        env_runner.environment = env
-                        env_runner.shared = len(tasks) > 1
-                    else:
-                        runner.env_runner = env_runner
+                    env_runner = _attach_env_runner(
+                        runner, env_runner, func, env, dir_name, selector_name
+                    )
+                    env_runner.shared = len(tasks) > 1
                     runners.append(runner)
 
             # ``env:`` (no task) only provisions the environment. It also
@@ -594,15 +582,8 @@ class Manifest:
             runner = SessionRunner(
                 name, signatures, func, self._config, self, multi=multi
             )
-            runner.env_base_name = env.name
-            runner.env_instance_name = selector_name
-            if env_runner is None:
-                env_runner = runner.env_runner
-                env_runner._name = dir_name
-                env_runner._func = func
-                env_runner.environment = env
-            else:
-                runner.env_runner = env_runner
+            runner.hidden = not fallback
+            _attach_env_runner(runner, env_runner, func, env, dir_name, selector_name)
             runners.append(runner)
 
         return runners
@@ -882,6 +863,31 @@ def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
 def _null_session_func_(session: Session) -> None:
     """A no-op session for parametrized sessions with no available params."""
     session.skip("This session had no parameters available.")
+
+
+def _attach_env_runner(
+    runner: SessionRunner,
+    env_runner: EnvRunner | None,
+    func: Func,
+    env: Environment,
+    dir_name: str,
+    selector_name: str,
+) -> EnvRunner:
+    """Attach a task runner to its environment instance's shared EnvRunner.
+
+    The first runner of an instance donates its own EnvRunner, configured
+    from the environment; later runners share it.
+    """
+    runner.env_base_name = env.name
+    runner.env_instance_name = selector_name
+    if env_runner is None:
+        env_runner = runner.env_runner
+        env_runner._name = dir_name
+        env_runner._func = func
+        env_runner.environment = env
+    else:
+        runner.env_runner = env_runner
+    return env_runner
 
 
 def _env_only_func_(session: Session) -> None:

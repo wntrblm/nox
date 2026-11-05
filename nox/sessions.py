@@ -1316,6 +1316,8 @@ class SessionRunner:
     task_name: str | None = None
     env_base_name: str | None = None
     env_instance_name: str | None = None
+    # Left out of --list unless selected (the ``env:`` provisioning session).
+    hidden: bool = False
 
     def __init__(
         self,

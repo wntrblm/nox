@@ -307,6 +307,8 @@ def _produce_listing(manifest: Manifest, global_config: NoxConfig) -> None:
     skipped_color = parse_colors("white") if global_config.color else ""
 
     for session, selected in manifest.list_all_sessions():
+        if getattr(session, "hidden", False) and not selected:
+            continue
         marker = "*" if selected else "-"
         color = selected_color if selected else skipped_color
         tag_color = (
