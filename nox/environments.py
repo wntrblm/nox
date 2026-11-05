@@ -79,6 +79,49 @@ def _file_hash(path: str, *, kind: str) -> str:
         raise FileNotFoundError(msg) from None
 
 
+_FILE_OPTIONS = frozenset({"-r", "-c", "--requirement", "--constraint"})
+_PROJECT_FILES = ("pyproject.toml", "setup.py", "setup.cfg")
+
+
+def _implicit_inputs(dependencies: Sequence[str]) -> list[str]:
+    """Files whose contents affect installing ``dependencies``.
+
+    Covers ``-r``/``-c`` files and the metadata files of local project
+    directories (``.``, ``-e .``). Source changes of an editable install
+    are not inputs, and a local project's build backend may read files
+    other than these; list them with ``inputs=`` if so.
+    """
+    files: list[str] = []
+    args = iter(dependencies)
+    for arg in args:
+        if arg in _FILE_OPTIONS:
+            files.append(next(args, ""))
+            continue
+        option, sep, value = arg.partition("=")
+        if sep and option in _FILE_OPTIONS:
+            files.append(value)
+            continue
+        if arg in {"-e", "--editable"}:
+            requirement = next(args, "")
+        elif arg.startswith("--editable="):
+            requirement = arg.removeprefix("--editable=")
+        elif arg.startswith("-e"):
+            requirement = arg[2:]
+        elif arg.startswith("-"):
+            continue
+        else:
+            requirement = arg
+        # Strip extras: "./pkg[dev]" -> "./pkg".
+        path = requirement.partition("[")[0]
+        if path and os.path.isdir(path):
+            files.extend(
+                os.path.join(path, name)
+                for name in _PROJECT_FILES
+                if os.path.isfile(os.path.join(path, name))
+            )
+    return [file for file in files if file]
+
+
 class Environment:
     """A declarative environment (virtualenv + how to provision it).
 
@@ -98,6 +141,7 @@ class Environment:
         download_python: Literal["auto", "never", "always"] | None = None,
         tags: Sequence[str] | None = None,
         dependencies: Sequence[str] = (),
+        inputs: Sequence[str | os.PathLike[str]] = (),
         location: str | os.PathLike[str] | None = None,
         setup_stamp: str | None = None,
         register: bool = True,
@@ -110,6 +154,7 @@ class Environment:
         self.download_python = download_python
         self.tags = list(tags or [])
         self.dependencies = list(dependencies)
+        self.inputs = [os.fspath(path) for path in inputs]
         self.location = os.fspath(location) if location is not None else None
         self.setup_func: Callable[[Session], None] | None = None
         self.setup_stamp = setup_stamp
@@ -150,18 +195,31 @@ class Environment:
         data: dict[str, Any] = {
             "kind": "dependencies",
             "dependencies": list(self.dependencies),
+            "inputs": self._input_hashes(),
         }
         if self.setup_stamp is not None:
             data["setup_stamp"] = self.setup_stamp
         return data
 
-    @property
-    def sync_is_exact(self) -> bool:
+    def _input_hashes(self, *extra: str) -> dict[str, str]:
+        """Content hashes of explicit ``inputs`` plus implicit ones.
+
+        Explicit inputs must exist; implicit ones (``-r`` files, local
+        project metadata, ``extra``) are only hashed when present.
+        """
+        hashes = {path: _file_hash(path, kind="input") for path in self.inputs}
+        for path in (*_implicit_inputs(self.dependencies), *extra):
+            if path not in hashes and os.path.isfile(path):
+                hashes[path] = _file_hash(path, kind="input")
+        return hashes
+
+    def sync_is_exact(self, session: Session) -> bool:  # noqa: ARG002
         """Whether :meth:`sync` makes the environment exactly match its inputs.
 
         When False (plain pip installs are additive), a stale environment is
         recreated instead of re-synced in place, so removed dependencies
-        actually disappear.
+        actually disappear. Takes the session, since this can depend on the
+        venv backend actually in use.
         """
         return False
 
@@ -280,10 +338,12 @@ class PylockEnvironment(Environment):
         data["extras"] = self.extras
         return data
 
-    @property
-    def sync_is_exact(self) -> bool:
+    def sync_is_exact(self, session: Session) -> bool:
         # `uv pip sync` is exact; pip and extra dependencies are additive.
-        return nox.virtualenv.HAS_UV and not self.dependencies
+        return self._uses_uv(session) and not self.dependencies
+
+    def _uses_uv(self, session: Session) -> bool:
+        return nox.virtualenv.HAS_UV and session.venv_backend in self._UV_BACKENDS
 
     def sync(self, session: Session) -> None:
         if not session.virtualenv.is_sandboxed:
@@ -292,7 +352,7 @@ class PylockEnvironment(Environment):
                 "requires a virtual environment."
             )
             raise RuntimeError(msg)
-        if nox.virtualenv.HAS_UV and session.venv_backend in self._UV_BACKENDS:
+        if self._uses_uv(session):
             # uv targets the session's venv through the VIRTUAL_ENV variable.
             session.run_install(
                 nox.virtualenv.UV,
@@ -370,11 +430,14 @@ class UvProjectEnvironment(Environment):
         data["kind"] = "uv"
         data["lockfile"] = self.lockfile
         data["lockfile_hash"] = _file_hash(self.lockfile, kind="lock file")
+        # `--locked` only validates when the sync actually runs, so the
+        # project file (and the project's entry points) must be an input.
+        pyproject = os.path.join(os.path.dirname(self.lockfile), "pyproject.toml")
+        data["inputs"] = self._input_hashes(pyproject)
         data["command"] = self._sync_command()
         return data
 
-    @property
-    def sync_is_exact(self) -> bool:
+    def sync_is_exact(self, session: Session) -> bool:  # noqa: ARG002
         # `uv sync` is exact; extra dependencies are installed after it,
         # additively.
         return not self.dependencies
@@ -406,8 +469,35 @@ class _EnvAPI:
     pylock = PylockEnvironment
     uv = UvProjectEnvironment
 
-    def __call__(self, name: str, /, **kwargs: Any) -> Environment:
-        return Environment(name, **kwargs)
+    def __call__(
+        self,
+        name: str,
+        /,
+        *,
+        python: Python = None,
+        venv_backend: str | None = None,
+        venv_params: Sequence[str] = (),
+        reuse_venv: bool | None = None,
+        download_python: Literal["auto", "never", "always"] | None = None,
+        tags: Sequence[str] | None = None,
+        dependencies: Sequence[str] = (),
+        inputs: Sequence[str | os.PathLike[str]] = (),
+        location: str | os.PathLike[str] | None = None,
+        setup_stamp: str | None = None,
+    ) -> Environment:
+        return Environment(
+            name,
+            python=python,
+            venv_backend=venv_backend,
+            venv_params=venv_params,
+            reuse_venv=reuse_venv,
+            download_python=download_python,
+            tags=tags,
+            dependencies=dependencies,
+            inputs=inputs,
+            location=location,
+            setup_stamp=setup_stamp,
+        )
 
 
 env = _EnvAPI()

@@ -574,6 +574,11 @@ inputs in a stamp file (``.nox-env.json``) inside the environment. On the
 next run the environment is reused, and if the stamp still matches — same
 dependency list, same lock file contents, same backend and Python — the
 installation step is skipped entirely, making repeat runs fast by default.
+Files named in the dependency list with ``-r``/``-c``, and the
+``pyproject.toml``/``setup.py``/``setup.cfg`` of a local project
+(``"."``, ``"-e ."``), are hashed into the stamp too. Pass ``inputs=[...]``
+to hash any other file the installation depends on; source changes of an
+editable install do not need a re-sync.
 If the inputs changed, lock file environments are re-synced in place (their
 syncs are exact), while a plain ``dependencies`` list recreates the
 environment, so removed dependencies actually disappear.
@@ -626,9 +631,9 @@ the lock file's directory), ``groups``, ``extras``, ``all_extras``,
 ``no_default_groups``, ``no_install_project``, and ``sync_args`` for
 anything else. It requires the ``uv`` backend and refuses to sync under
 ``--force-venv-backend``/``--no-venv``, since ``uv sync`` would otherwise
-target the project's own ``.venv``. The lock file's contents are part of
-the environment stamp, so editing the lock triggers a re-sync on the next
-run.
+target the project's own ``.venv``. The lock file and the project's
+``pyproject.toml`` are part of the environment stamp, so editing either
+triggers a re-sync (and ``--locked`` validation) on the next run.
 
 Other formats can be supported by subclassing :class:`nox.Environment` and
 overriding ``stamp_data()`` (return the content hashes of your inputs, or
@@ -668,8 +673,8 @@ in ``nox.options.sessions``:
 
 Aliases are expanded recursively at selection time (a cycle is an error)
 and don't appear as sessions themselves; ``nox --list`` shows them in a
-separate section with their targets. An alias that shadows an existing task
-name takes precedence, with a warning.
+separate section with their targets. Since a bare task name is not a
+selector, an alias may reuse one (``nox.alias("lint", "tooling:lint")``).
 
 Environment API reference
 ~~~~~~~~~~~~~~~~~~~~~~~~~

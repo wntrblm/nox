@@ -18,7 +18,6 @@ __lazy_modules__ = {
     "ast",
     "itertools",
     "nox._resolver",
-    "nox.logger",
     "nox.registry",
     "nox.sessions",
     "operator",
@@ -34,7 +33,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from nox._decorators import Call, Func
 from nox._resolver import CycleError, lazy_stable_topo_sort
-from nox.logger import logger
 from nox.registry import RegistryData
 from nox.sessions import EnvRunner, Session, SessionRunner
 
@@ -105,7 +103,6 @@ class Manifest:
                 else:
                     for session in self._make_env_sessions(env, tasks):
                         self.add_session(session)
-            self._warn_shadowing_aliases()
         else:
             for name, func in session_functions.items():
                 for session in self.make_session(name, func):
@@ -122,21 +119,18 @@ class Manifest:
         Checked over the selected sessions (not all sessions), so an
         unselected environment cannot break an unrelated invocation — e.g.
         --force-python temporarily multiplying a located environment.
+        Default locations take part too, so an explicit ``location`` cannot
+        silently overlap another environment's default directory.
         """
         locations: dict[str, str] = {}
         location_bases: dict[str, str | None] = {}
         seen_runners: set[int] = set()
         for session in self._queue:
             env_runner = session.env_runner
-            environment = env_runner.environment
-            if (
-                environment is None
-                or environment.location is None
-                or id(env_runner) in seen_runners
-            ):
+            if env_runner.environment is None or id(env_runner) in seen_runners:
                 continue
             seen_runners.add(id(env_runner))
-            resolved = os.path.normpath(env_runner.envdir)
+            resolved = os.path.realpath(env_runner.envdir)
             other = locations.setdefault(resolved, env_runner.friendly_name)
             other_base = location_bases.setdefault(resolved, session.env_base_name)
             if other == env_runner.friendly_name:
@@ -422,21 +416,6 @@ class Manifest:
         for name in names:
             expand(name, frozenset())
         return expanded
-
-    def _warn_shadowing_aliases(self) -> None:
-        for alias_name in self._aliases:
-            shadowed = sorted(
-                {
-                    f"{session.env_base_name}:{session.task_name}"
-                    for session in self._all_sessions
-                    if session.task_name == alias_name
-                }
-            )
-            if shadowed:
-                logger.warning(
-                    f"Alias {alias_name!r} shadows the task(s) "
-                    f"{', '.join(shadowed)}; the alias takes precedence."
-                )
 
     def _extra_requirements(self) -> dict[str, list[str]]:
         """Identifiers usable in ``requires`` beyond signatures and names.

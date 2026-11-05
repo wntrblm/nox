@@ -1118,6 +1118,45 @@ def test_location_duplicate_error() -> None:
         manifest.check_location_collisions()
 
 
+def test_location_collides_with_default_location() -> None:
+    env_a = nox.env("a", location=".nox/b")
+    env_b = nox.env("b")
+
+    @env_a.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    @env_b.task(name="run")
+    def run_b(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest(envdir=".nox")
+    with pytest.raises(ValueError, match="both resolve to the location"):
+        manifest.check_location_collisions()
+
+
+def test_location_collision_through_symlink(tmp_path: Path) -> None:
+    (tmp_path / "real").mkdir()
+    (tmp_path / "link").symlink_to(tmp_path / "real", target_is_directory=True)
+    env_a = nox.env("a", location="real/venv")
+    env_b = nox.env("b", location="link/venv")
+
+    @env_a.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    @env_b.task(name="run")
+    def run_b(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    with pytest.raises(ValueError, match="both resolve to the location"):
+        manifest.check_location_collisions()
+
+
 def test_location_shared_template_ok(tmp_path: Path) -> None:
     env_a = nox.env("a", python=["3.11", "3.12"], location=".venvs/{name}")
     env_b = nox.env("b", python=["3.11", "3.12"], location=".venvs/{name}")
@@ -1289,6 +1328,78 @@ def test_pylock_stamp(tmp_path: Path) -> None:
     assert env.stamp_data() != data
 
 
+def test_stamp_ignores_options_without_files() -> None:
+    data = Environment(
+        "x", dependencies=["--no-deps", "six"], register=False
+    ).stamp_data()
+    assert data is not None
+    assert data["inputs"] == {}
+
+
+def test_stamp_hashes_requirements_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("six\n", encoding="utf-8")
+    (tmp_path / "constraints.txt").write_text("six==1\n", encoding="utf-8")
+    env = nox.env(
+        "dev",
+        dependencies=["-r", "requirements.txt", "--constraint=constraints.txt"],
+    )
+    data = env.stamp_data()
+    assert data is not None
+    assert set(data["inputs"]) == {"requirements.txt", "constraints.txt"}
+
+    (tmp_path / "requirements.txt").write_text("six\nattrs\n", encoding="utf-8")
+    assert env.stamp_data() != data
+
+
+def test_stamp_hashes_local_project_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+    env = nox.env("dev", dependencies=["-e", "."])
+    data = env.stamp_data()
+    assert data is not None
+    assert set(data["inputs"]) == {os.path.join(".", "pyproject.toml")}
+    for dep in ("-e.[dev]", "--editable=.", ".[dev]"):
+        other = Environment("x", dependencies=[dep], register=False).stamp_data()
+        assert other is not None
+        assert other["inputs"] == data["inputs"]
+
+    (tmp_path / "pyproject.toml").write_text("[project]\nx=1\n", encoding="utf-8")
+    assert env.stamp_data() != data
+
+
+def test_stamp_explicit_inputs(tmp_path: Path) -> None:
+    extra = tmp_path / "extra.txt"
+    extra.write_text("a\n", encoding="utf-8")
+    env = nox.env("dev", inputs=[extra])
+    data = env.stamp_data()
+    assert data is not None
+    assert list(data["inputs"]) == [str(extra)]
+
+    extra.write_text("b\n", encoding="utf-8")
+    assert env.stamp_data() != data
+
+    with pytest.raises(FileNotFoundError, match="does not exist"):
+        nox.env("dev2", inputs=[tmp_path / "missing.txt"]).stamp_data()
+
+
+def test_uv_env_stamp_hashes_pyproject(tmp_path: Path) -> None:
+    (tmp_path / "uv.lock").write_text("version = 1\n", encoding="utf-8")
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("[project]\n", encoding="utf-8")
+    env = nox.env.uv("dev", lockfile=tmp_path / "uv.lock")
+    data = env.stamp_data()
+    assert data is not None
+    assert str(pyproject) in data["inputs"]
+
+    pyproject.write_text("[project]\nx = 1\n", encoding="utf-8")
+    assert env.stamp_data() != data
+
+
 def test_pylock_unstampable_setup(tmp_path: Path) -> None:
     env = nox.env.pylock("ci", lockfile=tmp_path / "pylock.toml")
 
@@ -1300,12 +1411,18 @@ def test_pylock_unstampable_setup(tmp_path: Path) -> None:
 
 
 def test_pylock_sync_is_exact(monkeypatch: pytest.MonkeyPatch) -> None:
+    session = mock.MagicMock()
+    session.venv_backend = "uv"
     monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
-    assert nox.env.pylock("ci").sync_is_exact
-    assert not nox.env.pylock("ci2", dependencies=["pip"]).sync_is_exact
+    assert nox.env.pylock("ci").sync_is_exact(session)
+    assert not nox.env.pylock("ci2", dependencies=["pip"]).sync_is_exact(session)
+    # uv cannot target conda, so sync() falls back to additive pip.
+    session.venv_backend = "conda"
+    assert not nox.env.pylock("ci3").sync_is_exact(session)
     # pip installs are additive.
+    session.venv_backend = "uv"
     monkeypatch.setattr(nox.virtualenv, "HAS_UV", False)
-    assert not nox.env.pylock("ci3").sync_is_exact
+    assert not nox.env.pylock("ci4").sync_is_exact(session)
 
 
 def test_pylock_stamp_includes_selection(tmp_path: Path) -> None:
@@ -1469,8 +1586,10 @@ def test_uv_env_unstampable_setup(tmp_path: Path) -> None:
 
 
 def test_uv_env_sync_is_exact() -> None:
-    assert nox.env.uv("dev").sync_is_exact
-    assert not nox.env.uv("dev2", dependencies=["pip"]).sync_is_exact
+    session = mock.MagicMock()
+    session.venv_backend = "uv"
+    assert nox.env.uv("dev").sync_is_exact(session)
+    assert not nox.env.uv("dev2", dependencies=["pip"]).sync_is_exact(session)
 
 
 def test_uv_env_backend_forced() -> None:
@@ -1716,7 +1835,9 @@ def test_env_only_session_logs(caplog: pytest.LogCaptureFixture) -> None:
     assert "No tasks ran; environment 'dev' is ready" in caplog.text
 
 
-def test_alias_shadowing_task_warns(caplog: pytest.LogCaptureFixture) -> None:
+def test_alias_same_as_task_name_no_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     tooling = nox.env("tooling")
 
     @tooling.task
@@ -1725,10 +1846,7 @@ def test_alias_shadowing_task_warns(caplog: pytest.LogCaptureFixture) -> None:
 
     nox.alias("lint", "tooling:style")
     make_manifest()
-    assert any(
-        "shadows the task" in record.message and "tooling:lint" in record.message
-        for record in caplog.records
-    )
+    assert not any("shadow" in record.message for record in caplog.records)
 
 
 def test_empty_parametrize_does_not_poison_env() -> None:
@@ -1910,7 +2028,8 @@ def test_inexact_env_recreated_on_change(tmp_path: Path) -> None:
 
 
 class ExactTrackingEnvironment(TrackingEnvironment):
-    sync_is_exact = True
+    def sync_is_exact(self, session: nox.Session) -> bool:  # noqa: ARG002
+        return True
 
 
 def test_exact_env_synced_in_place_on_change(tmp_path: Path) -> None:

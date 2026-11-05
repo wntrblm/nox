@@ -1240,7 +1240,7 @@ class EnvRunner:
             if self._read_stamp() == stamp:
                 logger.debug(f"Environment {self.friendly_name} is already up to date.")
                 return
-            if not environment.sync_is_exact:
+            if not environment.sync_is_exact(session):
                 # An additive sync would leave removed dependencies behind;
                 # start over so the environment matches its declaration.
                 logger.info(
