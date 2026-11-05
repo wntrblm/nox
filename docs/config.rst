@@ -607,12 +607,19 @@ dependency list:
 
 .. code-block:: python
 
-    # PEP 751 pylock file, installed exactly with `uv pip sync`:
-    ci = nox.env.pylock("ci", lockfile="pylock.toml")
+    # PEP 751 pylock file, installed exactly with `uv pip sync`
+    # (or `pip install -r` when uv is not available):
+    ci = nox.env.pylock("ci", lockfile="pylock.toml", groups=["dev"])
 
     # A uv project's uv.lock, synced with `uv sync --locked`
     # (requires the "uv" backend, which is the default here):
     dev = nox.env.uv("dev", groups=["dev"], location=".venv")
+
+``nox.env.pylock()`` accepts ``lockfile`` (default ``pylock.toml``),
+``groups``, and ``extras``, which select from a multi-use lock such as one
+written by ``pip lock``; a lock exported by ``uv export`` has its selection
+baked in. Installing with pip needs pip 25.1, or 26.3 for ``groups`` and
+``extras``.
 
 ``nox.env.uv()`` accepts ``lockfile`` (default ``uv.lock``; the project is
 the lock file's directory), ``groups``, ``extras``, ``all_extras``,

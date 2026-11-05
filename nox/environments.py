@@ -246,20 +246,28 @@ class Environment:
 class PylockEnvironment(Environment):
     """An environment installed from a PEP 751 ``pylock.toml`` file.
 
-    The lock file is installed with ``uv pip sync``, so the environment
-    exactly matches the lock; extra ``dependencies`` are installed after.
-    Available as ``nox.env.pylock``.
+    With uv available, the lock file is installed with ``uv pip sync``, so
+    the environment exactly matches the lock. Otherwise, or on backends uv
+    cannot target (such as conda), it is installed with ``pip install -r``
+    (pip 25.1+; 26.3+ for ``groups`` and ``extras``). Extra ``dependencies``
+    are installed after. Available as ``nox.env.pylock``.
     """
+
+    _UV_BACKENDS = frozenset({"uv", "virtualenv", "venv"})
 
     def __init__(
         self,
         name: str,
         *,
         lockfile: str | os.PathLike[str] = "pylock.toml",
+        groups: Sequence[str] = (),
+        extras: Sequence[str] = (),
         **kwargs: Any,
     ) -> None:
         super().__init__(name, **kwargs)
         self.lockfile = os.fspath(lockfile)
+        self.groups = list(groups)
+        self.extras = list(extras)
 
     def stamp_data(self) -> dict[str, Any] | None:
         data = super().stamp_data()
@@ -268,35 +276,43 @@ class PylockEnvironment(Environment):
         data["kind"] = "pylock"
         data["lockfile"] = self.lockfile
         data["lockfile_hash"] = _file_hash(self.lockfile, kind="lock file")
+        data["groups"] = self.groups
+        data["extras"] = self.extras
         return data
 
     @property
     def sync_is_exact(self) -> bool:
-        # `uv pip sync` is exact; extra dependencies are installed after it,
-        # additively.
-        return not self.dependencies
+        # `uv pip sync` is exact; pip and extra dependencies are additive.
+        return nox.virtualenv.HAS_UV and not self.dependencies
 
     def sync(self, session: Session) -> None:
-        if not nox.virtualenv.HAS_UV:
+        if not session.virtualenv.is_sandboxed:
             msg = (
-                f"Environment {self.name!r} installs from a pylock file, "
-                "which requires uv to be available."
+                f"Environment {self.name!r} installs from a pylock file and "
+                "requires a virtual environment."
             )
             raise RuntimeError(msg)
-        if not session.virtualenv.is_sandboxed or session.venv_backend not in {
-            "uv",
-            "virtualenv",
-            "venv",
-        }:
-            msg = (
-                f"Environment {self.name!r} installs from a pylock file, which "
-                f"requires a virtualenv-style backend, not {session.venv_backend!r}."
+        if nox.virtualenv.HAS_UV and session.venv_backend in self._UV_BACKENDS:
+            # uv targets the session's venv through the VIRTUAL_ENV variable.
+            session.run_install(
+                nox.virtualenv.UV,
+                "pip",
+                "sync",
+                self.lockfile,
+                *(f"--group={group}" for group in self.groups),
+                *(f"--extra={extra}" for extra in self.extras),
+                external=True,
+                silent=True,
             )
-            raise RuntimeError(msg)
-        # uv targets the session's venv through the VIRTUAL_ENV variable.
-        session.run_install(
-            nox.virtualenv.UV, "pip", "sync", self.lockfile, external=True, silent=True
-        )
+        else:
+            requirement = self.lockfile
+            if self.extras:
+                requirement += f"[{','.join(self.extras)}]"
+            session.install(
+                "-r",
+                requirement,
+                *(f"--group={self.lockfile}:{group}" for group in self.groups),
+            )
         super().sync(session)
 
 

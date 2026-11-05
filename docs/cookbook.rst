@@ -180,11 +180,11 @@ If you use ``uv`` to lock your dependencies, ``nox.env.uv`` runs ``uv sync --loc
 
 Nox stores a hash of ``uv.lock`` in the environment, so it syncs only when the lockfile changes. Other useful options include ``extras``, ``no_default_groups``, ``no_install_project``, and ``sync_args`` for any other ``uv sync`` flag.
 
-For a :pep:`751` lockfile, use ``nox.env.pylock``, which runs ``uv pip sync``:
+For a :pep:`751` lockfile, use ``nox.env.pylock``, which runs ``uv pip sync``, or ``pip install -r`` if uv is not available:
 
 .. code-block:: python
 
-    tests = nox.env.pylock("tests", lockfile="pylock.toml")
+    tests = nox.env.pylock("tests", lockfile="pylock.toml", groups=["test"])
 
 If you prefer ``@nox.session``, the `nox-uv <https://github.com/dantebben/nox-uv>`_ package can be used to reduce the boilerplate needed to ``uv sync`` specific dependency groups or extras into the nox virtual environment.
 By default, ``nox-uv`` also validates that the lockfile is up-to-date.

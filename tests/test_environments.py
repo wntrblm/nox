@@ -1299,9 +1299,27 @@ def test_pylock_unstampable_setup(tmp_path: Path) -> None:
     assert env.stamp_data() is None
 
 
-def test_pylock_sync_is_exact() -> None:
+def test_pylock_sync_is_exact(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
     assert nox.env.pylock("ci").sync_is_exact
     assert not nox.env.pylock("ci2", dependencies=["pip"]).sync_is_exact
+    # pip installs are additive.
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", False)
+    assert not nox.env.pylock("ci3").sync_is_exact
+
+
+def test_pylock_stamp_includes_selection(tmp_path: Path) -> None:
+    lockfile = tmp_path / "pylock.toml"
+    lockfile.write_text("lock-version = '1.0'\n", encoding="utf-8")
+    plain = nox.env.pylock("a", lockfile=lockfile).stamp_data()
+    grouped = nox.env.pylock(
+        "b", lockfile=lockfile, groups=["dev"], extras=["x"]
+    ).stamp_data()
+    assert plain is not None
+    assert grouped is not None
+    assert plain["groups"] == []
+    assert grouped["groups"] == ["dev"]
+    assert grouped["extras"] == ["x"]
 
 
 def test_pylock_sync_command(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1317,22 +1335,75 @@ def test_pylock_sync_command(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def test_pylock_sync_requires_uv(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_pylock_sync_command_groups_extras(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV", "/fake/uv")
+    env = nox.env.pylock(
+        "ci", lockfile="pylock.toml", groups=["dev", "docs"], extras=["a", "b"]
+    )
+    session = mock.MagicMock()
+    session.venv_backend = "venv"
+    session.virtualenv.is_sandboxed = True
+    env.sync(session)
+    session.run_install.assert_called_once_with(
+        "/fake/uv",
+        "pip",
+        "sync",
+        "pylock.toml",
+        "--group=dev",
+        "--group=docs",
+        "--extra=a",
+        "--extra=b",
+        external=True,
+        silent=True,
+    )
+
+
+def test_pylock_sync_pip_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(nox.virtualenv, "HAS_UV", False)
-    env = nox.env.pylock("ci")
-    with pytest.raises(RuntimeError, match="requires uv"):
-        env.sync(mock.MagicMock())
+    env = nox.env.pylock("ci", lockfile="pylock.toml")
+    session = mock.MagicMock()
+    session.venv_backend = "venv"
+    session.virtualenv.is_sandboxed = True
+    env.sync(session)
+    session.install.assert_called_once_with("-r", "pylock.toml")
+    session.run_install.assert_not_called()
 
 
-def test_pylock_sync_requires_venv_backend(
+def test_pylock_sync_pip_fallback_groups_extras(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", False)
+    env = nox.env.pylock(
+        "ci", lockfile="pylock.toml", groups=["dev", "docs"], extras=["a", "b"]
+    )
+    session = mock.MagicMock()
+    session.venv_backend = "venv"
+    session.virtualenv.is_sandboxed = True
+    env.sync(session)
+    session.install.assert_called_once_with(
+        "-r", "pylock.toml[a,b]", "--group=pylock.toml:dev", "--group=pylock.toml:docs"
+    )
+
+
+def test_pylock_sync_conda_uses_pip(monkeypatch: pytest.MonkeyPatch) -> None:
+    # uv pip sync only targets virtualenv-style backends; others use pip.
     monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
-    env = nox.env.pylock("ci")
+    env = nox.env.pylock("ci", lockfile="pylock.toml")
     session = mock.MagicMock()
     session.venv_backend = "conda"
     session.virtualenv.is_sandboxed = True
-    with pytest.raises(RuntimeError, match="virtualenv-style backend"):
+    env.sync(session)
+    session.install.assert_called_once_with("-r", "pylock.toml")
+
+
+def test_pylock_sync_requires_sandbox(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    env = nox.env.pylock("ci")
+    session = mock.MagicMock()
+    session.venv_backend = "none"
+    session.virtualenv.is_sandboxed = False
+    with pytest.raises(RuntimeError, match="virtual environment"):
         env.sync(session)
 
 
