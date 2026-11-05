@@ -158,15 +158,18 @@ def test_parallel_stop_on_first_error(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _patch_run_session_tracking_concurrency(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, overlap_timeout: float = 0.05
 ) -> dict[str, int]:
     """Patch ``_run_session`` with a fake that records peak concurrency.
 
     The returned dict maps each session's envdir (and the ``"total"`` key) to
-    the largest number of simultaneously-running sessions observed. The fake
-    sleeps briefly so that sessions submitted together reliably overlap.
+    the largest number of simultaneously-running sessions observed. Each fake
+    session holds until a second one is running or ``overlap_timeout`` passes.
+    Tests that expect an overlap need a long timeout, so a slow runner can't
+    finish one session before the next one starts.
     """
     lock = threading.Lock()
+    overlapped = threading.Event()
     concurrent: dict[str, int] = {}
     peak: dict[str, int] = {}
 
@@ -180,7 +183,9 @@ def _patch_run_session_tracking_concurrency(
             for key in (session.envdir, "total"):
                 concurrent[key] = concurrent.get(key, 0) + 1
                 peak[key] = max(peak.get(key, 0), concurrent[key])
-        time.sleep(0.05)
+            if concurrent["total"] > 1:
+                overlapped.set()
+        overlapped.wait(overlap_timeout)
         with lock:
             for key in (session.envdir, "total"):
                 concurrent[key] -= 1
@@ -204,7 +209,7 @@ def test_parallel_serializes_shared_envdir(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 def test_parallel_opted_in_sessions_overlap(monkeypatch: pytest.MonkeyPatch) -> None:
-    peak = _patch_run_session_tracking_concurrency(monkeypatch)
+    peak = _patch_run_session_tracking_concurrency(monkeypatch, overlap_timeout=5)
     sessions = [FakeSession("a"), FakeSession("b")]
 
     results = _run(sessions, _config(), jobs=2)
@@ -234,7 +239,7 @@ def test_parallel_global_default_allows_overlap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Sessions that don't set allow_parallel= inherit --allow-parallel.
-    peak = _patch_run_session_tracking_concurrency(monkeypatch)
+    peak = _patch_run_session_tracking_concurrency(monkeypatch, overlap_timeout=5)
     sessions = [
         FakeSession("a", allow_parallel=None),
         FakeSession("b", allow_parallel=None),
