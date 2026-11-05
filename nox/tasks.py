@@ -213,9 +213,8 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
         return 3
 
     # Filter by the name of any explicit sessions.
-    # This can raise KeyError if a specified session does not exist, or
-    # ValueError for an environment with no default tasks; log this if it
-    # happens.
+    # This can raise KeyError if a specified session does not exist; log
+    # this if it happens.
     # The sessions does not come from the Noxfile if keywords is not empty
     # or tags are supplied.
     if global_config.tags is None and not global_config.keywords:
@@ -224,7 +223,7 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
         else:
             try:
                 manifest.filter_by_name(global_config.sessions)
-            except (KeyError, ValueError) as exc:
+            except KeyError as exc:
                 logger.error("Error while collecting sessions.")
                 logger.error(exc.args[0])
                 return 3

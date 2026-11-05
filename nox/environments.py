@@ -186,6 +186,7 @@ class Environment:
         name: str | None = ...,
         tags: Sequence[str] | None = ...,
         default: bool = ...,
+        explicit: bool = ...,
         requires: Sequence[str] | None = ...,
     ) -> Callable[[RawFunc | Func], Func]: ...
 
@@ -197,15 +198,26 @@ class Environment:
         name: str | None = None,
         tags: Sequence[str] | None = None,
         default: bool = True,
+        explicit: bool = False,
         requires: Sequence[str] | None = None,
     ) -> Func | Callable[[RawFunc | Func], Func]:
         """Designate the decorated function as a task in this environment.
 
         Works with and without parentheses, like ``@nox.session``.
+
+        ``default=False`` keeps the task out of a bare ``nox`` run.
+        ``explicit=True`` keeps it out of environment selectors such as
+        ``nox -s env`` or ``requires=["env"]``; it then only runs when named
+        as ``env:task`` or through an alias.
         """
         if func is None:
             return functools.partial(
-                self.task, name=name, tags=tags, default=default, requires=requires
+                self.task,
+                name=name,
+                tags=tags,
+                default=default,
+                explicit=explicit,
+                requires=requires,
             )
 
         if isinstance(func, Func):
@@ -221,6 +233,7 @@ class Environment:
             name=f"{self.name}:{task_name}",
             tags=tags,
             default=default,
+            explicit=explicit,
             requires=requires,
         )
         fn.task_name = task_name

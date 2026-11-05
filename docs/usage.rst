@@ -85,12 +85,16 @@ use several shorthands:
 .. code-block:: console
 
     nox -s tooling:lint       # one specific task
-    nox -s tooling            # all default tasks of the environment
-    nox -s tests-3.12         # all default tasks of one Python instance
+    nox -s tooling            # all tasks of the environment
+    nox -s tests-3.12         # all tasks of one Python instance
     nox -s check              # an alias
 
-Selecting an environment with no default tasks is an error rather than a
-silent no-op. The same identifiers (including aliases) work in a session's
+A task declared with ``explicit=True`` is left out of the environment and
+instance selectors; it only runs when named as ``env:task`` or through an
+alias. If all of an environment's tasks are explicit, selecting the
+environment just creates and provisions it, and Nox logs that no tasks ran.
+``default=False`` is independent: it only keeps a task out of a bare ``nox``
+run. The same identifiers (including aliases) work in a session's
 ``requires`` list and in
 :func:`session.notify() <nox.sessions.Session.notify>`.
 

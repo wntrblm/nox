@@ -238,7 +238,8 @@ class Manifest:
 
         A specified name may be a session/task identifier (``env:task`` or a
         classic session name), an alias, or an environment name (which
-        selects the environment's default tasks).
+        selects the environment's non-explicit tasks, or just sets up the
+        environment if it has none).
 
         Args:
             specified_sessions (Sequence[str]): A list of specified
@@ -246,7 +247,6 @@ class Manifest:
 
         Raises:
             KeyError: If any explicitly listed sessions are not found.
-            ValueError: If an environment selector has no default tasks.
         """
         expanded = self._expand_aliases(specified_sessions)
 
@@ -274,8 +274,6 @@ class Manifest:
         selector), or ``None`` if nothing matches. Earlier kinds take
         precedence.
 
-        Raises:
-            ValueError: If ``name`` is an environment with no default tasks.
         """
         if any(
             _normalized_session_match(name, session) for session in self._all_sessions
@@ -288,12 +286,6 @@ class Manifest:
             and name in {session.env_base_name, session.env_instance_name}
         ]
         if env_matches:
-            if not any(session.func.default for session in env_matches):
-                msg = (
-                    f"Environment {name!r} has no default tasks; use "
-                    f"'{name}:<task>' to select a task."
-                )
-                raise ValueError(msg)
             return "env"
         return None
 
@@ -450,7 +442,7 @@ class Manifest:
         """Identifiers usable in ``requires`` beyond signatures and names.
 
         Maps aliases and environment selectors (which expand to the
-        environment or instance's default tasks) to the identifiers they
+        environment or instance's non-explicit tasks) to the identifiers they
         expand to.
         """
         if self._extra_requirements_cache is not None:
@@ -465,24 +457,24 @@ class Manifest:
             if session.task_name is None:
                 continue
             assert session.env_base_name is not None
-            env_defaults = env_tasks.setdefault(session.env_base_name, {})
-            env_defaults[session.name] = (
-                env_defaults.get(session.name, False) or session.func.default
+            env_selectable = env_tasks.setdefault(session.env_base_name, {})
+            env_selectable[session.name] = (
+                env_selectable.get(session.name, False) or not session.func.explicit
             )
             if session.env_instance_name != session.env_base_name:
                 assert session.env_instance_name is not None
                 instance_tasks.setdefault(session.env_instance_name, {})[
                     f"{session.env_instance_name}:{session.task_name}"
-                ] = session.func.default
+                ] = not session.func.explicit
 
         for env_name, canonical_names in env_tasks.items():
-            defaults = [name for name, default in canonical_names.items() if default]
-            if defaults:
-                extra.setdefault(env_name, defaults)
+            names = [name for name, selectable in canonical_names.items() if selectable]
+            if names:
+                extra.setdefault(env_name, names)
         for instance_name, signature_names in instance_tasks.items():
-            defaults = [name for name, default in signature_names.items() if default]
-            if defaults:
-                extra.setdefault(instance_name, defaults)
+            names = [name for name, selectable in signature_names.items() if selectable]
+            if names:
+                extra.setdefault(instance_name, names)
 
         self._extra_requirements_cache = extra
         return extra
@@ -569,6 +561,35 @@ class Manifest:
                     else:
                         runner.env_runner = env_runner
                     runners.append(runner)
+
+            if any(not task.explicit for task in tasks.values()):
+                continue
+            # With no task to select, the environment name runs a session
+            # that only provisions the environment.
+            func = self._bind_task_func(
+                Func(_env_only_func_, name=env.name, default=False),
+                env,
+                py,
+                env_should_warn,
+            )
+            runner = SessionRunner(
+                env.name,
+                [selector_name] if py else [],
+                func,
+                self._config,
+                self,
+                multi=multi,
+            )
+            runner.env_base_name = env.name
+            runner.env_instance_name = selector_name
+            if env_runner is None:
+                env_runner = runner.env_runner
+                env_runner._name = dir_name
+                env_runner._func = func
+                env_runner.environment = env
+            else:
+                runner.env_runner = env_runner
+            runners.append(runner)
 
         return runners
 
@@ -849,6 +870,13 @@ def _null_session_func_(session: Session) -> None:
     session.skip("This session had no parameters available.")
 
 
+def _env_only_func_(session: Session) -> None:
+    """Set up the environment without running a task."""
+    location = getattr(session.virtualenv, "location", None)
+    where = f" at {location}" if location else ""
+    session.log(f"No tasks ran; environment {session.name!r} is ready{where}")
+
+
 def _normalized_session_match(session_name: str, session: SessionRunner) -> bool:
     """Checks if session_name matches session."""
     if session_name == session.name or session_name in session.signatures:
@@ -867,11 +895,11 @@ def _matches_kind(session_name: str, kind: str | None, session: SessionRunner) -
     if kind == "exact":
         return _normalized_session_match(session_name, session)
     if kind == "env":
-        # Selecting an environment runs its default tasks.
+        # Selecting an environment runs its non-explicit tasks.
         return (
             session.task_name is not None
             and session_name in {session.env_base_name, session.env_instance_name}
-            and session.func.default
+            and not session.func.explicit
         )
     return False
 

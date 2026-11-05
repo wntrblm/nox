@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -375,8 +376,12 @@ def make_selection_envs() -> None:
     def lint(session: nox.Session) -> None:
         pass
 
-    @tooling.task(default=False)
+    @tooling.task(explicit=True)
     def typecheck(session: nox.Session) -> None:
+        pass
+
+    @tooling.task(default=False)
+    def slow(session: nox.Session) -> None:
         pass
 
     docs = nox.env("docs")
@@ -403,12 +408,25 @@ def test_filter_by_canonical_name() -> None:
     assert selected(manifest) == ["tooling:lint"]
 
 
-def test_filter_by_env_name_selects_default_tasks() -> None:
+def test_filter_by_env_name_skips_explicit_tasks() -> None:
     make_selection_envs()
     manifest = make_manifest()
     manifest.filter_by_name(["tooling"])
-    # typecheck is default=False, so the env selector skips it.
-    assert selected(manifest) == ["tooling:lint"]
+    # typecheck is explicit=True, so the env selector skips it; default=False
+    # only affects a bare ``nox`` run.
+    assert selected(manifest) == ["tooling:lint", "tooling:slow"]
+
+
+def test_filter_by_default_skips_non_default_tasks() -> None:
+    make_selection_envs()
+    manifest = make_manifest()
+    manifest.filter_by_default()
+    assert selected(manifest) == [
+        "tooling:lint",
+        "tooling:typecheck",
+        "docs:build",
+        "docs:lint",
+    ]
 
 
 def test_filter_by_bare_task_name_not_found() -> None:
@@ -466,7 +484,7 @@ def test_filter_by_keywords_env_name() -> None:
     make_selection_envs()
     manifest = make_manifest()
     manifest.filter_by_keywords("tooling")
-    assert len(manifest) == 2
+    assert len(manifest) == 3
 
 
 # Listing
@@ -587,9 +605,10 @@ def test_requires_env_name_multiple_tasks_selects_defaults() -> None:
     manifest = make_manifest()
     manifest.filter_by_name(["other:check"])
     manifest.add_dependencies()
-    # typecheck is default=False, so only the default task is pulled in.
+    # typecheck is explicit=True, so it is not pulled in.
     assert [session.friendly_name for session in manifest._queue] == [
         "tooling:lint",
+        "tooling:slow",
         "other:check",
     ]
 
@@ -644,16 +663,16 @@ def test_requires_prefers_real_session_over_selector() -> None:
     ]
 
 
-def test_extra_requirements_skip_non_default_envs() -> None:
+def test_extra_requirements_skip_explicit_only_envs() -> None:
     env = nox.env("tests", python=["3.11", "3.12"])
 
-    @env.task(default=False)
+    @env.task(explicit=True)
     def run(session: nox.Session) -> None:
         pass
 
     manifest = make_manifest()
     extra = manifest._extra_requirements()
-    # Env and instance selectors with no default tasks are not requirable,
+    # Env and instance selectors with only explicit tasks are not requirable,
     # and bare task names never are.
     assert "tests" not in extra
     assert "tests-3.11" not in extra
@@ -1472,20 +1491,64 @@ def test_legacy_session_name_with_colon_still_works() -> None:
     assert selected(manifest) == ["docs:build"]
 
 
-def test_env_selector_no_default_tasks_errors() -> None:
+def test_env_selector_only_explicit_tasks_sets_up_env() -> None:
     tooling = nox.env("tooling")
 
-    @tooling.task(default=False)
+    @tooling.task(explicit=True)
     def lint(session: nox.Session) -> None:
         pass
 
     manifest = make_manifest()
-    with pytest.raises(ValueError, match="has no default tasks"):
-        manifest.filter_by_name(["tooling"])
+    runner = manifest["tooling"]
+    assert runner.task_name is None
+    assert runner.env_runner is manifest["tooling:lint"].env_runner
+    assert not runner.func.default
+    manifest.filter_by_name(["tooling"])
+    assert selected(manifest) == ["tooling"]
 
-    config = nox._options.options.namespace(posargs=[], sessions=["tooling"])
-    manifest = Manifest(nox.registry.get_registry(), config)
-    assert nox.tasks.filter_manifest(manifest, config) == 3
+    # The env-only session never runs on a bare ``nox``.
+    manifest = make_manifest()
+    manifest.filter_by_default()
+    assert selected(manifest) == ["tooling:lint"]
+
+
+def test_env_only_session_per_instance() -> None:
+    tests = nox.env("tests", python=["3.11", "3.12"])
+
+    @tests.task(explicit=True)
+    def run(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest()
+    assert manifest["tests-3.12"].env_runner is manifest["tests-3.12:run"].env_runner
+    manifest.filter_by_name(["tests-3.12"])
+    assert selected(manifest) == ["tests-3.12"]
+
+    manifest = make_manifest()
+    manifest.filter_by_name(["tests"])
+    assert selected(manifest) == ["tests-3.11", "tests-3.12"]
+
+    # Env selectors resolve in ``requires`` too.
+    assert [s.friendly_name for s in manifest.resolve_requirement("tests")] == [
+        "tests-3.11",
+        "tests-3.12",
+    ]
+
+
+def test_env_only_session_logs(caplog: pytest.LogCaptureFixture) -> None:
+    dev = nox.env("dev", venv_backend="none")
+
+    @dev.task(explicit=True)
+    def create(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest()
+    manifest.filter_by_name(["dev"])
+    runner = manifest["dev"]
+    with caplog.at_level(logging.INFO):
+        result = runner.execute()
+    assert result.status == nox.sessions.Status.SUCCESS
+    assert "No tasks ran; environment 'dev' is ready" in caplog.text
 
 
 def test_alias_shadowing_task_warns(caplog: pytest.LogCaptureFixture) -> None:
@@ -1552,7 +1615,9 @@ def test_notify_new_identifier_forms() -> None:
 
     assert manifest.notify("docs:build") is False  # already selected
 
-    # Env selector: tooling's only default task is already queued.
+    # Env selector: queues the remaining non-explicit task, then nothing.
+    assert manifest.notify("tooling")
+    assert manifest["tooling:slow"] in manifest._queue
     assert manifest.notify("tooling") is False
 
     assert manifest.notify("tooling:typecheck")

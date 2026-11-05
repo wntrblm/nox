@@ -45,16 +45,21 @@ Enter the ``dev`` nox environment:
     dev = nox.env("dev", dependencies=["-e.[dev]"], location=".venv")
 
 
-    # It's a good idea to keep this task out of the default list
-    # so it's not run accidentally
+With this, a user can simply run ``nox -s dev`` and have their entire environment set up automatically! The environment has no tasks, so selecting it only creates and provisions it, and Nox logs where it is. It is never part of a bare ``nox`` run.
+
+If you want to run something in the environment after it is set up, add a task:
+
+.. code-block:: python
+
+    # Keep this task out of the default list so it's not run accidentally
     @dev.task(default=False)
     def create(session: nox.Session) -> None:
         """
         Set up a python development environment for the project at ".venv".
         """
-        session.log(f"Development environment ready at {session.virtualenv.location}")
+        session.run("python", "-m", "pip", "list")
 
-With this, a user can simply run ``nox -s dev:create`` and have their entire environment set up automatically! The task has ``default=False``, so ``nox -s dev`` alone is an error: it selects default tasks only, and this environment has none.
+Now ``nox -s dev`` (or ``nox -s dev:create``) runs this task as well.
 
 A second run is fast, because Nox skips the install when the environment's inputs are unchanged. Nox does not read ``pyproject.toml``, so use ``nox -s dev:create --reuse-venv=never`` after you change the dependencies in that file. If the project has a ``uv.lock``, use the lock file instead, and Nox will re-sync the environment when the lock file changes:
 
@@ -87,7 +92,7 @@ Linters and type checkers often need the same packages, and a separate virtual e
         session.run("ruff", "format", "--check", ".")
 
 
-    @tooling.task(default=False)
+    @tooling.task(explicit=True)
     def typecheck(session: nox.Session) -> None:
         """Run the type checker."""
         session.run("mypy", "src")
@@ -95,7 +100,7 @@ Linters and type checkers often need the same packages, and a separate virtual e
 
     nox.alias("check", "tooling:lint", "tooling:typecheck")
 
-Now ``nox -s tooling`` runs the default tasks, ``nox -s tooling:typecheck`` runs one task, and ``nox -s check`` runs the two tasks in the alias. All of them use the same virtual environment, and Nox installs into it only when the dependency list changes.
+Now ``nox -s tooling`` runs the non-explicit tasks, ``nox -s tooling:typecheck`` runs one task, and ``nox -s check`` runs the two tasks in the alias. All of them use the same virtual environment, and Nox installs into it only when the dependency list changes.
 
 
 The Auto-Release
@@ -285,7 +290,7 @@ cleanup and report steps can share one environment:
     )
 
 
-    @coverage.task(default=False)
+    @coverage.task(explicit=True)
     def erase(session: nox.Session) -> None:
         """Remove data left by an earlier coverage run."""
         session.run("coverage", "erase")

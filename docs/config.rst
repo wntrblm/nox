@@ -536,7 +536,7 @@ declare them separately so several tasks share one environment:
         """Run the linters."""
         session.run("prek", "run", "--all-files", *session.posargs)
 
-    @tooling.task(tags=["check"], default=False)
+    @tooling.task(tags=["check"], explicit=True)
     def typecheck(session):
         session.run("mypy", "src")
 
@@ -550,7 +550,9 @@ Environment names (and aliases, below) are globally unique and share a
 namespace with classic session names; task names only need to be unique
 within their environment. On the command line and in ``requires``, you can
 refer to a task by its full ``env:task`` id, or by the environment name to
-select the environment's default tasks. See :doc:`usage` for details.
+select all of its tasks except those marked ``explicit=True``. As with
+sessions, ``default=False`` keeps a task out of a bare ``nox`` run. See
+:doc:`usage` for details.
 Because session names share this grammar, new session names containing
 ``:`` or parentheses
 are deprecated (existing ones keep working with a warning).
