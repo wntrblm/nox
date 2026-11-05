@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from typing import TYPE_CHECKING, Any, Literal
 
 import attrs
@@ -122,9 +123,9 @@ def parse_parallel(value: str | int) -> int:
         ValueError: If the value is not ``"auto"`` or a positive integer.
     """
     if isinstance(value, str) and value.strip().lower() == "auto":
-        # os.process_cpu_count requires Python 3.13+
-        cpu_count = getattr(os, "process_cpu_count", os.cpu_count)
-        return cpu_count() or 1
+        if sys.version_info >= (3, 13):
+            return os.process_cpu_count() or 1
+        return os.cpu_count() or 1
     try:
         jobs = int(value)
     except (TypeError, ValueError):
