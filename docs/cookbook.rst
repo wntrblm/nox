@@ -59,7 +59,7 @@ If you want to run something in the environment after it is set up, add a task:
         """
         session.run("python", "-m", "pip", "list")
 
-Now ``nox -s dev`` (or ``nox -s dev:create``) runs this task as well.
+Now ``nox -s dev`` (or ``nox -s dev:create``) runs this task as well, and ``nox -s dev:`` still only sets up the environment.
 
 A second run is fast, because Nox skips the install when the environment's inputs are unchanged. Nox does not read ``pyproject.toml``, so use ``nox -s dev:create --reuse-venv=never`` after you change the dependencies in that file. If the project has a ``uv.lock``, use the lock file instead, and Nox will re-sync the environment when the lock file changes:
 

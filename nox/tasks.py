@@ -344,7 +344,8 @@ def _produce_json_listing(manifest: Manifest, global_config: NoxConfig) -> None:
                     "tags": session.tags,
                     "call_spec": getattr(session.func, "call_spec", {}),
                     "env": session.env_base_name or session.name,
-                    "task": session.task_name or session.name,
+                    "task": session.task_name
+                    or ("" if session.env_base_name else session.name),
                 }
             )
     print(json.dumps(report, default=str))

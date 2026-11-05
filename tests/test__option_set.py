@@ -110,7 +110,7 @@ class TestOptions:
         )
         assert list(
             _completers.session_completer(prefix="", parsed_args=parsed_args)
-        ) == ["tooling:lint", "tooling:fmt", "check"]
+        ) == ["tooling:lint", "tooling:fmt", "tooling:", "check"]
 
     def test_session_completer_invalid_sessions(self) -> None:
         parsed_args = _options.options.namespace(

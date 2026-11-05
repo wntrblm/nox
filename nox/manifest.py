@@ -453,10 +453,18 @@ class Manifest:
 
         env_tasks: dict[str, dict[str, bool]] = {}
         instance_tasks: dict[str, dict[str, bool]] = {}
+        env_only: dict[str, list[str]] = {}
         for session in self._all_sessions:
-            if session.task_name is None:
+            if session.env_base_name is None:
                 continue
-            assert session.env_base_name is not None
+            if session.task_name is None:
+                # Environment-only sessions back the bare selectors of
+                # environments with no selectable tasks.
+                assert session.env_instance_name is not None
+                target = f"{session.env_instance_name}:"
+                for key in (session.env_base_name, f"{session.env_base_name}:"):
+                    env_only.setdefault(key, []).append(target)
+                continue
             env_selectable = env_tasks.setdefault(session.env_base_name, {})
             env_selectable[session.name] = (
                 env_selectable.get(session.name, False) or not session.func.explicit
@@ -475,6 +483,13 @@ class Manifest:
             names = [name for name, selectable in signature_names.items() if selectable]
             if names:
                 extra.setdefault(instance_name, names)
+        known = (
+            self.all_sessions_by_signature.keys()
+            | self.parametrized_sessions_by_name.keys()
+        )
+        for name, targets in env_only.items():
+            if name not in extra and name not in known:
+                extra[name] = list(dict.fromkeys(targets))
 
         self._extra_requirements_cache = extra
         return extra
@@ -562,23 +577,22 @@ class Manifest:
                         runner.env_runner = env_runner
                     runners.append(runner)
 
-            if any(not task.explicit for task in tasks.values()):
-                continue
-            # With no task to select, the environment name runs a session
-            # that only provisions the environment.
+            # ``env:`` (no task) only provisions the environment. It also
+            # answers to the bare environment name when no task is selectable.
+            fallback = all(task.explicit for task in tasks.values())
+            name = env.name if fallback else f"{env.name}:"
+            # The first signature is the listed name.
+            signatures = [selector_name] if fallback else []
+            if f"{selector_name}:" != name:
+                signatures.append(f"{selector_name}:")
             func = self._bind_task_func(
-                Func(_env_only_func_, name=env.name, default=False),
+                Func(_env_only_func_, name=name, default=False),
                 env,
                 py,
                 env_should_warn,
             )
             runner = SessionRunner(
-                env.name,
-                [selector_name] if py else [],
-                func,
-                self._config,
-                self,
-                multi=multi,
+                name, signatures, func, self._config, self, multi=multi
             )
             runner.env_base_name = env.name
             runner.env_instance_name = selector_name
@@ -872,9 +886,10 @@ def _null_session_func_(session: Session) -> None:
 
 def _env_only_func_(session: Session) -> None:
     """Set up the environment without running a task."""
+    name = session._runner.env_runner.friendly_name
     location = getattr(session.virtualenv, "location", None)
     where = f" at {location}" if location else ""
-    session.log(f"No tasks ran; environment {session.name!r} is ready{where}")
+    session.log(f"No tasks ran; environment {name!r} is ready{where}")
 
 
 def _normalized_session_match(session_name: str, session: SessionRunner) -> bool:

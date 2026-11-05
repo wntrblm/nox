@@ -221,7 +221,12 @@ def test_task_signatures_python_matrix() -> None:
         pass
 
     manifest = make_manifest()
-    assert signatures(manifest) == [["tests-3.11:run"], ["tests-3.12:run"]]
+    assert signatures(manifest) == [
+        ["tests-3.11:run"],
+        ["tests-3.11:"],
+        ["tests-3.12:run"],
+        ["tests-3.12:"],
+    ]
     session = manifest["tests-3.11:run"]
     assert session.multi
     assert session.env_instance_name == "tests-3.11"
@@ -237,10 +242,11 @@ def test_task_parametrize() -> None:
         pass
 
     manifest = make_manifest()
-    assert signatures(manifest) == [["tooling:lint(x=1)"], ["tooling:lint(x=2)"]]
+    assert signatures(manifest) == [["tooling:lint(x=1)"], ["tooling:lint(x=2)"], []]
     # Both parametrizations share the environment's venv.
     runners = [session for session, _ in manifest.list_all_sessions()]
     assert runners[0].env_runner is runners[1].env_runner
+    assert runners[2].name == "tooling:"
 
 
 def test_matrix_parametrized_task() -> None:
@@ -255,8 +261,10 @@ def test_matrix_parametrized_task() -> None:
     assert signatures(manifest) == [
         ["tests-3.11:run(x=1)", "tests-3.11:run"],
         ["tests-3.11:run(x=2)", "tests-3.11:run"],
+        ["tests-3.11:"],
         ["tests-3.12:run(x=1)", "tests-3.12:run"],
         ["tests-3.12:run(x=2)", "tests-3.12:run"],
+        ["tests-3.12:"],
     ]
     # The instance task id runs every parametrization of that instance.
     manifest.filter_by_name(["tests-3.11:run"])
@@ -294,7 +302,14 @@ def test_env_extra_pythons() -> None:
 
     manifest = make_manifest(extra_pythons=["3.12"])
     names = [session.friendly_name for session, _ in manifest.list_all_sessions()]
-    assert names == ["tests-3.11:run", "tests-3.12:run", "tools:lint"]
+    assert names == [
+        "tests-3.11:run",
+        "tests-3.11:",
+        "tests-3.12:run",
+        "tests-3.12:",
+        "tools:lint",
+        "tools:",
+    ]
 
 
 def test_task_parametrize_python_forbidden() -> None:
@@ -363,7 +378,7 @@ def test_session_and_env_coexist() -> None:
         pass
 
     manifest = make_manifest()
-    assert signatures(manifest) == [["lint"], ["tests:run"]]
+    assert signatures(manifest) == [["lint"], ["tests:run"], []]
 
 
 # Selection
@@ -484,7 +499,7 @@ def test_filter_by_keywords_env_name() -> None:
     make_selection_envs()
     manifest = make_manifest()
     manifest.filter_by_keywords("tooling")
-    assert len(manifest) == 3
+    assert len(manifest) == 4
 
 
 # Listing
@@ -663,7 +678,7 @@ def test_requires_prefers_real_session_over_selector() -> None:
     ]
 
 
-def test_extra_requirements_skip_explicit_only_envs() -> None:
+def test_extra_requirements_explicit_only_envs() -> None:
     env = nox.env("tests", python=["3.11", "3.12"])
 
     @env.task(explicit=True)
@@ -672,11 +687,16 @@ def test_extra_requirements_skip_explicit_only_envs() -> None:
 
     manifest = make_manifest()
     extra = manifest._extra_requirements()
-    # Env and instance selectors with only explicit tasks are not requirable,
-    # and bare task names never are.
-    assert "tests" not in extra
-    assert "tests-3.11" not in extra
+    # Env selectors with only explicit tasks resolve to the env-only
+    # sessions; bare task names never resolve.
+    assert extra["tests:"] == ["tests-3.11:", "tests-3.12:"]
+    assert "tests" not in extra  # resolved by name instead
     assert "run" not in extra
+    for name in ("tests", "tests:"):
+        assert [s.friendly_name for s in manifest.resolve_requirement(name)] == [
+            "tests-3.11",
+            "tests-3.12",
+        ]
 
 
 # Notify
@@ -1500,6 +1520,7 @@ def test_env_selector_only_explicit_tasks_sets_up_env() -> None:
 
     manifest = make_manifest()
     runner = manifest["tooling"]
+    assert runner is manifest["tooling:"]
     assert runner.task_name is None
     assert runner.env_runner is manifest["tooling:lint"].env_runner
     assert not runner.func.default
@@ -1521,6 +1542,7 @@ def test_env_only_session_per_instance() -> None:
 
     manifest = make_manifest()
     assert manifest["tests-3.12"].env_runner is manifest["tests-3.12:run"].env_runner
+    assert manifest["tests-3.12"] is manifest["tests-3.12:"]
     manifest.filter_by_name(["tests-3.12"])
     assert selected(manifest) == ["tests-3.12"]
 
@@ -1529,9 +1551,58 @@ def test_env_only_session_per_instance() -> None:
     assert selected(manifest) == ["tests-3.11", "tests-3.12"]
 
     # Env selectors resolve in ``requires`` too.
-    assert [s.friendly_name for s in manifest.resolve_requirement("tests")] == [
-        "tests-3.11",
-        "tests-3.12",
+    for name in ("tests", "tests:"):
+        manifest = make_manifest()
+        assert [s.friendly_name for s in manifest.resolve_requirement(name)] == [
+            "tests-3.11",
+            "tests-3.12",
+        ]
+
+
+def test_env_colon_provisions_only() -> None:
+    make_selection_envs()
+    manifest = make_manifest()
+    runner = manifest["tooling:"]
+    assert runner.task_name is None
+    assert runner.env_runner is manifest["tooling:lint"].env_runner
+    manifest.filter_by_name(["tooling:"])
+    assert selected(manifest) == ["tooling:"]
+
+    # The bare name still runs the tasks, and never the env-only session.
+    manifest = make_manifest()
+    manifest.filter_by_name(["tooling"])
+    assert selected(manifest) == ["tooling:lint", "tooling:slow"]
+    with pytest.raises(KeyError):
+        manifest["tooling"]
+
+    manifest = make_manifest()
+    manifest.filter_by_default()
+    assert "tooling:" not in selected(manifest)
+
+
+def test_env_colon_instance_and_requires() -> None:
+    tests = nox.env("tests", python=["3.11", "3.12"])
+
+    @tests.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    other = nox.env("other")
+
+    @other.task(requires=["tests-3.12:"])
+    def check(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest()
+    assert [s.friendly_name for s in manifest.resolve_requirement("tests:")] == [
+        "tests-3.11:",
+        "tests-3.12:",
+    ]
+    manifest.filter_by_name(["other:check"])
+    manifest.add_dependencies()
+    assert [session.friendly_name for session in manifest._queue] == [
+        "tests-3.12:",
+        "other:check",
     ]
 
 

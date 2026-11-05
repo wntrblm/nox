@@ -549,10 +549,11 @@ shared virtualenv, created and provisioned once per invocation. A classic
 Environment names (and aliases, below) are globally unique and share a
 namespace with classic session names; task names only need to be unique
 within their environment. On the command line and in ``requires``, you can
-refer to a task by its full ``env:task`` id, or by the environment name to
-select all of its tasks except those marked ``explicit=True``. As with
-sessions, ``default=False`` keeps a task out of a bare ``nox`` run. See
-:doc:`usage` for details.
+refer to a task by its full ``env:task`` id, by the environment name to
+select all of its tasks except those marked ``explicit=True``, or by
+``env:`` to only set up the environment. As with sessions,
+``default=False`` keeps a task out of a bare ``nox`` run. See :doc:`usage`
+for details.
 Because session names share this grammar, new session names containing
 ``:`` or parentheses
 are deprecated (existing ones keep working with a warning).

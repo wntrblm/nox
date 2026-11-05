@@ -87,12 +87,14 @@ use several shorthands:
     nox -s tooling:lint       # one specific task
     nox -s tooling            # all tasks of the environment
     nox -s tests-3.12         # all tasks of one Python instance
+    nox -s tooling:           # only set up the environment, run no task
     nox -s check              # an alias
 
 A task declared with ``explicit=True`` is left out of the environment and
 instance selectors; it only runs when named as ``env:task`` or through an
-alias. If all of an environment's tasks are explicit, selecting the
-environment just creates and provisions it, and Nox logs that no tasks ran.
+alias. ``env:`` with no task name creates and provisions the environment
+without running anything, and Nox logs that no tasks ran. If all of an
+environment's tasks are explicit, the bare environment name does the same.
 ``default=False`` is independent: it only keeps a task out of a bare ``nox``
 run. The same identifiers (including aliases) work in a session's
 ``requires`` list and in
