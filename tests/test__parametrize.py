@@ -407,3 +407,13 @@ def test_parametrize_single_argument_single_value(value: Any) -> None:
     _parametrize.parametrize_decorator("abc", value)(f)
 
     assert f.parametrize == [{"abc": value}]  # type: ignore[attr-defined]
+
+
+def test_requires_py_matches_python_function_argument() -> None:
+    def f(session: nox.Session, python: str) -> None:
+        pass
+
+    func = _decorators.Func(f, requires=["build-{python}", "build-{py}"])
+    param = _parametrize.Param("3.11", arg_names=("python",))
+
+    assert _decorators.Call(func, param).requires == ["build-3.11", "build-3.11"]

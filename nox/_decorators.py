@@ -92,7 +92,6 @@ class Func:
         self.requires = list(requires or [])
         self.download_python = download_python
         self.allow_parallel = allow_parallel
-        self.call_spec: dict[str, Any] = {}
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r})"
@@ -128,13 +127,13 @@ class Func:
     def requires(self, value: Sequence[str]) -> None:
         self._requires = list(value)
 
+    def _format_fields(self) -> dict[str, Any]:
+        return {"python": self.python} if isinstance(self.python, str) else {}
+
     def format_dependency(self, dependency: str) -> str:
-        # Parametrize arguments are available as fields, plus the session's
-        # Python as ``{python}`` and ``{py}``.
-        fields: dict[str, Any] = dict(self.call_spec)
-        if isinstance(self.python, str):
-            fields.setdefault("python", self.python)
-            fields.setdefault("py", self.python)
+        fields = self._format_fields()
+        if "python" in fields:
+            fields.setdefault("py", fields["python"])
         try:
             return dependency.format(**fields)
         except KeyError as exc:
@@ -180,6 +179,9 @@ class Call(Func):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, call_spec={self.call_spec!r}, session_signature={self.session_signature!r})"
+
+    def _format_fields(self) -> dict[str, Any]:
+        return {**super()._format_fields(), **self.call_spec}
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         kwargs.update(self.call_spec)
