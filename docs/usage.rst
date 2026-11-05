@@ -78,26 +78,20 @@ By default Nox will run all sessions defined in the Noxfile. However, you can ch
 
 Nox will run these sessions in the same order they are specified.
 
-For tasks defined in an explicit :ref:`environment <environments>`, a session
-is identified as ``environment:task``. You can select one with its full id, or
-use several shorthands:
+Tasks in an :ref:`environment <environments>` have the id ``environment:task``:
 
 .. code-block:: console
 
-    nox -s tooling:lint       # one specific task
+    nox -s tooling:lint       # one task
     nox -s tooling            # all tasks of the environment
     nox -s tests-3.12         # all tasks of one Python instance
-    nox -s tooling:           # only set up the environment, run no task
+    nox -s tooling:           # only set up the environment
     nox -s check              # an alias
 
-A task declared with ``explicit=True`` is left out of the environment and
-instance selectors; it only runs when named as ``env:task`` or through an
-alias. ``env:`` with no task name creates and provisions the environment
-without running anything, and Nox logs that no tasks ran. If all of an
-environment's tasks are explicit, the bare environment name does the same.
-``default=False`` is independent: it only keeps a task out of a bare ``nox``
-run. The same identifiers (including aliases) work in a session's
-``requires`` list and in
+The environment and instance selectors skip tasks declared with
+``explicit=True``. If all tasks are explicit, these selectors only set up the
+environment. ``default=False`` only keeps a task out of a bare ``nox`` run.
+These ids also work in ``requires`` and
 :func:`session.notify() <nox.sessions.Session.notify>`.
 
 If you have a :ref:`configured session's virtualenv <virtualenv config>`, you can choose to run only sessions with given Python versions:

@@ -45,23 +45,9 @@ Enter the ``dev`` nox environment:
     dev = nox.env("dev", dependencies=["-e.[dev]"], location=".venv")
 
 
-With this, a user can simply run ``nox -s dev`` and have their entire environment set up automatically! The environment has no tasks, so selecting it only creates and provisions it, and Nox logs where it is. It is never part of a bare ``nox`` run.
+With this, a user can run ``nox -s dev`` to set up their entire environment. The environment has no tasks, so Nox only provisions it, and a bare ``nox`` run skips it.
 
-If you want to run something in the environment after it is set up, add a task:
-
-.. code-block:: python
-
-    # Keep this task out of the default list so it's not run accidentally
-    @dev.task(default=False)
-    def create(session: nox.Session) -> None:
-        """
-        Set up a python development environment for the project at ".venv".
-        """
-        session.run("python", "-m", "pip", "list")
-
-Now ``nox -s dev`` (or ``nox -s dev:create``) runs this task as well, and ``nox -s dev:`` still only sets up the environment.
-
-A second run is fast, because Nox skips the install when the environment's inputs are unchanged. The project's ``pyproject.toml`` is one of those inputs, so changing the dependencies in it recreates the environment on the next run. If the project has a ``uv.lock``, use the lock file instead, and Nox will re-sync the environment in place when the lock file changes:
+Nox skips the install on later runs if the inputs are unchanged. ``pyproject.toml`` is an input, so a change to it recreates the environment. If the project has a ``uv.lock``, use it instead, and Nox re-syncs the environment in place when the lock file changes:
 
 .. code-block:: python
 
@@ -71,7 +57,7 @@ A second run is fast, because Nox skips the install when the environment's input
 Sharing an environment between tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Linters and type checkers often need the same packages, and a separate virtual environment for each one wastes time and disk space. Put the tools in one :ref:`environment <environments>` and attach each job as a task:
+Put tools that can share packages in one :ref:`environment <environments>` and attach each job as a task:
 
 .. code-block:: python
 
@@ -100,7 +86,7 @@ Linters and type checkers often need the same packages, and a separate virtual e
 
     nox.alias("check", "tooling:lint", "tooling:typecheck")
 
-Now ``nox -s tooling`` runs the non-explicit tasks, ``nox -s tooling:typecheck`` runs one task, and ``nox -s check`` runs the two tasks in the alias. All of them use the same virtual environment, and Nox installs into it only when the dependency list changes.
+Now ``nox -s tooling`` runs the non-explicit tasks, ``nox -s tooling:typecheck`` runs one task, and ``nox -s check`` runs the alias. All use the same virtual environment.
 
 
 The Auto-Release
@@ -162,7 +148,7 @@ Now a simple ``nox -s release -- patch`` will automate your release (provided yo
 Using a lockfile
 ^^^^^^^^^^^^^^^^
 
-If you use ``uv`` to lock your dependencies, ``nox.env.uv`` runs ``uv sync --locked`` on the nox virtual environment. This also validates that the lockfile is up-to-date. Here's an example:
+If you use ``uv`` to lock your dependencies, ``nox.env.uv`` runs ``uv sync --locked`` on the nox virtual environment:
 
 .. code-block:: python
 
@@ -178,9 +164,9 @@ If you use ``uv`` to lock your dependencies, ``nox.env.uv`` runs ``uv sync --loc
         """
         session.run("pytest", *session.posargs)
 
-Nox stores a hash of ``uv.lock`` in the environment, so it syncs only when the lockfile changes. Other useful options include ``extras``, ``no_default_groups``, ``no_install_project``, and ``sync_args`` for any other ``uv sync`` flag.
+Nox syncs only when the lockfile changes. See :ref:`environments` for the options.
 
-For a :pep:`751` lockfile, use ``nox.env.pylock``, which runs ``uv pip sync``, or ``pip install -r`` if uv is not available:
+For a :pep:`751` lockfile, use ``nox.env.pylock``:
 
 .. code-block:: python
 
@@ -272,8 +258,7 @@ Combining coverage across Python versions
 Code paths can vary between Python versions, so measuring each test run separately
 and then combining the data gives a more accurate coverage report. The important
 parts are to remove stale data before the matrix starts, give every run a unique
-data file, and combine the files only after every test session finishes. The
-cleanup and report steps can share one environment:
+data file, and combine the files only after every test session finishes:
 
 .. code-block:: python
 
@@ -319,9 +304,8 @@ Running ``nox -s coverage`` selects ``coverage:report``; its requirements run
 cleanup first and then the ``run`` task on every Python version. ``coverage combine``
 writes the combined ``.coverage`` data file and removes the per-version files it
 consumed.
-The project is an editable install (``-e.``) because Nox reuses these environments
-and does not reinstall when only your source code changes. A plain ``.`` would test
-an old build.
+The project is an editable install (``-e.``) because Nox does not reinstall when
+only your source code changes.
 Keep the phases sequential so cleanup and reporting cannot race with the test
 sessions. Projects that use subprocesses or pytest-xdist should also enable
 Coverage.py's `parallel mode <https://coverage.readthedocs.io/en/latest/config.html#run-parallel>`_.

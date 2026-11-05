@@ -516,10 +516,9 @@ In this example, the ``quick`` tag is assigned to the single combination of the 
 Environments and tasks
 ----------------------
 
-A session is really two things: an *environment* (a virtualenv and the
-packages installed into it) and a *task* (the thing you want to do, like
-running pytest). ``@nox.session`` fuses the two under one name; you can also
-declare them separately so several tasks share one environment:
+A session combines an *environment* (a virtualenv and its packages) and a
+*task* (the work to do, like running pytest). ``@nox.session`` gives both one
+name. To share an environment between tasks, declare them separately:
 
 .. code-block:: python
 
@@ -540,54 +539,42 @@ declare them separately so several tasks share one environment:
     def typecheck(session):
         session.run("mypy", "src")
 
-Each task is a session named ``environment:task`` — here ``tooling:lint``
-and ``tooling:typecheck`` — and all of an environment's tasks run in one
-shared virtualenv, created and provisioned once per invocation. A classic
-``@nox.session`` is exactly an environment and a task sharing one name, so
-``nox -s tests`` and ``requires=["tests"]`` keep working unchanged.
+Each task is a session named ``environment:task``, here ``tooling:lint`` and
+``tooling:typecheck``. Tasks of an environment share one virtualenv, which Nox
+provisions once per invocation. See :doc:`usage` for how to select them.
 
-Environment names (and aliases, below) are globally unique and share a
-namespace with classic session names; task names only need to be unique
-within their environment. On the command line and in ``requires``, you can
-refer to a task by its full ``env:task`` id, by the environment name to
-select all of its tasks except those marked ``explicit=True``, or by
-``env:`` to only set up the environment. As with sessions,
-``default=False`` keeps a task out of a bare ``nox`` run. See :doc:`usage`
-for details.
-Because session names share this grammar, new session names containing
-``:`` or parentheses
-are deprecated (existing ones keep working with a warning).
+Environment names and aliases are globally unique and share a namespace with
+classic session names. Task names must be unique only within their
+environment. New session names that contain ``:`` or parentheses are
+deprecated.
 
-``nox.env()`` accepts the environment-level options of ``@nox.session`` —
-``python``, ``venv_backend``, ``venv_params``, ``reuse_venv``,
-``download_python``, and ``tags`` (tags are inherited by the environment's
-tasks) — plus the provisioning options below. Listing multiple Pythons
-creates one environment instance per interpreter: ``tests-3.11:run``,
-``tests-3.12:run``, and so on. ``@nox.parametrize`` works on tasks, but
-``python`` must be set on the environment, not parametrized on a task.
+``nox.env()`` accepts ``python``, ``venv_backend``, ``venv_params``,
+``reuse_venv``, ``download_python``, and ``tags`` (which tasks inherit) from
+``@nox.session``, plus the options below. Multiple Pythons create one instance
+per interpreter: ``tests-3.11:run``, ``tests-3.12:run``, and so on.
+``@nox.parametrize`` works on tasks, but set ``python`` on the environment.
 
 Declarative dependencies and staleness
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Unlike classic sessions, declarative environments record their provisioning
-inputs in a stamp file (``.nox-env.json``) inside the environment. On the
-next run the environment is reused, and if the stamp still matches — same
-dependency list, same lock file contents, same backend and Python — the
-installation step is skipped entirely, making repeat runs fast by default.
-Files named in the dependency list with ``-r``/``-c``, and the
-``pyproject.toml``/``setup.py``/``setup.cfg`` of a local project
-(``"."``, ``"-e ."``), are hashed into the stamp too. Pass ``inputs=[...]``
-to hash any other file the installation depends on; source changes of an
-editable install do not need a re-sync.
-If the inputs changed, lock file environments are re-synced in place (their
-syncs are exact), while a plain ``dependencies`` list recreates the
-environment, so removed dependencies actually disappear.
-``--reuse-venv=never`` forces full recreation, and ``-R``/``--no-install``
-skip installs as usual.
+Declarative environments store a hash of their provisioning inputs in a stamp
+file (``.nox-env.json``). If the stamp matches on the next run, Nox reuses the
+environment and skips the install. The stamp covers:
 
-For install-time logic that can't be expressed declaratively, add a setup
-hook. It runs after the declared dependencies are installed, and only when
-the environment is created or stale:
+- the dependency list or lock file, the backend, and the Python;
+- files named with ``-r``/``-c``;
+- ``pyproject.toml``, ``setup.py``, and ``setup.cfg`` of a local project
+  (``"."``, ``"-e ."``);
+- any other files you list in ``inputs=[...]``.
+
+If the stamp does not match, Nox re-syncs a lock file environment in place and
+recreates an environment with a plain ``dependencies`` list.
+``--reuse-venv=never`` always recreates, and ``-R``/``--no-install`` skip
+installs as usual.
+
+For install logic that dependencies cannot express, add a setup hook. It runs
+after the dependencies install, and only when the environment is created or
+stale:
 
 .. code-block:: python
 
@@ -596,85 +583,71 @@ the environment is created or stale:
         if sys.platform == "linux":
             session.install("pyenchant")
 
-Since Nox cannot see when a hook's *effect* changes, an environment with a
-setup hook is re-synced on every run unless you pass a ``setup_stamp``
-string to ``nox.env()`` and bump it whenever the hook's behavior changes.
+Nox cannot detect a change in what a hook does, so it re-syncs an environment
+with a hook on every run. To prevent this, pass a ``setup_stamp`` string to
+``nox.env()`` and change it when the hook changes.
 
-Using ``session.install()`` inside a task still works, but for environments
-with more than one task it warns, since run-time installs into a shared
-environment are invisible to the staleness check.
+``session.install()`` in a task warns if the environment has more than one
+task, because the staleness check does not see these installs.
 
 Lock files
 ~~~~~~~~~~
 
-Specialized environment types install from lock files instead of a
-dependency list:
+These environment types install from a lock file:
 
 .. code-block:: python
 
-    # PEP 751 pylock file, installed exactly with `uv pip sync`
-    # (or `pip install -r` when uv is not available):
+    # PEP 751 lock file, installed with `uv pip sync` or `pip install -r`
     ci = nox.env.pylock("ci", lockfile="pylock.toml", groups=["dev"])
 
-    # A uv project's uv.lock, synced with `uv sync --locked`
-    # (requires the "uv" backend, which is the default here):
+    # uv.lock, installed with `uv sync --locked`
     dev = nox.env.uv("dev", groups=["dev"], location=".venv")
 
 ``nox.env.pylock()`` accepts ``lockfile`` (default ``pylock.toml``),
-``groups``, and ``extras``, which select from a multi-use lock such as one
-written by ``pip lock``; a lock exported by ``uv export`` has its selection
-baked in. Installing with pip needs pip 25.1, or 26.3 for ``groups`` and
-``extras``.
+``groups``, and ``extras``. The last two select from a multi-use lock, such as
+one from ``pip lock``. pip 25.1 or later is necessary, or 26.3 for ``groups``
+and ``extras``.
 
-``nox.env.uv()`` accepts ``lockfile`` (default ``uv.lock``; the project is
-the lock file's directory), ``groups``, ``extras``, ``all_extras``,
-``no_default_groups``, ``no_install_project``, and ``sync_args`` for
-anything else. It requires the ``uv`` backend and refuses to sync under
-``--force-venv-backend``/``--no-venv``, since ``uv sync`` would otherwise
-target the project's own ``.venv``. The lock file and the project's
-``pyproject.toml`` are part of the environment stamp, so editing either
-triggers a re-sync (and ``--locked`` validation) on the next run.
+``nox.env.uv()`` accepts ``lockfile`` (default ``uv.lock``; its directory is
+the project), ``groups``, ``extras``, ``all_extras``, ``no_default_groups``,
+``no_install_project``, and ``sync_args``. It requires the ``uv`` backend, the
+default here, and refuses to sync with ``--force-venv-backend`` or
+``--no-venv``. The stamp includes the lock file and the project's
+``pyproject.toml``.
 
-Other formats can be supported by subclassing :class:`nox.Environment` and
-overriding ``stamp_data()`` (return the content hashes of your inputs, or
-``None`` to always re-sync) and ``sync(session)`` (run the install
-commands). Instantiating the subclass registers it, so a package like a
-poetry integration can simply ship its own environment type.
+To support another format, subclass :class:`nox.Environment` and override
+``stamp_data()`` and ``sync(session)``.
 
 Environment location
 ~~~~~~~~~~~~~~~~~~~~
 
-By default environments live under ``--envdir`` (``.nox``). Pass
-``location=`` to place one somewhere specific — for example ``.venv``, so
-your editor and Nox share an environment:
+Environments are in ``--envdir`` (``.nox``) by default. Use ``location=`` to
+change this, for example to share ``.venv`` with your editor:
 
 .. code-block:: python
 
     dev = nox.env.uv("dev", location=".venv")
 
-The path is relative to the noxfile's directory. Environments with multiple
-Pythons must include a ``{name}`` or ``{python}`` placeholder (e.g.
-``location=".venvs/{name}"``) — two selected environment instances may
-never resolve to the same location. Nox will adopt an existing virtualenv
-at the location, but refuses to touch a non-empty directory that isn't one,
-and never writes ``.gitignore`` or ``CACHEDIR.TAG`` outside ``--envdir``.
+The path is relative to the noxfile. Environments with multiple Pythons must
+use a ``{name}`` or ``{python}`` placeholder (``location=".venvs/{name}"``),
+because two selected instances cannot use one location. Nox adopts an existing
+virtualenv, refuses a non-empty directory that is not a virtualenv, and writes
+``.gitignore`` and ``CACHEDIR.TAG`` only in ``--envdir``.
 
 Aliases
 ~~~~~~~
 
-An alias gives a globally unique name to one or more sessions and can be
-used anywhere a session name can — on the command line, in ``requires``, or
-in ``nox.options.sessions``:
+An alias gives a globally unique name to one or more sessions. Use it on the
+command line, in ``requires``, or in ``nox.options.sessions``:
 
 .. code-block:: python
 
     nox.alias("check", "tooling:lint", "tooling:typecheck")
     nox.alias("style", "tooling:lint")
 
-Aliases are expanded recursively at selection time (a cycle is an error)
-and don't appear as sessions themselves; ``nox --list`` shows them in a
-separate section with their targets. Since a bare task name is not a
-selector, an alias may reuse one (``nox.alias("lint", "tooling:lint")``).
+Aliases can refer to other aliases, but not in a cycle. ``nox --list`` shows
+them in a separate section. An alias can reuse a task name
+(``nox.alias("lint", "tooling:lint")``).
 
 Environment API reference
 ~~~~~~~~~~~~~~~~~~~~~~~~~
