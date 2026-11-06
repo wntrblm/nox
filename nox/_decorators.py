@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
     from . import _typing
     from ._parametrize import Param
+    from .environments import Environment
 
 T = TypeVar("T", bound=Callable[..., Any])
 
@@ -57,6 +58,10 @@ def _copy_func(src: T, name: str | None = None) -> T:
 class Func:
     """This is a function decorator that adds additional Nox-specific metadata."""
 
+    # Set when this function is a task attached to an environment.
+    task_name: str | None = None
+    env: Environment | None = None
+
     def __new__(  # noqa: PYI034
         cls, func: Callable[..., Any], *args: Any, **kwargs: Any
     ) -> Func:
@@ -76,6 +81,7 @@ class Func:
         tags: Sequence[str] | None = None,
         *,
         default: bool = True,
+        explicit: bool = False,
         requires: Sequence[str] | None = None,
         download_python: Literal["auto", "never", "always"] | None = None,
         allow_parallel: bool | None = None,
@@ -89,6 +95,8 @@ class Func:
         self.should_warn = dict(should_warn or {})
         self.tags = list(tags or [])
         self.default = default
+        # Only runs when named directly, never via an environment selector.
+        self.explicit = explicit
         self.requires = list(requires or [])
         self.download_python = download_python
         self.allow_parallel = allow_parallel
@@ -112,6 +120,7 @@ class Func:
             self.should_warn,
             self.tags,
             default=self.default,
+            explicit=self.explicit,
             requires=self._requires,
             download_python=self.download_python,
             allow_parallel=self.allow_parallel,
@@ -169,6 +178,7 @@ class Call(Func):
             func.should_warn,
             func.tags + param_spec.tags,
             default=func.default,
+            explicit=func.explicit,
             requires=func.requires,
             download_python=func.download_python,
             allow_parallel=func.allow_parallel,

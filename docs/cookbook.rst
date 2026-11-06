@@ -35,30 +35,58 @@ Instant Dev Environment
 
 A common sticking point in contributing to python projects (especially for beginners) is the problem of wrangling virtual environments and installing dependencies.
 
-Enter the ``dev`` nox session:
+Enter the ``dev`` nox environment:
 
 .. code-block:: python
 
     import nox
 
+    # The location puts the environment where your editor expects to find it.
+    dev = nox.env.standard("dev", dependencies=["-e.[dev]"], location=".venv")
 
-    # It's a good idea to keep your dev session out of the default list
-    # so it's not run twice accidentally
-    @nox.session(default=False)
-    def dev(session: nox.Session) -> None:
-        """
-        Set up a python development environment for the project at ".venv".
-        """
 
-        session.install("virtualenv")
+With this, a user can run ``nox -s dev`` to set up their entire environment. The environment has no tasks, so Nox only provisions it, and a bare ``nox`` run skips it.
 
-        session.run("virtualenv", ".venv", silent=True)
+Nox skips the install on later runs if the inputs are unchanged. ``pyproject.toml`` is an input, so a change to it recreates the environment. If the project has a ``uv.lock``, use it instead, and Nox re-syncs the environment in place when the lock file changes:
 
-        # Use the venv's interpreter to install the project along with
-        # all its dev dependencies, this ensures it's installed in the right way
-        session.run(".venv/bin/pip", "install", "-e", ".[dev]", external=True)
+.. code-block:: python
 
-With this, a user can simply run ``nox -s dev`` and have their entire environment set up automatically!
+    dev = nox.env.uv("dev", groups=["dev"], location=".venv")
+
+
+Sharing an environment between tools
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Put tools that can share packages in one :ref:`environment <environments>` and attach each job as a task:
+
+.. code-block:: python
+
+    import nox
+
+    tooling = nox.env.standard("tooling", dependencies=["ruff", "mypy"])
+
+
+    @tooling.task
+    def lint(session: nox.Session) -> None:
+        """Lint the code."""
+        session.run("ruff", "check", ".", *session.posargs)
+
+
+    @tooling.task
+    def format(session: nox.Session) -> None:
+        """Check the code formatting."""
+        session.run("ruff", "format", "--check", ".")
+
+
+    @tooling.task(explicit=True)
+    def typecheck(session: nox.Session) -> None:
+        """Run the type checker."""
+        session.run("mypy", "src")
+
+
+    nox.alias("check", "tooling:lint", "tooling:typecheck")
+
+Now ``nox -s tooling`` runs the non-explicit tasks, ``nox -s tooling:typecheck`` runs one task, and ``nox -s check`` runs the alias. All use the same virtual environment.
 
 
 The Auto-Release
@@ -120,29 +148,31 @@ Now a simple ``nox -s release -- patch`` will automate your release (provided yo
 Using a lockfile
 ^^^^^^^^^^^^^^^^
 
-If you use a tool like ``uv`` to lock your dependencies, you can use that inside a nox session. Here's an example:
+If you use ``uv`` to lock your dependencies, ``nox.env.uv`` runs ``uv sync --locked`` on the nox virtual environment:
 
 .. code-block:: python
 
-    @nox.session(venv_backend="uv")
-    def tests(session: nox.Session) -> None:
+    import nox
+
+    tests = nox.env.uv("tests", python=["3.12", "3.13"], groups=["test"])
+
+
+    @tests.task
+    def run(session: nox.Session) -> None:
         """
         Run the unit and regular tests.
         """
-        session.run_install(
-            "uv",
-            "sync",
-            "--extra=test",
-            "--no-default-extras",
-            f"--python={session.virtualenv.location}",
-            env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
-        )
         session.run("pytest", *session.posargs)
 
+Nox syncs only when the lockfile changes. See :ref:`environments` for the options.
 
-Here we run ``uv sync`` on the nox virtual environment. Other useful flags might include ``--locked`` (validate lockfile is up-to-date) and ``--inexact`` (will allow you to install other packages as well).
+For a :pep:`751` lockfile, use ``nox.env.pylock``:
 
-The `nox-uv <https://github.com/dantebben/nox-uv>`_ package can be used to reduce the boilerplate needed to ``uv sync`` specific dependency groups or extras into the nox virtual environment.
+.. code-block:: python
+
+    tests = nox.env.pylock("tests", lockfile="pylock.toml", groups=["test"])
+
+If you prefer ``@nox.session``, the `nox-uv <https://github.com/dantebben/nox-uv>`_ package can be used to reduce the boilerplate needed to ``uv sync`` specific dependency groups or extras into the nox virtual environment.
 By default, ``nox-uv`` also validates that the lockfile is up-to-date.
 
 .. code-block:: python
@@ -237,22 +267,23 @@ data file, and combine the files only after every test session finishes:
     PYPROJECT = nox.project.load_toml("pyproject.toml")
     PYTHON_VERSIONS = nox.project.python_versions(PYPROJECT)
 
+    coverage = nox.env.standard("coverage", dependencies=["coverage[toml]"])
+    tests = nox.env.standard(
+        "tests",
+        python=PYTHON_VERSIONS,
+        dependencies=["coverage[toml]", "--group=test", "-e."],
+    )
 
-    @nox.session(default=False)
-    def coverage_erase(session: nox.Session) -> None:
+
+    @coverage.task(explicit=True)
+    def erase(session: nox.Session) -> None:
         """Remove data left by an earlier coverage run."""
-        session.install("coverage[toml]")
         session.run("coverage", "erase")
 
 
-    @nox.session(
-        python=PYTHON_VERSIONS,
-        default=False,
-        requires=["coverage_erase"],
-    )
-    def tests(session: nox.Session) -> None:
+    @tests.task(requires=["coverage:erase"])
+    def run(session: nox.Session) -> None:
         """Measure tests independently for each supported Python version."""
-        session.install("coverage[toml]", "--group=test", ".")
         session.run(
             "coverage",
             "run",
@@ -263,17 +294,18 @@ data file, and combine the files only after every test session finishes:
         )
 
 
-    @nox.session(requires=["tests"])
-    def coverage_report(session: nox.Session) -> None:
+    @coverage.task(requires=["tests"])
+    def report(session: nox.Session) -> None:
         """Combine the per-version data and display one report."""
-        session.install("coverage[toml]")
         session.run("coverage", "combine")
         session.run("coverage", "report", "--show-missing")
 
-Running ``nox`` selects ``coverage_report`` by default; its requirements run
-cleanup first and then every parametrized test session. ``coverage combine``
+Running ``nox -s coverage`` selects ``coverage:report``; its requirements run
+cleanup first and then the ``run`` task on every Python version. ``coverage combine``
 writes the combined ``.coverage`` data file and removes the per-version files it
 consumed.
+The project is an editable install (``-e.``) because Nox does not reinstall when
+only your source code changes.
 Keep the phases sequential so cleanup and reporting cannot race with the test
 sessions. Projects that use subprocesses or pytest-xdist should also enable
 Coverage.py's `parallel mode <https://coverage.readthedocs.io/en/latest/config.html#run-parallel>`_.
