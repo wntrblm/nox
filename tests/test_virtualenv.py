@@ -301,6 +301,138 @@ def test_get_virtualenv_non_optional_fallback(
         )
 
 
+@pytest.fixture
+def uv_only(monkeypatch: pytest.MonkeyPatch) -> Callable[[str], None]:
+    """Make uv the only available optional backend, at a chosen uv version."""
+    monkeypatch.setattr(
+        nox.virtualenv,
+        "OPTIONAL_VENVS",
+        {
+            "conda": False,
+            "mamba": False,
+            "micromamba": False,
+            "rattler": False,
+            "uv": True,
+        },
+    )
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV", "uv")
+
+    def set_version(uv_version: str) -> None:
+        monkeypatch.setattr(nox.virtualenv, "UV_VERSION", version.Version(uv_version))
+
+    return set_version
+
+
+# uv lowered its minimum Python from 3.8 to 3.6 in 0.10.12.
+OLD_UV, NEW_UV = "0.10.11", "0.10.12"
+
+
+@pytest.mark.parametrize(
+    ("uv_version", "interpreter", "expected"),
+    [
+        # Below the floor: fall back.
+        (OLD_UV, "3.7", "virtualenv"),
+        (OLD_UV, "python3.7", "virtualenv"),
+        (OLD_UV, "pypy3.7", "virtualenv"),
+        (OLD_UV, "pypy-3.7", "virtualenv"),
+        (OLD_UV, "3.7t", "virtualenv"),
+        (NEW_UV, "3.5", "virtualenv"),
+        (NEW_UV, "2.7", "virtualenv"),
+        # At or above the floor: keep uv.
+        (OLD_UV, "3.8", "uv"),
+        (OLD_UV, "pypy3.10", "uv"),
+        (NEW_UV, "3.6", "uv"),
+        (NEW_UV, "3.7", "uv"),
+        # A range is rejected only if it allows nothing at or above the floor.
+        (OLD_UV, "<3.8", "virtualenv"),
+        (OLD_UV, "==3.7.*", "virtualenv"),
+        (OLD_UV, "<=3.7", "virtualenv"),
+        (NEW_UV, "<3.6", "virtualenv"),
+        (OLD_UV, ">=3.6", "uv"),
+        (OLD_UV, "<4", "uv"),
+        (NEW_UV, "==3.7.*", "uv"),
+        # No version to compare, or a range packaging can't read: leave it to uv.
+        (OLD_UV, None, "uv"),
+        (OLD_UV, "python", "uv"),
+        (OLD_UV, "~=3", "uv"),
+    ],
+)
+def test_get_virtualenv_uv_floor(
+    tmp_path: Path,
+    uv_only: Callable[[str], None],
+    uv_version: str,
+    interpreter: str | None,
+    expected: str,
+) -> None:
+    uv_only(uv_version)
+    venv = nox.virtualenv.get_virtualenv(
+        "uv",
+        "virtualenv",
+        download_python="auto",
+        envdir=str(tmp_path),
+        reuse_existing=False,
+        interpreter=interpreter,
+    )
+    assert venv.venv_backend == expected
+
+
+def test_get_virtualenv_uv_floor_logs_the_switch(
+    tmp_path: Path,
+    uv_only: Callable[[str], None],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    uv_only(OLD_UV)
+    with caplog.at_level("INFO", logger="nox"):
+        nox.virtualenv.get_virtualenv(
+            "uv",
+            "virtualenv",
+            download_python="auto",
+            envdir=str(tmp_path),
+            reuse_existing=False,
+            interpreter="3.7",
+        )
+    assert "using the 'virtualenv' backend instead" in caplog.text
+
+
+@pytest.mark.parametrize("backends", [("uv",), ("uv", "conda")])
+def test_get_virtualenv_uv_kept_without_an_available_fallback(
+    tmp_path: Path,
+    uv_only: Callable[[str], None],
+    backends: tuple[str, ...],
+) -> None:
+    """With no other available backend, uv is used and reports its own error.
+
+    In ``uv|conda`` with conda missing, conda can't take over, so uv must not be
+    skipped in favour of a "No backends present" error.
+    """
+    uv_only(OLD_UV)
+    venv = nox.virtualenv.get_virtualenv(
+        *backends,
+        download_python="auto",
+        envdir=str(tmp_path),
+        reuse_existing=False,
+        interpreter="3.7",
+    )
+    assert venv.venv_backend == "uv"
+
+
+def test_get_virtualenv_uv_floor_ignores_interpreter_false(
+    tmp_path: Path,
+    uv_only: Callable[[str], None],
+) -> None:
+    uv_only(OLD_UV)
+    venv = nox.virtualenv.get_virtualenv(
+        "uv",
+        "virtualenv",
+        download_python="auto",
+        envdir=str(tmp_path),
+        reuse_existing=False,
+        interpreter=False,
+    )
+    assert isinstance(venv, nox.virtualenv.PassthroughEnv)
+
+
 def test_condaenv_constructor_defaults(
     make_conda: Callable[..., tuple[CondaEnv, Path]],
 ) -> None:

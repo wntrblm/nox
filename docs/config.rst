@@ -224,6 +224,10 @@ You are not limited to virtualenv, there is a selection of backends you can choo
 
 You can chain together optional backends with ``|``, such as ``uv|virtualenv``
 or ``rattler|micromamba|mamba|conda``, and the first available backend will be selected.
+An available backend that is known to reject the session's Python is skipped
+when a later backend is available, so ``uv|virtualenv`` falls back to
+``virtualenv`` for Python older than 3.6 (3.8 before uv 0.10.12), which ``uv``
+cannot create.
 You cannot put anything after a backend that can't be missing like ``venv`` or
 ``virtualenv``.
 
