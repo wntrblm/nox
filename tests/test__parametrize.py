@@ -281,7 +281,7 @@ def test_parametrize_decorator_stack_with_empty_outer() -> None:
 def test_generate_calls_simple() -> None:
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"
-    f.requires = None
+    f._requires = None
     f.some_prop = 42
 
     arg_names = ("abc",)
@@ -314,7 +314,7 @@ def test_generate_calls_simple() -> None:
 def test_generate_calls_multiple_args() -> None:
     f = mock.Mock(should_warn=None, tags=[])
     f.__name__ = "f"
-    f.requires = None
+    f._requires = None
 
     arg_names = ("foo", "abc")
     call_specs = [
@@ -341,7 +341,7 @@ def test_generate_calls_multiple_args() -> None:
 def test_generate_calls_ids() -> None:
     f = mock.Mock(should_warn={}, tags=[])
     f.__name__ = "f"
-    f.requires = None
+    f._requires = None
 
     arg_names = ("foo",)
     call_specs = [
@@ -362,7 +362,7 @@ def test_generate_calls_ids() -> None:
 
 
 def test_generate_calls_tags() -> None:
-    f = mock.Mock(should_warn={}, tags=[], requires=[])
+    f = mock.Mock(should_warn={}, tags=[], _requires=[])
     f.__name__ = "f"
 
     arg_names = ("foo",)
@@ -381,7 +381,7 @@ def test_generate_calls_tags() -> None:
 
 
 def test_generate_calls_merge_tags() -> None:
-    f = mock.Mock(should_warn={}, tags=["tag1", "tag2"], requires=[])
+    f = mock.Mock(should_warn={}, tags=["tag1", "tag2"], _requires=[])
     f.__name__ = "f"
 
     arg_names = ("foo",)
@@ -486,3 +486,13 @@ def test_parametrize_single_argument_single_value(value: Any) -> None:
     _parametrize.parametrize_decorator("abc", value)(f)
 
     assert f.parametrize == [{"abc": value}]  # type: ignore[attr-defined]
+
+
+def test_requires_py_matches_python_function_argument() -> None:
+    def f(session: nox.Session, python: str) -> None:
+        pass
+
+    func = _decorators.Func(f, requires=["build-{python}", "build-{py}"])
+    param = _parametrize.Param("3.11", arg_names=("python",))
+
+    assert _decorators.Call(func, param).requires == ["build-3.11", "build-3.11"]
