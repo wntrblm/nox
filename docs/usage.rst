@@ -335,12 +335,12 @@ Running sessions in parallel
 By default Nox runs sessions one at a time. Use ``-j`` / ``--parallel`` to run
 independent sessions concurrently, each in its own subprocess::
 
-    nox --parallel auto   # one session per CPU
+    nox --parallel auto   # one session per available CPU
     nox -j 4              # at most four sessions at once
 
-The value is a positive integer or ``auto`` (the number of CPUs). The default
-is ``1`` (sequential). The environment variable ``NOX_PARALLEL`` and
-``nox.options.parallel`` in the Noxfile are also honored.
+The value is a positive integer or ``auto`` (the number of CPUs available to
+the process). The default is ``1`` (sequential). The environment variable
+``NOX_PARALLEL`` and ``nox.options.parallel`` in the Noxfile are also honored.
 
 Parallel execution is opt-in per session: only sessions declared with
 ``allow_parallel=True`` may run at the same time::

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from typing import TYPE_CHECKING, Any, Literal
 
 import attrs
@@ -114,13 +115,16 @@ def _forcecolor_default() -> bool:
 def parse_parallel(value: str | int) -> int:
     """Resolve a ``--parallel`` value to a positive integer.
 
-    Accepts a positive integer (or its string form) or ``"auto"`` (the CPU
-    count). Used for command-line, ``NOX_PARALLEL``, and Noxfile-set values.
+    Accepts a positive integer (or its string form) or ``"auto"`` (the CPUs
+    available to this process). Used for command-line, ``NOX_PARALLEL``, and
+    Noxfile-set values.
 
     Raises:
         ValueError: If the value is not ``"auto"`` or a positive integer.
     """
     if isinstance(value, str) and value.strip().lower() == "auto":
+        if sys.version_info >= (3, 13):
+            return os.process_cpu_count() or 1
         return os.cpu_count() or 1
     try:
         jobs = int(value)
@@ -282,8 +286,8 @@ class NoxfileOptions(_option_set.OptionsBase):
             argparse_kwargs={"type": _parallel_arg, "metavar": "N"},
             help=(
                 "Run independent sessions in parallel, each in its own subprocess."
-                " Pass a positive integer or ``'auto'`` (one per CPU). Only"
-                " sessions that allow parallel execution (``allow_parallel=True``"
+                " Pass a positive integer or ``'auto'`` (one per available CPU)."
+                " Only sessions that allow parallel execution (``allow_parallel=True``"
                 " or ``--allow-parallel``) run concurrently; other sessions run"
                 " one at a time. Sessions are ordered by their ``requires=``"
                 " dependencies; their output is buffered and printed as each"
