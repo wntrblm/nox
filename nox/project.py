@@ -184,7 +184,7 @@ def python_versions(
         raise ValueError(msg)
 
     lower_bounds = [
-        int(spec.version.split(".")[1]) if "." in spec.version else 0
+        _min_minor_version(spec.version)
         for spec in packaging.specifiers.SpecifierSet(requires_python_str)
         if spec.operator in {">", ">=", "~="}
     ]
@@ -197,6 +197,14 @@ def python_versions(
 
     versions = [f"3.{v}" for v in range(min_minor_version, max_minor_version + 1)]
     return _with_free_threaded(versions, free_threaded=free_threaded)
+
+
+def _min_minor_version(version: str) -> int:
+    release = packaging.version.Version(version).release
+    # a lower bound below Python 3 (like "2.7") allows every 3.x version
+    if release[0] < 3:
+        return 0
+    return release[1] if len(release) > 1 else 0
 
 
 def _with_free_threaded(versions: list[str], *, free_threaded: bool) -> list[str]:
