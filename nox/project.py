@@ -184,7 +184,9 @@ def python_versions(
         raise ValueError(msg)
 
     lower_bounds = [
-        int(spec.version.split(".")[1]) if "." in spec.version else 0
+        int(spec.version.split(".")[1])
+        if spec.version.split(".", 1)[0] == "3" and "." in spec.version
+        else 0
         for spec in packaging.specifiers.SpecifierSet(requires_python_str)
         if spec.operator in {">", ">=", "~="}
     ]
