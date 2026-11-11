@@ -511,6 +511,71 @@ More sophisticated tag assignment can be performed by passing a generator to the
 In this example, the ``quick`` tag is assigned to the single combination of the latest version of the dependency along with the SQLite database backend, allowing a developer to run the tests in a single configuration as a basic sanity test.  The ``standard`` tag, in contrast, selects combinations targeting either the latest version of the dependency *or* the SQLite database backend.  If the developer runs ``nox --tags standard``, the tests will be run against all supported versions of the dependency with the SQLite backend, as well as against all supported database backends under the latest version of the dependency, giving much more comprehensive test coverage while using only five of the potential nine test matrix combinations.
 
 
+.. _environments:
+
+Environments and tasks
+----------------------
+
+A session combines an *environment* (a virtualenv and its packages) and a
+*task* (the work to do, like running pytest). ``@nox.session`` gives both one
+name. To share an environment between tasks, declare them separately:
+
+.. code-block:: python
+
+    import nox
+
+    tooling = nox.env.standard("tooling", python="3.12")
+
+    @tooling.task
+    def lint(session):
+        """Run the linters."""
+        session.install("prek")
+        session.run("prek", "run", "--all-files", *session.posargs)
+
+    @tooling.task(tags=["check"], explicit=True)
+    def typecheck(session):
+        session.install("mypy")
+        session.run("mypy", "src")
+
+Each task is a session named ``environment:task``, here ``tooling:lint`` and
+``tooling:typecheck``. Tasks of an environment share one virtualenv, which Nox
+creates once per invocation. See :doc:`usage` for how to select them.
+
+Environment names and aliases are globally unique and share a namespace with
+classic session names. Task names must be unique only within their
+environment. New session names that contain ``:`` or parentheses are
+deprecated.
+
+``nox.env.standard()`` accepts ``python``, ``venv_backend``, ``venv_params``,
+``reuse_venv``, ``download_python``, and ``tags`` (which tasks inherit) from
+``@nox.session``. Multiple Pythons create one instance per interpreter:
+``tests-3.11:run``, ``tests-3.12:run``, and so on. ``@nox.parametrize`` works
+on tasks, but set ``python`` on the environment.
+
+Aliases
+~~~~~~~
+
+An alias gives a globally unique name to one or more sessions. Use it on the
+command line, in ``requires``, or in ``nox.options.sessions``:
+
+.. code-block:: python
+
+    nox.alias("check", "tooling:lint", "tooling:typecheck")
+    nox.alias("style", "tooling:lint")
+
+Aliases can refer to other aliases, but not in a cycle. ``nox --list`` shows
+them in a separate section. An alias can reuse a task name
+(``nox.alias("lint", "tooling:lint")``).
+
+Environment API reference
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: nox.Environment
+    :members:
+
+.. autofunction:: nox.alias
+
+
 The session object
 ------------------
 

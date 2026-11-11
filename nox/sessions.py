@@ -78,6 +78,7 @@ if typing.TYPE_CHECKING:
     from nox._decorators import Func
     from nox._options import NoxConfig
     from nox.command import ExternalType
+    from nox.environments import Environment
     from nox.manifest import Manifest
 
 __all__ = ["EnvRunner", "Result", "Session", "SessionRunner", "Status", "nox"]
@@ -1067,30 +1068,58 @@ def resolve_reuse_existing_venv(global_config: NoxConfig, func: Func) -> bool:
 
 
 class EnvRunner:
-    """Owns one virtualenv and creates it for the session that runs in it.
+    """Owns one virtualenv and creates it for the task(s) that run in it.
+
+    A classic session has its own; the tasks of one instance of an
+    :class:`~nox.environments.Environment` share one.
 
     Args:
         name: The name of the virtualenv, used for its directory.
         func: Supplies the interpreter and virtualenv settings.
         global_config: The global configuration.
+        environment: The environment this virtualenv belongs to, if any.
+        instance_name: The selector for this instance (``env`` or
+            ``env-python``).
     """
 
-    def __init__(self, name: str, func: Func, global_config: NoxConfig) -> None:
+    def __init__(
+        self,
+        name: str,
+        func: Func,
+        global_config: NoxConfig,
+        environment: Environment | None = None,
+        *,
+        instance_name: str | None = None,
+    ) -> None:
         self.name = name
         self.func = func
         self.global_config = global_config
+        self.environment = environment
+        self.instance_name = instance_name
         self.venv: ProcessEnv | None = None
         self._ensured = False
+        self._error: BaseException | None = None
 
     @property
     def envdir(self) -> str:
         return _normalize_path(os.fspath(self.global_config.envdir), self.name)
 
     def ensure(self) -> None:
-        """Create the virtualenv if this runner hasn't already done so."""
+        """Create the virtualenv if this runner hasn't already done so.
+
+        A failure is remembered so that later tasks sharing this environment
+        fail fast instead of retrying the creation.
+        """
+        if self._error is not None:
+            raise self._error
         if self._ensured:
             return
-        self._create_venv()
+        try:
+            self._create_venv()
+        except BaseException as exc:
+            if not isinstance(exc, KeyboardInterrupt):
+                self._error = exc
+            raise
         self._ensured = True
 
     def _create_venv(self) -> None:
@@ -1118,6 +1147,14 @@ class EnvRunner:
 
 
 class SessionRunner:
+    """Runs one session: a classic session or a task of an environment.
+
+    Args:
+        env_runner: The virtualenv to run in; a classic session has its own.
+        task_name: The task name, for a task of an environment.
+        hidden: Leave the session out of ``--list`` unless it is selected.
+    """
+
     def __init__(
         self,
         name: str,
@@ -1127,13 +1164,20 @@ class SessionRunner:
         manifest: Manifest,
         *,
         multi: bool = False,
+        env_runner: EnvRunner | None = None,
+        task_name: str | None = None,
+        hidden: bool = False,
     ) -> None:
         self.name = name
         self.signatures = signatures
         self.func = func
         self.global_config = global_config
         self.manifest = manifest
-        self.env_runner = EnvRunner(self.friendly_name, func, global_config)
+        self.env_runner = env_runner or EnvRunner(
+            self.friendly_name, func, global_config
+        )
+        self.task_name = task_name
+        self.hidden = hidden
         self.posargs: list[str] = list(global_config.posargs)
         self.result: Result | None = None
         self.multi = multi
@@ -1173,6 +1217,17 @@ class SessionRunner:
         return self.func.tags
 
     @property
+    def env_base_name(self) -> str | None:
+        """The name of the environment; None for a classic session."""
+        environment = self.env_runner.environment
+        return None if environment is None else environment.name
+
+    @property
+    def env_instance_name(self) -> str | None:
+        """The selector of the environment instance (``env`` or ``env-python``)."""
+        return self.env_runner.instance_name
+
+    @property
     def venv(self) -> ProcessEnv | None:
         return self.env_runner.venv
 
@@ -1207,15 +1262,8 @@ class SessionRunner:
         """
         try:
             if sessions_by_id is None:
-                sessions_by_signature = self.manifest.all_sessions_by_signature
-                parametrized_sessions_by_name = (
-                    self.manifest.parametrized_sessions_by_name
-                )
                 for requirement in self.func.requires:
-                    if requirement in sessions_by_signature:
-                        yield sessions_by_signature[requirement]
-                    else:
-                        yield from parametrized_sessions_by_name[requirement]
+                    yield from self.manifest.resolve_requirement(requirement)
             else:
                 yield from map(sessions_by_id.__getitem__, self.func.requires)
         except KeyError as exc:

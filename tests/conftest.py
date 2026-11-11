@@ -41,6 +41,8 @@ def reset_color_envvars(monkeypatch: pytest.MonkeyPatch) -> None:
 def clear_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     """Clear the cache for each test."""
     monkeypatch.setattr("nox.registry._REGISTRY", {})
+    monkeypatch.setattr("nox.registry._TASKS", {})
+    monkeypatch.setattr("nox.registry._ALIASES", {})
 
 
 @pytest.fixture(autouse=True, scope="session")
