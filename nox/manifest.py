@@ -28,6 +28,7 @@ import ast
 import functools
 import itertools
 import operator
+import os
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, cast
 
@@ -110,6 +111,42 @@ class Manifest:
     def aliases(self) -> dict[str, tuple[str, ...]]:
         """The registered aliases, mapped to their direct targets."""
         return dict(self._aliases)
+
+    def check_location_collisions(self) -> None:
+        """Error if two selected environment instances share one location.
+
+        Checked over the selected sessions (not all sessions), so an
+        unselected environment cannot break an unrelated invocation — e.g.
+        --force-python temporarily multiplying a located environment.
+        Default locations take part too, so an explicit ``location`` cannot
+        silently overlap another environment's default directory.
+        """
+        locations: dict[str, str] = {}
+        location_bases: dict[str, str | None] = {}
+        seen_runners: set[int] = set()
+        for session in self._queue:
+            env_runner = session.env_runner
+            if env_runner.environment is None or id(env_runner) in seen_runners:
+                continue
+            seen_runners.add(id(env_runner))
+            resolved = os.path.realpath(env_runner.envdir)
+            other = locations.setdefault(resolved, env_runner.name)
+            other_base = location_bases.setdefault(resolved, session.env_base_name)
+            if other == env_runner.name:
+                continue
+            if other_base == session.env_base_name:
+                msg = (
+                    f"Multiple instances of environment "
+                    f"{session.env_base_name!r} resolve to the location "
+                    f"{resolved!r}; add a {{name}} or {{python}} placeholder "
+                    "to its location."
+                )
+            else:
+                msg = (
+                    f"Environments {other!r} and {env_runner.name!r} "
+                    f"both resolve to the location {resolved!r}."
+                )
+            raise ValueError(msg)
 
     def __contains__(self, needle: str | SessionRunner) -> bool:
         return (

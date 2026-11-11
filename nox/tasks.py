@@ -282,6 +282,12 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
         logger.error(exc.args[0])
         return 3
 
+    try:
+        manifest.check_location_collisions()
+    except ValueError as exc:
+        logger.error(exc.args[0])
+        return 3
+
     # Return the modified manifest.
     return manifest
 

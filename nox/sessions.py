@@ -1123,6 +1123,12 @@ class EnvRunner:
 
     @property
     def envdir(self) -> str:
+        if self.environment is not None and self.environment.location is not None:
+            location = self.environment.location.format(
+                name=self.name, python=self.func.python or ""
+            )
+            root = os.path.realpath(os.path.dirname(self.global_config.noxfile))
+            return os.path.normpath(os.path.join(root, location))
         return _normalize_path(os.fspath(self.global_config.envdir), self.name)
 
     @property
@@ -1150,6 +1156,12 @@ class EnvRunner:
     def _create_venv(self, *, reuse_existing: bool | None = None) -> None:
         if reuse_existing is None:
             reuse_existing = self.reuse_existing_venv()
+        custom_location = (
+            self.environment is not None and self.environment.location is not None
+        )
+        if custom_location:
+            self._check_location_ownership()
+
         self.venv = get_virtualenv(
             *resolve_venv_backends(self.global_config, self.func),
             download_python=resolve_download_python(self.global_config, self.func),
@@ -1157,9 +1169,33 @@ class EnvRunner:
             reuse_existing=reuse_existing,
             interpreter=self.func.python,
             venv_params=self.func.venv_params,
+            manage_parent_dir=not custom_location,
         )
 
         self.venv.create()
+
+    def _check_location_ownership(self) -> None:
+        """Never delete or reuse a user path that isn't a virtual environment."""
+        location = self.envdir
+        if os.path.isfile(location):
+            msg = (
+                f"Refusing to use {location!r} for environment "
+                f"{self.name!r}: it is a file (such as a PEP 832 "
+                "'.venv' redirect file), not a directory."
+            )
+            raise OSError(msg)
+        if not os.path.isdir(location) or not os.listdir(location):
+            return
+        if os.path.isfile(os.path.join(location, "pyvenv.cfg")):
+            return
+        if os.path.isdir(os.path.join(location, "conda-meta")):
+            return
+        msg = (
+            f"Refusing to use {location!r} for environment "
+            f"{self.name!r}: the directory exists, is not empty, and "
+            "does not look like a virtual environment."
+        )
+        raise OSError(msg)
 
     def provision(self, session: Session) -> None:
         """Sync the environment's declared dependencies, once, if stale.

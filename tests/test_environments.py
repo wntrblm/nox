@@ -1576,3 +1576,547 @@ def test_stamp_skips_missing_and_repeated_inputs(tmp_path: Path) -> None:
     data = env.stamp_data()
     assert data is not None
     assert list(data["inputs"]) == [str(reqs)]
+
+
+# Lock files and locations
+
+
+def test_location_envdir(tmp_path: Path) -> None:
+    env = nox.env.standard("dev", location=".venv")
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    assert manifest["dev:sync"].envdir == os.path.join(
+        os.path.realpath(tmp_path), ".venv"
+    )
+
+
+def test_location_matrix_requires_placeholder() -> None:
+    env = nox.env.standard("tests", python=["3.11", "3.12"], location=".venv")
+
+    @env.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest(envdir=".nox")
+    with pytest.raises(ValueError, match="placeholder"):
+        manifest.check_location_collisions()
+
+
+def test_location_matrix_placeholder(tmp_path: Path) -> None:
+    env = nox.env.standard("tests", python=["3.11", "3.12"], location=".venvs/{name}")
+
+    @env.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    assert manifest["tests-3.11:run"].envdir == os.path.join(
+        os.path.realpath(tmp_path), ".venvs", "tests-3.11"
+    )
+
+
+def test_location_duplicate_error() -> None:
+    env_a = nox.env.standard("a", location=".venv")
+    env_b = nox.env.standard("b", location=".venv")
+
+    @env_a.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    @env_b.task(name="sync")
+    def sync_b(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest(envdir=".nox")
+    with pytest.raises(ValueError, match="both resolve to the location"):
+        manifest.check_location_collisions()
+
+
+def test_location_collides_with_default_location() -> None:
+    env_a = nox.env.standard("a", location=".nox/b")
+    env_b = nox.env.standard("b")
+
+    @env_a.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    @env_b.task(name="run")
+    def run_b(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest(envdir=".nox")
+    with pytest.raises(ValueError, match="both resolve to the location"):
+        manifest.check_location_collisions()
+
+
+def test_location_collision_through_symlink(tmp_path: Path) -> None:
+    (tmp_path / "real").mkdir()
+    (tmp_path / "link").symlink_to(tmp_path / "real", target_is_directory=True)
+    env_a = nox.env.standard("a", location="real/venv")
+    env_b = nox.env.standard("b", location="link/venv")
+
+    @env_a.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    @env_b.task(name="run")
+    def run_b(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    with pytest.raises(ValueError, match="both resolve to the location"):
+        manifest.check_location_collisions()
+
+
+def test_location_shared_template_ok(tmp_path: Path) -> None:
+    env_a = nox.env.standard("a", python=["3.11", "3.12"], location=".venvs/{name}")
+    env_b = nox.env.standard("b", python=["3.11", "3.12"], location=".venvs/{name}")
+
+    @env_a.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    @env_b.task(name="run")
+    def run_b(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    assert manifest["a-3.11:run"].envdir != manifest["b-3.11:run"].envdir
+
+
+def test_location_template_collision_error(tmp_path: Path) -> None:
+    env_a = nox.env.standard("a", python="3.12", location=".venvs/{python}")
+    env_b = nox.env.standard("b", python="3.12", location=".venvs/{python}")
+
+    @env_a.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    @env_b.task(name="run")
+    def run_b(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    with pytest.raises(ValueError, match="both resolve to the location"):
+        manifest.check_location_collisions()
+
+
+def test_location_ownership_guard(tmp_path: Path) -> None:
+    (tmp_path / ".venv").mkdir()
+    (tmp_path / ".venv" / "precious.txt").write_text("data", encoding="utf-8")
+    env = nox.env.standard("dev", location=".venv")
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    with pytest.raises(OSError, match="Refusing to use"):
+        manifest["dev:sync"].env_runner._check_location_ownership()
+    assert (tmp_path / ".venv" / "precious.txt").exists()
+
+
+def test_location_ownership_redirect_file(tmp_path: Path) -> None:
+    # PEP 832 allows .venv to be a one-line redirect file
+    (tmp_path / ".venv").write_text("other/env\n", encoding="utf-8")
+    env = nox.env.standard("dev", location=".venv")
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    with pytest.raises(OSError, match="is a file"):
+        manifest["dev:sync"].env_runner._check_location_ownership()
+    assert (tmp_path / ".venv").read_text(encoding="utf-8") == "other/env\n"
+
+
+def test_location_ownership_venv_ok(tmp_path: Path) -> None:
+    (tmp_path / ".venv").mkdir()
+    (tmp_path / ".venv" / "pyvenv.cfg").write_text(
+        "home = /usr/bin\n", encoding="utf-8"
+    )
+    env = nox.env.standard("dev", location=".venv")
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    manifest["dev:sync"].env_runner._check_location_ownership()
+
+
+def test_located_env_create_checks_ownership(tmp_path: Path) -> None:
+    env = nox.env.standard("dev", location=".venv")
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    fake_venv = mock.MagicMock()
+    fake_venv.env = {}
+    fake_venv._reused = False
+    with mock.patch(
+        "nox.sessions.get_virtualenv", return_value=fake_venv
+    ) as get_virtualenv:
+        manifest["dev:sync"].env_runner.ensure()
+    # Located envs never get .gitignore/CACHEDIR.TAG dropped next to them.
+    assert get_virtualenv.call_args.kwargs["manage_parent_dir"] is False
+
+
+def test_location_ownership_conda_ok(tmp_path: Path) -> None:
+    (tmp_path / ".venv" / "conda-meta").mkdir(parents=True)
+    env = nox.env.standard("dev", location=".venv")
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    manifest["dev:sync"].env_runner._check_location_ownership()
+
+
+def test_filter_manifest_location_collision(tmp_path: Path) -> None:
+    env_a = nox.env.standard("a", location=".venv")
+
+    @env_a.task
+    def sync_a(session: nox.Session) -> None:
+        pass
+
+    env_b = nox.env.standard("b", location=".venv")
+
+    @env_b.task
+    def sync_b(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[], envdir=".nox", noxfile=str(tmp_path / "noxfile.py")
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    assert nox.tasks.filter_manifest(manifest, config) == 3
+
+
+def test_env_namespace_types() -> None:
+    assert nox.env.pylock is nox.environments.PylockEnvironment
+    assert nox.env.uv_project is nox.environments.UvProjectEnvironment
+
+
+def test_pylock_stamp(tmp_path: Path) -> None:
+    lockfile = tmp_path / "pylock.toml"
+    lockfile.write_text("lock-version = '1.0'\n", encoding="utf-8")
+    env = nox.env.pylock("ci", lockfile=lockfile)
+    data = env.stamp_data()
+    assert data is not None
+    assert data["kind"] == "pylock"
+    assert data["lockfile_hash"]
+
+    lockfile.write_text("lock-version = '1.1'\n", encoding="utf-8")
+    assert env.stamp_data() != data
+
+
+def test_uv_env_stamp_hashes_pyproject(tmp_path: Path) -> None:
+    (tmp_path / "uv.lock").write_text("version = 1\n", encoding="utf-8")
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("[project]\n", encoding="utf-8")
+    env = nox.env.uv_project("dev", lockfile=tmp_path / "uv.lock")
+    data = env.stamp_data()
+    assert data is not None
+    assert str(pyproject) in data["inputs"]
+
+    pyproject.write_text("[project]\nx = 1\n", encoding="utf-8")
+    assert env.stamp_data() != data
+
+
+def test_pylock_unstampable_setup(tmp_path: Path) -> None:
+    env = nox.env.pylock("ci", lockfile=tmp_path / "pylock.toml")
+
+    @env.setup
+    def _(session: nox.Session) -> None:
+        pass
+
+    assert env.stamp_data() is None
+
+
+def test_pylock_sync_is_exact(monkeypatch: pytest.MonkeyPatch) -> None:
+    session = mock.MagicMock()
+    session.venv_backend = "uv"
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    assert nox.env.pylock("ci").sync_is_exact(session)
+    assert not nox.env.pylock("ci2", dependencies=["pip"]).sync_is_exact(session)
+    # uv cannot target conda, so sync() falls back to additive pip.
+    session.venv_backend = "conda"
+    assert not nox.env.pylock("ci3").sync_is_exact(session)
+    # pip installs are additive.
+    session.venv_backend = "uv"
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", False)
+    assert not nox.env.pylock("ci4").sync_is_exact(session)
+
+
+def test_pylock_stamp_includes_selection(tmp_path: Path) -> None:
+    lockfile = tmp_path / "pylock.toml"
+    lockfile.write_text("lock-version = '1.0'\n", encoding="utf-8")
+    plain = nox.env.pylock("a", lockfile=lockfile).stamp_data()
+    grouped = nox.env.pylock(
+        "b", lockfile=lockfile, groups=["dev"], extras=["x"]
+    ).stamp_data()
+    assert plain is not None
+    assert grouped is not None
+    assert plain["groups"] == []
+    assert grouped["groups"] == ["dev"]
+    assert grouped["extras"] == ["x"]
+
+
+def test_pylock_sync_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV", "/fake/uv")
+    env = nox.env.pylock("ci", lockfile="pylock.toml")
+    session = mock.MagicMock()
+    session.venv_backend = "uv"
+    session.virtualenv.is_sandboxed = True
+    env.sync(session)
+    session.run_install.assert_called_once_with(
+        "/fake/uv", "pip", "sync", "pylock.toml", external=True, silent=True
+    )
+
+
+def test_pylock_sync_command_groups_extras(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    monkeypatch.setattr(nox.virtualenv, "UV", "/fake/uv")
+    env = nox.env.pylock(
+        "ci", lockfile="pylock.toml", groups=["dev", "docs"], extras=["a", "b"]
+    )
+    session = mock.MagicMock()
+    session.venv_backend = "venv"
+    session.virtualenv.is_sandboxed = True
+    env.sync(session)
+    session.run_install.assert_called_once_with(
+        "/fake/uv",
+        "pip",
+        "sync",
+        "pylock.toml",
+        "--group=dev",
+        "--group=docs",
+        "--extra=a",
+        "--extra=b",
+        external=True,
+        silent=True,
+    )
+
+
+def test_pylock_sync_pip_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", False)
+    env = nox.env.pylock("ci", lockfile="pylock.toml")
+    session = mock.MagicMock()
+    session.venv_backend = "venv"
+    session.virtualenv.is_sandboxed = True
+    env.sync(session)
+    session.install.assert_called_once_with("-r", "pylock.toml")
+    session.run_install.assert_not_called()
+
+
+def test_pylock_sync_pip_fallback_groups_extras(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", False)
+    env = nox.env.pylock(
+        "ci", lockfile="pylock.toml", groups=["dev", "docs"], extras=["a", "b"]
+    )
+    session = mock.MagicMock()
+    session.venv_backend = "venv"
+    session.virtualenv.is_sandboxed = True
+    env.sync(session)
+    session.install.assert_called_once_with(
+        "-r", "pylock.toml[a,b]", "--group=pylock.toml:dev", "--group=pylock.toml:docs"
+    )
+
+
+def test_pylock_sync_conda_uses_pip(monkeypatch: pytest.MonkeyPatch) -> None:
+    # uv pip sync only targets virtualenv-style backends; others use pip.
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    env = nox.env.pylock("ci", lockfile="pylock.toml")
+    session = mock.MagicMock()
+    session.venv_backend = "conda"
+    session.virtualenv.is_sandboxed = True
+    env.sync(session)
+    session.install.assert_called_once_with("-r", "pylock.toml")
+
+
+def test_pylock_sync_requires_sandbox(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.virtualenv, "HAS_UV", True)
+    env = nox.env.pylock("ci")
+    session = mock.MagicMock()
+    session.venv_backend = "none"
+    session.virtualenv.is_sandboxed = False
+    with pytest.raises(RuntimeError, match="virtual environment"):
+        env.sync(session)
+
+
+def test_uv_env_sync_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(nox.virtualenv, "UV", "/fake/uv")
+    lockfile = tmp_path / "uv.lock"
+    lockfile.write_text("version = 1\n", encoding="utf-8")
+    env = nox.env.uv_project(
+        "dev",
+        lockfile=lockfile,
+        groups=["dev"],
+        extras=["cli"],
+        no_default_groups=True,
+    )
+    command = env._sync_command()
+    assert command == [
+        "sync",
+        "--locked",
+        f"--project={tmp_path}",
+        "--group=dev",
+        "--extra=cli",
+        "--no-default-groups",
+    ]
+    data = env.stamp_data()
+    assert data is not None
+    assert data["kind"] == "uv"
+    assert data["command"] == command
+
+    session = mock.MagicMock()
+    session.venv_backend = "uv"
+    env.sync(session)
+    session.run_install.assert_called_once_with(
+        "/fake/uv", *command, external=True, silent=True
+    )
+
+
+def test_uv_env_sync_command_flags(tmp_path: Path) -> None:
+    env = nox.env.uv_project(
+        "dev",
+        lockfile=tmp_path / "uv.lock",
+        all_extras=True,
+        no_install_project=True,
+        sync_args=["--quiet"],
+    )
+    assert env._sync_command() == [
+        "sync",
+        "--locked",
+        f"--project={tmp_path}",
+        "--all-extras",
+        "--no-install-project",
+        "--quiet",
+    ]
+
+
+def test_uv_env_frozen(tmp_path: Path) -> None:
+    env = nox.env.uv_project("dev", lockfile=tmp_path / "uv.lock", frozen=True)
+    assert env._sync_command() == ["sync", "--frozen", f"--project={tmp_path}"]
+
+
+def test_uv_env_unstampable_setup(tmp_path: Path) -> None:
+    env = nox.env.uv_project("dev", lockfile=tmp_path / "uv.lock")
+
+    @env.setup
+    def _(session: nox.Session) -> None:
+        pass
+
+    assert env.stamp_data() is None
+
+
+def test_uv_env_sync_is_exact() -> None:
+    session = mock.MagicMock()
+    session.venv_backend = "uv"
+    assert nox.env.uv_project("dev").sync_is_exact(session)
+    assert not nox.env.uv_project("dev2", dependencies=["pip"]).sync_is_exact(session)
+
+
+def test_uv_env_backend_forced() -> None:
+    assert nox.env.uv_project("dev").venv_backend == "uv"
+    with pytest.raises(ValueError, match="requires the 'uv' venv backend"):
+        nox.env.uv_project("dev2", venv_backend="virtualenv")
+
+
+def test_uv_env_missing_lockfile(tmp_path: Path) -> None:
+    env = nox.env.uv_project("dev", lockfile=tmp_path / "uv.lock")
+    with pytest.raises(FileNotFoundError, match="does not exist"):
+        env.stamp_data()
+
+
+def test_uv_env_sync_refuses_other_backends(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(nox.virtualenv, "UV", "/fake/uv")
+    env = nox.env.uv_project("dev")
+    session = mock.MagicMock()
+    session.venv_backend = "virtualenv"
+    with pytest.raises(RuntimeError, match="must run on the 'uv' venv backend"):
+        env.sync(session)
+    session.run_install.assert_not_called()
+
+
+def test_forced_python_on_located_env_does_not_break_others(
+    tmp_path: Path,
+) -> None:
+    dev = nox.env.standard("dev", python="3.12", location=".devenv")
+
+    @dev.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    lint = nox.env.standard("lint", venv_backend="none")
+
+    @lint.task
+    def run(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[],
+        envdir=".nox",
+        noxfile=str(tmp_path / "noxfile.py"),
+        sessions=["lint:run"],
+        extra_pythons=["3.13"],
+        force_pythons=["3.13"],
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    result = nox.tasks.filter_manifest(manifest, config)
+    assert result is manifest
+
+    # Selecting the located env itself does error, cleanly.
+    manifest = Manifest(nox.registry.get_registry(), config)
+    manifest.filter_by_name(["dev"])
+    with pytest.raises(ValueError, match="placeholder"):
+        manifest.check_location_collisions()
+
+
+def test_lock_file_envs_need_venv() -> None:
+    assert nox.env.pylock("locked").needs_venv()
+    assert nox.env.uv_project("project").needs_venv()

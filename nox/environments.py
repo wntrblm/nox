@@ -18,6 +18,7 @@ __lazy_modules__ = {
     "functools",
     "hashlib",
     "nox.registry",
+    "nox.virtualenv",
     f"{__spec__.parent}._decorators",
 }
 
@@ -27,6 +28,7 @@ import os
 from typing import TYPE_CHECKING, Any, Literal, overload
 
 import nox.registry
+import nox.virtualenv
 
 from ._decorators import Func
 
@@ -40,6 +42,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Environment",
+    "PylockEnvironment",
+    "UvProjectEnvironment",
     "env",
 ]
 
@@ -122,6 +126,7 @@ class Environment:
         tags: Sequence[str] | None = None,
         dependencies: Sequence[str] = (),
         inputs: Sequence[str | os.PathLike[str]] = (),
+        location: str | os.PathLike[str] | None = None,
         setup_stamp: str | None = None,
         register: bool = True,
     ) -> None:
@@ -134,6 +139,7 @@ class Environment:
         self.tags = list(tags or [])
         self.dependencies = list(dependencies)
         self.inputs = [os.fspath(path) for path in inputs]
+        self.location = os.fspath(location) if location is not None else None
         self.setup_func: Callable[[Session], None] | None = None
         self.setup_stamp = setup_stamp
 
@@ -176,14 +182,14 @@ class Environment:
             data["setup_stamp"] = self.setup_stamp
         return data
 
-    def _input_hashes(self) -> dict[str, str]:
+    def _input_hashes(self, *extra: str) -> dict[str, str]:
         """Content hashes of explicit ``inputs`` plus implicit ones.
 
         Explicit inputs must exist; implicit ones (``-r`` files, local
-        project metadata) are only hashed when present.
+        project metadata, ``extra``) are only hashed when present.
         """
         hashes = {path: _file_hash(path, kind="input") for path in self.inputs}
-        for path in _implicit_inputs(self.dependencies):
+        for path in (*_implicit_inputs(self.dependencies), *extra):
             if path not in hashes and os.path.isfile(path):
                 hashes[path] = _file_hash(path, kind="input")
         return hashes
@@ -285,10 +291,226 @@ class Environment:
         return fn
 
 
+class PylockEnvironment(Environment):
+    """An environment installed from a PEP 751 ``pylock.toml`` file.
+
+    With uv available, the lock file is installed with ``uv pip sync``, so
+    the environment exactly matches the lock. Otherwise, or on backends uv
+    cannot target (such as conda), it is installed with ``pip install -r``
+    (pip 25.1+; 26.3+ for ``groups`` and ``extras``). Extra ``dependencies``
+    are installed after. Available as ``nox.env.pylock``.
+    """
+
+    _UV_BACKENDS = frozenset({"uv", "virtualenv", "venv"})
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        lockfile: str | os.PathLike[str] = "pylock.toml",
+        groups: Sequence[str] = (),
+        extras: Sequence[str] = (),
+        python: Python = None,
+        venv_backend: str | None = None,
+        venv_params: Sequence[str] = (),
+        reuse_venv: bool | None = None,
+        download_python: Literal["auto", "never", "always"] | None = None,
+        tags: Sequence[str] | None = None,
+        dependencies: Sequence[str] = (),
+        inputs: Sequence[str | os.PathLike[str]] = (),
+        location: str | os.PathLike[str] | None = None,
+        setup_stamp: str | None = None,
+        register: bool = True,
+    ) -> None:
+        super().__init__(
+            name,
+            python=python,
+            venv_backend=venv_backend,
+            venv_params=venv_params,
+            reuse_venv=reuse_venv,
+            download_python=download_python,
+            tags=tags,
+            dependencies=dependencies,
+            inputs=inputs,
+            location=location,
+            setup_stamp=setup_stamp,
+            register=register,
+        )
+        self.lockfile = os.fspath(lockfile)
+        self.groups = list(groups)
+        self.extras = list(extras)
+
+    def stamp_data(self) -> dict[str, Any] | None:
+        data = super().stamp_data()
+        if data is None:
+            return None
+        data["kind"] = "pylock"
+        data["lockfile"] = self.lockfile
+        data["lockfile_hash"] = _file_hash(self.lockfile, kind="lock file")
+        data["groups"] = self.groups
+        data["extras"] = self.extras
+        return data
+
+    def needs_venv(self) -> bool:
+        return True
+
+    def sync_is_exact(self, session: Session) -> bool:
+        # `uv pip sync` is exact; pip and extra dependencies are additive.
+        return self._uses_uv(session) and not self.dependencies
+
+    def _uses_uv(self, session: Session) -> bool:
+        return nox.virtualenv.HAS_UV and session.venv_backend in self._UV_BACKENDS
+
+    def sync(self, session: Session) -> None:
+        if not session.virtualenv.is_sandboxed:
+            msg = (
+                f"Environment {self.name!r} installs from a pylock file and "
+                "requires a virtual environment."
+            )
+            raise RuntimeError(msg)
+        if self._uses_uv(session):
+            # uv targets the session's venv through the VIRTUAL_ENV variable.
+            session.run_install(
+                nox.virtualenv.UV,
+                "pip",
+                "sync",
+                self.lockfile,
+                *(f"--group={group}" for group in self.groups),
+                *(f"--extra={extra}" for extra in self.extras),
+                external=True,
+                silent=True,
+            )
+        else:
+            requirement = self.lockfile
+            if self.extras:
+                requirement += f"[{','.join(self.extras)}]"
+            session.install(
+                "-r",
+                requirement,
+                *(f"--group={self.lockfile}:{group}" for group in self.groups),
+            )
+        super().sync(session)
+
+
+class UvProjectEnvironment(Environment):
+    """An environment synced from a uv project's ``uv.lock``.
+
+    Runs ``uv sync --locked`` against the project owning the lock file,
+    targeting this environment. With ``frozen=True``, it runs
+    ``uv sync --frozen``, which does not check that the lock file is up to
+    date. Available as ``nox.env.uv_project``.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        lockfile: str | os.PathLike[str] = "uv.lock",
+        groups: Sequence[str] = (),
+        extras: Sequence[str] = (),
+        all_extras: bool = False,
+        no_default_groups: bool = False,
+        no_install_project: bool = False,
+        frozen: bool = False,
+        sync_args: Sequence[str] = (),
+        python: Python = None,
+        venv_backend: str = "uv",
+        venv_params: Sequence[str] = (),
+        reuse_venv: bool | None = None,
+        download_python: Literal["auto", "never", "always"] | None = None,
+        tags: Sequence[str] | None = None,
+        dependencies: Sequence[str] = (),
+        inputs: Sequence[str | os.PathLike[str]] = (),
+        location: str | os.PathLike[str] | None = None,
+        setup_stamp: str | None = None,
+        register: bool = True,
+    ) -> None:
+        if venv_backend != "uv":
+            msg = f"Environment {name!r} syncs a uv project and requires the 'uv' venv backend."
+            raise ValueError(msg)
+        super().__init__(
+            name,
+            python=python,
+            venv_backend=venv_backend,
+            venv_params=venv_params,
+            reuse_venv=reuse_venv,
+            download_python=download_python,
+            tags=tags,
+            dependencies=dependencies,
+            inputs=inputs,
+            location=location,
+            setup_stamp=setup_stamp,
+            register=register,
+        )
+        self.lockfile = os.fspath(lockfile)
+        self.groups = list(groups)
+        self.extras = list(extras)
+        self.all_extras = all_extras
+        self.no_default_groups = no_default_groups
+        self.no_install_project = no_install_project
+        self.frozen = frozen
+        self.sync_args = list(sync_args)
+
+    def _sync_command(self) -> list[str]:
+        project_dir = os.path.dirname(os.path.abspath(self.lockfile))
+        lock_flag = "--frozen" if self.frozen else "--locked"
+        command = ["sync", lock_flag, f"--project={project_dir}"]
+        command.extend(f"--group={group}" for group in self.groups)
+        command.extend(f"--extra={extra}" for extra in self.extras)
+        if self.all_extras:
+            command.append("--all-extras")
+        if self.no_default_groups:
+            command.append("--no-default-groups")
+        if self.no_install_project:
+            command.append("--no-install-project")
+        command.extend(self.sync_args)
+        return command
+
+    def stamp_data(self) -> dict[str, Any] | None:
+        data = super().stamp_data()
+        if data is None:
+            return None
+        data["kind"] = "uv"
+        data["lockfile"] = self.lockfile
+        data["lockfile_hash"] = _file_hash(self.lockfile, kind="lock file")
+        # `--locked` only validates when the sync actually runs, so the
+        # project file (and the project's entry points) must be an input.
+        pyproject = os.path.join(os.path.dirname(self.lockfile), "pyproject.toml")
+        data["inputs"] = self._input_hashes(pyproject)
+        data["command"] = self._sync_command()
+        return data
+
+    def needs_venv(self) -> bool:
+        return True
+
+    def sync_is_exact(self, session: Session) -> bool:  # noqa: ARG002
+        # `uv sync` is exact; extra dependencies are installed after it,
+        # additively.
+        return not self.dependencies
+
+    def sync(self, session: Session) -> None:
+        # uv targets the session's venv through UV_PROJECT_ENVIRONMENT, which
+        # only the uv backend sets; on any other backend `uv sync` would fall
+        # back to the *project's* own .venv and clobber it.
+        if session.venv_backend != "uv":
+            msg = (
+                f"Environment {self.name!r} syncs a uv project and must run "
+                f"on the 'uv' venv backend, not {session.venv_backend!r} "
+                "(is --force-venv-backend or --no-venv overriding it?)."
+            )
+            raise RuntimeError(msg)
+        session.run_install(
+            nox.virtualenv.UV, *self._sync_command(), external=True, silent=True
+        )
+        super().sync(session)
+
+
 class _EnvAPI:
     """The ``nox.env`` namespace of environment types."""
 
     standard = Environment
+    pylock = PylockEnvironment
+    uv_project = UvProjectEnvironment
 
 
 env = _EnvAPI()

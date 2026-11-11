@@ -561,15 +561,16 @@ Declarative environments store a hash of their provisioning inputs in a stamp
 file (``.nox-env.json``). If the stamp matches on the next run, Nox reuses the
 environment and skips the install. The stamp covers:
 
-- the dependency list, the backend, and the Python;
+- the dependency list or lock file, the backend, and the Python;
 - files named with ``-r``/``-c``;
 - ``pyproject.toml``, ``setup.py``, and ``setup.cfg`` of a local project
   (``"."``, ``"-e ."``);
 - any other files you list in ``inputs=[...]``.
 
-If the stamp does not match, Nox recreates the environment, so removed
-packages do not stay. ``--reuse-venv=never`` always recreates, and
-``-R``/``--no-install`` skip installs as usual.
+If the stamp does not match, Nox re-syncs a lock file environment in place and
+recreates an environment with a plain ``dependencies`` list.
+``--reuse-venv=never`` always recreates, and ``-R``/``--no-install`` skip
+installs as usual.
 
 For install logic that dependencies cannot express, add a setup hook. It runs
 after the dependencies install, and only when the environment is created or
@@ -588,6 +589,52 @@ with a hook on every run. To prevent this, pass a ``setup_stamp`` string to
 
 ``session.install()`` in a task warns if the environment has more than one
 task, because the staleness check does not see these installs.
+
+Lock files
+~~~~~~~~~~
+
+These environment types install from a lock file:
+
+.. code-block:: python
+
+    # PEP 751 lock file, installed with `uv pip sync` or `pip install -r`
+    ci = nox.env.pylock("ci", lockfile="pylock.toml", groups=["dev"])
+
+    # uv.lock, installed with `uv sync --locked`
+    dev = nox.env.uv_project("dev", groups=["dev"], location=".venv")
+
+``nox.env.pylock()`` accepts ``lockfile`` (default ``pylock.toml``),
+``groups``, and ``extras``. The last two select from a multi-use lock, such as
+one from ``pip lock``. pip 25.1 or later is necessary, or 26.3 for ``groups``
+and ``extras``.
+
+``nox.env.uv_project()`` accepts ``lockfile`` (default ``uv.lock``; its
+directory is the project), ``groups``, ``extras``, ``all_extras``,
+``no_default_groups``, ``no_install_project``, ``frozen``, and ``sync_args``.
+Set ``frozen=True`` to use ``uv sync --frozen`` instead of ``--locked``, which
+does not check that the lock file is up to date. It requires the ``uv``
+backend, the default here, and refuses to sync with ``--force-venv-backend``
+or ``--no-venv``. The stamp includes the lock file and the project's
+``pyproject.toml``.
+
+To support another format, subclass :class:`nox.Environment` and override
+``stamp_data()``, ``sync(session)``, and ``needs_venv()``.
+
+Environment location
+~~~~~~~~~~~~~~~~~~~~
+
+Environments are in ``--envdir`` (``.nox``) by default. Use ``location=`` to
+change this, for example to share ``.venv`` with your editor:
+
+.. code-block:: python
+
+    dev = nox.env.uv_project("dev", location=".venv")
+
+The path is relative to the noxfile. Environments with multiple Pythons must
+use a ``{name}`` or ``{python}`` placeholder (``location=".venvs/{name}"``),
+because two selected instances cannot use one location. Nox adopts an existing
+virtualenv, refuses a non-empty directory that is not a virtualenv, and writes
+``.gitignore`` and ``CACHEDIR.TAG`` only in ``--envdir``.
 
 Aliases
 ~~~~~~~
