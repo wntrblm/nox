@@ -524,22 +524,24 @@ name. To share an environment between tasks, declare them separately:
 
     import nox
 
-    tooling = nox.env.standard("tooling", python="3.12")
+    tooling = nox.env.standard(
+        "tooling",
+        python="3.12",
+        dependencies=["prek", "mypy"],
+    )
 
     @tooling.task
     def lint(session):
         """Run the linters."""
-        session.install("prek")
         session.run("prek", "run", "--all-files", *session.posargs)
 
     @tooling.task(tags=["check"], explicit=True)
     def typecheck(session):
-        session.install("mypy")
         session.run("mypy", "src")
 
 Each task is a session named ``environment:task``, here ``tooling:lint`` and
 ``tooling:typecheck``. Tasks of an environment share one virtualenv, which Nox
-creates once per invocation. See :doc:`usage` for how to select them.
+provisions once per invocation. See :doc:`usage` for how to select them.
 
 Environment names and aliases are globally unique and share a namespace with
 classic session names. Task names must be unique only within their
@@ -548,9 +550,44 @@ deprecated.
 
 ``nox.env.standard()`` accepts ``python``, ``venv_backend``, ``venv_params``,
 ``reuse_venv``, ``download_python``, and ``tags`` (which tasks inherit) from
-``@nox.session``. Multiple Pythons create one instance per interpreter:
-``tests-3.11:run``, ``tests-3.12:run``, and so on. ``@nox.parametrize`` works
-on tasks, but set ``python`` on the environment.
+``@nox.session``, plus the options below. Multiple Pythons create one instance
+per interpreter: ``tests-3.11:run``, ``tests-3.12:run``, and so on.
+``@nox.parametrize`` works on tasks, but set ``python`` on the environment.
+
+Declarative dependencies and staleness
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Declarative environments store a hash of their provisioning inputs in a stamp
+file (``.nox-env.json``). If the stamp matches on the next run, Nox reuses the
+environment and skips the install. The stamp covers:
+
+- the dependency list, the backend, and the Python;
+- files named with ``-r``/``-c``;
+- ``pyproject.toml``, ``setup.py``, and ``setup.cfg`` of a local project
+  (``"."``, ``"-e ."``);
+- any other files you list in ``inputs=[...]``.
+
+If the stamp does not match, Nox recreates the environment, so removed
+packages do not stay. ``--reuse-venv=never`` always recreates, and
+``-R``/``--no-install`` skip installs as usual.
+
+For install logic that dependencies cannot express, add a setup hook. It runs
+after the dependencies install, and only when the environment is created or
+stale:
+
+.. code-block:: python
+
+    @tooling.setup
+    def _(session):
+        if sys.platform == "linux":
+            session.install("pyenchant")
+
+Nox cannot detect a change in what a hook does, so it re-syncs an environment
+with a hook on every run. To prevent this, pass a ``setup_stamp`` string to
+``nox.env.standard()`` and change it when the hook changes.
+
+``session.install()`` in a task warns if the environment has more than one
+task, because the staleness check does not see these installs.
 
 Aliases
 ~~~~~~~

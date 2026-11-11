@@ -61,6 +61,41 @@ Enter the ``dev`` nox session:
 With this, a user can simply run ``nox -s dev`` and have their entire environment set up automatically!
 
 
+Sharing an environment between tools
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Put tools that can share packages in one :ref:`environment <environments>` and attach each job as a task:
+
+.. code-block:: python
+
+    import nox
+
+    tooling = nox.env.standard("tooling", dependencies=["ruff", "mypy"])
+
+
+    @tooling.task
+    def lint(session: nox.Session) -> None:
+        """Lint the code."""
+        session.run("ruff", "check", ".", *session.posargs)
+
+
+    @tooling.task
+    def format(session: nox.Session) -> None:
+        """Check the code formatting."""
+        session.run("ruff", "format", "--check", ".")
+
+
+    @tooling.task(explicit=True)
+    def typecheck(session: nox.Session) -> None:
+        """Run the type checker."""
+        session.run("mypy", "src")
+
+
+    nox.alias("check", "tooling:lint", "tooling:typecheck")
+
+Now ``nox -s tooling`` runs the non-explicit tasks, ``nox -s tooling:typecheck`` runs one task, and ``nox -s check`` runs the alias. All use the same virtual environment.
+
+
 The Auto-Release
 ^^^^^^^^^^^^^^^^
 
@@ -237,22 +272,23 @@ data file, and combine the files only after every test session finishes:
     PYPROJECT = nox.project.load_toml("pyproject.toml")
     PYTHON_VERSIONS = nox.project.python_versions(PYPROJECT)
 
+    coverage = nox.env.standard("coverage", dependencies=["coverage[toml]"])
+    tests = nox.env.standard(
+        "tests",
+        python=PYTHON_VERSIONS,
+        dependencies=["coverage[toml]", "--group=test", "-e."],
+    )
 
-    @nox.session(default=False)
-    def coverage_erase(session: nox.Session) -> None:
+
+    @coverage.task(explicit=True)
+    def erase(session: nox.Session) -> None:
         """Remove data left by an earlier coverage run."""
-        session.install("coverage[toml]")
         session.run("coverage", "erase")
 
 
-    @nox.session(
-        python=PYTHON_VERSIONS,
-        default=False,
-        requires=["coverage_erase"],
-    )
-    def tests(session: nox.Session) -> None:
+    @tests.task(requires=["coverage:erase"])
+    def run(session: nox.Session) -> None:
         """Measure tests independently for each supported Python version."""
-        session.install("coverage[toml]", "--group=test", ".")
         session.run(
             "coverage",
             "run",
@@ -263,17 +299,18 @@ data file, and combine the files only after every test session finishes:
         )
 
 
-    @nox.session(requires=["tests"])
-    def coverage_report(session: nox.Session) -> None:
+    @coverage.task(requires=["tests"])
+    def report(session: nox.Session) -> None:
         """Combine the per-version data and display one report."""
-        session.install("coverage[toml]")
         session.run("coverage", "combine")
         session.run("coverage", "report", "--show-missing")
 
-Running ``nox`` selects ``coverage_report`` by default; its requirements run
-cleanup first and then every parametrized test session. ``coverage combine``
+Running ``nox -s coverage`` selects ``coverage:report``; its requirements run
+cleanup first and then the ``run`` task on every Python version. ``coverage combine``
 writes the combined ``.coverage`` data file and removes the per-version files it
 consumed.
+The project is an editable install (``-e.``) because Nox does not reinstall when
+only your source code changes.
 Keep the phases sequential so cleanup and reporting cannot race with the test
 sessions. Projects that use subprocesses or pytest-xdist should also enable
 Coverage.py's `parallel mode <https://coverage.readthedocs.io/en/latest/config.html#run-parallel>`_.

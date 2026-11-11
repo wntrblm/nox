@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from typing import TYPE_CHECKING
@@ -32,6 +33,7 @@ from nox.manifest import Manifest
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
 
 
 # Environments, tasks, and aliases
@@ -1068,3 +1070,509 @@ def test_discover_manifest_reports_construction_errors(
     module = mock.Mock(__doc__=None)
     assert nox.tasks.discover_manifest(module, config) == 3
     assert any("cannot parametrize" in record.message for record in caplog.records)
+
+
+# Dependencies and stamps
+
+
+def test_base_sync_installs_dependencies() -> None:
+    env = nox.env.standard("dev", dependencies=["requests", "rich"])
+    session = mock.MagicMock()
+    env.sync(session)
+    session.install.assert_called_once_with("requests", "rich")
+
+
+class TrackingEnvironment(Environment):
+    """Records sync/setup calls instead of installing."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+        self.sync_calls = 0
+
+    def sync(self, session: nox.Session) -> None:  # noqa: ARG002
+        self.sync_calls += 1
+
+
+def make_provision_env(
+    tmp_path: Path, dependencies: Sequence[str] = ("requests",)
+) -> TrackingEnvironment:
+    env = TrackingEnvironment("dev", dependencies=list(dependencies))
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    (tmp_path / ".nox" / "dev").mkdir(parents=True, exist_ok=True)
+    return env
+
+
+def execute_provision(tmp_path: Path, *, reused: bool, **config_kwargs: object) -> None:
+    config = nox._options.options.namespace(
+        posargs=[],
+        envdir=str(tmp_path / ".nox"),
+        noxfile=str(tmp_path / "noxfile.py"),
+        **config_kwargs,
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    fake_venv = mock.MagicMock()
+    fake_venv.env = {}
+    fake_venv._reused = reused
+    fake_venv.venv_backend = "uv"
+    with mock.patch("nox.sessions.get_virtualenv", return_value=fake_venv):
+        for session in manifest:
+            assert session.execute()
+
+
+def test_provision_writes_stamp(tmp_path: Path) -> None:
+    env = make_provision_env(tmp_path)
+    execute_provision(tmp_path, reused=False)
+    assert env.sync_calls == 1
+    stamp = json.loads(
+        (tmp_path / ".nox" / "dev" / ".nox-env.json").read_text(encoding="utf-8")
+    )
+    assert stamp["env"]["dependencies"] == ["requests"]
+
+
+def test_provision_skips_when_stamp_matches(tmp_path: Path) -> None:
+    env = make_provision_env(tmp_path)
+    execute_provision(tmp_path, reused=False)
+    assert env.sync_calls == 1
+
+    nox.registry.reset()
+    env2 = make_provision_env(tmp_path)
+    execute_provision(tmp_path, reused=True)
+    assert env2.sync_calls == 0
+
+
+def test_provision_resyncs_on_change(tmp_path: Path) -> None:
+    make_provision_env(tmp_path)
+    execute_provision(tmp_path, reused=False)
+
+    nox.registry.reset()
+    env2 = make_provision_env(tmp_path, dependencies=["requests", "rich"])
+    execute_provision(tmp_path, reused=True)
+    assert env2.sync_calls == 1
+    stamp = json.loads(
+        (tmp_path / ".nox" / "dev" / ".nox-env.json").read_text(encoding="utf-8")
+    )
+    assert stamp["env"]["dependencies"] == ["requests", "rich"]
+
+
+def test_provision_syncs_fresh_venv_even_with_stamp(tmp_path: Path) -> None:
+    make_provision_env(tmp_path)
+    execute_provision(tmp_path, reused=False)
+
+    nox.registry.reset()
+    env2 = make_provision_env(tmp_path)
+    execute_provision(tmp_path, reused=False)
+    assert env2.sync_calls == 1
+
+
+def test_provision_no_install_skips(tmp_path: Path) -> None:
+    env = make_provision_env(tmp_path)
+    execute_provision(tmp_path, reused=True, no_install=True)
+    assert env.sync_calls == 0
+
+
+def test_provision_corrupt_stamp_resyncs(tmp_path: Path) -> None:
+    env = make_provision_env(tmp_path)
+    stamp_path = tmp_path / ".nox" / "dev" / ".nox-env.json"
+    stamp_path.write_text("{corrupt", encoding="utf-8")
+    execute_provision(tmp_path, reused=True)
+    assert env.sync_calls == 1
+
+
+def test_provision_failure_cached(tmp_path: Path) -> None:
+    class FailingEnvironment(TrackingEnvironment):
+        def sync(self, session: nox.Session) -> None:
+            super().sync(session)
+            msg = "sync failed"
+            raise RuntimeError(msg)
+
+    env = FailingEnvironment("dev", dependencies=["requests"])
+
+    @env.task
+    def a(session: nox.Session) -> None:
+        pass
+
+    @env.task
+    def b(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[],
+        envdir=str(tmp_path / ".nox"),
+        noxfile=str(tmp_path / "noxfile.py"),
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    fake_venv = mock.MagicMock()
+    fake_venv.env = {}
+    fake_venv._reused = False
+    fake_venv.venv_backend = "uv"
+    with mock.patch("nox.sessions.get_virtualenv", return_value=fake_venv):
+        results = [session.execute() for session in manifest]
+
+    assert not any(results)
+    # The second task fails fast from the cached error, without re-syncing.
+    assert env.sync_calls == 1
+    with pytest.raises(RuntimeError, match="sync failed"):
+        manifest["dev:a"].env_runner.provision(mock.MagicMock())
+
+
+def test_provision_keyboard_interrupt_not_cached(tmp_path: Path) -> None:
+    make_provision_env(tmp_path)
+    config = nox._options.options.namespace(
+        posargs=[],
+        envdir=str(tmp_path / ".nox"),
+        noxfile=str(tmp_path / "noxfile.py"),
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    runner = manifest["dev:sync"].env_runner
+    with (
+        mock.patch.object(runner, "_provision", side_effect=KeyboardInterrupt),
+        pytest.raises(KeyboardInterrupt),
+    ):
+        runner.provision(mock.MagicMock())
+    assert runner._error is None
+
+
+def test_setup_hook_unstampable(tmp_path: Path) -> None:
+    env = make_provision_env(tmp_path)
+    setup_calls = []
+
+    @env.setup
+    def _(session: nox.Session) -> None:
+        setup_calls.append(session)
+
+    assert env.stamp_data() is None
+    execute_provision(tmp_path, reused=True)
+    assert env.sync_calls == 1
+    assert len(setup_calls) == 1
+    assert not (tmp_path / ".nox" / "dev" / ".nox-env.json").exists()
+
+
+def test_setup_stamp_makes_stampable(tmp_path: Path) -> None:
+    env = make_provision_env(tmp_path)
+    env.setup_stamp = "v1"
+
+    @env.setup
+    def _(session: nox.Session) -> None:
+        pass
+
+    data = env.stamp_data()
+    assert data is not None
+    assert data["setup_stamp"] == "v1"
+
+
+def test_setup_hook_only_once() -> None:
+    env = nox.env.standard("dev")
+
+    @env.setup
+    def _(session: nox.Session) -> None:
+        pass
+
+    with pytest.raises(ValueError, match="already has a setup function"):
+
+        @env.setup
+        def _(session: nox.Session) -> None:
+            pass
+
+
+def test_stamp_ignores_options_without_files() -> None:
+    data = Environment(
+        "x", dependencies=["--no-deps", "six"], register=False
+    ).stamp_data()
+    assert data is not None
+    assert data["inputs"] == {}
+
+
+def test_stamp_hashes_requirements_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "requirements.txt").write_text("six\n", encoding="utf-8")
+    (tmp_path / "constraints.txt").write_text("six==1\n", encoding="utf-8")
+    env = nox.env.standard(
+        "dev",
+        dependencies=["-r", "requirements.txt", "--constraint=constraints.txt"],
+    )
+    data = env.stamp_data()
+    assert data is not None
+    assert set(data["inputs"]) == {"requirements.txt", "constraints.txt"}
+
+    (tmp_path / "requirements.txt").write_text("six\nattrs\n", encoding="utf-8")
+    assert env.stamp_data() != data
+
+
+def test_stamp_hashes_local_project_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+    env = nox.env.standard("dev", dependencies=["-e", "."])
+    data = env.stamp_data()
+    assert data is not None
+    assert set(data["inputs"]) == {os.path.join(".", "pyproject.toml")}
+    for dep in ("-e.[dev]", "--editable=.", ".[dev]"):
+        other = Environment("x", dependencies=[dep], register=False).stamp_data()
+        assert other is not None
+        assert other["inputs"] == data["inputs"]
+
+    (tmp_path / "pyproject.toml").write_text("[project]\nx=1\n", encoding="utf-8")
+    assert env.stamp_data() != data
+
+
+def test_stamp_explicit_inputs(tmp_path: Path) -> None:
+    extra = tmp_path / "extra.txt"
+    extra.write_text("a\n", encoding="utf-8")
+    env = nox.env.standard("dev", inputs=[extra])
+    data = env.stamp_data()
+    assert data is not None
+    assert list(data["inputs"]) == [str(extra)]
+
+    extra.write_text("b\n", encoding="utf-8")
+    assert env.stamp_data() != data
+
+    with pytest.raises(FileNotFoundError, match="does not exist"):
+        nox.env.standard("dev2", inputs=[tmp_path / "missing.txt"]).stamp_data()
+
+
+def test_declarative_env_reuse_default() -> None:
+    env = nox.env.standard("dev")
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest(envdir=".nox")
+    runner = manifest["dev:sync"]
+    assert runner.func.reuse_venv is True
+    assert runner.reuse_existing_venv()
+
+
+def test_declarative_env_reuse_opt_out() -> None:
+    env = nox.env.standard("dev", reuse_venv=False)
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest(envdir=".nox")
+    assert not manifest["dev:sync"].reuse_existing_venv()
+
+
+def test_legacy_session_reuse_unchanged() -> None:
+    @nox.session
+    def tests(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest(envdir=".nox")
+    assert not manifest["tests"].reuse_existing_venv()
+
+
+def test_shared_env_install_warns_once(caplog: pytest.LogCaptureFixture) -> None:
+    env = nox.env.standard("tooling")
+
+    @env.task
+    def lint(session: nox.Session) -> None:
+        pass
+
+    @env.task
+    def typecheck(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest(envdir=".nox", no_install=False, verbose=False)
+    runner = manifest["tooling:lint"]
+    runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv, instance=True)
+    runner.venv._reused = False
+    runner.venv.venv_backend = "virtualenv"  # type: ignore[misc]
+    session = nox.sessions.Session(runner)
+    with mock.patch.object(nox.sessions.Session, "_run"):
+        session.install("requests")
+        session.install("rich")
+    warnings_ = [r for r in caplog.records if "shared environment" in r.message]
+    assert len(warnings_) == 1
+
+
+def test_own_env_install_no_warning(caplog: pytest.LogCaptureFixture) -> None:
+    env = nox.env.standard("solo")
+
+    @env.task
+    def lint(session: nox.Session) -> None:
+        pass
+
+    manifest = make_manifest(envdir=".nox", no_install=False, verbose=False)
+    runner = manifest["solo:lint"]
+    runner.venv = mock.create_autospec(nox.virtualenv.VirtualEnv, instance=True)
+    runner.venv._reused = False
+    runner.venv.venv_backend = "virtualenv"  # type: ignore[misc]
+    session = nox.sessions.Session(runner)
+    with mock.patch.object(nox.sessions.Session, "_run"):
+        session.install("requests")
+    assert not [r for r in caplog.records if "shared environment" in r.message]
+
+
+def test_provision_install_only_writes_stamp(tmp_path: Path) -> None:
+    make_provision_env(tmp_path)
+    execute_provision(tmp_path, reused=False, install_only=True)
+    assert (tmp_path / ".nox" / "dev" / ".nox-env.json").exists()
+
+    # The prepared environment is treated as up to date on the next run.
+    nox.registry.reset()
+    env2 = make_provision_env(tmp_path)
+    execute_provision(tmp_path, reused=True)
+    assert env2.sync_calls == 0
+
+
+def test_provision_install_only_setup_hook_no_stamp(tmp_path: Path) -> None:
+    env = make_provision_env(tmp_path)
+    env.setup_stamp = "v1"
+
+    @env.setup
+    def _(session: nox.Session) -> None:
+        pass
+
+    execute_provision(tmp_path, reused=False, install_only=True)
+    assert not (tmp_path / ".nox" / "dev" / ".nox-env.json").exists()
+
+
+def test_inexact_env_recreated_on_change(tmp_path: Path) -> None:
+    make_provision_env(tmp_path, dependencies=["requests", "six"])
+    execute_provision(tmp_path, reused=False)
+
+    nox.registry.reset()
+    env2 = make_provision_env(tmp_path, dependencies=["requests"])
+    config = nox._options.options.namespace(
+        posargs=[],
+        envdir=str(tmp_path / ".nox"),
+        noxfile=str(tmp_path / "noxfile.py"),
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    fake_venv = mock.MagicMock()
+    fake_venv.env = {}
+    fake_venv._reused = True
+    fake_venv.venv_backend = "uv"
+    with mock.patch(
+        "nox.sessions.get_virtualenv", return_value=fake_venv
+    ) as get_virtualenv:
+        for session in manifest:
+            assert session.execute()
+    # Stale + additive sync: the venv is recreated, not synced in place.
+    assert get_virtualenv.call_count == 2
+    assert get_virtualenv.call_args.kwargs["reuse_existing"] is False
+    assert env2.sync_calls == 1
+
+
+class ExactTrackingEnvironment(TrackingEnvironment):
+    def sync_is_exact(self, session: nox.Session) -> bool:  # noqa: ARG002
+        return True
+
+
+def test_exact_env_synced_in_place_on_change(tmp_path: Path) -> None:
+    env = ExactTrackingEnvironment("dev", dependencies=["requests", "six"])
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    (tmp_path / ".nox" / "dev").mkdir(parents=True, exist_ok=True)
+    execute_provision(tmp_path, reused=False)
+
+    nox.registry.reset()
+    env2 = ExactTrackingEnvironment("dev", dependencies=["requests"])
+
+    @env2.task
+    def sync2(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[],
+        envdir=str(tmp_path / ".nox"),
+        noxfile=str(tmp_path / "noxfile.py"),
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    fake_venv = mock.MagicMock()
+    fake_venv.env = {}
+    fake_venv._reused = True
+    fake_venv.venv_backend = "uv"
+    with mock.patch(
+        "nox.sessions.get_virtualenv", return_value=fake_venv
+    ) as get_virtualenv:
+        for session in manifest:
+            assert session.execute()
+    assert get_virtualenv.call_count == 1
+    assert env2.sync_calls == 1
+
+
+def test_backend_none_with_dependencies_clean_error(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    env = nox.env.standard("dev", venv_backend="none", dependencies=["six"])
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        pass
+
+    config = nox._options.options.namespace(
+        posargs=[],
+        envdir=str(tmp_path / ".nox"),
+        noxfile=str(tmp_path / "noxfile.py"),
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+    result = manifest["dev:sync"].execute()
+    assert not result
+    assert any(
+        "does not have a virtualenv" in record.message for record in caplog.records
+    )
+
+
+def test_recreated_env_keeps_current_session_variable(tmp_path: Path) -> None:
+    make_provision_env(tmp_path, dependencies=["requests", "six"])
+    execute_provision(tmp_path, reused=False)
+
+    nox.registry.reset()
+    env = TrackingEnvironment("dev", dependencies=["requests"])
+    seen = []
+
+    @env.task
+    def sync(session: nox.Session) -> None:
+        seen.append(session.env.get("NOX_CURRENT_SESSION"))
+
+    config = nox._options.options.namespace(
+        posargs=[],
+        envdir=str(tmp_path / ".nox"),
+        noxfile=str(tmp_path / "noxfile.py"),
+    )
+    manifest = Manifest(nox.registry.get_registry(), config)
+
+    def fake_venv(*args: object, **kwargs: object) -> mock.MagicMock:
+        venv = mock.MagicMock()
+        venv.env = {}
+        venv._reused = True
+        venv.venv_backend = "uv"
+        return venv
+
+    with mock.patch("nox.sessions.get_virtualenv", side_effect=fake_venv) as get_venv:
+        for session in manifest:
+            assert session.execute()
+    assert get_venv.call_count == 2
+    assert seen == ["dev:sync"]
+
+
+def test_needs_venv() -> None:
+    assert not nox.env.standard("plain").needs_venv()
+    assert nox.env.standard("deps", dependencies=["six"]).needs_venv()
+
+
+def test_stamp_skips_missing_and_repeated_inputs(tmp_path: Path) -> None:
+    reqs = tmp_path / "requirements.txt"
+    reqs.write_text("six\n", encoding="utf-8")
+    env = Environment(
+        "x",
+        dependencies=["-r", str(reqs), "-r", str(tmp_path / "missing.txt")],
+        inputs=[reqs],
+        register=False,
+    )
+    data = env.stamp_data()
+    assert data is not None
+    assert list(data["inputs"]) == [str(reqs)]

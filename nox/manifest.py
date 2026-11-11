@@ -639,6 +639,7 @@ class Manifest:
                 self._config,
                 env,
                 instance_name=instance_name,
+                shared=len(tasks) > 1,
             )
 
             for task_name, task_func in tasks.items():
@@ -691,7 +692,9 @@ class Manifest:
         """Copy a task function and fill in the environment-level settings."""
         func = task_func.copy(task_func.name)
         func.python = python
-        func.reuse_venv = env.reuse_venv
+        # Declarative environments are reused (and re-synced when their
+        # inputs change) by default; --reuse-venv=never still recreates.
+        func.reuse_venv = True if env.reuse_venv is None else env.reuse_venv
         func.venv_backend = env.venv_backend
         func.venv_params = env.venv_params
         func.download_python = env.download_python
