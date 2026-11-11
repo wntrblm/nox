@@ -188,6 +188,22 @@ def test_python_range_major_only_max_version() -> None:
     assert python_versions(pyproject, max_version="3") == ["3.0"]
 
 
+@pytest.mark.parametrize("requires_python", [">=2.7", ">2.7", "~=2.7", ">=2"])
+def test_python_range_python2_lower_bound(requires_python: str) -> None:
+    # A lower bound below Python 3 allows every 3.x version, so the range
+    # starts at 3.0 (">=2.7" used to give 3.7 because only the minor was read).
+    pyproject = {"project": {"requires-python": requires_python}}
+
+    assert python_versions(pyproject, max_version="3.2") == ["3.0", "3.1", "3.2"]
+
+
+def test_python_range_python2_and_python3_lower_bounds() -> None:
+    # The largest lower bound still wins when one of them is below Python 3.
+    pyproject = {"project": {"requires-python": ">=2.7,>=3.9"}}
+
+    assert python_versions(pyproject, max_version="3.11") == ["3.9", "3.10", "3.11"]
+
+
 def test_python_range_multiple_lower_bounds() -> None:
     # With several lower-bound specifiers the effective minimum is the largest
     # one, regardless of the order they appear in.
