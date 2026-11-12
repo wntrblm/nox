@@ -134,11 +134,11 @@ def main() -> None:
 
         # tox 4 resolves skipsdist, no_package, "package =" and a project
         # without pyproject.toml, setup.py or setup.cfg into "package".
-        package = section.get("package")
-        if package == "skip":
-            config[name]["skip_install"] = True
-        elif package in {"editable", "editable-legacy"}:
-            config[name]["use_develop"] = True
+        match section:
+            case {"package": "skip"}:
+                config[name]["skip_install"] = True
+            case {"package": "editable" | "editable-legacy"}:
+                config[name]["use_develop"] = True
 
         if os.path.isabs(section["base_python"]) or re.match(
             r"py\d+", section["base_python"]
