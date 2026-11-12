@@ -14,23 +14,35 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"ast", "itertools", "nox._resolver", "nox.sessions", "operator"}
+__lazy_modules__ = {
+    "ast",
+    "itertools",
+    "nox._resolver",
+    "nox.environments",
+    "nox.registry",
+    "nox.sessions",
+    "operator",
+}
 
 import ast
 import functools
 import itertools
 import operator
+import os
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, cast
 
 from nox._decorators import Call, Func
 from nox._resolver import CycleError, lazy_stable_topo_sort
-from nox.sessions import Session, SessionRunner
+from nox.environments import Environment
+from nox.registry import RegistryData
+from nox.sessions import EnvRunner, Session, SessionRunner
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
 
     from nox._options import NoxConfig
+    from nox._typing import Python
 
 __all__ = ["WARN_PYTHONS_IGNORED", "Manifest", "keyword_match"]
 
@@ -67,7 +79,7 @@ class Manifest:
 
     def __init__(
         self,
-        session_functions: Mapping[str, Func],
+        session_functions: Mapping[str, Func] | RegistryData,
         global_config: NoxConfig,
         module_docstring: str | None = None,
     ) -> None:
@@ -76,11 +88,65 @@ class Manifest:
         self._consumed: list[SessionRunner] = []
         self._config: NoxConfig = global_config
         self.module_docstring: str | None = module_docstring
+        self._aliases: dict[str, tuple[str, ...]] = {}
+        self._extra_requirements_cache: dict[str, list[str]] | None = None
 
         # Create the sessions based on the provided session functions.
-        for name, func in session_functions.items():
-            for session in self.make_session(name, func):
+        entries: Mapping[str, Func | Environment]
+        tasks: Mapping[str, Mapping[str, Func]] = {}
+        if isinstance(session_functions, RegistryData):
+            entries, tasks, aliases = session_functions
+            self._aliases = dict(aliases)
+        else:
+            entries = session_functions
+        for name, entry in entries.items():
+            if isinstance(entry, Environment):
+                sessions = self._make_env_sessions(entry, tasks[name])
+            else:
+                sessions = self.make_session(name, entry)
+            for session in sessions:
                 self.add_session(session)
+
+    @property
+    def aliases(self) -> dict[str, tuple[str, ...]]:
+        """The registered aliases, mapped to their direct targets."""
+        return dict(self._aliases)
+
+    def check_location_collisions(self) -> None:
+        """Error if two selected environment instances share one location.
+
+        Checked over the selected sessions (not all sessions), so an
+        unselected environment cannot break an unrelated invocation — e.g.
+        --force-python temporarily multiplying a located environment.
+        Default locations take part too, so an explicit ``location`` cannot
+        silently overlap another environment's default directory.
+        """
+        locations: dict[str, str] = {}
+        location_bases: dict[str, str | None] = {}
+        seen_runners: set[int] = set()
+        for session in self._queue:
+            env_runner = session.env_runner
+            if env_runner.environment is None or id(env_runner) in seen_runners:
+                continue
+            seen_runners.add(id(env_runner))
+            resolved = os.path.realpath(env_runner.envdir)
+            other = locations.setdefault(resolved, env_runner.name)
+            other_base = location_bases.setdefault(resolved, session.env_base_name)
+            if other == env_runner.name:
+                continue
+            if other_base == session.env_base_name:
+                msg = (
+                    f"Multiple instances of environment "
+                    f"{session.env_base_name!r} resolve to the location "
+                    f"{resolved!r}; add a {{name}} or {{python}} placeholder "
+                    "to its location."
+                )
+            else:
+                msg = (
+                    f"Environments {other!r} and {env_runner.name!r} "
+                    f"both resolve to the location {resolved!r}."
+                )
+            raise ValueError(msg)
 
     def __contains__(self, needle: str | SessionRunner) -> bool:
         return (
@@ -156,11 +222,17 @@ class Manifest:
         """
         if session not in self._all_sessions:
             self._all_sessions.append(session)
+            self._extra_requirements_cache = None
         if session not in self._queue:
             self._queue.append(session)
 
     def filter_by_name(self, specified_sessions: Iterable[str]) -> None:
         """Filter sessions in the queue based on the user-specified names.
+
+        A specified name may be a session/task identifier (``env:task`` or a
+        classic session name), an alias, or an environment name (which
+        selects the environment's non-explicit tasks, or just sets up the
+        environment if it has none).
 
         Args:
             specified_sessions (Sequence[str]): A list of specified
@@ -169,35 +241,46 @@ class Manifest:
         Raises:
             KeyError: If any explicitly listed sessions are not found.
         """
+        expanded = self._expand_aliases(specified_sessions)
+
+        kinds = {name: self._id_kind(name) for name in dict.fromkeys(expanded)}
+
         # Filter the sessions remaining in the queue based on
         # whether they are individually specified.
         self._queue = [
             session
-            for session_name in specified_sessions
+            for session_name in expanded
             for session in self._queue
-            if _normalized_session_match(session_name, session)
+            if _matches_kind(session_name, kinds[session_name], session)
         ]
 
         # If a session was requested and was not found, complain loudly.
-        all_sessions = set(
-            map(
-                _normalize_arg,
-                (
-                    itertools.chain(
-                        [x.name for x in self._all_sessions if x.name],
-                        *[x.signatures for x in self._all_sessions],
-                    )
-                ),
-            )
-        )
-        missing_sessions = [
-            session_name
-            for session_name in specified_sessions
-            if _normalize_arg(session_name) not in all_sessions
-        ]
+        missing_sessions = [name for name, kind in kinds.items() if kind is None]
         if missing_sessions:
             msg = f"Sessions not found: {', '.join(missing_sessions)}"
             raise KeyError(msg)
+
+    def _id_kind(self, name: str) -> str | None:
+        """Classify a user-specified identifier.
+
+        Returns ``"exact"`` (session name/signature), ``"env"`` (environment
+        selector), or ``None`` if nothing matches. Earlier kinds take
+        precedence.
+
+        """
+        if any(
+            _normalized_session_match(name, session) for session in self._all_sessions
+        ):
+            return "exact"
+        env_matches = [
+            session
+            for session in self._all_sessions
+            if session.task_name is not None
+            and name in {session.env_base_name, session.env_instance_name}
+        ]
+        if env_matches:
+            return "env"
+        return None
 
     def filter_by_default(self) -> None:
         """Filter sessions in the queue based on the default flag."""
@@ -224,7 +307,15 @@ class Manifest:
         self._queue = [
             x
             for x in self._queue
-            if keyword_match(keywords, [*x.signatures, *x.tags, x.name])
+            if keyword_match(
+                keywords,
+                [
+                    *x.signatures,
+                    *x.tags,
+                    x.name,
+                    *filter(None, (x.task_name, x.env_base_name, x.env_instance_name)),
+                ],
+            )
         ]
 
     def filter_by_tags(self, tags: Iterable[str]) -> None:
@@ -264,6 +355,19 @@ class Manifest:
             parent_sessions.add(parent_session)
             sessions_by_id[parent_name] = parent_session
 
+        # Aliases and environment selectors are also allowed in ``requires``;
+        # represent each as a fake parent that depends on its expansion.
+        for extra_name, targets in self._extra_requirements().items():
+            if extra_name in sessions_by_id:
+                continue
+            parent_func = _null_session_func.copy()
+            parent_func.requires = targets
+            parent_session = SessionRunner(
+                extra_name, [], parent_func, self._config, self, multi=False
+            )
+            parent_sessions.add(parent_session)
+            sessions_by_id[extra_name] = parent_session
+
         # Construct the dependency graph. Note that this is done lazily with iterators
         # so that we won't raise if a session that doesn't actually need to run declares
         # missing/improper dependencies.
@@ -297,6 +401,95 @@ class Manifest:
             session for session in resolved_graph if session not in parent_sessions
         ]
 
+    def _expand_aliases(self, names: Iterable[str]) -> list[str]:
+        """Recursively expand aliases; a cycle leaves the name unresolved."""
+        expanded: list[str] = []
+
+        def expand(name: str, seen: frozenset[str]) -> None:
+            if name in self._aliases and name not in seen:
+                for target in self._aliases[name]:
+                    expand(target, seen | {name})
+            else:
+                expanded.append(name)
+
+        for name in names:
+            expand(name, frozenset())
+        return expanded
+
+    def _extra_requirements(self) -> dict[str, list[str]]:
+        """Identifiers usable in ``requires`` beyond signatures and names.
+
+        Maps aliases and environment selectors (which expand to the
+        environment or instance's non-explicit tasks) to the identifiers they
+        expand to.
+        """
+        if self._extra_requirements_cache is not None:
+            return self._extra_requirements_cache
+        extra: dict[str, list[str]] = {
+            name: list(targets) for name, targets in self._aliases.items()
+        }
+
+        env_tasks: dict[str, dict[str, bool]] = {}
+        instance_tasks: dict[str, dict[str, bool]] = {}
+        env_only: dict[str, list[str]] = {}
+        for session in self._all_sessions:
+            if session.env_base_name is None:
+                continue
+            if session.task_name is None:
+                env_only.setdefault(f"{session.env_base_name}:", []).append(
+                    f"{session.env_instance_name}:"
+                )
+                continue
+            env_selectable = env_tasks.setdefault(session.env_base_name, {})
+            env_selectable[session.name] = (
+                env_selectable.get(session.name, False) or not session.func.explicit
+            )
+            if session.env_instance_name != session.env_base_name:
+                assert session.env_instance_name is not None
+                instance_tasks.setdefault(session.env_instance_name, {})[
+                    f"{session.env_instance_name}:{session.task_name}"
+                ] = not session.func.explicit
+
+        for env_name, canonical_names in env_tasks.items():
+            names = [name for name, selectable in canonical_names.items() if selectable]
+            if names:
+                extra.setdefault(env_name, names)
+        for instance_name, signature_names in instance_tasks.items():
+            names = [name for name, selectable in signature_names.items() if selectable]
+            if names:
+                extra.setdefault(instance_name, names)
+        # ``env:`` is a session name or signature except for a python list
+        # with no selectable task, where the instances are named ``env-py``.
+        by_name = self.parametrized_sessions_by_name
+        extra.update({k: v for k, v in env_only.items() if k not in by_name})
+
+        self._extra_requirements_cache = extra
+        return extra
+
+    def resolve_requirement(
+        self, requirement: str, _seen: frozenset[str] = frozenset()
+    ) -> list[SessionRunner]:
+        """Resolve a ``requires`` entry to the sessions it refers to.
+
+        Raises:
+            KeyError: If the requirement cannot be resolved.
+        """
+        by_signature = self.all_sessions_by_signature
+        if requirement in by_signature:
+            return [by_signature[requirement]]
+        by_name = self.parametrized_sessions_by_name
+        if requirement in by_name:
+            return list(by_name[requirement])
+        extra = self._extra_requirements()
+        if requirement in extra and requirement not in _seen:
+            seen = _seen | {requirement}
+            return [
+                session
+                for target in extra[requirement]
+                for session in self.resolve_requirement(target, seen)
+            ]
+        raise KeyError(requirement)
+
     def make_session(
         self, name: str, func: Func, *, multi: bool = False
     ) -> list[SessionRunner]:
@@ -312,42 +505,18 @@ class Manifest:
             Sequence[~nox.session.Session]: A sequence of Session objects
                 bound to this manifest and configuration.
         """
-        sessions = []
-
-        # If the backend is "none", we won't parametrize `python`.
-        backend = (
-            self._config.force_venv_backend
-            or func.venv_backend
-            or self._config.default_venv_backend
+        func.python, ignored = self._expand_python(
+            func.python, func.venv_backend, multi=multi
         )
-        if backend == "none" and isinstance(func.python, (list, tuple, set)):
+        if ignored is not None:
             # we can not log a warning here since the session is maybe deselected.
             # instead let's set a flag, to warn later when session is actually run.
-            func.should_warn[WARN_PYTHONS_IGNORED] = func.python
-            func.python = False
-
-        if self._config.extra_pythons:
-            # If extra python is provided, expand the func.python list to
-            # include additional python interpreters
-            extra_pythons: Sequence[str] = self._config.extra_pythons
-            if isinstance(func.python, (list, tuple, set)):
-                func.python = _unique_list(*func.python, *extra_pythons)
-            elif not multi and func.python:
-                # If this is multi, but there is only a single interpreter, it
-                # is the reentrant case. The extra_python interpreter shouldn't
-                # be added in that case. If func.python is False, the session
-                # has no backend; if None, it uses the same interpreter as Nox.
-                # Otherwise, add the extra specified python.
-                assert isinstance(func.python, str)
-                func.python = _unique_list(func.python, *extra_pythons)
-            elif not func.python and self._config.force_pythons:
-                # If a python is forced by the user, but the underlying function
-                # has no version parametrised, add it as sole occupant to func.python
-                func.python = _unique_list(*extra_pythons)
+            func.should_warn[WARN_PYTHONS_IGNORED] = ignored
 
         # If the func has the python attribute set to a list, we'll need
         # to expand them. Duplicates would make identical sessions.
         if isinstance(func.python, (list, tuple, set)):
+            sessions = []
             for python in _unique_list(*func.python):
                 single_func = func.copy()
                 single_func.python = python
@@ -355,23 +524,87 @@ class Manifest:
 
             return sessions
 
+        instance_name = f"{name}-{func.python}" if func.python else None
+        return self._make_runners(name, instance_name, func, multi=multi)
+
+    def _expand_python(
+        self, python: Python, venv_backend: str | None, *, multi: bool = False
+    ) -> tuple[Python, Python]:
+        """Apply the backend and the extra/forced pythons to ``python``.
+
+        Returns the expanded python (a list gives one instance each), and the
+        pythons that are ignored because the backend is "none", if any.
+        """
+        # If the backend is "none", we won't parametrize `python`.
+        backend = (
+            self._config.force_venv_backend
+            or venv_backend
+            or self._config.default_venv_backend
+        )
+        ignored: Python = None
+        if backend == "none" and isinstance(python, (list, tuple, set)):
+            ignored = python
+            python = False
+
+        if self._config.extra_pythons:
+            # If extra python is provided, expand the python list to
+            # include additional python interpreters
+            extra_pythons: Sequence[str] = self._config.extra_pythons
+            if isinstance(python, (list, tuple, set)):
+                python = _unique_list(*python, *extra_pythons)
+            elif not multi and python:
+                # If this is multi, but there is only a single interpreter, it
+                # is the reentrant case. The extra_python interpreter shouldn't
+                # be added in that case. If python is False, the session
+                # has no backend; if None, it uses the same interpreter as Nox.
+                # Otherwise, add the extra specified python.
+                assert isinstance(python, str)
+                python = _unique_list(python, *extra_pythons)
+            elif not python and self._config.force_pythons:
+                # If a python is forced by the user, but the underlying function
+                # has no version parametrised, add it as sole occupant.
+                python = _unique_list(*extra_pythons)
+
+        return python, ignored
+
+    def _make_runners(
+        self,
+        name: str,
+        instance_name: str | None,
+        func: Func,
+        *,
+        multi: bool,
+        **kwargs: Any,
+    ) -> list[SessionRunner]:
+        """Create the runner(s) for a function with one interpreter.
+
+        Args:
+            name: The session name.
+            instance_name: The name with the interpreter, if it has one.
+            func: The session function.
+            multi: Whether the function is a member of a set of sessions
+                with different interpreters.
+            kwargs: Passed to each :class:`SessionRunner`.
+        """
         # Simple case: If this function is not parametrized, then make
         # a simple session.
         if not hasattr(func, "parametrize"):
             long_names = []
             if not multi:
                 long_names.append(name)
-            if func.python:
-                long_names.append(f"{name}-{func.python}")
+            if instance_name:
+                long_names.append(instance_name)
 
             return [
-                SessionRunner(name, long_names, func, self._config, self, multi=multi)
+                SessionRunner(
+                    name, long_names, func, self._config, self, multi=multi, **kwargs
+                )
             ]
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
-        parametrize = func.parametrize
-        calls = Call.generate_calls(func, parametrize)
+        sessions = []
+        calls = Call.generate_calls(func, func.parametrize)
         for call in calls:
             long_names = []
             if not multi or (
@@ -380,13 +613,15 @@ class Manifest:
             ):
                 long_names.append(f"{name}{call.session_signature}")
 
-            if func.python:
-                long_names.append(f"{name}-{func.python}{call.session_signature}")
+            if instance_name:
+                long_names.append(f"{instance_name}{call.session_signature}")
                 # Ensure that specifying session-python will run all parameterizations.
-                long_names.append(f"{name}-{func.python}")
+                long_names.append(instance_name)
 
             sessions.append(
-                SessionRunner(name, long_names, call, self._config, self, multi=multi)
+                SessionRunner(
+                    name, long_names, call, self._config, self, multi=multi, **kwargs
+                )
             )
 
         # Edge case: If the parameters made it such that there were no valid
@@ -394,12 +629,115 @@ class Manifest:
         if not calls:
             sessions.append(
                 SessionRunner(
-                    name, [], _null_session_func, self._config, self, multi=multi
+                    name,
+                    [],
+                    _null_session_func,
+                    self._config,
+                    self,
+                    multi=multi,
+                    **kwargs,
                 )
             )
 
         # Return the list of sessions.
         return sessions
+
+    def _make_env_sessions(
+        self, env: Environment, tasks: Mapping[str, Func]
+    ) -> list[SessionRunner]:
+        """Create the task runners of an environment.
+
+        All tasks of one instance of the environment (one per interpreter of
+        a python list) share one :class:`EnvRunner`.
+        """
+        runners: list[SessionRunner] = []
+        python, ignored = self._expand_python(env.python, env.venv_backend)
+        should_warn = {} if ignored is None else {WARN_PYTHONS_IGNORED: ignored}
+        multi = isinstance(python, (list, tuple, set))
+        # ``env:`` (no task) only provisions the environment. It also answers
+        # to the bare environment name when no task is selectable.
+        fallback = all(task.explicit for task in tasks.values())
+        env_only_name = env.name if fallback else f"{env.name}:"
+
+        for py in python if isinstance(python, (list, tuple, set)) else [python]:
+            # The directory only gets a python suffix for a python list
+            # (matching classic sessions), but the selector always does, so
+            # `-s tooling-3.12` works for pinned environments too.
+            instance_name = f"{env.name}-{py}" if py else env.name
+            env_only_func = self._bind_task_func(
+                Func(_env_only_func_, name=env_only_name, default=False),
+                env,
+                py,
+                should_warn,
+            )
+            env_runner = EnvRunner(
+                instance_name if multi else env.name,
+                env_only_func,
+                self._config,
+                env,
+                instance_name=instance_name,
+                shared=len(tasks) > 1,
+            )
+
+            for task_name, task_func in tasks.items():
+                func = self._bind_task_func(task_func, env, py, should_warn)
+                task_runners = self._make_runners(
+                    f"{env.name}:{task_name}",
+                    f"{instance_name}:{task_name}" if py else None,
+                    func,
+                    multi=multi,
+                    env_runner=env_runner,
+                    task_name=task_name,
+                )
+                if any(
+                    isinstance(r.func, Call) and r.func.python != py
+                    for r in task_runners
+                ):
+                    msg = (
+                        f"Task '{env.name}:{task_name}' cannot parametrize "
+                        "'python'; set python on the environment instead."
+                    )
+                    raise ValueError(msg)
+                runners.extend(task_runners)
+
+            # The first signature is the listed name.
+            signatures = [instance_name] if fallback else []
+            if f"{instance_name}:" != env_only_name:
+                signatures.append(f"{instance_name}:")
+            runners.append(
+                SessionRunner(
+                    env_only_name,
+                    signatures,
+                    env_only_func,
+                    self._config,
+                    self,
+                    multi=multi,
+                    env_runner=env_runner,
+                    hidden=not fallback,
+                )
+            )
+
+        return runners
+
+    def _bind_task_func(
+        self,
+        task_func: Func,
+        env: Environment,
+        python: Python,
+        env_should_warn: Mapping[str, Any],
+    ) -> Func:
+        """Copy a task function and fill in the environment-level settings."""
+        func = task_func.copy(task_func.name)
+        func.python = python
+        # Declarative environments are reused (and re-synced when their
+        # inputs change) by default; --reuse-venv=never still recreates.
+        func.reuse_venv = True if env.reuse_venv is None else env.reuse_venv
+        func.venv_backend = env.venv_backend
+        func.venv_params = env.venv_params
+        func.download_python = env.download_python
+        func.tags = _unique_list(*env.tags, *task_func.tags)
+        func.should_warn.update(env_should_warn)
+        return func
 
     def notify(
         self, session: str | SessionRunner, posargs: Iterable[str] | None = None
@@ -436,6 +774,24 @@ class Manifest:
                     s.posargs = list(posargs)
                 self._queue.append(s)
                 return True
+
+        # Fall back to the shared identifier grammar (aliases, environment
+        # selectors).
+        if isinstance(session, str):
+            try:
+                resolved = self.resolve_requirement(session)
+            except KeyError:
+                pass
+            else:
+                added = False
+                for runner in resolved:
+                    if runner in self._queue or runner in self._consumed:
+                        continue
+                    if posargs is not None:
+                        runner.posargs = list(posargs)
+                    self._queue.append(runner)
+                    added = True
+                return added
 
         # The session was not found in the list of sessions.
         msg = f"Session {session} not found."
@@ -476,12 +832,20 @@ def _null_session_func_(session: Session) -> None:
     session.skip("This session had no parameters available.")
 
 
+def _env_only_func_(session: Session) -> None:
+    """Set up the environment without running a task."""
+    name = session._runner.env_runner.name
+    location = getattr(session.virtualenv, "location", None)
+    where = f" at {location}" if location else ""
+    session.log(f"No tasks ran; environment {name!r} is ready{where}")
+
+
 def _normalized_session_match(session_name: str, session: SessionRunner) -> bool:
     """Checks if session_name matches session."""
     if session_name == session.name or session_name in session.signatures:
         return True
     normalized_name = _normalize_arg(session_name)
-    for name in session.signatures:
+    for name in (session.name, *session.signatures):
         equal_rep = normalized_name == _normalize_arg(name)
         if equal_rep:
             return True
@@ -489,9 +853,32 @@ def _normalized_session_match(session_name: str, session: SessionRunner) -> bool
     return False
 
 
+def _matches_kind(session_name: str, kind: str | None, session: SessionRunner) -> bool:
+    """Checks if session_name, classified by Manifest._id_kind, matches session."""
+    if kind == "exact":
+        return _normalized_session_match(session_name, session)
+    if kind == "env":
+        # Selecting an environment runs its non-explicit tasks.
+        return (
+            session.task_name is not None
+            and session_name in {session.env_base_name, session.env_instance_name}
+            and not session.func.explicit
+        )
+    return False
+
+
 @functools.cache
 def _normalize_arg(arg: str) -> str:
     """Normalize arg for comparison."""
+    # For env:task ids only the task part is Python-like; normalize it alone.
+    # A colon after "(" is parametrize-argument content, not a separator.
+    head, sep, tail = arg.partition(":")
+    if sep and "(" not in head:
+        return f"{head}:{_normalize_call(tail)}"
+    return _normalize_call(arg)
+
+
+def _normalize_call(arg: str) -> str:
     try:
         return str(ast.dump(ast.parse(arg)))
     except (TypeError, SyntaxError):

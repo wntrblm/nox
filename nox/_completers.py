@@ -72,6 +72,8 @@ def python_completer(
     config = _expand(parsed_args)
     module = load_nox_module(config)
     manifest = discover_manifest(module, config)
+    if isinstance(manifest, int):
+        return ()
     return filter(
         None,
         (
@@ -90,11 +92,14 @@ def session_completer(
     config.list_sessions = True
     module = load_nox_module(config)
     manifest = discover_manifest(module, config)
+    if isinstance(manifest, int):
+        return []
     filtered_manifest = filter_manifest(manifest, config)
     if isinstance(filtered_manifest, int):
         return []
-    return (
-        session.friendly_name for session, _ in filtered_manifest.list_all_sessions()
+    return itertools.chain(
+        (session.friendly_name for session, _ in filtered_manifest.list_all_sessions()),
+        filtered_manifest.aliases,
     )
 
 
@@ -106,6 +111,8 @@ def tag_completer(
     config = _expand(parsed_args)
     module = load_nox_module(config)
     manifest = discover_manifest(module, config)
+    if isinstance(manifest, int):
+        return ()
     return itertools.chain.from_iterable(
         filter(None, (session.tags for session, _ in manifest.list_all_sessions()))
     )

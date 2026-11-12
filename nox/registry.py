@@ -14,13 +14,12 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"copy", "functools", "warnings", f"{__spec__.parent}._decorators"}
+__lazy_modules__ = {"functools", "warnings", f"{__spec__.parent}._decorators"}
 
-import copy
 import functools
 import warnings
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, overload
 
 from ._decorators import Func
 
@@ -28,8 +27,19 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from ._typing import Python
+    from .environments import Environment
 
-__all__ = ["get", "reset", "session_decorator"]
+__all__ = [
+    "RegistryData",
+    "alias",
+    "get",
+    "get_registry",
+    "register_env",
+    "register_task",
+    "reset",
+    "session_decorator",
+    "validate_name",
+]
 
 
 def __dir__() -> list[str]:
@@ -38,11 +48,104 @@ def __dir__() -> list[str]:
 
 RawFunc = Callable[..., Any]
 
-_REGISTRY: dict[str, Func] = {}
+
+class RegistryData(NamedTuple):
+    """The full contents of the registry."""
+
+    #: Classic sessions and environments by name, in registration order.
+    entries: dict[str, Func | Environment]
+    #: The tasks of each environment.
+    tasks: dict[str, dict[str, Func]]
+    aliases: dict[str, tuple[str, ...]]
+
+
+_REGISTRY: dict[str, Func | Environment] = {}
+_TASKS: dict[str, dict[str, Func]] = {}
+_ALIASES: dict[str, tuple[str, ...]] = {}
 
 
 def reset() -> None:
     _REGISTRY.clear()
+    _TASKS.clear()
+    _ALIASES.clear()
+
+
+def get() -> dict[str, Func]:
+    """Return a shallow copy of the registered sessions.
+
+    Only includes classic sessions, for backward compatibility. Use
+    :func:`get_registry` for the full registry.
+    """
+    return {name: fn for name, fn in _REGISTRY.items() if isinstance(fn, Func)}
+
+
+def get_registry() -> RegistryData:
+    """Return a shallow copy of the full registry."""
+    return RegistryData(
+        entries=dict(_REGISTRY),
+        tasks={name: dict(tasks) for name, tasks in _TASKS.items()},
+        aliases=dict(_ALIASES),
+    )
+
+
+def validate_name(name: str, kind: str = "An environment") -> None:
+    """Reject names that would break ``env:task`` identifiers."""
+    if not name:
+        msg = f"{kind} name cannot be empty."
+        raise ValueError(msg)
+    for char in ":()":
+        if char in name:
+            msg = f"{kind} name cannot contain {char!r}: {name!r}"
+            raise ValueError(msg)
+
+
+def _check_global_name(name: str, kind: str) -> None:
+    if name in _REGISTRY:
+        what = "session" if isinstance(_REGISTRY[name], Func) else "environment"
+        msg = f"A {what} named {name!r} is already registered; cannot register {kind} {name!r}."
+        raise ValueError(msg)
+    if name in _ALIASES:
+        msg = f"An alias named {name!r} is already registered; cannot register {kind} {name!r}."
+        raise ValueError(msg)
+
+
+def register_env(environment: Environment) -> None:
+    """Register an environment."""
+    validate_name(environment.name)
+    _check_global_name(environment.name, "environment")
+    _REGISTRY[environment.name] = environment
+    _TASKS[environment.name] = {}
+
+
+def register_task(environment: Environment, task_name: str, fn: Func) -> None:
+    """Register a task under its environment."""
+    if _REGISTRY.get(environment.name) is not environment:
+        msg = f"The environment {environment.name!r} is not registered."
+        raise ValueError(msg)
+    tasks = _TASKS[environment.name]
+    if task_name in tasks:
+        msg = (
+            f"The task {task_name!r} is already registered in "
+            f"environment {environment.name!r}."
+        )
+        raise ValueError(msg)
+    tasks[task_name] = fn
+
+
+def alias(name: str, /, *targets: str) -> None:
+    """Register a global alias that expands to one or more sessions.
+
+    Args:
+        name: The alias name; shares a namespace with sessions and
+            environments.
+        targets: One or more session identifiers (e.g. ``"tooling:lint"``).
+    """
+    validate_name(name, "An alias")
+    if not targets:
+        msg = f"Alias {name!r} needs at least one target."
+        raise ValueError(msg)
+    _check_global_name(name, "alias")
+    _ALIASES[name] = targets
 
 
 @overload
@@ -123,6 +226,14 @@ def session_decorator(
 
     reg_name = name or func.__name__
 
+    if any(char in reg_name for char in ":()"):
+        msg = (
+            f"The session name {reg_name!r} contains characters used by "
+            "environment:task identifiers (':', '(', ')'); this will become "
+            "an error in a future version of nox."
+        )
+        warnings.warn(msg, FutureWarning, stacklevel=2)
+
     fn = Func(
         func,
         python,
@@ -136,6 +247,20 @@ def session_decorator(
         download_python=download_python,
         allow_parallel=allow_parallel,
     )
+
+    # Session names are not validated: they predate the env:task grammar.
+    if reg_name in _TASKS:
+        msg = (
+            f"An environment named {reg_name!r} is already registered; "
+            "sessions and environments share one namespace."
+        )
+        raise ValueError(msg)
+    if reg_name in _ALIASES:
+        msg = (
+            f"An alias named {reg_name!r} is already registered; "
+            "sessions and aliases share one namespace."
+        )
+        raise ValueError(msg)
     if reg_name in _REGISTRY:
         msg = (
             f"The session {reg_name!r} has already been registered; "
@@ -145,12 +270,3 @@ def session_decorator(
         warnings.warn(msg, FutureWarning, stacklevel=2)
     _REGISTRY[reg_name] = fn
     return fn
-
-
-def get() -> dict[str, Func]:
-    """Return a shallow copy of the registry.
-
-    This ensures that the registry is not accidentally modified by
-    calling code that retrieves a registry and mutates it.
-    """
-    return copy.copy(_REGISTRY)
