@@ -65,6 +65,10 @@ def session_decorator(
     requires: Sequence[str] | None = ...,
     download_python: Literal["auto", "never", "always"] | None = None,
     allow_parallel: bool | None = ...,
+    retries: int = ...,
+    retry_delay: float = ...,
+    retry_backoff: float = ...,
+    retry_on: Sequence[int] | None = ...,
 ) -> Callable[[RawFunc | Func], Func]: ...
 
 
@@ -83,6 +87,10 @@ def session_decorator(
     requires: Sequence[str] | None = None,
     download_python: Literal["auto", "never", "always"] | None = None,
     allow_parallel: bool | None = None,
+    retries: int = 0,
+    retry_delay: float = 0.0,
+    retry_backoff: float = 1.0,
+    retry_on: Sequence[int] | None = None,
 ) -> Func | Callable[[RawFunc | Func], Func]:
     """Designate the decorated function as a session."""
     # If `func` is provided, then this is the decorator call with the function
@@ -106,7 +114,21 @@ def session_decorator(
             requires=requires,
             download_python=download_python,
             allow_parallel=allow_parallel,
+            retries=retries,
+            retry_delay=retry_delay,
+            retry_backoff=retry_backoff,
+            retry_on=retry_on,
         )
+
+    if retries < 0:
+        msg = f"retries must be >= 0, got {retries}"
+        raise ValueError(msg)
+    if retry_delay < 0:
+        msg = f"retry_delay must be >= 0, got {retry_delay}"
+        raise ValueError(msg)
+    if retry_backoff < 1:
+        msg = f"retry_backoff must be >= 1, got {retry_backoff}"
+        raise ValueError(msg)
 
     if isinstance(func, Func):
         func = func.func
@@ -135,6 +157,10 @@ def session_decorator(
         requires=requires,
         download_python=download_python,
         allow_parallel=allow_parallel,
+        retries=retries,
+        retry_delay=retry_delay,
+        retry_backoff=retry_backoff,
+        retry_on=retry_on,
     )
     if reg_name in _REGISTRY:
         msg = (
