@@ -38,6 +38,11 @@ PYTHON_VERSION_NODOT = PYTHON_VERSION.replace(".", "")
 
 @pytest.fixture
 def makeconfig(tmp_path: Path) -> Callable[[str], str]:
+    # Without a project file, tox reports "package = skip" for every env.
+    tmp_path.joinpath("pyproject.toml").write_text(
+        '[project]\nname = "example"\nversion = "0.1"\n', encoding="utf-8"
+    )
+
     def makeconfig(toxini_content: str) -> str:
         tmp_path.joinpath("tox.ini").write_text(toxini_content, encoding="utf-8")
         old = Path.cwd().resolve()
@@ -113,6 +118,63 @@ def test_usedevelop(makeconfig: Callable[[str], str]) -> None:
 
     [testenv]
     usedevelop = True
+    """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent(
+            f"""
+    import nox
+
+
+    @nox.session(python='python{PYTHON_VERSION}')
+    def py{PYTHON_VERSION_NODOT}(session):
+        session.install('-e', '.')
+    """
+        ).lstrip()
+    )
+
+
+def test_skipsdist(makeconfig: Callable[[str], str]) -> None:
+    result = makeconfig(
+        textwrap.dedent(
+            f"""
+    [tox]
+    skipsdist = True
+    envlist = py{PYTHON_VERSION_NODOT}
+
+    [testenv]
+    deps = six
+    """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent(
+            f"""
+    import nox
+
+
+    @nox.session(python='python{PYTHON_VERSION}')
+    def py{PYTHON_VERSION_NODOT}(session):
+        session.install('six')
+    """
+        ).lstrip()
+    )
+
+
+def test_package_editable(makeconfig: Callable[[str], str]) -> None:
+    result = makeconfig(
+        textwrap.dedent(
+            f"""
+    [tox]
+    envlist = py{PYTHON_VERSION_NODOT}
+
+    [testenv]
+    package = editable
     """
         )
     )
