@@ -358,6 +358,11 @@ class TestToArgv:
             ["--default-venv-backend", "uv", "--download-python", "never"],
             ["--force-python", "3.13", "--stop-on-first-error"],
             ["-j", "2", "--allow-parallel"],
+            ["--python"],
+            ["--extra-python"],
+            ["--force-python"],
+            ["--session"],
+            ["--tags"],
             ["-s", "test", "--", "-k", "foo", "--flag"],
         ],
     )
@@ -380,6 +385,36 @@ class TestToArgv:
         # The alias state is forwarded through the canonical options instead.
         assert "--no-install" in argv
         assert argv[argv.index("--reuse-venv") :][:2] == ["--reuse-venv", "yes"]
+
+    @pytest.mark.parametrize("value", [[], ()])
+    def test_empty_list_overrides_noxfile(self, value: list[str] | tuple[()]) -> None:
+        config = _options.NoxConfig(pythons=value)
+        noxfile_config = _options.NoxfileOptions()
+        noxfile_config.pythons = ["3.99"]
+
+        rebuilt = _options.options.parse_args(to_argv(config))
+        _merge.merge_noxfile_options(rebuilt, noxfile_config)
+
+        assert rebuilt.pythons == []
+
+    @pytest.mark.parametrize(
+        ("flag", "field", "env_var"),
+        [
+            ("--python", "pythons", "NOXPYTHON"),
+            ("--extra-python", "extra_pythons", "NOXEXTRAPYTHON"),
+            ("--force-python", "force_pythons", "NOXFORCEPYTHON"),
+            ("--session", "sessions", "NOXSESSION"),
+        ],
+    )
+    def test_empty_list_overrides_environment(
+        self, monkeypatch: pytest.MonkeyPatch, flag: str, field: str, env_var: str
+    ) -> None:
+        monkeypatch.setenv(env_var, "unwanted")
+        config = _options.options.parse_args([flag])
+
+        rebuilt = _options.options.parse_args(to_argv(config))
+
+        assert getattr(rebuilt, field) == []
 
     def test_flag_pairs_always_emitted(self) -> None:
         """Environment-dependent pair defaults must be pinned for children."""

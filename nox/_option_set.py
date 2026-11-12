@@ -222,7 +222,11 @@ def to_argv(config: OptionsBase) -> list[str]:
             if value:
                 argv.append(flag)
         elif isinstance(value, (list, tuple)):
-            if value:
+            if (
+                value
+                or config.provenance(field.name) is not Source.DEFAULT
+                or value != getattr(defaults, field.name)
+            ):
                 argv += [flag, *(str(v) for v in value)]
         elif value is not None:
             argv += [flag, str(value)]
