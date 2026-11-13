@@ -169,6 +169,30 @@ class TestOptions:
             options.default_venv_backend = None  # type: ignore[assignment]
 
 
+class TestParallelOption:
+    @pytest.mark.parametrize("args", [["-j"], ["--parallel"]])
+    def test_bare_flag_means_auto(self, args: list[str]) -> None:
+        """``-j`` / ``--parallel`` with no value means ``auto`` (#1218)."""
+        config = _options.options.parse_args(args)
+        assert config.parallel == _options.parse_parallel("auto")
+
+    def test_bare_flag_does_not_swallow_next_option(self) -> None:
+        config = _options.options.parse_args(["-j", "-s", "a"])
+        assert config.parallel == _options.parse_parallel("auto")
+        assert list(config.sessions or []) == ["a"]
+
+    def test_explicit_value_still_works(self) -> None:
+        assert _options.options.parse_args(["-j", "2"]).parallel == 2
+        assert (
+            _options.options.parse_args(["--parallel", "auto"]).parallel
+            == _options.parse_parallel("auto")
+        )
+
+    def test_invalid_value_is_a_clean_error(self) -> None:
+        with pytest.raises(SystemExit):
+            _options.options.parse_args(["-j", "0"])
+
+
 class TestAnalyzeType:
     @pytest.mark.parametrize(
         ("tp", "kind"),
@@ -358,6 +382,8 @@ class TestToArgv:
             ["--default-venv-backend", "uv", "--download-python", "never"],
             ["--force-python", "3.13", "--stop-on-first-error"],
             ["-j", "2", "--allow-parallel"],
+            ["-j"],
+            ["--parallel"],
             ["--python"],
             ["--extra-python"],
             ["--force-python"],

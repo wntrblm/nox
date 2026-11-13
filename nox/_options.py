@@ -283,10 +283,16 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--parallel",
             group="execution",
             env_var="NOX_PARALLEL",
-            argparse_kwargs={"type": _parallel_arg, "metavar": "N"},
+            argparse_kwargs={
+                "type": _parallel_arg,
+                "metavar": "N",
+                "nargs": "?",
+                "const": "auto",
+            },
             help=(
                 "Run independent sessions in parallel, each in its own subprocess."
-                " Pass a positive integer or ``'auto'`` (one per available CPU)."
+                " Pass a positive integer or ``'auto'`` (one per available CPU);"
+                " with no value, ``--parallel`` means ``'auto'``."
                 " Only sessions that allow parallel execution (``allow_parallel=True``"
                 " or ``--allow-parallel``) run concurrently; other sessions run"
                 " one at a time. Sessions are ordered by their ``requires=``"
