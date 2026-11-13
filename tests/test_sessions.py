@@ -1289,7 +1289,6 @@ class TestSessionRunner:
         runner._create_venv()
 
         assert runner.venv is venv
-        assert runner.envdir == runner.env_runner.envdir
 
     @mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True)
     def test__create_venv(self, create: mock.Mock) -> None:

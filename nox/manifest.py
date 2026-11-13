@@ -337,7 +337,7 @@ class Manifest:
 
     def _expand_python(
         self, python: Python, venv_backend: str | None, *, multi: bool = False
-    ) -> tuple[Python, Python]:
+    ) -> tuple[Python, Iterable[str] | None]:
         """Apply the backend and the extra/forced pythons to ``python``.
 
         Returns the expanded python (a list gives one instance each), and the
@@ -349,7 +349,7 @@ class Manifest:
             or venv_backend
             or self._config.default_venv_backend
         )
-        ignored: Python = None
+        ignored: Iterable[str] | None = None
         if backend == "none" and isinstance(python, (list, tuple, set)):
             ignored = python
             python = False
