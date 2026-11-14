@@ -215,6 +215,41 @@ def test_python_range_multiple_lower_bounds() -> None:
     ) == ["3.10", "3.11", "3.12"]
 
 
+@pytest.mark.parametrize("max_version", ["2.7", "2.6", "2"])
+def test_python_range_python2_max_version(max_version: str) -> None:
+    # An upper bound below Python 3 cannot be satisfied by any Python 3 version,
+    # so an empty list must be returned (previously "2.7" gave 3.0..3.7 because
+    # only the minor version was read).
+    pyproject = {"project": {"requires-python": ">=2.7"}}
+
+    assert python_versions(pyproject, max_version=max_version) == []
+
+
+@pytest.mark.parametrize("max_version", ["3.14rc1", "3.14a2", "3.14.0b1", "3.14.1"])
+def test_python_range_prerelease_max_version(max_version: str) -> None:
+    # Pre-release, alpha, beta, rc, and micro version strings in max_version must
+    # be parsed correctly via packaging.version.Version without crashing on int conversion.
+    pyproject = {"project": {"requires-python": ">=3.12"}}
+
+    assert python_versions(pyproject, max_version=max_version) == [
+        "3.12",
+        "3.13",
+        "3.14",
+    ]
+
+
+def test_python_range_free_threaded_max_version() -> None:
+    # A free-threaded max_version (like "3.14t") should be accepted and enable
+    # free-threaded version output.
+    pyproject = {"project": {"requires-python": ">=3.13"}}
+
+    assert python_versions(pyproject, max_version="3.14t") == [
+        "3.13",
+        "3.14",
+        "3.14t",
+    ]
+
+
 def test_dependency_groups() -> None:
     example = {
         "dependency-groups": {

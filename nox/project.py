@@ -159,7 +159,7 @@ def python_versions(
     """
     classifiers = pyproject.get("project", {}).get("classifiers", [])
     if free_threaded is None:
-        free_threaded = any(
+        free_threaded = (max_version is not None and max_version.endswith("t")) or any(
             c.startswith("Programming Language :: Python :: Free Threading")
             for c in classifiers
         )
@@ -193,7 +193,17 @@ def python_versions(
         raise ValueError(msg)
     min_version = max(lower_bounds)
 
-    max_minor_version = int(max_version.split(".")[1]) if "." in max_version else 0
+    clean_max_version = max_version.removesuffix("t")
+    max_v_release = packaging.version.Version(clean_max_version).release
+    max_version_tuple = (
+        max_v_release[0],
+        max_v_release[1] if len(max_v_release) > 1 else 0,
+    )
+
+    if max_version_tuple < (3, 0):
+        return []
+
+    max_minor_version = max_version_tuple[1]
 
     versions = [f"3.{m}" for m in range(max_minor_version + 1) if (3, m) >= min_version]
     return _with_free_threaded(versions, free_threaded=free_threaded)
