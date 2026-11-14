@@ -222,7 +222,7 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
                 logger.error(exc.args[0])
                 return 3
 
-    if not manifest and not global_config.list_sessions:
+    if not manifest and not (global_config.list_sessions or global_config.list_tags):
         print("No sessions selected. Please select a session with -s <session name>.\n")
         _produce_listing(manifest, global_config)
         return 0
@@ -230,14 +230,18 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
     # Filter by python interpreter versions.
     if global_config.pythons:
         manifest.filter_by_python_interpreter(global_config.pythons)
-        if not manifest and not global_config.list_sessions:
+        if not manifest and not (
+            global_config.list_sessions or global_config.list_tags
+        ):
             logger.error("Python version selection caused no sessions to be selected.")
             return 3
 
     # Filter by tags.
     if global_config.tags is not None:
         manifest.filter_by_tags(global_config.tags)
-        if not manifest and not global_config.list_sessions:
+        if not manifest and not (
+            global_config.list_sessions or global_config.list_tags
+        ):
             logger.error("Tag selection caused no sessions to be selected.")
             return 3
 
@@ -256,7 +260,7 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
         # (which is an error condition later).
         manifest.filter_by_keywords(global_config.keywords)
 
-    if not manifest and not global_config.list_sessions:
+    if not manifest and not (global_config.list_sessions or global_config.list_tags):
         logger.error("No sessions selected after filtering by keyword.")
         return 3
 
@@ -314,6 +318,39 @@ def _produce_listing(manifest: Manifest, global_config: NoxConfig) -> None:
     )
 
 
+def _produce_tag_listing(manifest: Manifest, global_config: NoxConfig) -> None:
+    """List sessions under every tag they belong to."""
+    sessions_by_tag: dict[str, list[tuple[str, str | None, bool]]] = {}
+    for session, selected in manifest.list_all_sessions():
+        for tag in dict.fromkeys(session.tags):
+            sessions_by_tag.setdefault(tag, []).append(
+                (session.friendly_name, session.description, selected)
+            )
+
+    if not sessions_by_tag:
+        print("No tagged sessions found.")
+        return
+
+    reset = parse_colors("reset") if global_config.color else ""
+    selected_color = parse_colors("cyan") if global_config.color else ""
+    skipped_color = parse_colors("white") if global_config.color else ""
+
+    print(f"Tags defined in {global_config.noxfile}:\n")
+    for tag, sessions in sorted(sessions_by_tag.items()):
+        print(f"{tag}:")
+        for name, description, selected in sessions:
+            marker = "*" if selected else "-"
+            color = selected_color if selected else skipped_color
+            summary = f" -> {description}" if description else ""
+            print(f"  {marker} {color}{name}{reset}{summary}")
+        print()
+
+    print(
+        f"sessions marked with {selected_color}*{reset} are selected, sessions marked"
+        f" with {skipped_color}-{reset} are skipped."
+    )
+
+
 def _produce_json_listing(manifest: Manifest, global_config: NoxConfig) -> None:  # noqa: ARG001
     report = []
     for session, selected in manifest.list_all_sessions():
@@ -342,7 +379,9 @@ def honor_list_request(manifest: Manifest, global_config: NoxConfig) -> Manifest
         Union[~.Manifest,int]: ``0`` if a listing is all that is requested,
             the manifest otherwise (to be sent to the next task).
     """
-    if not (global_config.list_sessions or global_config.json):
+    if not (
+        global_config.list_sessions or global_config.list_tags or global_config.json
+    ):
         return manifest
 
     # JSON output requires list sessions also be specified
@@ -352,6 +391,8 @@ def honor_list_request(manifest: Manifest, global_config: NoxConfig) -> Manifest
 
     if global_config.json:
         _produce_json_listing(manifest, global_config)
+    elif global_config.list_tags:
+        _produce_tag_listing(manifest, global_config)
     else:
         _produce_listing(manifest, global_config)
 

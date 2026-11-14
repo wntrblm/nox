@@ -35,6 +35,15 @@ get json output for the selected session. Fields include ``session`` (pretty
 name), ``name``, ``description``, ``python`` (null if not specified), ``tags``,
 and ``call_spec`` (for parametrized sessions).
 
+To list sessions grouped by tag, without running them, use ``--list-tags``:
+
+.. code-block:: console
+
+    nox --list-tags
+
+Sessions with multiple tags appear under each of them. As in ``nox --list``,
+``*`` marks selected sessions and ``-`` marks skipped sessions.
+
 To get more information about one particular session at a time, you can use ``--usage``:
 
 .. code-block:: console
