@@ -415,6 +415,33 @@ def test_run_script_mode_pip_resolution(
     assert script_mode_exec[0][0] == [*expected, "nox", "cowsay"]
 
 
+def test_run_script_mode_nested_envdir(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    script_mode_exec: list[tuple[list[str], dict[str, str]]],
+) -> None:
+    envdir = tmp_path / "build" / ".nox"
+    fake_venv = make_fake_script_venv()
+    monkeypatch.setattr(
+        nox.virtualenv, "get_virtualenv", lambda *_args, **_kwargs: fake_venv
+    )
+
+    with pytest.raises(SystemExit) as excinfo:
+        nox._cli.run_script_mode(
+            "noxfile.py",
+            envdir,
+            reuse=False,
+            dependencies=["nox"],
+            venv_backend="uv",
+            download_python="never",
+            requires_python=None,
+        )
+
+    assert excinfo.value.code == 0
+    assert envdir.is_dir()
+    assert len(script_mode_exec) == 2
+
+
 @pytest.mark.parametrize(("is_sandboxed", "backend"), [(True, "uv"), (False, "none")])
 def test_run_script_mode_pythonpath_isolation(
     monkeypatch: pytest.MonkeyPatch,
