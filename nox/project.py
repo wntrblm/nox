@@ -135,7 +135,9 @@ def python_versions(
     will read the trove classifiers (recommended). With a ``max_version``, it
     will read the requires-python setting for a lower bound, and will use the
     value of ``max_version`` as the upper bound. (Reminder: you should never
-    set an upper bound in ``requires-python``).
+    set an upper bound in ``requires-python``). ``max_version`` must be a
+    Python 3 version; a micro or pre-release part (like ``"3.14rc1"``) is
+    ignored.
 
     Classifier-derived versions are sorted by default. Set ``sort=False`` to
     preserve classifier order.
@@ -143,7 +145,8 @@ def python_versions(
     If the project has a ``Programming Language :: Python :: Free Threading``
     classifier, free-threaded versions (like ``"3.14t"``) are appended for
     every version from 3.14 on. 3.13t is not included, as it was experimental.
-    Set ``free_threaded`` to force this on or off.
+    A ``max_version`` with a ``t`` suffix (like ``"3.15t"``) also turns this
+    on. Set ``free_threaded`` to force this on or off.
 
     Example:
 
@@ -159,7 +162,7 @@ def python_versions(
     """
     classifiers = pyproject.get("project", {}).get("classifiers", [])
     if free_threaded is None:
-        free_threaded = any(
+        free_threaded = (max_version or "").endswith("t") or any(
             c.startswith("Programming Language :: Python :: Free Threading")
             for c in classifiers
         )
@@ -193,7 +196,19 @@ def python_versions(
         raise ValueError(msg)
     min_version = max(lower_bounds)
 
-    max_minor_version = int(max_version.split(".")[1]) if "." in max_version else 0
+    max_version_free_threaded = max_version.endswith("t")
+    try:
+        max_release = packaging.version.Version(max_version.removesuffix("t")).release
+    except packaging.version.InvalidVersion:
+        msg = f"Invalid max_version {max_version!r}"
+        raise ValueError(msg) from None
+    major, max_minor_version = (*max_release, 0)[:2]
+    if major != 3:
+        msg = f"max_version must be a Python 3 version, got {max_version!r}"
+        raise ValueError(msg)
+    if max_version_free_threaded and max_minor_version < 14:
+        msg = f"A free-threaded max_version must be 3.14 or newer, got {max_version!r}"
+        raise ValueError(msg)
 
     versions = [f"3.{m}" for m in range(max_minor_version + 1) if (3, m) >= min_version]
     return _with_free_threaded(versions, free_threaded=free_threaded)

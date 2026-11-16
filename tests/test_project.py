@@ -215,6 +215,61 @@ def test_python_range_multiple_lower_bounds() -> None:
     ) == ["3.10", "3.11", "3.12"]
 
 
+@pytest.mark.parametrize("max_version", ["2.7", "2", "4", "4.0", "4.1"])
+def test_python_range_max_version_not_python3(max_version: str) -> None:
+    pyproject = {"project": {"requires-python": ">=2.7"}}
+
+    with pytest.raises(ValueError, match="max_version must be a Python 3"):
+        python_versions(pyproject, max_version=max_version)
+
+
+@pytest.mark.parametrize("max_version", ["3.14rc1", "3.14a2", "3.14.0b1", "3.14.1"])
+def test_python_range_prerelease_max_version(max_version: str) -> None:
+    pyproject = {"project": {"requires-python": ">=3.12"}}
+
+    assert python_versions(pyproject, max_version=max_version) == [
+        "3.12",
+        "3.13",
+        "3.14",
+    ]
+
+
+def test_python_range_free_threaded_max_version() -> None:
+    pyproject = {"project": {"requires-python": ">=3.13"}}
+
+    assert python_versions(pyproject, max_version="3.15t") == [
+        "3.13",
+        "3.14",
+        "3.15",
+        "3.14t",
+        "3.15t",
+    ]
+
+
+def test_python_range_free_threaded_max_version_override() -> None:
+    pyproject = {"project": {"requires-python": ">=3.13"}}
+
+    assert python_versions(pyproject, max_version="3.14t", free_threaded=False) == [
+        "3.13",
+        "3.14",
+    ]
+
+
+def test_python_range_free_threaded_max_version_too_old() -> None:
+    pyproject = {"project": {"requires-python": ">=3.12"}}
+
+    with pytest.raises(ValueError, match=r"3\.14 or newer"):
+        python_versions(pyproject, max_version="3.13t")
+
+
+@pytest.mark.parametrize("max_version", ["3.14T", "3.14tt", "three"])
+def test_python_range_invalid_max_version(max_version: str) -> None:
+    pyproject = {"project": {"requires-python": ">=3.12"}}
+
+    with pytest.raises(ValueError, match="Invalid max_version"):
+        python_versions(pyproject, max_version=max_version)
+
+
 def test_dependency_groups() -> None:
     example = {
         "dependency-groups": {
