@@ -284,7 +284,7 @@ def run_script_mode(
     download_python: Literal["auto", "never", "always"],
     requires_python: str | None,
 ) -> NoReturn:
-    envdir.mkdir(exist_ok=True)
+    envdir.mkdir(parents=True, exist_ok=True)
     noxenv = envdir.joinpath("_nox_script_mode")
 
     venv = _make_env(
