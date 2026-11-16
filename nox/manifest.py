@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
 
     from nox._options import NoxConfig
+    from nox._typing import Python
 
 __all__ = ["WARN_PYTHONS_IGNORED", "Manifest", "keyword_match"]
 
@@ -312,42 +313,18 @@ class Manifest:
             Sequence[~nox.session.Session]: A sequence of Session objects
                 bound to this manifest and configuration.
         """
-        sessions = []
-
-        # If the backend is "none", we won't parametrize `python`.
-        backend = (
-            self._config.force_venv_backend
-            or func.venv_backend
-            or self._config.default_venv_backend
+        func.python, ignored = self._expand_python(
+            func.python, func.venv_backend, multi=multi
         )
-        if backend == "none" and isinstance(func.python, (list, tuple, set)):
+        if ignored is not None:
             # we can not log a warning here since the session is maybe deselected.
             # instead let's set a flag, to warn later when session is actually run.
-            func.should_warn[WARN_PYTHONS_IGNORED] = func.python
-            func.python = False
-
-        if self._config.extra_pythons:
-            # If extra python is provided, expand the func.python list to
-            # include additional python interpreters
-            extra_pythons: Sequence[str] = self._config.extra_pythons
-            if isinstance(func.python, (list, tuple, set)):
-                func.python = _unique_list(*func.python, *extra_pythons)
-            elif not multi and func.python:
-                # If this is multi, but there is only a single interpreter, it
-                # is the reentrant case. The extra_python interpreter shouldn't
-                # be added in that case. If func.python is False, the session
-                # has no backend; if None, it uses the same interpreter as Nox.
-                # Otherwise, add the extra specified python.
-                assert isinstance(func.python, str)
-                func.python = _unique_list(func.python, *extra_pythons)
-            elif not func.python and self._config.force_pythons:
-                # If a python is forced by the user, but the underlying function
-                # has no version parametrised, add it as sole occupant to func.python
-                func.python = _unique_list(*extra_pythons)
+            func.should_warn[WARN_PYTHONS_IGNORED] = ignored
 
         # If the func has the python attribute set to a list, we'll need
         # to expand them. Duplicates would make identical sessions.
         if isinstance(func.python, (list, tuple, set)):
+            sessions = []
             for python in _unique_list(*func.python):
                 single_func = func.copy()
                 single_func.python = python
@@ -355,14 +332,74 @@ class Manifest:
 
             return sessions
 
+        instance_name = f"{name}-{func.python}" if func.python else None
+        return self._make_runners(name, instance_name, func, multi=multi)
+
+    def _expand_python(
+        self, python: Python, venv_backend: str | None, *, multi: bool = False
+    ) -> tuple[Python, Iterable[str] | None]:
+        """Apply the backend and the extra/forced pythons to ``python``.
+
+        Returns the expanded python (a list gives one instance each), and the
+        pythons that are ignored because the backend is "none", if any.
+        """
+        # If the backend is "none", we won't parametrize `python`.
+        backend = (
+            self._config.force_venv_backend
+            or venv_backend
+            or self._config.default_venv_backend
+        )
+        ignored: Iterable[str] | None = None
+        if backend == "none" and isinstance(python, (list, tuple, set)):
+            ignored = python
+            python = False
+
+        if self._config.extra_pythons:
+            # If extra python is provided, expand the python list to
+            # include additional python interpreters
+            extra_pythons: Sequence[str] = self._config.extra_pythons
+            if isinstance(python, (list, tuple, set)):
+                python = _unique_list(*python, *extra_pythons)
+            elif not multi and python:
+                # If this is multi, but there is only a single interpreter, it
+                # is the reentrant case. The extra_python interpreter shouldn't
+                # be added in that case. If python is False, the session
+                # has no backend; if None, it uses the same interpreter as Nox.
+                # Otherwise, add the extra specified python.
+                assert isinstance(python, str)
+                python = _unique_list(python, *extra_pythons)
+            elif not python and self._config.force_pythons:
+                # If a python is forced by the user, but the underlying function
+                # has no version parametrised, add it as sole occupant.
+                python = _unique_list(*extra_pythons)
+
+        return python, ignored
+
+    def _make_runners(
+        self,
+        name: str,
+        instance_name: str | None,
+        func: Func,
+        *,
+        multi: bool,
+    ) -> list[SessionRunner]:
+        """Create the runner(s) for a function with one interpreter.
+
+        Args:
+            name: The session name.
+            instance_name: The name with the interpreter, if it has one.
+            func: The session function.
+            multi: Whether the function is a member of a set of sessions
+                with different interpreters.
+        """
         # Simple case: If this function is not parametrized, then make
         # a simple session.
         if not hasattr(func, "parametrize"):
             long_names = []
             if not multi:
                 long_names.append(name)
-            if func.python:
-                long_names.append(f"{name}-{func.python}")
+            if instance_name:
+                long_names.append(instance_name)
 
             return [
                 SessionRunner(name, long_names, func, self._config, self, multi=multi)
@@ -370,8 +407,8 @@ class Manifest:
 
         # Since this function is parametrized, we need to add a distinct
         # session for each permutation.
-        parametrize = func.parametrize
-        calls = Call.generate_calls(func, parametrize)
+        sessions = []
+        calls = Call.generate_calls(func, func.parametrize)
         for call in calls:
             long_names = []
             if not multi or (
@@ -380,10 +417,10 @@ class Manifest:
             ):
                 long_names.append(f"{name}{call.session_signature}")
 
-            if func.python:
-                long_names.append(f"{name}-{func.python}{call.session_signature}")
+            if instance_name:
+                long_names.append(f"{instance_name}{call.session_signature}")
                 # Ensure that specifying session-python will run all parameterizations.
-                long_names.append(f"{name}-{func.python}")
+                long_names.append(instance_name)
 
             sessions.append(
                 SessionRunner(name, long_names, call, self._config, self, multi=multi)
