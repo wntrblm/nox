@@ -535,6 +535,16 @@ By either passing ``--verbose`` to Nox or setting ``nox.options.verbose = True``
 run is shown, regardless of the silent argument.
 
 
+Adding timestamps to log messages
+---------------------------------
+
+To add a timestamp to each of Nox's log messages, use ``--add-timestamp`` (or ``-ts``):
+
+.. code-block:: console
+
+    nox --add-timestamp
+
+
 .. _opt-report:
 
 
