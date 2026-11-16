@@ -525,6 +525,7 @@ def create_report(
             },
             report_file,
             indent=2,
+            default=str,
         )
 
     # Return back the results passed to this task.

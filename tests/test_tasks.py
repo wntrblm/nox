@@ -889,8 +889,30 @@ def test_create_report() -> None:
                 },
                 mock.ANY,
                 indent=2,
+                default=str,
             )
         open_.assert_called_once_with("/path/to/report", "w", encoding="utf-8")
+
+
+def test_create_report_path_args(tmp_path: Path) -> None:
+    report = tmp_path / "report.json"
+    config = _options.options.namespace(report=str(report))
+    results = [
+        sessions.Result(
+            session=typing.cast(
+                "sessions.SessionRunner",
+                argparse.Namespace(
+                    signatures=["foosig"],
+                    name="foo",
+                    func=argparse.Namespace(call_spec={"src": Path("docs")}),
+                ),
+            ),
+            status=sessions.Status.SUCCESS,
+        )
+    ]
+    tasks.create_report(results, config)
+    data = json.loads(report.read_text(encoding="utf-8"))
+    assert data["sessions"][0]["args"] == {"src": "docs"}
 
 
 def test_honor_usage_request_noop() -> None:
