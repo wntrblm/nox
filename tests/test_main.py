@@ -519,6 +519,42 @@ def run_nox(
     return _run_nox
 
 
+def test_main_list_tags(
+    run_nox: Callable[..., tuple[int, str, str]],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(nox, "options", nox._options.NoxfileOptions())
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(
+        '''import nox
+
+@nox.session(tags=["lint", "check"], venv_backend="none")
+def lint(session):
+    """Run lint."""
+    raise AssertionError("List mode must not execute sessions")
+
+@nox.session(tags=["format", "check"], default=False, venv_backend="none")
+def format(session):
+    """Run formatter."""
+    raise AssertionError("List mode must not execute sessions")
+
+@nox.session(venv_backend="none")
+def untagged(session):
+    raise AssertionError("List mode must not execute sessions")
+''',
+        encoding="utf-8",
+    )
+    returncode, stdout, _ = run_nox("-f", str(noxfile), "--list-tags", "--nocolor")
+    assert returncode == 0
+    assert "check:" in stdout
+    assert "format:" in stdout
+    assert "lint:" in stdout
+    assert "  * lint -> Run lint." in stdout
+    assert "  - format -> Run formatter." in stdout
+    assert "untagged" not in stdout
+
+
 @pytest.mark.parametrize(
     ("settings", "session_options", "selection"),
     [
