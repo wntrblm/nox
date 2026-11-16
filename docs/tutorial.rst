@@ -410,7 +410,8 @@ You can also request sessions be run before your session runs. This is done with
 
 The required sessions will be stably topologically sorted and run. Parametrized
 sessions are supported. You can also get the current Python version with
-``{python}``, though arbitrary parametrizations are not supported.
+``{python}``, and any ``@nox.parametrize`` argument of the session by name,
+such as ``{django!r}``.
 
 
 .. code-block:: python

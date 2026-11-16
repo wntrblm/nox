@@ -127,17 +127,18 @@ class Func:
     def requires(self, value: Sequence[str]) -> None:
         self._requires = list(value)
 
+    def _format_fields(self) -> dict[str, Any]:
+        return {"python": self.python} if isinstance(self.python, str) else {}
+
     def format_dependency(self, dependency: str) -> str:
-        if isinstance(self.python, (bool, str)) or self.python is None:
-            formatted = dependency.format(python=self.python, py=self.python)
-            if (
-                self.python is None or isinstance(self.python, bool)
-            ) and formatted != dependency:
-                msg = "Cannot parametrize requires with {python} when python is None or a bool."
-                raise ValueError(msg)
-            return formatted
-        msg = "The requires of a not-yet-parametrized session cannot be parametrized."  # pragma: no cover
-        raise TypeError(msg)  # pragma: no cover
+        fields = self._format_fields()
+        if "python" in fields:
+            fields.setdefault("py", fields["python"])
+        try:
+            return dependency.format(**fields)
+        except KeyError as exc:
+            msg = f"Cannot parametrize requires {dependency!r}: {exc.args[0]!r} is not a parametrize argument, and only a single, non-None python can be used as {{python}}."
+            raise ValueError(msg) from None
 
 
 class Call(Func):
@@ -169,7 +170,7 @@ class Call(Func):
             func.should_warn,
             func.tags + param_spec.tags,
             default=func.default,
-            requires=func.requires,
+            requires=func._requires,
             download_python=func.download_python,
             allow_parallel=func.allow_parallel,
         )
@@ -178,6 +179,9 @@ class Call(Func):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r}, call_spec={self.call_spec!r}, session_signature={self.session_signature!r})"
+
+    def _format_fields(self) -> dict[str, Any]:
+        return {**super()._format_fields(), **self.call_spec}
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         kwargs.update(self.call_spec)
