@@ -230,8 +230,10 @@ def check_url_dependency(dep_url: str, dist: importlib.metadata.Distribution) ->
 
     dep_purl = urllib.parse.urlparse(dep_url)
 
-    if hasattr(origin, "requested_revision"):
-        origin_purl = urllib.parse.urlparse(f"{origin.url}@{origin.requested_revision}")
+    vcs_info = getattr(origin, "vcs_info", None)
+    requested_revision = getattr(vcs_info, "requested_revision", None)
+    if requested_revision is not None:
+        origin_purl = urllib.parse.urlparse(f"{origin.url}@{requested_revision}")
     else:
         origin_purl = urllib.parse.urlparse(origin.url)
 
