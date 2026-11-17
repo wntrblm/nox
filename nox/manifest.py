@@ -493,9 +493,16 @@ def _normalized_session_match(session_name: str, session: SessionRunner) -> bool
 def _normalize_arg(arg: str) -> str:
     """Normalize arg for comparison."""
     try:
-        return str(ast.dump(ast.parse(arg)))
+        tree = ast.parse(arg)
     except (TypeError, SyntaxError):
         return arg
+    # A session name like ``tests-3.10`` parses as ``tests - 3.10``, and the
+    # float ``3.10`` is the same as ``3.1``. Keep the number as it was written
+    # so that ``tests-3.1`` does not match ``tests-3.10``.
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, float):
+            node.value = ("float", ast.get_source_segment(arg, node))
+    return str(ast.dump(tree))
 
 
 _null_session_func = Func(_null_session_func_, python=False)
