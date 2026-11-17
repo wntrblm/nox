@@ -199,7 +199,7 @@ class Session:
     @property
     def env_dir(self) -> pathlib.Path:
         """The path to the environment of this session."""
-        return pathlib.Path(self._runner.envdir)
+        return self._in_noxfile_dir(self._runner.envdir)
 
     @property
     def posargs(self) -> list[str]:
@@ -244,7 +244,7 @@ class Session:
 
     def create_tmp(self) -> str:
         """Create, and return, a temporary directory."""
-        tmpdir = os.path.join(self._runner.envdir, "tmp")
+        tmpdir = os.fspath(self._in_noxfile_dir(self._runner.envdir, "tmp"))
         os.makedirs(tmpdir, exist_ok=True)
         self.env["TMPDIR"] = os.path.abspath(tmpdir)
         return tmpdir
@@ -252,9 +252,21 @@ class Session:
     @property
     def cache_dir(self) -> pathlib.Path:
         """Create and return a 'shared cache' directory to be used across sessions."""
-        path = pathlib.Path(self._runner.global_config.envdir).joinpath(".cache")
+        path = self._in_noxfile_dir(self._runner.global_config.envdir, ".cache")
         path.mkdir(parents=True, exist_ok=True)
         return path
+
+    def _in_noxfile_dir(self, *parts: str | os.PathLike[str]) -> pathlib.Path:
+        """Resolve a path the way it was resolved when the session started.
+
+        Sessions start in the Noxfile's directory, so a relative ``--envdir``
+        (``.nox`` by default) lives there. Anchoring to it rather than to the
+        current directory keeps these paths right after :meth:`chdir`.
+        """
+        noxfile_dir = os.path.realpath(
+            os.path.dirname(self._runner.global_config.noxfile)
+        )
+        return pathlib.Path(noxfile_dir, *parts)
 
     @property
     def interactive(self) -> bool:

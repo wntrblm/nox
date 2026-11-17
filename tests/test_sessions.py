@@ -197,6 +197,22 @@ class TestSession:
             assert cache_dir == Path(runner.global_config.envdir).joinpath(".cache")
             assert cache_dir.is_dir()
 
+    def test_envdir_paths_after_chdir(self, tmp_path: Path) -> None:
+        session, runner = self.make_session_and_runner()
+        runner.global_config.noxfile = str(tmp_path / "noxfile.py")
+        runner.global_config.envdir = ".nox"
+        docs = tmp_path / "docs"
+        docs.mkdir()
+        envdir = tmp_path.resolve() / ".nox"
+
+        with session.chdir(docs):
+            assert session.env_dir == envdir / "test"
+            assert session.cache_dir == envdir / ".cache"
+            assert session.create_tmp() == os.fspath(envdir / "test" / "tmp")
+            assert session.env["TMPDIR"] == os.fspath(envdir / "test" / "tmp")
+
+        assert not (docs / ".nox").exists()
+
     def test_no_bin_paths(self) -> None:
         session, runner = self.make_session_and_runner()
 
