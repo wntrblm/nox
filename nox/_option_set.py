@@ -283,6 +283,7 @@ class Options(Generic[ConfigT]):
             kwargs["action"] = "store_true"
         elif kind == "list":
             kwargs["nargs"] = "*"
+            kwargs["action"] = "extend"
         if choices:
             kwargs["choices"] = list(choices)
         kwargs.update(option.argparse_kwargs)
