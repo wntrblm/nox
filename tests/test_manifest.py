@@ -74,6 +74,17 @@ def test__normalized_session_match() -> None:
     assert _normalized_session_match("test(foo='bar')", session_mock)
 
 
+def test__normalized_session_match_python_version() -> None:
+    session_mock = mock.MagicMock()
+    session_mock.name = "tests"
+    session_mock.signatures = ["tests-3.10"]
+    assert _normalized_session_match("tests-3.10", session_mock)
+    assert not _normalized_session_match("tests-3.1", session_mock)
+
+    session_mock.signatures = ["tests-3.1"]
+    assert not _normalized_session_match("tests-3.10", session_mock)
+
+
 def test_init() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
