@@ -501,7 +501,7 @@ def _normalize_arg(arg: str) -> str:
     # so that ``tests-3.1`` does not match ``tests-3.10``.
     for node in ast.walk(tree):
         if isinstance(node, ast.Constant) and isinstance(node.value, float):
-            node.value = ("float", ast.get_source_segment(arg, node))
+            node.value = f"float:{ast.get_source_segment(arg, node)}"
     return str(ast.dump(tree))
 
 
