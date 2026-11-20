@@ -271,7 +271,7 @@ class NoxfileOptions(_option_set.OptionsBase):
             "--keywords",
             group="sessions",
             completer=_completers.empty_completer,
-            help="Only run sessions that match the given expression.",
+            help="Only run sessions matching these keywords (combine with and, or, not).",
         ),
     )
     parallel: int | None = attrs.field(

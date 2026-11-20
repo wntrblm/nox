@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 __lazy_modules__ = {
-    "ast",
     "colorlog.escape_codes",
     "importlib.util",
     "json",
@@ -26,7 +25,6 @@ __lazy_modules__ = {
     "nox.manifest",
 }
 
-import ast
 import importlib.util
 import json
 import os
@@ -244,17 +242,12 @@ def filter_manifest(manifest: Manifest, global_config: NoxConfig) -> Manifest | 
     # Filter by keywords.
     if global_config.keywords:
         try:
-            ast.parse(global_config.keywords, mode="eval")
+            manifest.filter_by_keywords(global_config.keywords)
         except SyntaxError:
             logger.error(
-                "Error while collecting sessions: keywords argument must be a Python"
-                " expression."
+                "Error while collecting sessions: invalid keywords expression."
             )
             return 3
-
-        # This function never errors, but may cause an empty list of sessions
-        # (which is an error condition later).
-        manifest.filter_by_keywords(global_config.keywords)
 
     if not manifest and not global_config.list_sessions:
         logger.error("No sessions selected after filtering by keyword.")

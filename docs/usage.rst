@@ -99,8 +99,11 @@ tags using ``-t`` or ``--tags`` to filter test sessions:
 
     nox -k "not lint"
     nox -k "tests and not lint"
+    nox -k "tests-3.12 or docs:html"
     nox -k "not my_tag"
     nox -t "my_tag" "my_other_tag"
+
+Keywords match case-sensitive substrings of session names, signatures, and tags.
 
 .. _pytest-style keywords: https://docs.pytest.org/en/latest/usage.html#specifying-tests-selecting-tests
 
