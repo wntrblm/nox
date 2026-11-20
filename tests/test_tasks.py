@@ -313,7 +313,7 @@ def test_filter_manifest_keywords_not_found(caplog: pytest.LogCaptureFixture) ->
 
 def test_filter_manifest_keywords_syntax_error() -> None:
     config = _options.options.namespace(
-        sessions=None, pythons=(), keywords="foo:bar", posargs=[]
+        sessions=None, pythons=(), keywords="foo and )", posargs=[]
     )
     manifest = Manifest({"foo_bar": session_func, "foo_baz": session_func}, config)
     return_value = tasks.filter_manifest(manifest, config)
