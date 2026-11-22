@@ -441,6 +441,38 @@ def test_dash_in_envname(makeconfig: Callable[[str], str]) -> None:
     )
 
 
+def test_dotted_envname(makeconfig: Callable[[str], str]) -> None:
+    result = makeconfig(
+        textwrap.dedent(
+            f"""
+            [tox]
+            envlist = {PYTHON_VERSION}, py{PYTHON_VERSION}-lint
+
+            [testenv]
+            basepython = python{PYTHON_VERSION}
+            """
+        )
+    )
+
+    assert (
+        result
+        == textwrap.dedent(
+            f"""
+        import nox
+
+
+        @nox.session(python='python{PYTHON_VERSION}')
+        def _{PYTHON_VERSION.replace(".", "_")}(session):
+            session.install('.')
+
+        @nox.session(python='python{PYTHON_VERSION}')
+        def py{PYTHON_VERSION.replace(".", "_")}_lint(session):
+            session.install('.')
+        """
+        ).lstrip()
+    )
+
+
 def test_descriptions_into_docstrings(makeconfig: Callable[[str], str]) -> None:
     result = makeconfig(
         textwrap.dedent(
