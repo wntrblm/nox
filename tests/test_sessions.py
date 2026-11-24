@@ -876,6 +876,51 @@ class TestSession:
             ),
         ):
             session.install("requests", "urllib3")
+            
+    def _passthrough_session(self, **options: Any) -> nox.sessions.Session:
+        runner = nox.sessions.SessionRunner(
+            name="test",
+            signatures=["test"],
+            func=mock.sentinel.func,
+            global_config=_options.options.namespace(posargs=[], **options),
+            manifest=mock.create_autospec(nox.manifest.Manifest),
+        )
+        runner.venv = mock.create_autospec(nox.virtualenv.PassthroughEnv)
+        assert runner.venv
+        runner.venv.env = {}
+
+        class SessionNoSlots(nox.sessions.Session):
+            pass
+
+        return SessionNoSlots(runner=runner)
+
+    def test_install_no_venv_allow_global_argument(self) -> None:
+        session = self._passthrough_session()
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.install("requests", "urllib3", allow_global=True)
+            run.assert_called_once_with(
+                "python",
+                "-m",
+                "pip",
+                "install",
+                "requests",
+                "urllib3",
+                **_run_with_defaults(silent=True, external="error"),
+            )
+
+    def test_install_no_venv_allow_global_option(self) -> None:
+        session = self._passthrough_session(allow_global_install=True)
+
+        with mock.patch.object(session, "_run", autospec=True) as run:
+            session.install("requests", "urllib3")
+            run.assert_called_once()
+
+    def test_install_no_venv_allow_global_argument_wins(self) -> None:
+        session = self._passthrough_session(allow_global_install=True)
+
+        with pytest.raises(ValueError, match=r"no longer allowed"):
+            session.install("requests", "urllib3", allow_global=False)
 
     @pytest.mark.parametrize(
         ("verbose", "expected_silent"),
