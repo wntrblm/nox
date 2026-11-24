@@ -871,9 +871,13 @@ class Session:
 
         .. warning::
 
-            Running ``session.install`` without a virtual environment
-            is no longer supported. If you still want to do that, please
-            use ``session.run("pip", "install", ...)`` instead.
+            Running ``session.install`` without a virtual environment raises
+            an error by default, since it would modify the global Python
+            environment. Pass ``allow_global=True``, set
+            ``nox.options.allow_global_install``, or use
+            ``--allow-global-install`` to allow it; the argument takes
+            precedence over the global option. Alternatively, use
+            ``session.run("pip", "install", ...)``.
 
         .. warning::
 

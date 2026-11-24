@@ -416,6 +416,21 @@ Programs in sibling directories are still external, even when the directory name
 
 If the Noxfile sets ``nox.options.error_on_external_run``, you can override the Noxfile setting from the command line by using ``--no-error-on-external-run``.
 
+.. _opt-allow-global-install:
+
+Installing without a virtual environment
+----------------------------------------
+
+By default, :func:`session.install <nox.sessions.Session.install>` raises an error in a session without a virtual environment (``venv_backend="none"``), because it would modify the global Python environment. You can allow it with ``--allow-global-install``:
+
+.. code-block:: console
+
+    nox --allow-global-install
+
+You can also pass ``allow_global=True`` to a single ``session.install()`` call. A session's own ``allow_global=`` value always wins over the global default.
+
+If the Noxfile sets ``nox.options.allow_global_install``, you can override the Noxfile setting from the command line by using ``--no-allow-global-install``.
+
 Specifying a different configuration file
 -----------------------------------------
 
