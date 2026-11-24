@@ -572,6 +572,7 @@ The following options can be specified in the Noxfile:
 * ``nox.options.sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-pythons-and-keywords>`. If set to an empty list, no sessions will be run if no sessions were given on the command line, and the list of available sessions will be shown instead.
 * ``nox.options.pythons`` is equivalent to specifying :ref:`-p or --pythons <opt-sessions-pythons-and-keywords>`.
 * ``nox.options.keywords`` is equivalent to specifying :ref:`-k or --keywords <opt-sessions-pythons-and-keywords>`.
+* ``nox.options.hyphenated_session_names = True`` displays parametrized sessions with hyphenated names where possible, such as ``tests-3.14-resolution-highest``. The original names remain valid selectors. If a generated name would be ambiguous, Nox keeps the original display name. The CLI flags ``--hyphenated-session-names`` and ``--no-hyphenated-session-names`` override the noxfile setting.
 * ``nox.options.tags`` is equivalent to specifying :ref:`-t or --tags <opt-sessions-pythons-and-keywords>`.
 * ``nox.options.default_venv_backend`` is equivalent to specifying :ref:`-db or --default-venv-backend <opt-default-venv-backend>`.
 * ``nox.options.force_venv_backend`` is equivalent to specifying :ref:`-fb or --force-venv-backend <opt-force-venv-backend>`.

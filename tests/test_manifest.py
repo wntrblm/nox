@@ -54,6 +54,7 @@ def create_mock_config() -> Any:
     cfg.default_venv_backend = None
     cfg.extra_pythons = None
     cfg.force_pythons = None
+    cfg.hyphenated_session_names = False
     cfg.posargs = []
     return cfg
 
@@ -378,6 +379,59 @@ def test_add_session_parametrized_multiple_pythons() -> None:
     for session in manifest.make_session("my_session", func):
         manifest.add_session(session)
     assert len(manifest) == 4
+
+
+def test_hyphenated_session_names_keep_original_selectors() -> None:
+    config = nox._options.NoxConfig(hyphenated_session_names=True)
+
+    @nox.parametrize("resolution", ["highest", nox.param("lowest", id="low / direct")])
+    def tests(session: nox.Session, resolution: str) -> None:
+        pass
+
+    manifest = Manifest({"tests": Func(tests, python=["3.13", "3.14"])}, config)
+
+    assert [session.friendly_name for session in manifest._all_sessions] == [
+        "tests-3.13-resolution-highest",
+        "tests-3.13-low-direct",
+        "tests-3.14-resolution-highest",
+        "tests-3.14-low-direct",
+    ]
+    session = manifest["tests-3.14-resolution-highest"]
+    assert manifest["tests-3.14(resolution='highest')"] is session
+    manifest.filter_by_name(["tests-3.14"])
+    assert [session.friendly_name for session in manifest] == [
+        "tests-3.14-resolution-highest",
+        "tests-3.14-low-direct",
+    ]
+
+
+def test_hyphenated_session_names_preserve_unambiguous_selectors() -> None:
+    config = nox._options.NoxConfig(hyphenated_session_names=True)
+
+    @nox.parametrize(
+        "value",
+        [
+            nox.param(1, id="a b"),
+            nox.param(2, id="a/b"),
+            nox.param(3, id="existing"),
+            nox.param(4, id="!"),
+        ],
+    )
+    def tests(session: nox.Session, value: int) -> None:
+        pass
+
+    def other(session: nox.Session) -> None:
+        pass
+
+    manifest = Manifest({"test": Func(tests), "test-existing": Func(other)}, config)
+
+    assert [session.friendly_name for session in manifest._all_sessions] == [
+        "test(a b)",
+        "test(a/b)",
+        "test(existing)",
+        "test(!)",
+        "test-existing",
+    ]
 
 
 def test_add_session_parametrized_noop() -> None:

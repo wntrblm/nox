@@ -263,6 +263,16 @@ class NoxfileOptions(_option_set.OptionsBase):
             ),
         ),
     )
+    hyphenated_session_names: bool = attrs.field(
+        default=False,
+        validator=av_bool,
+        metadata=opt(
+            "--hyphenated-session-names",
+            negative_flags=("--no-hyphenated-session-names",),
+            group="sessions",
+            help="Use hyphenated names for parametrized sessions.",
+        ),
+    )
     keywords: str | None = attrs.field(
         default=None,
         validator=av_opt_str,

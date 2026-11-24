@@ -20,6 +20,8 @@ import ast
 import functools
 import itertools
 import operator
+import re
+from collections import Counter
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, cast
 
@@ -81,6 +83,30 @@ class Manifest:
         for name, func in session_functions.items():
             for session in self.make_session(name, func):
                 self.add_session(session)
+
+        if self._config.hyphenated_session_names:
+            self._add_hyphenated_session_names()
+
+    def _add_hyphenated_session_names(self) -> None:
+        existing_names = {
+            _normalize_arg(name)
+            for session in self._all_sessions
+            for name in (session.name, *session.signatures)
+        }
+        aliases = []
+        for session in self._all_sessions:
+            if isinstance(session.func, Call):
+                signature = session.func.session_signature
+                suffix = re.sub(r"[^a-zA-Z0-9_.-]+", "-", signature).strip("-")
+                prefix = session.signatures[0][: -len(signature)]
+                if suffix:
+                    aliases.append((session, f"{prefix}-{suffix}"))
+
+        counts = Counter(_normalize_arg(alias) for _, alias in aliases)
+        for session, alias in aliases:
+            name = _normalize_arg(alias)
+            if counts[name] == 1 and name not in existing_names:
+                session.signatures.insert(0, alias)
 
     def __contains__(self, needle: str | SessionRunner) -> bool:
         return (
