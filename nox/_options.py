@@ -170,6 +170,21 @@ class NoxfileOptions(_option_set.OptionsBase):
     See :doc:`usage` for more details on these settings and their effect.
     """
 
+    allow_global_install: bool = attrs.field(
+        default=False,
+        validator=av_bool,
+        metadata=opt(
+            "--allow-global-install",
+            negative_flags=("--no-allow-global-install",),
+            group="execution",
+            help=(
+                "Allow ``session.install()`` to run in sessions without a"
+                " virtual environment, which installs into the global Python"
+                " environment; a session's own ``allow_global=`` argument"
+                " always wins."
+            ),
+        ),
+    )
     allow_parallel: bool = attrs.field(
         default=False,
         validator=av_bool,
