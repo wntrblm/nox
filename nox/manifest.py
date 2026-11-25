@@ -498,7 +498,7 @@ def _normalize_arg(arg: str) -> str:
     if not paren:
         return arg
     try:
-        return prefix + str(ast.dump(ast.parse(f"_{paren}{params}")))
+        return prefix.strip() + str(ast.dump(ast.parse(f"_{paren}{params}")))
     except (TypeError, SyntaxError):
         return arg
 
