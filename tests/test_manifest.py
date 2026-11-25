@@ -74,6 +74,19 @@ def test__normalized_session_match() -> None:
     assert _normalized_session_match("test(foo='bar')", session_mock)
 
 
+def test__normalized_session_match_python_version() -> None:
+    session_mock = mock.MagicMock()
+    session_mock.name = "tests"
+    session_mock.signatures = ["tests-3.10", "tests-3.10(x=1.0)"]
+    assert _normalized_session_match("tests-3.10", session_mock)
+    assert _normalized_session_match("tests-3.10(x=1.00)", session_mock)
+    assert not _normalized_session_match("tests-3.1", session_mock)
+    assert not _normalized_session_match("tests-3.1(x=1.0)", session_mock)
+
+    session_mock.signatures = ["tests-3.1"]
+    assert not _normalized_session_match("tests-3.10", session_mock)
+
+
 def test_init() -> None:
     sessions = create_mock_sessions()
     manifest = Manifest(sessions, create_mock_config())
@@ -180,6 +193,14 @@ def test_filter_by_name_not_found() -> None:
     manifest = Manifest(sessions, create_mock_config())
     with pytest.raises(KeyError):
         manifest.filter_by_name(("baz",))
+
+
+def test_filter_by_name_python_version_not_found() -> None:
+    sessions = create_mock_sessions()
+    sessions["foo"].python = "3.10"
+    manifest = Manifest(sessions, create_mock_config())
+    with pytest.raises(KeyError, match=r"foo-3\.1\b"):
+        manifest.filter_by_name(("foo-3.1",))
 
 
 def test_filter_by_python_interpreter() -> None:

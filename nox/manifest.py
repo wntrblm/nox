@@ -492,8 +492,13 @@ def _normalized_session_match(session_name: str, session: SessionRunner) -> bool
 @functools.cache
 def _normalize_arg(arg: str) -> str:
     """Normalize arg for comparison."""
+    # Only the parametrize args are Python. The name and Python version are
+    # compared as text, so that ``tests-3.1`` does not match ``tests-3.10``.
+    prefix, paren, params = arg.partition("(")
+    if not paren:
+        return arg
     try:
-        return str(ast.dump(ast.parse(arg)))
+        return prefix.strip() + str(ast.dump(ast.parse(f"_{paren}{params}")))
     except (TypeError, SyntaxError):
         return arg
 
