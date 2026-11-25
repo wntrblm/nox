@@ -734,10 +734,16 @@ def test_run_script_mode_none_backend(
 def test_dependencies_with_version(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(nox._cli, "get_dependencies", lambda x: [x])
     monkeypatch.setattr(
-        importlib.metadata, "version", lambda x: {"nox": "2024.10.09", "uv": "0.4.5"}[x]
+        importlib.metadata,
+        "version",
+        lambda x: {"nox": "2024.10.09", "uv": "0.4.5", "virtualenv": "21.0.0b1"}[x],
     )
 
     assert nox._cli.check_dependencies(["nox", "uv"])
     assert nox._cli.check_dependencies(["nox==2024.10.09", "uv>=0.4"])
     assert nox._cli.check_dependencies(["nox<=2025", "uv~=0.4.2"])
     assert not nox._cli.check_dependencies(["nox==2024.10.10", "uv"])
+    # An installed prerelease satisfies plain specs, but PEP 440 ordering
+    # applies: a beta predates its final release.
+    assert nox._cli.check_dependencies(["nox", "virtualenv>=20.15"])
+    assert not nox._cli.check_dependencies(["nox", "virtualenv>=21"])

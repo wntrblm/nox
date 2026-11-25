@@ -151,7 +151,10 @@ def check_dependencies(dependencies: list[str]) -> bool:
     for dep in expanded_deps:
         if dep.specifier:
             version = importlib.metadata.version(dep.name)
-            if not dep.specifier.contains(version):
+            # prereleases=True so an installed prerelease still matches plain
+            # specs like ">=1" (packaging<26 rejects it by default); PEP 440
+            # ordering (beta < final) still applies.
+            if not dep.specifier.contains(version, prereleases=True):
                 return False
         if dep.url:
             dist = importlib.metadata.distribution(dep.name)
