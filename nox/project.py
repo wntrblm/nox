@@ -192,11 +192,13 @@ def python_versions(
         if spec.operator in {">", ">=", "~="}
     ]
     # A wildcard exclusion such as ``!=3.9.*`` rules out a whole minor
-    # version. Excluding a single release (``!=3.9.1``) does not.
+    # version. Narrower ones (``!=3.9.1``, ``!=3.9.0.*``) do not.
     exclusions = [
         spec
         for spec in specifiers
-        if spec.operator == "!=" and spec.version.endswith(".*")
+        if spec.operator == "!="
+        and spec.version.endswith(".*")
+        and len(packaging.version.Version(spec.version[:-2]).release) <= 2
     ]
     if not lower_bounds:
         msg = 'No minimum version found in "project.requires-python"'
@@ -211,6 +213,9 @@ def python_versions(
         if (3, m) >= min_version
         and all(spec.contains(f"3.{m}", prereleases=True) for spec in exclusions)
     ]
+    if not versions:
+        msg = f'"project.requires-python" excludes every version up to {max_version}'
+        raise ValueError(msg)
     return _with_free_threaded(versions, free_threaded=free_threaded)
 
 
