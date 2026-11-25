@@ -213,6 +213,35 @@ class TestSession:
 
         assert not (docs / ".nox").exists()
 
+    def test_absolute_envdir_after_chdir(self, tmp_path: Path) -> None:
+        session, runner = self.make_session_and_runner()
+        runner.global_config.noxfile = str(tmp_path / "noxfile.py")
+        envdir = tmp_path / "elsewhere" / ".nox"
+        runner.global_config.envdir = Path(envdir)
+        docs = tmp_path / "docs"
+        docs.mkdir()
+
+        with session.chdir(docs):
+            assert session.env_dir == envdir / "test"
+            assert session.cache_dir == envdir / ".cache"
+            assert session.create_tmp() == os.fspath(envdir / "test" / "tmp")
+
+    def test_relative_noxfile_after_chdir(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        session, runner = self.make_session_and_runner()
+        monkeypatch.chdir(tmp_path)
+        runner.global_config.noxfile = "noxfile.py"
+        runner.global_config.envdir = ".nox"
+        assert runner.start_dir == os.path.realpath(tmp_path)
+        docs = tmp_path / "docs"
+        docs.mkdir()
+
+        with session.chdir(docs):
+            assert session.cache_dir == tmp_path.resolve() / ".nox" / ".cache"
+
+        assert not (docs / ".nox").exists()
+
     def test_no_bin_paths(self) -> None:
         session, runner = self.make_session_and_runner()
 
