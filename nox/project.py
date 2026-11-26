@@ -135,7 +135,9 @@ def python_versions(
     will read the trove classifiers (recommended). With a ``max_version``, it
     will read the requires-python setting for a lower bound, and will use the
     value of ``max_version`` as the upper bound. (Reminder: you should never
-    set an upper bound in ``requires-python``).
+    set an upper bound in ``requires-python``). A minor version that
+    ``requires-python`` excludes with a wildcard, like ``!=3.9.*``, is left
+    out.
 
     Classifier-derived versions are sorted by default. Set ``sort=False`` to
     preserve classifier order.
@@ -183,10 +185,20 @@ def python_versions(
         msg = 'No "project.requires-python" value set'
         raise ValueError(msg)
 
+    specifiers = packaging.specifiers.SpecifierSet(requires_python_str)
     lower_bounds = [
         packaging.version.Version(spec.version).release[:2]
-        for spec in packaging.specifiers.SpecifierSet(requires_python_str)
+        for spec in specifiers
         if spec.operator in {">", ">=", "~="}
+    ]
+    # A wildcard exclusion such as ``!=3.9.*`` rules out a whole minor
+    # version. Narrower ones (``!=3.9.1``, ``!=3.9.0.*``) do not.
+    exclusions = [
+        spec
+        for spec in specifiers
+        if spec.operator == "!="
+        and spec.version.endswith(".*")
+        and len(packaging.version.Version(spec.version[:-2]).release) <= 2
     ]
     if not lower_bounds:
         msg = 'No minimum version found in "project.requires-python"'
@@ -195,7 +207,15 @@ def python_versions(
 
     max_minor_version = int(max_version.split(".")[1]) if "." in max_version else 0
 
-    versions = [f"3.{m}" for m in range(max_minor_version + 1) if (3, m) >= min_version]
+    versions = [
+        f"3.{m}"
+        for m in range(max_minor_version + 1)
+        if (3, m) >= min_version
+        and all(spec.contains(f"3.{m}", prereleases=True) for spec in exclusions)
+    ]
+    if not versions:
+        msg = f'"project.requires-python" excludes every version up to {max_version}'
+        raise ValueError(msg)
     return _with_free_threaded(versions, free_threaded=free_threaded)
 
 

@@ -215,6 +215,32 @@ def test_python_range_multiple_lower_bounds() -> None:
     ) == ["3.10", "3.11", "3.12"]
 
 
+@pytest.mark.parametrize(
+    ("requires_python", "expected"),
+    [
+        (">=3.8, !=3.9.*", ["3.8", "3.10", "3.11", "3.12"]),
+        (">=3.8, !=3.9.*, !=3.11.*", ["3.8", "3.10", "3.12"]),
+        (">=3.8, !=3.12.*", ["3.8", "3.9", "3.10", "3.11"]),
+        # Excluding a single release keeps the minor version.
+        (">=3.8, !=3.9.1", ["3.8", "3.9", "3.10", "3.11", "3.12"]),
+        (">=3.8, !=3.9", ["3.8", "3.9", "3.10", "3.11", "3.12"]),
+        (">=3.8, !=3.9.0.*", ["3.8", "3.9", "3.10", "3.11", "3.12"]),
+    ],
+)
+def test_python_range_wildcard_exclusions(
+    requires_python: str, expected: list[str]
+) -> None:
+    pyproject = {"project": {"requires-python": requires_python}}
+    assert python_versions(pyproject, max_version="3.12") == expected
+
+
+@pytest.mark.parametrize("requires_python", [">=3.8, !=3.*", ">=3.11, !=3.11.*"])
+def test_python_range_all_excluded(requires_python: str) -> None:
+    pyproject = {"project": {"requires-python": requires_python}}
+    with pytest.raises(ValueError, match="excludes every version"):
+        python_versions(pyproject, max_version="3.11")
+
+
 def test_dependency_groups() -> None:
     example = {
         "dependency-groups": {
