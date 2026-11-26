@@ -747,3 +747,16 @@ def test_dependencies_with_version(monkeypatch: pytest.MonkeyPatch) -> None:
     # applies: a beta predates its final release.
     assert nox._cli.check_dependencies(["nox", "virtualenv>=20.15"])
     assert not nox._cli.check_dependencies(["nox", "virtualenv>=21"])
+
+
+def test_dependencies_with_invalid_installed_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(nox._cli, "get_dependencies", lambda x: [x])
+    monkeypatch.setattr(
+        importlib.metadata,
+        "version",
+        lambda x: {"nox": "2024.10.09", "legacy": "1.0-foo-bar"}[x],
+    )
+
+    assert not nox._cli.check_dependencies(["nox", "legacy>=1"])

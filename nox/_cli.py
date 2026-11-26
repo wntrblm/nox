@@ -29,6 +29,7 @@ __lazy_modules__ = {
     "packaging.requirements",
     "packaging.specifiers",
     "packaging.utils",
+    "packaging.version",
     "pathlib",
     "shutil",
     "subprocess",
@@ -47,6 +48,7 @@ from typing import TYPE_CHECKING, Literal, NoReturn, cast
 import packaging.requirements
 import packaging.specifiers
 import packaging.utils
+import packaging.version
 
 import nox.command
 import nox.registry
@@ -154,7 +156,11 @@ def check_dependencies(dependencies: list[str]) -> bool:
             # prereleases=True so an installed prerelease still matches plain
             # specs like ">=1" (packaging<26 rejects it by default); PEP 440
             # ordering (beta < final) still applies.
-            if not dep.specifier.contains(version, prereleases=True):
+            try:
+                if not dep.specifier.contains(version, prereleases=True):
+                    return False
+            # packaging<26 raises on non-PEP 440 versions instead of returning False
+            except packaging.version.InvalidVersion:
                 return False
         if dep.url:
             dist = importlib.metadata.distribution(dep.name)
