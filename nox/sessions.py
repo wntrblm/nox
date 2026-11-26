@@ -31,6 +31,7 @@ __lazy_modules__ = {
 import contextlib
 import datetime as dt
 import enum
+import functools
 import hashlib
 import inspect
 import os
@@ -199,7 +200,7 @@ class Session:
     @property
     def env_dir(self) -> pathlib.Path:
         """The path to the environment of this session."""
-        return pathlib.Path(self._runner.envdir)
+        return self._in_noxfile_dir(self._runner.envdir)
 
     @property
     def posargs(self) -> list[str]:
@@ -244,17 +245,26 @@ class Session:
 
     def create_tmp(self) -> str:
         """Create, and return, a temporary directory."""
-        tmpdir = os.path.join(self._runner.envdir, "tmp")
+        tmpdir = os.fspath(self._in_noxfile_dir(self._runner.envdir, "tmp"))
         os.makedirs(tmpdir, exist_ok=True)
-        self.env["TMPDIR"] = os.path.abspath(tmpdir)
+        self.env["TMPDIR"] = tmpdir
         return tmpdir
 
     @property
     def cache_dir(self) -> pathlib.Path:
         """Create and return a 'shared cache' directory to be used across sessions."""
-        path = pathlib.Path(self._runner.global_config.envdir).joinpath(".cache")
+        path = self._in_noxfile_dir(self._runner.global_config.envdir, ".cache")
         path.mkdir(parents=True, exist_ok=True)
         return path
+
+    def _in_noxfile_dir(self, *parts: str | os.PathLike[str]) -> pathlib.Path:
+        """Resolve a path the way it was resolved when the session started.
+
+        A relative ``--envdir`` (``.nox`` by default) lives in the session's
+        start directory, so anchor to it to keep these paths right after
+        :meth:`chdir`.
+        """
+        return pathlib.Path(self._runner.start_dir, *parts)
 
     @property
     def interactive(self) -> bool:
@@ -1095,6 +1105,14 @@ class SessionRunner:
             f"<{self.__class__.__name__} {self.name}: {self.signatures!r} {self.multi}>"
         )
 
+    @functools.cached_property
+    def start_dir(self) -> str:
+        """The directory the session runs in, the Noxfile's directory.
+
+        Cached so a relative Noxfile path keeps its meaning after a chdir.
+        """
+        return os.path.realpath(os.path.dirname(self.global_config.noxfile))
+
     @property
     def description(self) -> str | None:
         doc = self.func.__doc__
@@ -1199,9 +1217,7 @@ class SessionRunner:
 
         start = time.perf_counter()
         try:
-            cwd = os.path.realpath(os.path.dirname(self.global_config.noxfile))
-
-            with _chdir(cwd):
+            with _chdir(self.start_dir):
                 self._create_venv()
                 session = Session(self)
                 session.env["NOX_CURRENT_SESSION"] = session.name
