@@ -66,10 +66,11 @@ def wrapjoin(seq: Iterable[Any]) -> str:
 
 def fixname(envname: str) -> str:
     """
-    Replace dashes with underscores. Tox 4+ requires valid identifiers for
-    names already.
+    Turn a tox environment name, like ``py3.12-lint`` or ``3.12``, into a
+    valid Python identifier.
     """
-    return envname.replace("-", "_").replace("testenv:", "")
+    name = re.sub(r"\W", "_", envname.replace("testenv:", ""))
+    return f"_{name}" if name[0].isdigit() else name
 
 
 def write_output_to_file(output: str, filename: str) -> None:
