@@ -121,6 +121,34 @@ def test_load_nox_module_not_found(
     )
 
 
+def test_load_nox_module_broken_noxfile(
+    caplog: pytest.LogCaptureFixture, tmp_path: Path
+) -> None:
+    broken_noxfile = tmp_path / "noxfile.py"
+    broken_noxfile.write_text("def broken(\n")
+    config = _options.options.namespace(noxfile=str(broken_noxfile))
+
+    assert tasks.load_nox_module(config) == 2
+    assert (
+        f"Failed to load Noxfile {broken_noxfile}: SyntaxError: '(' was never closed (line 1)"
+        in caplog.text
+    )
+
+
+def test_load_nox_module_noxfile_that_raises(
+    caplog: pytest.LogCaptureFixture, tmp_path: Path
+) -> None:
+    raising_noxfile = tmp_path / "noxfile.py"
+    raising_noxfile.write_text('raise RuntimeError("boom at import")\n')
+    config = _options.options.namespace(noxfile=str(raising_noxfile))
+
+    assert tasks.load_nox_module(config) == 2
+    assert (
+        f"Failed to load Noxfile {raising_noxfile}: RuntimeError: boom at import"
+        in caplog.text
+    )
+
+
 def test_load_nox_module_os_error(caplog: pytest.LogCaptureFixture) -> None:
     noxfile = os.path.join(RESOURCES, "noxfile.py")
     config = _options.options.namespace(noxfile=noxfile)

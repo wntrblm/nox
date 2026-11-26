@@ -67,6 +67,15 @@ def __dir__() -> list[str]:
     return __all__
 
 
+def _report_noxfile_error(global_config: NoxConfig, error: Exception) -> None:
+    """Log why the Noxfile could not be loaded, in one line."""
+    if isinstance(error, SyntaxError) and error.lineno is not None:
+        detail = f"SyntaxError: {error.msg} (line {error.lineno})"
+    else:
+        detail = f"{type(error).__name__}: {error}"
+    logger.error(f"Failed to load Noxfile {global_config.noxfile}: {detail}")
+
+
 def _load_and_exec_nox_module(global_config: NoxConfig) -> types.ModuleType:
     """
     Loads, executes, then returns the global_config Nox module.
@@ -145,11 +154,19 @@ def load_nox_module(global_config: NoxConfig) -> types.ModuleType | int:
             f"Failed to load Noxfile {global_config.noxfile}, no such file exists."
         )
         return 2
+    except SyntaxError as error:
+        # check_nox_version() parses the Noxfile, so a syntax error surfaces here
+        _report_noxfile_error(global_config, error)
+        return 2
     except OSError:
         logger.exception(f"Failed to load Noxfile {global_config.noxfile}")
         return 2
 
-    return _load_and_exec_nox_module(global_config)
+    try:
+        return _load_and_exec_nox_module(global_config)
+    except Exception as error:  # noqa: BLE001 - anything a Noxfile raises is a user error
+        _report_noxfile_error(global_config, error)
+        return 2
 
 
 def merge_noxfile_options(
