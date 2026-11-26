@@ -501,7 +501,7 @@ def print_summary(
 
 def create_report(
     results: Sequence_Results_T, global_config: NoxConfig
-) -> Sequence_Results_T:
+) -> Sequence_Results_T | int:
     """Write a report to the location designated in the config, if any.
 
     Args:
@@ -510,23 +510,29 @@ def create_report(
 
     Returns:
         results (Sequence[~nox.sessions.Result]): The results passed
-            to this function, unmodified.
+            to this function, unmodified, or ``2`` when the report could not
+            be written.
     """
     # Sanity check: If no JSON report was requested, this is a no-op.
     if global_config.report is None:
         return results
 
     # Write the JSON report.
-    with open(global_config.report, "w", encoding="utf-8") as report_file:
-        json.dump(
-            {
-                "result": int(all(results)),
-                "sessions": [result.serialize() for result in results],
-            },
-            report_file,
-            indent=2,
-            default=str,
-        )
+    try:
+        with open(global_config.report, "w", encoding="utf-8") as report_file:
+            json.dump(
+                {
+                    "result": int(all(results)),
+                    "sessions": [result.serialize() for result in results],
+                },
+                report_file,
+                indent=2,
+                default=str,
+            )
+    except OSError as error:
+        # The path is the user's, so report it instead of showing a traceback
+        logger.error(f"Failed to write JSON report to {global_config.report}: {error}")
+        return 2
 
     # Return back the results passed to this task.
     return results

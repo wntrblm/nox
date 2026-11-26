@@ -894,6 +894,16 @@ def test_create_report() -> None:
         open_.assert_called_once_with("/path/to/report", "w", encoding="utf-8")
 
 
+def test_create_report_unwritable_path(
+    caplog: pytest.LogCaptureFixture, tmp_path: Path
+) -> None:
+    report = tmp_path / "missing" / "report.json"
+    config = _options.options.namespace(report=str(report))
+
+    assert tasks.create_report([], config) == 2
+    assert f"Failed to write JSON report to {report}" in caplog.text
+
+
 def test_create_report_path_args(tmp_path: Path) -> None:
     report = tmp_path / "report.json"
     config = _options.options.namespace(report=str(report))
