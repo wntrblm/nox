@@ -466,6 +466,15 @@ class NoxConfig(NoxfileOptions):
             help="List all available sessions and exit.",
         ),
     )
+    list_tags: bool = attrs.field(
+        default=False,
+        metadata=opt(
+            "--list-tags",
+            group="sessions",
+            forward=Forward.NEVER,
+            help="List sessions grouped by tag and exit.",
+        ),
+    )
     usage: list[str] | tuple[str, ...] | None = attrs.field(
         default=None,
         metadata=opt(

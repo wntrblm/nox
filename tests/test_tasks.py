@@ -621,6 +621,72 @@ def test_refuse_json_nolist_request(caplog: pytest.LogCaptureFixture) -> None:
     assert record.message == "Must specify --list-sessions with --json"
 
 
+@pytest.mark.parametrize("color", [False, True])
+def test_honor_list_tags_request(
+    capsys: pytest.CaptureFixture[builtins.str], color: bool
+) -> None:
+    config = _options.options.namespace(
+        list_tags=True, noxfile="noxfile.py", color=color
+    )
+    manifest = mock.create_autospec(Manifest)
+    manifest.list_all_sessions.return_value = [
+        (
+            argparse.Namespace(
+                friendly_name="flake8",
+                description="Run flake8",
+                tags=["lint", "check", "lint"],
+            ),
+            True,
+        ),
+        (
+            argparse.Namespace(
+                friendly_name="black",
+                description="Run black",
+                tags=["format", "check"],
+            ),
+            False,
+        ),
+        (argparse.Namespace(friendly_name="untagged", description=None, tags=[]), True),
+        (
+            argparse.Namespace(friendly_name="mypy", description=None, tags=["lint"]),
+            True,
+        ),
+    ]
+    assert tasks.honor_list_request(manifest, global_config=config) == 0
+    output = capsys.readouterr().out
+    assert output.index("check:") < output.index("format:") < output.index("lint:")
+    assert "untagged" not in output
+    assert output.count("Run flake8") == 2
+    assert output.count("Run black") == 2
+    assert output.count("mypy") == 1
+    assert "  * " in output
+    assert "  - " in output
+    if color:
+        assert "\x1b[" in output
+    else:
+        assert "  * flake8 -> Run flake8" in output
+        assert "  - black -> Run black" in output
+        assert "  * mypy" in output
+
+
+def test_honor_list_tags_without_tags(
+    capsys: pytest.CaptureFixture[builtins.str],
+) -> None:
+    config = _options.options.namespace(list_tags=True, color=False)
+    manifest = mock.create_autospec(Manifest)
+    manifest.list_all_sessions.return_value = [
+        (argparse.Namespace(friendly_name="test", description=None, tags=[]), True)
+    ]
+    assert tasks.honor_list_request(manifest, global_config=config) == 0
+    assert capsys.readouterr().out == "No tagged sessions found.\n"
+
+
+def test_filter_manifest_list_tags_with_no_default_sessions() -> None:
+    config = _options.options.namespace(list_tags=True, sessions=(), posargs=[])
+    manifest = Manifest({"session": session_func}, config)
+    assert tasks.filter_manifest(manifest, global_config=config) is manifest
+
+
 def test_empty_session_list_in_noxfile(
     capsys: pytest.CaptureFixture[builtins.str],
 ) -> None:
