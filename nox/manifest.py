@@ -14,12 +14,20 @@
 
 from __future__ import annotations
 
-__lazy_modules__ = {"ast", "itertools", "nox._resolver", "nox.sessions", "operator"}
+__lazy_modules__ = {
+    "ast",
+    "itertools",
+    "nox._resolver",
+    "nox.sessions",
+    "operator",
+    "re",
+}
 
 import ast
 import functools
 import itertools
 import operator
+import re
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, cast
 
@@ -29,6 +37,7 @@ from nox.sessions import Session, SessionRunner
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
+    from types import CodeType
 
     from nox._options import NoxConfig
 
@@ -218,13 +227,13 @@ class Manifest:
         """Filter sessions using pytest-like keyword expressions.
 
         Args:
-            keywords (str): A Python expression of keywords which
-                session names are checked against.
+            keywords (str): A keyword expression checked against session names and tags.
         """
+        expression = _compile_keyword_expression(keywords)
         self._queue = [
             x
             for x in self._queue
-            if keyword_match(keywords, [*x.signatures, *x.tags, x.name])
+            if keyword_match(expression, [*x.signatures, *x.tags, x.name])
         ]
 
     def filter_by_tags(self, tags: Iterable[str]) -> None:
@@ -464,11 +473,47 @@ class KeywordLocals(Mapping[str, bool]):
         return len(self._keywords)
 
 
-def keyword_match(expression: str, keywords: Iterable[str]) -> Any:
+def _compile_keyword_expression(expression: str) -> CodeType:
+    names: dict[str, str] = {}
+
+    def substitute(match: re.Match[str]) -> str:
+        term = match[0]
+        if term in {"and", "or", "not", "True", "False", "None"}:
+            return term
+        alias = f"_k{len(names)}"
+        names[alias] = term
+        return alias
+
+    # Let Python parse boolean precedence and grouping. Temporarily give each
+    # pytest-style keyword a valid identifier, even names like tests-3.12.
+    source = re.sub(r"[\w:+.\[\]\\/-]+", substitute, expression)
+    try:
+        tree = ast.parse(source, mode="eval")
+    except SyntaxError:
+        pass
+    else:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and node.id in names:
+                node.id = names[node.id]
+            elif (
+                isinstance(node, ast.Constant)
+                and (node.value is None or isinstance(node.value, bool))
+            ) or (isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not)):
+                continue
+            elif isinstance(node, ast.expr) and not isinstance(node, ast.BoolOp):
+                break
+        else:
+            return compile(tree, "<string>", "eval")
+
+    # Preserve existing Python expressions such as comparisons and calls.
+    return compile(expression, "<string>", "eval")
+
+
+def keyword_match(expression: str | CodeType, keywords: Iterable[str]) -> Any:
     """See if an expression matches the given set of keywords."""
-    # TODO: see if we can use ast.literal_eval here.
-    my_locals = KeywordLocals(set(keywords))
-    return eval(expression, {}, my_locals)  # noqa: S307
+    if isinstance(expression, str):
+        expression = _compile_keyword_expression(expression)
+    return eval(expression, {}, KeywordLocals(keywords))  # noqa: S307
 
 
 def _null_session_func_(session: Session) -> None:

@@ -30,6 +30,7 @@ from nox.manifest import (
     _normalize_arg,
     _normalized_session_match,
     _null_session_func,
+    keyword_match,
 )
 
 if TYPE_CHECKING:
@@ -211,6 +212,37 @@ def test_filter_by_python_interpreter() -> None:
     manifest.filter_by_python_interpreter(("3.8",))
     assert "foo" in manifest
     assert "bar" not in manifest
+
+
+@pytest.mark.parametrize(
+    ("expression", "matches"),
+    [
+        ("tests-3.12", ["tests-3.12"]),
+        ("site-fr", ["site-fr"]),
+        ("site:en", ["site:en"]),
+        ("docs.api", ["docs.api"]),
+        ("(site:en or site-fr) and not fr", ["site:en"]),
+        ("SITE:en", []),
+        ("3.12", ["tests-3.12"]),
+        ("-3", ["tests-3.10", "tests-3.12"]),
+        ("site:", ["site:en"]),
+        (r"docs[en]/c++\api", [r"docs[en]/c++\api"]),
+        ("site - fr", ["site:en"]),
+        ("site.bit_length()", ["site:en", "site-fr"]),
+        ("site != fr", ["site:en"]),
+        ("site and True", ["site:en", "site-fr"]),
+    ],
+)
+def test_keyword_session_names(expression: str, matches: list[str]) -> None:
+    names = [
+        "tests-3.10",
+        "tests-3.12",
+        "site:en",
+        "site-fr",
+        "docs.api",
+        r"docs[en]/c++\api",
+    ]
+    assert [name for name in names if keyword_match(expression, [name])] == matches
 
 
 def test_filter_by_keyword() -> None:
