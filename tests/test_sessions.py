@@ -1280,6 +1280,16 @@ class TestSessionRunner:
 
         assert isinstance(runner.venv, nox.virtualenv.ProcessEnv)
 
+    def test__create_venv_only_once(self) -> None:
+        runner = self.make_runner()
+        runner.func.python = False
+
+        runner._create_venv()
+        venv = runner.venv
+        runner._create_venv()
+
+        assert runner.venv is venv
+
     @mock.patch("nox.virtualenv.VirtualEnv.create", autospec=True)
     def test__create_venv(self, create: mock.Mock) -> None:
         runner = self.make_runner()
