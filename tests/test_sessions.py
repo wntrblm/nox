@@ -246,6 +246,40 @@ class TestSession:
 
             assert session.interactive is False
 
+    @pytest.mark.parametrize(
+        ("no_install", "reused", "expected"),
+        [
+            (True, True, True),
+            (True, False, False),
+            (False, True, False),
+            (False, False, False),
+        ],
+    )
+    def test_install_skipped(
+        self, no_install: bool, reused: bool, expected: bool
+    ) -> None:
+        session, runner = self.make_session_and_runner()
+        runner.global_config.no_install = no_install
+        assert runner.venv
+        runner.venv._reused = reused
+
+        assert session.install_skipped is expected
+
+    @pytest.mark.parametrize("no_install", [True, False])
+    def test_install_skipped_passthrough(self, no_install: bool) -> None:
+        session, runner = self.make_session_and_runner()
+        runner.venv = nox.virtualenv.PassthroughEnv()
+        runner.global_config.no_install = no_install
+
+        assert session.install_skipped is no_install
+
+    def test_install_skipped_no_venv(self) -> None:
+        session, runner = self.make_session_and_runner()
+        runner.venv = None
+        runner.global_config.no_install = True
+
+        assert session.install_skipped is False
+
     def test_chdir(self, tmp_path: Path) -> None:
         cdbby = tmp_path / "cdbby"
         cdbby.mkdir()
@@ -514,8 +548,31 @@ class TestSession:
         runner.venv = nox.virtualenv.PassthroughEnv()
         runner.global_config.no_install = True
 
-        session.install("numpy")
-        session.conda_install("numpy")
+        with mock.patch.object(nox.command, "run") as run:
+            session.install("numpy")
+            session.conda_install("numpy")
+            session.run_install("pip", "install", "numpy")
+
+        assert not run.called
+
+    def test_run_install_passthrough(self) -> None:
+        session, runner = self.make_session_and_runner()
+        runner.venv = nox.virtualenv.PassthroughEnv()
+        runner.global_config.no_install = False
+
+        with mock.patch.object(nox.command, "run") as run:
+            session.run_install("pip", "install", "numpy")
+
+        assert run.called
+
+    @pytest.mark.parametrize("no_install", [True, False])
+    def test_run_install_no_args(self, no_install: bool) -> None:
+        session, runner = self.make_session_and_runner()
+        runner.venv = nox.virtualenv.PassthroughEnv()
+        runner.global_config.no_install = no_install
+
+        with pytest.raises(ValueError, match="At least one argument"):
+            session.run_install()
 
     def test_run_no_conda_install(self) -> None:
         session, _runner = self.make_session_and_runner()
