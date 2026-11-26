@@ -492,7 +492,9 @@ def test_honor_list_request(
     manifest.module_docstring = module_docstring
     manifest.list_all_sessions.return_value = [
         (
-            argparse.Namespace(friendly_name="foo", description=description, tags=[]),
+            argparse.Namespace(
+                friendly_name="foo", description=description, tags=[], func=session_func
+            ),
             True,
         )
     ]
@@ -509,8 +511,18 @@ def test_honor_list_request_skip_and_selected(
     manifest = mock.create_autospec(Manifest)
     manifest.module_docstring = None
     manifest.list_all_sessions.return_value = [
-        (argparse.Namespace(friendly_name="foo", description=None, tags=[]), True),
-        (argparse.Namespace(friendly_name="bar", description=None, tags=[]), False),
+        (
+            argparse.Namespace(
+                friendly_name="foo", description=None, tags=[], func=session_func
+            ),
+            True,
+        ),
+        (
+            argparse.Namespace(
+                friendly_name="bar", description=None, tags=[], func=session_func
+            ),
+            False,
+        ),
     ]
     return_value = tasks.honor_list_request(manifest, global_config=config)
     assert return_value == 0
@@ -530,8 +542,18 @@ def test_honor_list_request_prints_docstring_if_present(
     manifest = mock.create_autospec(Manifest)
     manifest.module_docstring = "Hello I'm a docstring"
     manifest.list_all_sessions.return_value = [
-        (argparse.Namespace(friendly_name="foo", description=None, tags=[]), True),
-        (argparse.Namespace(friendly_name="bar", description=None, tags=[]), False),
+        (
+            argparse.Namespace(
+                friendly_name="foo", description=None, tags=[], func=session_func
+            ),
+            True,
+        ),
+        (
+            argparse.Namespace(
+                friendly_name="bar", description=None, tags=[], func=session_func
+            ),
+            False,
+        ),
     ]
 
     return_value = tasks.honor_list_request(manifest, global_config=config)
@@ -551,8 +573,18 @@ def test_honor_list_request_doesnt_print_docstring_if_not_present(
     manifest = mock.create_autospec(Manifest)
     manifest.module_docstring = None
     manifest.list_all_sessions.return_value = [
-        (argparse.Namespace(friendly_name="foo", description=None, tags=[]), True),
-        (argparse.Namespace(friendly_name="bar", description=None, tags=[]), False),
+        (
+            argparse.Namespace(
+                friendly_name="foo", description=None, tags=[], func=session_func
+            ),
+            True,
+        ),
+        (
+            argparse.Namespace(
+                friendly_name="bar", description=None, tags=[], func=session_func
+            ),
+            False,
+        ),
     ]
 
     return_value = tasks.honor_list_request(manifest, global_config=config)
@@ -561,6 +593,54 @@ def test_honor_list_request_doesnt_print_docstring_if_not_present(
     out = capsys.readouterr().out
 
     assert "Hello I'm a docstring" not in out
+
+
+@pytest.mark.parametrize(
+    ("python", "description", "expected"),
+    [
+        (None, "Run tests.", "* checks -> Run tests."),
+        (False, None, "* checks"),
+        (True, "Run tests.", "* checks -> Run tests."),
+        ("3.12", "Run tests.", "* checks -> Run tests. (Python 3.12)"),
+        ("3.12", None, "* checks (Python 3.12)"),
+        ("custom-python", None, "* checks (Python custom-python)"),
+    ],
+)
+def test_honor_list_request_python(
+    capsys: pytest.CaptureFixture[builtins.str],
+    python: builtins.str | builtins.bool | None,
+    description: builtins.str | None,
+    expected: builtins.str,
+) -> None:
+    @nox.session(python=python)
+    def checks() -> None:
+        pass
+
+    checks.__doc__ = description
+    config = _options.options.namespace(
+        list_sessions=True, noxfile="noxfile.py", color=False, posargs=[]
+    )
+    manifest = Manifest({"checks": checks}, config)
+    assert tasks.honor_list_request(manifest, config) == 0
+    assert capsys.readouterr().out.splitlines()[2] == expected
+
+
+def test_honor_list_request_parametrized_python(
+    capsys: pytest.CaptureFixture[builtins.str],
+) -> None:
+    @nox.session(python=["3.9", "3.10"])
+    def checks() -> None:
+        """Run tests."""
+
+    config = _options.options.namespace(
+        list_sessions=True, noxfile="noxfile.py", color=False, posargs=[]
+    )
+    manifest = Manifest({"checks": checks}, config)
+    manifest.filter_by_name(["checks-3.10"])
+    assert tasks.honor_list_request(manifest, config) == 0
+    out = capsys.readouterr().out
+    assert "- checks-3.9 -> Run tests. (Python 3.9)" in out
+    assert "* checks-3.10 -> Run tests. (Python 3.10)" in out
 
 
 def test_honor_list_json_request(capsys: pytest.CaptureFixture[builtins.str]) -> None:

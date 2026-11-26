@@ -30,6 +30,10 @@ To list all available sessions, including parametrized sessions:
     nox --list
     nox --list-sessions
 
+The text listing includes the configured Python version or interpreter after
+each session's description, when one is explicitly specified. For example,
+``tests-3.12 -> Run tests. (Python 3.12)``.
+
 If you'd like to use the output in later processing, you can add ``--json`` to
 get json output for the selected session. Fields include ``session`` (pretty
 name), ``name``, ``description``, ``python`` (null if not specified), ``tags``,

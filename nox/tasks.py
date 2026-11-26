@@ -305,8 +305,15 @@ def _produce_listing(manifest: Manifest, global_config: NoxConfig) -> None:
 
         tags = f" {tag_color}[{','.join(session.tags)}]{reset}" if session.tags else ""
         description = f" -> {session.description}" if session.description else ""
+        python = (
+            f" (Python {session.func.python})"
+            if isinstance(session.func.python, str)
+            else ""
+        )
 
-        print(f"{marker} {color}{session.friendly_name}{reset}{tags}{description}")
+        print(
+            f"{marker} {color}{session.friendly_name}{reset}{tags}{description}{python}"
+        )
 
     print(
         f"\nsessions marked with {selected_color}*{reset} are selected, sessions marked"
