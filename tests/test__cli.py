@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import importlib.metadata
 import importlib.util
+import json
 import os
 import shutil
 import subprocess
@@ -273,9 +274,31 @@ def test_url_dependency() -> None:
         "https://github.com/a/package@v1.2.3",
         FakeDistribution(  # type: ignore[arg-type]
             origin=SimpleNamespace(
-                url="https://github.com/a/package", requested_revision="v1.2.3"
+                url="https://github.com/a/package",
+                vcs_info=SimpleNamespace(requested_revision="v1.2.3"),
             )
         ),
+    )
+
+
+@pytest.mark.skipif(sys.version_info < (3, 13), reason="origin requires Python 3.13")
+@pytest.mark.parametrize("revision", [None, "v1.2.3"])
+def test_url_dependency_from_metadata(tmp_path: Path, revision: str | None) -> None:
+    vcs_info = {"vcs": "git", "commit_id": "a" * 40}
+    if revision is not None:
+        vcs_info["requested_revision"] = revision
+    tmp_path.joinpath("direct_url.json").write_text(
+        json.dumps({"url": "https://github.com/a/package", "vcs_info": vcs_info}),
+        encoding="utf-8",
+    )
+    dist = importlib.metadata.PathDistribution(tmp_path)
+    url = "git+https://github.com/a/package"
+    if revision is not None:
+        url += f"@{revision}"
+
+    assert nox._cli.check_url_dependency(url, dist)
+    assert not nox._cli.check_url_dependency(
+        "git+https://github.com/a/package@other", dist
     )
 
 
@@ -286,7 +309,8 @@ def test_dependencies_with_url(monkeypatch: pytest.MonkeyPatch) -> None:
         "distribution",
         lambda _: FakeDistribution(
             SimpleNamespace(
-                url="https://github.com/wntrblm/nox", requested_revision="2024.10.09"
+                url="https://github.com/wntrblm/nox",
+                vcs_info=SimpleNamespace(requested_revision="2024.10.09"),
             )
         ),
     )
