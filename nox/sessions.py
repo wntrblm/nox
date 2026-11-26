@@ -838,6 +838,7 @@ class Session:
         env: Mapping[str, str | None] | None = None,
         include_outer_env: bool = True,
         silent: bool | None = None,
+        allow_global: bool | None = None,
         success_codes: Iterable[int] | None = None,
         log: bool = True,
         external: ExternalType | None = None,  # noqa: ARG002
@@ -870,9 +871,13 @@ class Session:
 
         .. warning::
 
-            Running ``session.install`` without a virtual environment
-            is no longer supported. If you still want to do that, please
-            use ``session.run("pip", "install", ...)`` instead.
+            Running ``session.install`` without a virtual environment raises
+            an error by default, since it would modify the global Python
+            environment. Pass ``allow_global=True``, set
+            ``nox.options.allow_global_install``, or use
+            ``--allow-global-install`` to allow it; the argument takes
+            precedence over the global option. Alternatively, use
+            ``session.run("pip", "install", ...)``.
 
         .. warning::
 
@@ -892,13 +897,18 @@ class Session:
         if isinstance(venv, PassthroughEnv):
             if self._runner.global_config.no_install:
                 return
-            msg = (
-                f"Session {self.name} does not have a virtual environment, so use of"
-                " session.install() is no longer allowed since it would modify the"
-                " global Python environment. If you're really sure that is what you"
-                ' want to do, use session.run("pip", "install", ...) instead.'
-            )
-            raise ValueError(msg)
+            if allow_global is None:
+                allow_global = self._runner.global_config.allow_global_install
+            if not allow_global:
+                msg = (
+                    f"Session {self.name} does not have a virtual environment, so use of"
+                    " session.install() is no longer allowed since it would modify the"
+                    " global Python environment. If you're really sure that is what you"
+                    " want to do, pass allow_global=True, set"
+                    " nox.options.allow_global_install, or use"
+                    ' session.run("pip", "install", ...) instead.'
+                )
+                raise ValueError(msg)
         if not args:
             msg = "At least one argument required to install()."
             raise ValueError(msg)
