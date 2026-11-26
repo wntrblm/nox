@@ -245,6 +245,16 @@ class TestMerge:
         assert config.sessions is None
         assert config.keywords == "test"
 
+    def test_repeated_sessions_flag_accumulates(self) -> None:
+        """Repeating -s/--sessions accumulates all named sessions."""
+        config = self.parse_and_merge(["-s", "tests", "-s", "lint"], _options.NoxfileOptions())
+        assert config.sessions == ["tests", "lint"]
+
+    def test_repeated_sessions_flag_three(self) -> None:
+        """Three -s flags all accumulate."""
+        config = self.parse_and_merge(["-s", "a", "-s", "b", "-s", "c"], _options.NoxfileOptions())
+        assert config.sessions == ["a", "b", "c"]
+
     def test_env_sessions_suppress_noxfile_sessions(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
