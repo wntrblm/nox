@@ -11,6 +11,7 @@ import typing
 from types import SimpleNamespace
 
 import packaging.requirements
+import packaging.specifiers
 import packaging.version
 import pytest
 import python_discovery
@@ -759,4 +760,11 @@ def test_dependencies_with_invalid_installed_version(
         lambda x: {"nox": "2024.10.09", "legacy": "1.0-foo-bar"}[x],
     )
 
+    assert not nox._cli.check_dependencies(["nox", "legacy>=1"])
+
+    # packaging 26+ returns False itself, so force the packaging<26 path
+    def raise_invalid(*args: object, **kwargs: object) -> bool:
+        raise packaging.version.InvalidVersion
+
+    monkeypatch.setattr(packaging.specifiers.SpecifierSet, "contains", raise_invalid)
     assert not nox._cli.check_dependencies(["nox", "legacy>=1"])
